@@ -14,7 +14,7 @@ def create_app():
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY", "dev-secret-change-in-production")
 
-    CORS(app, origins=["http://localhost:3000", "https://roundhero.app"])
+    CORS(app, origins=["http://localhost:3000", "https://roundhero.app", "https://roundhero-web.onrender.com"])
     JWTManager(app)
     db.init_app(app)
 
