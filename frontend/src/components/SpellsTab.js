@@ -1,22 +1,34 @@
 import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
 import { slotColor } from '../utils/dnd';
+import SpellBrowserModal from './SpellBrowserModal';
+import SpellDetailModal from './SpellDetailModal';
 
 export default function SpellsTab() {
-  const { character, useSlot } = useCharacter();
-  const [search, setSearch]   = useState('');
-  const [filter, setFilter]   = useState('all');
+  const { character, useSlot, saveSpellData } = useCharacter();
+  const [search, setSearch]       = useState('');
+  const [filter, setFilter]       = useState('all');
+  const [browsing, setBrowsing]   = useState(false);
+  const [viewing, setViewing]     = useState(null);
 
   if (!character) return null;
   const sd    = character.spell_data || {};
   const slots = character.tracker_data?.spell_slots || {};
-  const spells = (sd.known_spells || []).filter(s => {
+  const knownSpells = sd.known_spells || [];
+  const spells = knownSpells.filter(s => {
     const matchSearch = !search || s.name?.toLowerCase().includes(search.toLowerCase());
-    const matchFilter = filter === 'all' || (filter === 'cantrip' ? s.level===0 : s.level===parseInt(filter));
+    const matchFilter = filter === 'all' || (filter === 'cantrip' ? s.level_int===0 : s.level_int===parseInt(filter));
     return matchSearch && matchFilter;
   });
-  const levels = [...new Set((sd.known_spells||[]).map(s=>s.level))].sort((a,b)=>a-b);
+  const levels = [...new Set(knownSpells.map(s=>s.level_int))].sort((a,b)=>a-b);
   const slotLevels = Object.entries(slots).filter(([,s])=>(s.max||0)>0);
+
+  const addSpell = (spell) => {
+    saveSpellData({ ...sd, known_spells: [...knownSpells, spell] });
+  };
+  const removeSpell = (spell) => {
+    saveSpellData({ ...sd, known_spells: knownSpells.filter(s => s.name !== spell.name) });
+  };
 
   return (
     <div style={{flex:1,overflowY:'auto',padding:12}}>
@@ -38,7 +50,7 @@ export default function SpellsTab() {
         </div>
       )}
 
-      {(sd.known_spells||[]).length > 0 ? (
+      {knownSpells.length > 0 ? (
         <div className="card">
           <div style={{display:'flex',gap:8,marginBottom:12,flexWrap:'wrap'}}>
             <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search spells..." style={{flex:1,minWidth:120}} />
@@ -47,12 +59,13 @@ export default function SpellsTab() {
               <option value="cantrip">Cantrips</option>
               {levels.filter(l=>l>0).map(l=><option key={l} value={l}>Level {l}</option>)}
             </select>
+            <button className="btn btn-primary" onClick={() => setBrowsing(true)}>+ Add Spells</button>
           </div>
           {spells.map((spell,i) => (
-            <div key={i} style={{padding:'8px 0',borderBottom:'1px solid var(--border)'}}>
+            <div key={i} onClick={() => setViewing(spell)} style={{padding:'8px 0',borderBottom:'1px solid var(--border)',cursor:'pointer'}}>
               <div style={{display:'flex',alignItems:'center',gap:8}}>
-                <div style={{background: spell.level===0 ? 'var(--text-dim)' : `var(--slot-${spell.level})`,color:'#fff',borderRadius:4,padding:'1px 6px',fontSize:10,fontWeight:600,minWidth:24,textAlign:'center'}}>
-                  {spell.level===0?'C':spell.level}
+                <div style={{background: spell.level_int===0 ? 'var(--text-dim)' : `var(--slot-${spell.level_int})`,color:'#fff',borderRadius:4,padding:'1px 6px',fontSize:10,fontWeight:600,minWidth:24,textAlign:'center'}}>
+                  {spell.level_int===0?'C':spell.level_int}
                 </div>
                 <div style={{flex:1}}>
                   <div style={{color:'var(--text-primary)',fontWeight:500,fontSize:13}}>{spell.name}</div>
@@ -66,8 +79,24 @@ export default function SpellsTab() {
         <div className="card" style={{textAlign:'center',padding:32}}>
           <div style={{fontSize:32,marginBottom:8}}>✨</div>
           <div style={{color:'var(--text-secondary)',marginBottom:8}}>No spells added yet.</div>
-          <div style={{color:'var(--text-dim)',fontSize:12}}>Spell management coming soon — add spells from the full spell list.</div>
+          <button className="btn btn-primary" onClick={() => setBrowsing(true)}>+ Add Spells</button>
         </div>
+      )}
+
+      {browsing && (
+        <SpellBrowserModal
+          character={character}
+          knownSpells={knownSpells}
+          onAdd={addSpell}
+          onClose={() => setBrowsing(false)}
+        />
+      )}
+      {viewing && (
+        <SpellDetailModal
+          spell={viewing}
+          onRemove={removeSpell}
+          onClose={() => setViewing(null)}
+        />
       )}
     </div>
   );

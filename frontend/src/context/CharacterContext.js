@@ -79,11 +79,17 @@ export function CharacterProvider({ children }) {
     setCharacter(prev => ({ ...prev, tracker_data: r.data }));
   }, [character]);
 
+  const saveSpellData = useCallback(async (spellData) => {
+    if (!character) return;
+    const r = await api.put(`/spells/${character.id}`, spellData);
+    setCharacter(prev => ({ ...prev, spell_data: r.data }));
+  }, [character]);
+
   return (
     <CharacterContext.Provider value={{
       character, characters, loading,
       fetchCharacters, loadCharacter, updateCharacter,
-      useFeature, useSlot, doRest, saveTrackerData, setCharacter,
+      useFeature, useSlot, doRest, saveTrackerData, saveSpellData, setCharacter,
     }}>
       {children}
     </CharacterContext.Provider>
