@@ -3,6 +3,7 @@ import { useCharacter } from '../context/CharacterContext';
 import { slotColor } from '../utils/dnd';
 import SpellBrowserModal from './SpellBrowserModal';
 import SpellDetailModal from './SpellDetailModal';
+import CustomSpellModal from './CustomSpellModal';
 
 export default function SpellsTab() {
   const { character, useSlot, saveSpellData } = useCharacter();
@@ -10,6 +11,7 @@ export default function SpellsTab() {
   const [filter, setFilter]       = useState('all');
   const [browsing, setBrowsing]   = useState(false);
   const [viewing, setViewing]     = useState(null);
+  const [addingCustom, setAddingCustom] = useState(false);
 
   if (!character) return null;
   const sd    = character.spell_data || {};
@@ -60,6 +62,7 @@ export default function SpellsTab() {
               {levels.filter(l=>l>0).map(l=><option key={l} value={l}>Level {l}</option>)}
             </select>
             <button className="btn btn-primary" onClick={() => setBrowsing(true)}>+ Add Spells</button>
+            <button className="btn btn-secondary" onClick={() => setAddingCustom(true)}>+ Custom Spell</button>
           </div>
           {spells.map((spell,i) => (
             <div key={i} onClick={() => setViewing(spell)} style={{padding:'8px 0',borderBottom:'1px solid var(--border)',cursor:'pointer'}}>
@@ -79,10 +82,16 @@ export default function SpellsTab() {
         <div className="card" style={{textAlign:'center',padding:32}}>
           <div style={{fontSize:32,marginBottom:8}}>✨</div>
           <div style={{color:'var(--text-secondary)',marginBottom:8}}>No spells added yet.</div>
-          <button className="btn btn-primary" onClick={() => setBrowsing(true)}>+ Add Spells</button>
+          <div style={{display:'flex',gap:8,justifyContent:'center'}}>
+            <button className="btn btn-primary" onClick={() => setBrowsing(true)}>+ Add Spells</button>
+            <button className="btn btn-secondary" onClick={() => setAddingCustom(true)}>+ Custom Spell</button>
+          </div>
         </div>
       )}
 
+      {addingCustom && (
+        <CustomSpellModal onAdd={addSpell} onClose={() => setAddingCustom(false)} />
+      )}
       {browsing && (
         <SpellBrowserModal
           character={character}
