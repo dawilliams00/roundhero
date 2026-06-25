@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+venv/
+env/
+*.db
+instance/
+
+# React
+node_modules/
+build/
+.env.local
+.env.production
+
+# General
+.DS_Store
+*.log
+*.tar.gz
+.claude/

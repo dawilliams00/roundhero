@@ -1,0 +1,155 @@
+from .content_packs import CLASSES, get_spell_slots, get_proficiency_bonus, SPELLCASTER_TYPE
+
+ABILITY_KEYS = ["STR", "DEX", "CON", "INT", "WIS", "CHA"]
+
+def modifier(score):
+    return (score - 10) // 2
+
+def get_features_up_to_level(class_name, level):
+    cls = CLASSES.get(class_name, {})
+    features_by_level = cls.get("features", {})
+    result = []
+    for feat_level in sorted(features_by_level.keys()):
+        if feat_level <= level:
+            for feat in features_by_level[feat_level]:
+                result.append(feat)
+    return result
+
+def build_tracker_data(class_name, level, ability_scores):
+    scores = ability_scores or {}
+    prof = get_proficiency_bonus(level)
+    features_raw = get_features_up_to_level(class_name, level)
+    features = {}
+    for feat in features_raw:
+        max_uses = feat.get("max", 0)
+        if feat["name"] not in features:
+            features[feat["name"]] = {
+                "current":     max_uses,
+                "max":         max_uses,
+                "rest_type":   feat.get("rest_type", "long"),
+                "action":      feat.get("action", "Action"),
+                "description": feat.get("description", ""),
+            }
+
+    # Dynamic use counts
+    cls = CLASSES.get(class_name, {})
+    cha_mod = modifier(scores.get("CHA", 10))
+    con_mod = modifier(scores.get("CON", 10))
+
+    if class_name == "Barbarian":
+        rage_table = cls.get("rage_uses", {})
+        rage_uses = 2
+        for lvl in sorted(rage_table.keys()):
+            if level >= lvl:
+                val = rage_table[lvl]
+                rage_uses = 99 if val == "unlimited" else val
+        if "Rage" in features:
+            features["Rage"]["max"] = rage_uses
+            features["Rage"]["current"] = rage_uses
+
+    if class_name == "Paladin":
+        if "Divine Sense" in features:
+            ds_max = max(1, 1 + cha_mod)
+            features["Divine Sense"]["max"] = ds_max
+            features["Divine Sense"]["current"] = ds_max
+        if "Lay on Hands" in features:
+            loh_max = level * 5
+            features["Lay on Hands"]["max"] = loh_max
+            features["Lay on Hands"]["current"] = loh_max
+
+    if class_name == "Bard":
+        bi_max = max(1, cha_mod)
+        if "Bardic Inspiration" in features:
+            features["Bardic Inspiration"]["max"] = bi_max
+            features["Bardic Inspiration"]["current"] = bi_max
+
+    if class_name == "Monk":
+        ki_max = level
+        features["Ki Points"] = {
+            "current": ki_max, "max": ki_max,
+            "rest_type": "short", "action": "Passive",
+            "description": f"Ki pool: {ki_max} points. Regain on short or long rest."
+        }
+
+    if class_name == "Fighter":
+        surge_table = cls.get("action_surge_uses", {})
+        surge_uses = 0
+        for lvl in sorted(surge_table.keys()):
+            if level >= lvl:
+                surge_uses = surge_table[lvl]
+        if "Action Surge" in features and surge_uses:
+            features["Action Surge"]["max"] = surge_uses
+            features["Action Surge"]["current"] = surge_uses
+        indom_table = cls.get("indomitable_uses", {})
+        indom_uses = 0
+        for lvl in sorted(indom_table.keys()):
+            if level >= lvl:
+                indom_uses = indom_table[lvl]
+        if "Indomitable" in features and indom_uses:
+            features["Indomitable"]["max"] = indom_uses
+            features["Indomitable"]["current"] = indom_uses
+
+    spell_slots = get_spell_slots(class_name, level)
+    return {"features": features, "spell_slots": spell_slots, "item_charges": {}, "conditions": []}
+
+def build_spell_data(class_name, level):
+    caster_type = SPELLCASTER_TYPE.get(class_name, "none")
+    return {
+        "class":        class_name,
+        "caster_type":  caster_type,
+        "spell_lists":  {},
+        "known_spells": [],
+        "prepared":     [],
+    }
+
+def build_ae_data(class_name, level):
+    stock_actions = [
+        {"name": "Attack",       "source": "Core 5e", "source_type": "raw", "cost_type": "action",      "description": "Make one or more melee or ranged attacks. Number of attacks depends on class and level."},
+        {"name": "Cast a Spell", "source": "Core 5e", "source_type": "raw", "cost_type": "cast_spell",  "description": "Cast a spell with a casting time of 1 action."},
+        {"name": "Dash",         "source": "Core 5e", "source_type": "raw", "cost_type": "action",      "description": "Double your movement speed this turn."},
+        {"name": "Disengage",    "source": "Core 5e", "source_type": "raw", "cost_type": "action",      "description": "Your movement doesn't provoke opportunity attacks for the rest of the turn."},
+        {"name": "Dodge",        "source": "Core 5e", "source_type": "raw", "cost_type": "action",      "description": "Attackers have disadvantage vs you. DEX saves with advantage until your next turn."},
+        {"name": "Help",         "source": "Core 5e", "source_type": "raw", "cost_type": "action",      "description": "Give an ally advantage on their next ability check or attack roll."},
+        {"name": "Hide",         "source": "Core 5e", "source_type": "raw", "cost_type": "action",      "description": "Make a DEX (Stealth) check to hide."},
+        {"name": "Ready",        "source": "Core 5e", "source_type": "raw", "cost_type": "action",      "description": "Prepare an action triggered by a specific condition."},
+        {"name": "Search",       "source": "Core 5e", "source_type": "raw", "cost_type": "action",      "description": "Devote your attention to finding something — Perception or Investigation check."},
+        {"name": "Use an Object","source": "Core 5e", "source_type": "raw", "cost_type": "action",      "description": "Interact with a second object or use a magic item that requires an action."},
+    ]
+    stock_bonus = [
+        {"name": "Off-hand Attack","source": "Core 5e", "source_type": "raw", "cost_type": "bonus_action", "description": "When you attack with a light weapon, attack with a different light weapon in your off hand. No ability modifier to damage unless negative."},
+    ]
+    stock_reactions = [
+        {"name": "Opportunity Attack", "source": "Core 5e", "source_type": "raw", "cost_type": "reaction", "description": "When a hostile creature moves out of your reach, make one melee attack."},
+        {"name": "Readied Action",     "source": "Core 5e", "source_type": "raw", "cost_type": "reaction", "description": "Trigger the action you prepared with the Ready action."},
+    ]
+    features_raw = get_features_up_to_level(class_name, level)
+    class_features = []
+    for feat in features_raw:
+        action = feat.get("action", "Passive")
+        if action == "Passive":
+            continue
+        class_features.append({
+            "name":        feat["name"],
+            "source":      class_name,
+            "source_type": "class",
+            "cost_type":   "feature",
+            "tracker_key": feat["name"],
+            "description": feat.get("description", ""),
+        })
+    return {
+        "Action":        stock_actions + [f for f in class_features if f.get("cost_type") == "action" or "Action" in f.get("name","")],
+        "Bonus Action":  stock_bonus   + [f for f in class_features if "Bonus" in f.get("name","")],
+        "Reaction":      stock_reactions + [f for f in class_features if "Reaction" in f.get("name","")],
+        "Free Action":   [],
+        "Passive":       [f for f in class_features if f.get("cost_type") == "passive"],
+    }
+
+def build_character(data):
+    class_name     = data.get("class_name", "Fighter")
+    level          = int(data.get("level", 1))
+    ability_scores = data.get("ability_scores", {a: 10 for a in ABILITY_KEYS})
+    return {
+        "tracker_data": build_tracker_data(class_name, level, ability_scores),
+        "spell_data":   build_spell_data(class_name, level),
+        "ae_data":      build_ae_data(class_name, level),
+    }

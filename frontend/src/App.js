@@ -1,0 +1,38 @@
+import React from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { CharacterProvider } from './context/CharacterContext';
+import LandingPage    from './pages/LandingPage';
+import AuthPage       from './pages/AuthPage';
+import CharacterSelect from './pages/CharacterSelect';
+import CharacterSetup from './pages/CharacterSetup';
+import GameView       from './pages/GameView';
+
+function PrivateRoute({ children }) {
+  const { user, loading } = useAuth();
+  if (loading) return <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'100vh',color:'var(--text-secondary)'}}>Loading...</div>;
+  return user ? children : <Navigate to="/auth" replace />;
+}
+
+function AppRoutes() {
+  return (
+    <Routes>
+      <Route path="/"        element={<LandingPage />} />
+      <Route path="/auth"    element={<AuthPage />} />
+      <Route path="/characters" element={<PrivateRoute><CharacterSelect /></PrivateRoute>} />
+      <Route path="/setup"   element={<PrivateRoute><CharacterSetup /></PrivateRoute>} />
+      <Route path="/play/:id" element={<PrivateRoute><GameView /></PrivateRoute>} />
+      <Route path="*"        element={<Navigate to="/" replace />} />
+    </Routes>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <CharacterProvider>
+        <AppRoutes />
+      </CharacterProvider>
+    </AuthProvider>
+  );
+}
