@@ -1,5 +1,6 @@
 import re
 import fitz
+from engine.item_data import get_item_by_name
 
 SKILL_FIELD_MAP = {
     "Acrobatics": "Acrobatics",
@@ -216,6 +217,17 @@ def parse_character_pdf(file_bytes, spell_db_by_name=None):
         if wname in item_by_name:
             item_by_name[wname]["charges"] = {"current": int(cm.group(1)), "max": int(cm.group(2)), "recharge": "dawn"}
 
+    canonical_items = set()
+    for it in items:
+        canonical = get_item_by_name(it["name"])
+        if canonical:
+            it["charges"] = dict(canonical["charges"]) if canonical.get("charges") else None
+            it["granted_spells"] = [dict(s) for s in canonical.get("granted_spells", [])]
+            it["description"] = canonical.get("description", it["description"])
+            it["rarity"] = canonical.get("rarity", it["rarity"])
+            it["weight"] = canonical.get("weight", it["weight"])
+            canonical_items.add(it["name"])
+
     feature_blobs = [fields[k] for k in _numbered_keys(fields, "FeaturesTraits")]
     parsed_features = _parse_features(feature_blobs)
     features = {}
@@ -295,9 +307,10 @@ def parse_character_pdf(file_bytes, spell_db_by_name=None):
         entry["_source"] = "pdf"
 
         if source in item_by_name:
-            item_by_name[source]["granted_spells"].append({
-                "name": entry["name"], "level_int": entry.get("level_int", level), "charge_cost": 1,
-            })
+            if source not in canonical_items:
+                item_by_name[source]["granted_spells"].append({
+                    "name": entry["name"], "level_int": entry.get("level_int", level), "charge_cost": 1,
+                })
             continue
 
         if source and source.lower() not in class_names:

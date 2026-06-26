@@ -73,6 +73,16 @@ export function CharacterProvider({ children }) {
     return r.data;
   }, [character]);
 
+  const useItemCharge = useCallback(async (itemIndex, delta) => {
+    if (!character) return;
+    const items = character.tracker_data.inventory.items;
+    const item = items[itemIndex];
+    if (!item.charges) return;
+    const cur = Math.max(0, Math.min(item.charges.max, (item.charges.current||0) + delta));
+    const newItems = items.map((it,i) => i===itemIndex ? { ...it, charges: { ...it.charges, current: cur } } : it);
+    await saveTrackerData({ ...character.tracker_data, inventory: { ...character.tracker_data.inventory, items: newItems } });
+  }, [character, saveTrackerData]);
+
   const saveTrackerData = useCallback(async (trackerData) => {
     if (!character) return;
     const r = await api.put(`/tracker/${character.id}`, trackerData);
@@ -99,11 +109,16 @@ export function CharacterProvider({ children }) {
     return r.data;
   }, [character]);
 
+  const deleteCharacter = useCallback(async (id) => {
+    await api.delete(`/characters/${id}`);
+    setCharacters(prev => prev.filter(c => c.id !== id));
+  }, []);
+
   return (
     <CharacterContext.Provider value={{
       character, characters, loading,
       fetchCharacters, loadCharacter, updateCharacter,
-      useFeature, useSlot, doRest, saveTrackerData, saveSpellData, importCharacter, resyncCharacter, setCharacter,
+      useFeature, useSlot, doRest, saveTrackerData, saveSpellData, importCharacter, resyncCharacter, deleteCharacter, useItemCharge, setCharacter,
     }}>
       {children}
     </CharacterContext.Provider>

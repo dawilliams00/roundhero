@@ -5,13 +5,26 @@ import { useCharacter } from '../context/CharacterContext';
 
 export default function CharacterSelect() {
   const { user, logout }              = useAuth();
-  const { characters, fetchCharacters, loading, importCharacter } = useCharacter();
+  const { characters, fetchCharacters, loading, importCharacter, deleteCharacter } = useCharacter();
+  const [confirmDelete, setConfirmDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
   const nav = useNavigate();
   const fileInputRef = useRef(null);
   const [importing, setImporting] = useState(false);
   const [importError, setImportError] = useState('');
 
   useEffect(() => { fetchCharacters(); }, [fetchCharacters]);
+
+  const handleDelete = async () => {
+    if (!confirmDelete) return;
+    setDeleting(true);
+    try {
+      await deleteCharacter(confirmDelete.id);
+      setConfirmDelete(null);
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const handleFileChange = async (e) => {
     const file = e.target.files[0];
@@ -62,22 +75,37 @@ export default function CharacterSelect() {
         ) : (
           <div style={{display:'flex',flexDirection:'column',gap:12}}>
             {characters.map(c => (
-              <button key={c.id} onClick={() => nav(`/play/${c.id}`)} style={{background:'var(--bg-card)',border:'1px solid var(--border)',borderRadius:'var(--radius-md)',padding:16,textAlign:'left',width:'100%',cursor:'pointer',transition:'border-color 0.15s'}}
-                onMouseEnter={e => e.currentTarget.style.borderColor='var(--accent)'}
-                onMouseLeave={e => e.currentTarget.style.borderColor='var(--border)'}
-              >
-                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-                  <div>
-                    <div style={{color:'var(--text-primary)',fontWeight:500,fontSize:16,marginBottom:2}}>{c.name}</div>
-                    <div style={{color:'var(--text-secondary)',fontSize:13}}>Level {c.level} {c.race} {c.class_name}</div>
+              <div key={c.id} style={{display:'flex',alignItems:'center',gap:8,background:'var(--bg-card)',border:'1px solid var(--border)',borderRadius:'var(--radius-md)',padding:16}}>
+                <button onClick={() => nav(`/play/${c.id}`)} style={{flex:1,background:'none',border:'none',textAlign:'left',cursor:'pointer',padding:0}}>
+                  <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+                    <div>
+                      <div style={{color:'var(--text-primary)',fontWeight:500,fontSize:16,marginBottom:2}}>{c.name}</div>
+                      <div style={{color:'var(--text-secondary)',fontSize:13}}>Level {c.level} {c.race} {c.class_name}</div>
+                    </div>
+                    <div style={{color:'var(--accent-light)',fontSize:20}}>→</div>
                   </div>
-                  <div style={{color:'var(--accent-light)',fontSize:20}}>→</div>
-                </div>
-              </button>
+                </button>
+                <button className="btn btn-secondary btn-sm" onClick={() => setConfirmDelete(c)}>Delete</button>
+              </div>
             ))}
           </div>
         )}
       </div>
+
+      {confirmDelete && (
+        <div className="modal-overlay" onClick={() => !deleting && setConfirmDelete(null)}>
+          <div className="modal" style={{maxWidth:360}} onClick={e => e.stopPropagation()}>
+            <h2>Delete {confirmDelete.name}?</h2>
+            <p style={{color:'var(--text-secondary)',fontSize:13,lineHeight:1.6}}>
+              This permanently deletes this character and all of its data. This can't be undone.
+            </p>
+            <div style={{display:'flex',gap:8,marginTop:16}}>
+              <button className="btn btn-secondary" style={{flex:1}} disabled={deleting} onClick={() => setConfirmDelete(null)}>Cancel</button>
+              <button className="btn btn-danger" style={{flex:1}} disabled={deleting} onClick={handleDelete}>{deleting ? 'Deleting...' : 'Delete'}</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

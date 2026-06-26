@@ -132,6 +132,7 @@ def do_rest(char_id):
     data = request.get_json()
     rest_type = data.get("type", "long")
     from engine.rest_engine import apply_rest
-    char.tracker_data = apply_rest(char.tracker_data, char.spell_data, rest_type)
+    new_td, summary = apply_rest(char.tracker_data, char.spell_data, rest_type)
+    char.tracker_data = new_td
     db.session.commit()
-    return jsonify({"tracker_data": char.tracker_data, "spell_data": char.spell_data}), 200
+    return jsonify({"tracker_data": char.tracker_data, "spell_data": char.spell_data, "summary": summary}), 200

@@ -2,12 +2,14 @@ import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
 import AddItemModal from './AddItemModal';
 import ItemSpellsModal from './ItemSpellsModal';
+import ItemBrowserModal from './ItemBrowserModal';
 
 const CURRENCIES = ['cp','sp','ep','gp','pp'];
 
 export default function InventoryTab() {
   const { character, saveTrackerData } = useCharacter();
   const [adding, setAdding]   = useState(false);
+  const [browsing, setBrowsing] = useState(false);
   const [editing, setEditing] = useState(null);
   const [viewingSpells, setViewingSpells] = useState(null);
 
@@ -62,6 +64,7 @@ export default function InventoryTab() {
           <div style={{color:'var(--text-secondary)',fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:1,flex:1}}>
             Items <span style={{color:'var(--text-dim)',fontWeight:400}}>· {totalWeight.toFixed(1)} lb</span>
           </div>
+          <button className="btn btn-secondary btn-sm" onClick={() => setBrowsing(true)}>Browse Items</button>
           <button className="btn btn-primary btn-sm" onClick={() => setAdding(true)}>+ Add Item</button>
         </div>
 
@@ -97,6 +100,7 @@ export default function InventoryTab() {
       </div>
 
       {adding && <AddItemModal onSave={addItem} onClose={() => setAdding(false)} />}
+      {browsing && <ItemBrowserModal existingItems={items} onAdd={addItem} onClose={() => setBrowsing(false)} />}
       {editing !== null && (
         <AddItemModal item={items[editing]} onSave={(it) => updateItem(editing, it)} onClose={() => setEditing(null)} />
       )}

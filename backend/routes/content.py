@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request
 from engine.content_packs import get_classes, get_races, get_class_features, get_subclasses
 from engine.spell_data import get_all_spells, get_spells_for_class
+from engine.item_data import get_all_items
 
 content_bp = Blueprint("content", __name__)
 
@@ -26,3 +27,7 @@ def list_spells():
     if class_name:
         return jsonify(get_spells_for_class(class_name)), 200
     return jsonify(get_all_spells()), 200
+
+@content_bp.route("/items", methods=["GET"])
+def list_items():
+    return jsonify(get_all_items()), 200

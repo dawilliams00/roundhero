@@ -1,0 +1,39 @@
+import React from 'react';
+
+export default function RestSummaryModal({ summary, restType, onClose }) {
+  const { features_reset = [], items_recharged = [], slots_restored } = summary || {};
+  const nothingChanged = features_reset.length === 0 && items_recharged.length === 0 && !slots_restored;
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" style={{maxWidth:360}} onClick={e => e.stopPropagation()}>
+        <h2>{restType === 'long' ? 'Long Rest Complete' : 'Short Rest Complete'}</h2>
+        {nothingChanged ? (
+          <p style={{color:'var(--text-secondary)',fontSize:13}}>Nothing needed to recharge — you were already topped up.</p>
+        ) : (
+          <>
+            {slots_restored && (
+              <div style={{marginBottom:10}}>
+                <div style={{color:'var(--accent-light)',fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:1}}>Spell Slots</div>
+                <div style={{color:'var(--text-secondary)',fontSize:13}}>Restored</div>
+              </div>
+            )}
+            {features_reset.length > 0 && (
+              <div style={{marginBottom:10}}>
+                <div style={{color:'var(--accent-light)',fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:1,marginBottom:4}}>Features Reset</div>
+                {features_reset.map(f => <div key={f} style={{color:'var(--text-secondary)',fontSize:13}}>{f}</div>)}
+              </div>
+            )}
+            {items_recharged.length > 0 && (
+              <div style={{marginBottom:10}}>
+                <div style={{color:'var(--accent-light)',fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:1,marginBottom:4}}>Items Recharged</div>
+                {items_recharged.map(it => <div key={it} style={{color:'var(--text-secondary)',fontSize:13}}>✨ {it}</div>)}
+              </div>
+            )}
+          </>
+        )}
+        <button className="btn btn-primary" style={{width:'100%',marginTop:8}} onClick={onClose}>Got it</button>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,47 @@
+import React, { useState } from 'react';
+import { useCharacter } from '../context/CharacterContext';
+import SpellDetailModal from './SpellDetailModal';
+
+export default function CastSpellPickerModal({ onClose }) {
+  const { character } = useCharacter();
+  const [search, setSearch] = useState('');
+  const [viewing, setViewing] = useState(null);
+
+  const sd = character?.spell_data || {};
+  const knownSpells = sd.known_spells || [];
+  const spellLists  = sd.spell_lists || {};
+  const activeList  = sd.active_list || null;
+  const isAlwaysAvailable = s => s.ritual || !!s.granted_by;
+  const visibleSpells = activeList && spellLists[activeList]
+    ? knownSpells.filter(s => spellLists[activeList].includes(s.name) || isAlwaysAvailable(s))
+    : knownSpells;
+  const spells = visibleSpells.filter(s => !search || s.name.toLowerCase().includes(search.toLowerCase()));
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" style={{maxWidth:420,maxHeight:'80vh',display:'flex',flexDirection:'column'}} onClick={e => e.stopPropagation()}>
+        <h2>Cast a Spell</h2>
+        <div style={{color:'var(--text-dim)',fontSize:11,marginBottom:10}}>From: {activeList || 'All Known Spells'}</div>
+        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search spells..." style={{marginBottom:12}} autoFocus />
+        <div style={{flex:1,overflowY:'auto'}}>
+          {spells.length === 0 ? (
+            <div style={{color:'var(--text-dim)',fontSize:12,textAlign:'center',padding:24}}>No spells available. Add some in the Spells tab.</div>
+          ) : spells.map((spell,i) => (
+            <div key={i} onClick={() => setViewing(spell)} style={{display:'flex',alignItems:'center',gap:8,padding:'8px 0',borderBottom:'1px solid var(--border)',cursor:'pointer'}}>
+              <div style={{background: spell.level_int===0 ? 'var(--text-dim)' : `var(--slot-${spell.level_int})`,color:'#fff',borderRadius:4,padding:'1px 6px',fontSize:10,fontWeight:600,minWidth:24,textAlign:'center'}}>
+                {spell.level_int===0?'C':spell.level_int}
+              </div>
+              <div style={{flex:1}}>
+                <div style={{color:'var(--text-primary)',fontWeight:500,fontSize:13}}>{spell.name}</div>
+                <div style={{color:'var(--text-dim)',fontSize:11}}>{spell.school}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+        <button className="btn btn-secondary" style={{width:'100%',marginTop:16}} onClick={onClose}>Close</button>
+      </div>
+
+      {viewing && <SpellDetailModal spell={viewing} onClose={() => setViewing(null)} />}
+    </div>
+  );
+}
