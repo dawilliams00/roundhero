@@ -85,11 +85,18 @@ export function CharacterProvider({ children }) {
     setCharacter(prev => ({ ...prev, spell_data: r.data }));
   }, [character]);
 
+  const importCharacter = useCallback(async (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const r = await api.post('/characters/import', formData, { headers: { 'Content-Type': undefined } });
+    return r.data;
+  }, []);
+
   return (
     <CharacterContext.Provider value={{
       character, characters, loading,
       fetchCharacters, loadCharacter, updateCharacter,
-      useFeature, useSlot, doRest, saveTrackerData, saveSpellData, setCharacter,
+      useFeature, useSlot, doRest, saveTrackerData, saveSpellData, importCharacter, setCharacter,
     }}>
       {children}
     </CharacterContext.Provider>

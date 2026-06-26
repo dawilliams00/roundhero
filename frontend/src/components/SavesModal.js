@@ -5,7 +5,8 @@ import { calcSaves, ABILITY_KEYS, ABILITY_LABELS } from '../utils/dnd';
 export default function SavesModal({ onClose }) {
   const { character } = useCharacter();
   if (!character) return null;
-  const saves = calcSaves(character.ability_scores, character.class_name, character.level);
+  const savedProfs = character.tracker_data?.save_proficiencies;
+  const saves = calcSaves(character.ability_scores, character.class_name, character.level, savedProfs);
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={e => e.stopPropagation()} style={{maxWidth:320}}>

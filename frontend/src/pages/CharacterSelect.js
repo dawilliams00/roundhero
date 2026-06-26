@@ -1,14 +1,33 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCharacter } from '../context/CharacterContext';
 
 export default function CharacterSelect() {
   const { user, logout }              = useAuth();
-  const { characters, fetchCharacters, loading } = useCharacter();
+  const { characters, fetchCharacters, loading, importCharacter } = useCharacter();
   const nav = useNavigate();
+  const fileInputRef = useRef(null);
+  const [importing, setImporting] = useState(false);
+  const [importError, setImportError] = useState('');
 
   useEffect(() => { fetchCharacters(); }, [fetchCharacters]);
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files[0];
+    e.target.value = '';
+    if (!file) return;
+    setImporting(true);
+    setImportError('');
+    try {
+      const created = await importCharacter(file);
+      nav(`/play/${created.id}`);
+    } catch (err) {
+      setImportError(err?.response?.data?.error || 'Import failed. Make sure this is a D&D Beyond character sheet PDF.');
+    } finally {
+      setImporting(false);
+    }
+  };
 
   return (
     <div style={{minHeight:'100vh',background:'var(--bg-primary)',padding:24}}>
@@ -20,10 +39,18 @@ export default function CharacterSelect() {
             <button className="btn btn-secondary btn-sm" onClick={logout}>Sign Out</button>
           </div>
         </div>
-        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:20}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8,flexWrap:'wrap',gap:8}}>
           <h2 style={{color:'var(--text-primary)',fontSize:18,fontWeight:500}}>Your Characters</h2>
-          <button className="btn btn-primary" onClick={() => nav('/setup')}>+ New Character</button>
+          <div style={{display:'flex',gap:8}}>
+            <input ref={fileInputRef} type="file" accept="application/pdf" onChange={handleFileChange} style={{display:'none'}} />
+            <button className="btn btn-secondary" disabled={importing} onClick={() => fileInputRef.current.click()}>
+              {importing ? 'Importing...' : '⬆ Import PDF'}
+            </button>
+            <button className="btn btn-primary" onClick={() => nav('/setup')}>+ New Character</button>
+          </div>
         </div>
+        {importError && <div style={{color:'var(--danger)',fontSize:12,marginBottom:12}}>{importError}</div>}
+        <div style={{marginBottom:20}} />
         {loading ? (
           <div style={{textAlign:'center',color:'var(--text-dim)',padding:40}}>Loading...</div>
         ) : characters.length === 0 ? (

@@ -6,7 +6,8 @@ export default function SkillsModal({ onClose }) {
   const { character }   = useCharacter();
   const [search, setSearch] = useState('');
   if (!character) return null;
-  const skills = calcSkills(character.ability_scores, [], [], character.level)
+  const skillProfs = character.tracker_data?.skill_proficiencies || [];
+  const skills = calcSkills(character.ability_scores, skillProfs, [], character.level)
     .filter(s => s.skill.toLowerCase().includes(search.toLowerCase()))
     .sort((a,b) => b.bonus - a.bonus);
   return (
@@ -26,7 +27,7 @@ export default function SkillsModal({ onClose }) {
             </div>
           ))}
         </div>
-        <div style={{fontSize:11,color:'var(--text-dim)',marginTop:8}}>🟣 Proficient · 🟡 Expertise (add your proficiencies in Tracker)</div>
+        <div style={{fontSize:11,color:'var(--text-dim)',marginTop:8}}>🟣 Proficient · 🟡 Expertise</div>
         <button className="btn btn-secondary" style={{width:'100%',marginTop:12}} onClick={onClose}>Close</button>
       </div>
     </div>

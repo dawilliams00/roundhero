@@ -20,9 +20,9 @@ export const modifier = score => Math.floor((score - 10) / 2);
 export const modStr   = score => { const m = modifier(score); return m >= 0 ? `+${m}` : `${m}`; };
 export const profBonus = level => PROF_BONUS[level] || 2;
 
-export const calcSaves = (abilityScores, className, level) => {
+export const calcSaves = (abilityScores, className, level, explicitProfs) => {
   const prof = profBonus(level);
-  const profs = SAVE_PROFS[className] || [];
+  const profs = explicitProfs && explicitProfs.length ? explicitProfs : (SAVE_PROFS[className] || []);
   return Object.fromEntries(
     ABILITY_KEYS.map(ab => {
       const base = modifier(abilityScores[ab] || 10);

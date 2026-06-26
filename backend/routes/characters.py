@@ -3,8 +3,12 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from database import db
 from models.character import Character
 from engine.character_engine import build_character
+from engine.pdf_import import parse_character_pdf
+from engine.spell_data import get_all_spells
 
 characters_bp = Blueprint("characters", __name__)
+
+_SPELL_DB_BY_NAME = {s["name"].lower(): s for s in get_all_spells()}
 
 @characters_bp.route("/", methods=["GET"])
 @jwt_required()
@@ -32,6 +36,35 @@ def create_character():
     char.spell_data     = built["spell_data"]
     char.ae_data        = built["ae_data"]
     char.notes          = {}
+    db.session.add(char)
+    db.session.commit()
+    return jsonify(char.to_dict()), 201
+
+@characters_bp.route("/import", methods=["POST"])
+@jwt_required()
+def import_character():
+    user_id = int(get_jwt_identity())
+    file = request.files.get("file")
+    if not file:
+        return jsonify({"error": "No file uploaded"}), 400
+    try:
+        parsed = parse_character_pdf(file.read(), spell_db_by_name=_SPELL_DB_BY_NAME)
+    except Exception:
+        return jsonify({"error": "Could not parse this PDF. Make sure it's a D&D Beyond character sheet export."}), 400
+
+    char = Character(
+        user_id=user_id,
+        name=parsed["name"],
+        class_name=parsed["class_name"],
+        subclass=parsed["subclass"],
+        race=parsed["race"],
+        level=parsed["level"],
+    )
+    char.ability_scores = parsed["ability_scores"]
+    char.tracker_data   = parsed["tracker_data"]
+    char.spell_data     = parsed["spell_data"]
+    char.ae_data        = parsed["ae_data"]
+    char.notes          = parsed["notes"]
     db.session.add(char)
     db.session.commit()
     return jsonify(char.to_dict()), 201
