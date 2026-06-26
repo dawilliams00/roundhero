@@ -136,10 +136,12 @@ def build_ae_data(class_name, level):
     ]
     stock_bonus = [
         {"name": "Off-hand Attack","source": "Core 5e", "source_type": "raw", "cost_type": "bonus_action", "description": "When you attack with a light weapon, attack with a different light weapon in your off hand. No ability modifier to damage unless negative."},
+        {"name": "Cast a Spell", "source": "Core 5e", "source_type": "raw", "cost_type": "cast_spell", "description": "Cast a spell with a casting time of 1 bonus action."},
     ]
     stock_reactions = [
         {"name": "Opportunity Attack", "source": "Core 5e", "source_type": "raw", "cost_type": "reaction", "description": "When a hostile creature moves out of your reach, make one melee attack."},
         {"name": "Readied Action",     "source": "Core 5e", "source_type": "raw", "cost_type": "reaction", "description": "Trigger the action you prepared with the Ready action."},
+        {"name": "Cast a Spell", "source": "Core 5e", "source_type": "raw", "cost_type": "cast_spell", "description": "Cast a spell with a casting time of 1 reaction."},
     ]
     features_raw = get_features_up_to_level(class_name, level)
     sections = {"Action": [], "Bonus Action": [], "Reaction": [], "Free Action": [], "Passive": []}

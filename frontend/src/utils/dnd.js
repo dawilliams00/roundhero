@@ -79,3 +79,14 @@ export const SECTION_COLORS = {
   'Passive':      '#212121',
   'Haste':        '#006064',
 };
+
+// Which action-economy bucket a spell's printed casting time belongs to.
+export const spellCastBucket = (castingTime) => {
+  const t = (castingTime || '').toLowerCase();
+  if (t.includes('bonus action')) return 'Bonus Action';
+  if (t.includes('reaction')) return 'Reaction';
+  return 'Action';
+};
+
+export const rollD20 = () => 1 + Math.floor(Math.random() * 20);
+export const rollDie = sides => 1 + Math.floor(Math.random() * sides);

@@ -5,8 +5,10 @@ import SavesModal from './SavesModal';
 import SkillsModal from './SkillsModal';
 import TraitsModal from './TraitsModal';
 import HPModal from './HPModal';
+import RestModal from './RestModal';
+import RestSummaryModal from './RestSummaryModal';
 
-function EditableStat({ label, value, onSave }) {
+function EditableStat({ label, value, onSave, color }) {
   const [editing, setEditing] = useState(false);
   const [val, setVal] = useState(value);
 
@@ -18,7 +20,7 @@ function EditableStat({ label, value, onSave }) {
   };
 
   return (
-    <div style={{textAlign:'center',minWidth:36}}>
+    <div className="stat-box">
       {editing ? (
         <input
           autoFocus
@@ -29,21 +31,46 @@ function EditableStat({ label, value, onSave }) {
           style={{width:36,textAlign:'center',fontWeight:700,fontSize:16,padding:'1px 2px'}}
         />
       ) : (
-        <div onClick={() => { setVal(value); setEditing(true); }} style={{color:'var(--accent-light)',fontWeight:700,fontSize:16,cursor:'pointer'}}>
+        <div onClick={() => { setVal(value); setEditing(true); }} className="stat-value" style={{cursor:'pointer',color: color || 'var(--accent-light)'}}>
           {value >= 0 && label==='INIT' ? `+${value}` : value}
         </div>
       )}
-      <div style={{color:'var(--text-dim)',fontSize:9,textTransform:'uppercase'}}>{label}</div>
+      <div className="stat-label">{label}</div>
+    </div>
+  );
+}
+
+function PMStat({ label, value, color, onAdjust }) {
+  return (
+    <div style={{display:'flex',alignItems:'center',gap:4}}>
+      <button onClick={() => onAdjust(-1)} style={{background:'var(--danger)',color:'#fff',borderRadius:4,width:22,height:22,fontWeight:700,fontSize:13,flexShrink:0}}>−</button>
+      <div className="stat-box">
+        <div className="stat-value" style={{color}}>{value}</div>
+        <div className="stat-label">{label}</div>
+      </div>
+      <button onClick={() => onAdjust(1)} style={{background:'var(--success)',color:'#fff',borderRadius:4,width:22,height:22,fontWeight:700,fontSize:13,flexShrink:0}}>+</button>
+    </div>
+  );
+}
+
+function AbilityBox({ abbr, score }) {
+  return (
+    <div className="stat-box" style={{minWidth:38}}>
+      <div className="stat-label" style={{marginTop:0,marginBottom:2}}>{abbr}</div>
+      <div className="stat-value">{score}</div>
+      <div className="stat-sub">{modStr(score)}</div>
     </div>
   );
 }
 
 export default function CharacterHeader({ onBack }) {
-  const { character, updateCharacter, saveTrackerData } = useCharacter();
+  const { character, saveTrackerData, doRest } = useCharacter();
   const [showSaves, setShowSaves]   = useState(false);
   const [showSkills, setShowSkills] = useState(false);
   const [showTraits, setShowTraits] = useState(false);
   const [showHP, setShowHP]         = useState(false);
+  const [showRest, setShowRest]     = useState(false);
+  const [restSummary, setRestSummary] = useState(null);
 
   if (!character) return null;
 
@@ -56,15 +83,18 @@ export default function CharacterHeader({ onBack }) {
   const calcMaxHp = hp.max || (level * (({ Barbarian:12,Fighter:10,Paladin:10,Ranger:10,Monk:8,Rogue:8,Bard:8,Cleric:8,Druid:8,Warlock:8,Sorcerer:6,Wizard:6 }[class_name] || 8) / 2 + 1 + con));
   const maxHp  = (hp.max_override > 0) ? hp.max_override : calcMaxHp;
   const curHp  = hp.current ?? maxHp;
+  const tempHp = hp.temp || 0;
   const ac     = td?.ac ?? (10 + dexMod);
   const init   = td?.initiative ?? dexMod;
   const insp   = !!td?.inspiration;
-  const traits = td?.traits || { resistances: [], immunities: [], vulnerabilities: [], advantages: [] };
+  const traits = td?.traits || { resistances: [], immunities: [], vulnerabilities: [], advantages: [], disadvantages: [] };
+  const traitName = t => (typeof t === 'string' ? t : t?.name) || '';
   const traitChips = [
-    ...(traits.resistances||[]).map(t => ({t,c:'var(--text-dim)'})),
-    ...(traits.immunities||[]).map(t => ({t,c:'var(--success)'})),
-    ...(traits.vulnerabilities||[]).map(t => ({t,c:'var(--danger)'})),
-    ...(traits.advantages||[]).map(t => ({t,c:'var(--accent-light)'})),
+    ...(traits.resistances||[]).map(t => ({t: traitName(t), d: t?.description, c:'var(--text-dim)'})),
+    ...(traits.immunities||[]).map(t => ({t: traitName(t), d: t?.description, c:'var(--success)'})),
+    ...(traits.vulnerabilities||[]).map(t => ({t: traitName(t), d: t?.description, c:'var(--danger)'})),
+    ...(traits.advantages||[]).map(t => ({t: traitName(t), d: t?.description, c:'var(--accent-light)'})),
+    ...(traits.disadvantages||[]).map(t => ({t: traitName(t), d: t?.description, c:'var(--warning)'})),
   ];
 
   const adjustHp = async delta => {
@@ -72,9 +102,13 @@ export default function CharacterHeader({ onBack }) {
     await saveTrackerData({ ...td, hp: { ...hp, current: newHp, max: calcMaxHp } });
   };
 
+  const adjustTempHp = async delta => {
+    const newTemp = Math.max(0, tempHp + delta);
+    await saveTrackerData({ ...td, hp: { ...hp, temp: newTemp } });
+  };
+
   const setAc     = (v) => saveTrackerData({ ...td, ac: v });
   const setInit   = (v) => saveTrackerData({ ...td, initiative: v });
-  const setTempHp = (v) => saveTrackerData({ ...td, hp: { ...hp, temp: Math.max(0, v) } });
   const toggleInspiration = () => saveTrackerData({ ...td, inspiration: !insp });
 
   const hpPct = maxHp > 0 ? curHp / maxHp : 0;
@@ -92,43 +126,34 @@ export default function CharacterHeader({ onBack }) {
             <div style={{color:'var(--text-dim)',fontSize:11}}>L{level} {race} {class_name} · Prof +{prof}</div>
           </div>
           <div style={{display:'flex',gap:6}}>
+            <button className="btn btn-secondary btn-sm" onClick={() => setShowRest(true)}>🌙 REST</button>
             <button className="btn btn-secondary btn-sm" onClick={() => setShowSaves(true)}>SAVES</button>
             <button className="btn btn-secondary btn-sm" onClick={() => setShowSkills(true)}>SKILLS</button>
             <button className="btn btn-secondary btn-sm" onClick={() => setShowTraits(true)}>TRAITS</button>
           </div>
         </div>
 
-        <div style={{display:'flex',gap:12,alignItems:'center',flexWrap:'wrap'}}>
-          <div style={{display:'flex',alignItems:'center',gap:6}}>
-            <button onClick={() => adjustHp(-1)} style={{background:'var(--danger)',color:'#fff',borderRadius:4,width:24,height:24,fontWeight:700,fontSize:14}}>−</button>
-            <div onClick={() => setShowHP(true)} style={{textAlign:'center',minWidth:60,cursor:'pointer'}}>
-              <div style={{color:hpCol,fontWeight:700,fontSize:22,lineHeight:1}}>{curHp}<span style={{color:'var(--text-dim)',fontSize:13}}>/{maxHp}</span></div>
-              <div style={{color:'var(--text-dim)',fontSize:10,marginTop:1}}>HP</div>
-              <div style={{width:60,height:3,background:'var(--border)',borderRadius:2,marginTop:2}}>
-                <div style={{width:`${hpPct*100}%`,height:'100%',background:hpCol,borderRadius:2,transition:'width 0.3s'}}/>
-              </div>
-            </div>
-            <button onClick={() => adjustHp(1)} style={{background:'var(--success)',color:'#fff',borderRadius:4,width:24,height:24,fontWeight:700,fontSize:14}}>+</button>
+        <div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}>
+          <PMStat label="HP" value={`${curHp}/${maxHp}`} color={hpCol} onAdjust={adjustHp} />
+          {tempHp > 0 && <PMStat label="Temp HP" value={tempHp} color={hpCol} onAdjust={adjustTempHp} />}
+          <div onClick={() => setShowHP(true)} style={{width:60,height:3,background:'var(--border)',borderRadius:2,cursor:'pointer',alignSelf:'center'}} title="Open HP management">
+            <div style={{width:`${hpPct*100}%`,height:'100%',background:hpCol,borderRadius:2,transition:'width 0.3s'}}/>
           </div>
 
-          <EditableStat label="Temp HP" value={hp.temp||0} onSave={setTempHp} />
           <EditableStat label="AC" value={ac} onSave={setAc} />
           <EditableStat label="INIT" value={init} onSave={setInit} />
-          <div style={{textAlign:'center',minWidth:36}}>
-            <div style={{color:'var(--accent-light)',fontWeight:700,fontSize:16}}>+{prof}</div>
-            <div style={{color:'var(--text-dim)',fontSize:9,textTransform:'uppercase'}}>Prof</div>
+          <div className="stat-box">
+            <div className="stat-value">+{prof}</div>
+            <div className="stat-label">Prof</div>
           </div>
-          <div onClick={toggleInspiration} style={{textAlign:'center',minWidth:36,cursor:'pointer'}}>
+          <div onClick={toggleInspiration} className="stat-box" style={{cursor:'pointer'}}>
             <div style={{fontSize:18,lineHeight:1,filter: insp ? 'none' : 'grayscale(1) opacity(0.4)'}}>⭐</div>
-            <div style={{color:'var(--text-dim)',fontSize:9,textTransform:'uppercase'}}>Insp</div>
+            <div className="stat-label">Insp</div>
           </div>
 
-          <div style={{display:'flex',gap:8}}>
+          <div style={{display:'flex',gap:6}}>
             {ABILITY_KEYS.map(k => (
-              <div key={k} style={{textAlign:'center',minWidth:28}}>
-                <div style={{color:'var(--accent-light)',fontWeight:600,fontSize:13}}>{modStr(ab?.[k]||10)}</div>
-                <div style={{color:'var(--text-dim)',fontSize:9,textTransform:'uppercase'}}>{k}</div>
-              </div>
+              <AbilityBox key={k} abbr={k} score={ab?.[k]||10} />
             ))}
           </div>
 
@@ -150,8 +175,8 @@ export default function CharacterHeader({ onBack }) {
 
         {traitChips.length > 0 && (
           <div style={{display:'flex',gap:5,flexWrap:'wrap',marginTop:8}}>
-            {traitChips.map(({t,c}) => (
-              <div key={t} style={{border:`1px solid ${c}`,color:c,borderRadius:10,padding:'1px 7px',fontSize:10}}>{t}</div>
+            {traitChips.map(({t,d,c}, i) => (
+              <div key={t+i} title={d || undefined} style={{border:`1px solid ${c}`,color:c,borderRadius:10,padding:'1px 7px',fontSize:10}}>{t}</div>
             ))}
           </div>
         )}
@@ -161,6 +186,16 @@ export default function CharacterHeader({ onBack }) {
       {showSkills && <SkillsModal onClose={() => setShowSkills(false)} />}
       {showTraits && <TraitsModal onClose={() => setShowTraits(false)} />}
       {showHP     && <HPModal     onClose={() => setShowHP(false)}     />}
+      {showRest   && (
+        <RestModal onClose={() => setShowRest(false)} onRest={async (type) => {
+          const result = await doRest(type);
+          setShowRest(false);
+          setRestSummary({ summary: result.summary, restType: type });
+        }} />
+      )}
+      {restSummary && (
+        <RestSummaryModal summary={restSummary.summary} restType={restSummary.restType} onClose={() => setRestSummary(null)} />
+      )}
     </>
   );
 }

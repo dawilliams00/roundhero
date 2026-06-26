@@ -1,21 +1,37 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
-import { calcSaves, ABILITY_KEYS, ABILITY_LABELS } from '../utils/dnd';
+import { calcSaves, ABILITY_KEYS, ABILITY_LABELS, rollD20 } from '../utils/dnd';
 
 export default function SavesModal({ onClose }) {
   const { character } = useCharacter();
+  const [lastRoll, setLastRoll] = useState(null);
   if (!character) return null;
   const savedProfs = character.tracker_data?.save_proficiencies;
   const saves = calcSaves(character.ability_scores, character.class_name, character.level, savedProfs);
+
+  const roll = (label, bonus) => {
+    const d = rollD20();
+    setLastRoll({ label, d, bonus, total: d + bonus });
+  };
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={e => e.stopPropagation()} style={{maxWidth:320}}>
         <h2>Saving Throws</h2>
+        {lastRoll && (
+          <div style={{background:'var(--bg-primary)',borderRadius:'var(--radius-sm)',padding:'8px 10px',marginBottom:10,textAlign:'center'}}>
+            <span style={{color:'var(--text-secondary)',fontSize:12}}>{lastRoll.label}: </span>
+            <span style={{color: lastRoll.d===20 ? 'var(--success)' : lastRoll.d===1 ? 'var(--danger)' : 'var(--text-primary)',fontWeight:600}}>🎲{lastRoll.d}</span>
+            <span style={{color:'var(--text-dim)'}}> {lastRoll.bonus>=0?'+':''}{lastRoll.bonus} = </span>
+            <span style={{color:'var(--accent-light)',fontWeight:700,fontSize:16}}>{lastRoll.total}</span>
+          </div>
+        )}
         <div style={{display:'flex',flexDirection:'column',gap:8}}>
           {ABILITY_KEYS.map(ab => {
             const { bonus, proficient } = saves[ab];
             return (
-              <div key={ab} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'8px 12px',background:'var(--bg-primary)',borderRadius:'var(--radius-sm)',border:`1px solid ${proficient ? 'var(--accent)' : 'var(--border)'}`}}>
+              <div key={ab} onClick={() => roll(ABILITY_LABELS[ab], bonus)} title="Click to roll d20 + bonus"
+                style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'8px 12px',background:'var(--bg-primary)',borderRadius:'var(--radius-sm)',border:`1px solid ${proficient ? 'var(--accent)' : 'var(--border)'}`,cursor:'pointer'}}>
                 <div style={{display:'flex',alignItems:'center',gap:8}}>
                   {proficient && <div style={{width:8,height:8,borderRadius:'50%',background:'var(--accent)'}}/>}
                   {!proficient && <div style={{width:8,height:8,borderRadius:'50%',border:'1px solid var(--border)'}}/>}
@@ -28,6 +44,7 @@ export default function SavesModal({ onClose }) {
             );
           })}
         </div>
+        <div style={{fontSize:11,color:'var(--text-dim)',marginTop:8}}>Click a save to roll d20 + bonus</div>
         <button className="btn btn-secondary" style={{width:'100%',marginTop:16}} onClick={onClose}>Close</button>
       </div>
     </div>

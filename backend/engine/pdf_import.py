@@ -44,10 +44,12 @@ STOCK_ACTIONS = [
 ]
 STOCK_BONUS = [
     {"name": "Off-hand Attack","source": "Core 5e", "source_type": "raw", "cost_type": "bonus_action", "description": "When you attack with a light weapon, attack with a different light weapon in your off hand. No ability modifier to damage unless negative."},
+    {"name": "Cast a Spell", "source": "Core 5e", "source_type": "raw", "cost_type": "cast_spell", "description": "Cast a spell with a casting time of 1 bonus action."},
 ]
 STOCK_REACTIONS = [
     {"name": "Opportunity Attack", "source": "Core 5e", "source_type": "raw", "cost_type": "reaction", "description": "When a hostile creature moves out of your reach, make one melee attack."},
     {"name": "Readied Action",     "source": "Core 5e", "source_type": "raw", "cost_type": "reaction", "description": "Trigger the action you prepared with the Ready action."},
+    {"name": "Cast a Spell", "source": "Core 5e", "source_type": "raw", "cost_type": "cast_spell", "description": "Cast a spell with a casting time of 1 reaction."},
 ]
 
 
@@ -100,7 +102,9 @@ def _parse_features(text_blobs):
                     current["max_uses"] = int(m.group(1))
                     current["rest_type"] = "long" if m.group(2).lower() == "long" else "short"
                 if current:
-                    if "Bonus Action" in usage:
+                    if "Free Action" in usage or "No Action" in usage:
+                        current["action"] = "Free Action"
+                    elif "Bonus Action" in usage:
                         current["action"] = "Bonus Action"
                     elif "Reaction" in usage:
                         current["action"] = "Reaction"

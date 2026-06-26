@@ -3,10 +3,15 @@ import api from '../utils/api';
 
 const CharacterContext = createContext(null);
 
+const EMPTY_TURN = { Action: false, 'Bonus Action': false, Reaction: false, Haste: false };
+
 export function CharacterProvider({ children }) {
   const [character, setCharacter]   = useState(null);
   const [characters, setCharacters] = useState([]);
   const [loading, setLoading]       = useState(false);
+  const [turnUsed, setTurnUsed]     = useState(EMPTY_TURN);
+
+  const resetTurn = useCallback(() => setTurnUsed(EMPTY_TURN), []);
 
   const fetchCharacters = useCallback(async () => {
     setLoading(true);
@@ -70,8 +75,9 @@ export function CharacterProvider({ children }) {
     if (!character) return;
     const r = await api.post(`/characters/${character.id}/rest`, { type: restType });
     setCharacter(prev => ({ ...prev, tracker_data: r.data.tracker_data }));
+    resetTurn();
     return r.data;
-  }, [character]);
+  }, [character, resetTurn]);
 
   const saveTrackerData = useCallback(async (trackerData) => {
     if (!character) return;
@@ -138,7 +144,7 @@ export function CharacterProvider({ children }) {
 
   return (
     <CharacterContext.Provider value={{
-      character, characters, loading,
+      character, characters, loading, turnUsed, setTurnUsed, resetTurn,
       fetchCharacters, loadCharacter, updateCharacter,
       useFeature, useSlot, restoreSlot, doRest, saveTrackerData, saveSpellData, importCharacter, resyncCharacter, deleteCharacter, useItemCharge, addActiveEffect, removeActiveEffect, setCharacter,
     }}>

@@ -1,22 +1,29 @@
 import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
-import { SECTION_ORDER, SECTION_COLORS, slotColor } from '../utils/dnd';
+import { SECTION_ORDER, SECTION_COLORS } from '../utils/dnd';
 import AbilityDetailModal from './AbilityDetailModal';
 import CustomAbilityModal from './CustomAbilityModal';
-import RestModal from './RestModal';
-import RestSummaryModal from './RestSummaryModal';
 import CastSpellPickerModal from './CastSpellPickerModal';
 import ItemSpellsModal from './ItemSpellsModal';
+import SpellTuckModal from './SpellTuckModal';
+
+const ITEM_BUCKET = { action: 'Action', bonus_action: 'Bonus Action', reaction: 'Reaction' };
+const ITEM_COST_OPTIONS = [
+  { value: '', label: 'No bucket' },
+  { value: 'action', label: 'Action' },
+  { value: 'bonus_action', label: 'Bonus' },
+  { value: 'reaction', label: 'Reaction' },
+  { value: 'free_action', label: 'Free' },
+];
 
 export default function ActionEconomyTab() {
-  const { character, useFeature, useSlot, restoreSlot, doRest, saveTrackerData, useItemCharge } = useCharacter();
+  const { character, useFeature, useSlot, restoreSlot, saveTrackerData, useItemCharge, turnUsed, setTurnUsed } = useCharacter();
   const [detail, setDetail]     = useState(null);
   const [showCustom, setCustom] = useState(false);
-  const [showRest, setRest]     = useState(false);
-  const [restSummary, setRestSummary] = useState(null);
   const [castingSpell, setCastingSpell] = useState(false);
+  const [castingBucket, setCastingBucket] = useState(null);
   const [viewingItemSpells, setViewingItemSpells] = useState(null);
-  const [turnUsed, setTurnUsed] = useState({ Action: false, 'Bonus Action': false, Reaction: false, Haste: false });
+  const [tuckTarget, setTuckTarget] = useState(null);
 
   if (!character) return null;
 
@@ -36,34 +43,30 @@ export default function ActionEconomyTab() {
     if (inInitiative) resetTurn();
   };
 
-  const bucketFor = (cost_type) => {
-    if (['action','cast_spell'].includes(cost_type)) return 'Action';
-    if (cost_type === 'bonus_action') return 'Bonus Action';
-    if (cost_type === 'reaction') return 'Reaction';
-    if (cost_type === 'haste_action') return 'Haste';
-    return null;
+  // The section an ability is rendered under IS the action-economy bucket for action/bonus_action/reaction/cast_spell types.
+  const bucketForAbility = (ability, section) => {
+    if (ability.cost_type === 'haste_action') return 'Haste';
+    if (['Action','Bonus Action','Reaction'].includes(section)) return section;
+    return null; // Free Action / Passive aren't turn-limited
   };
 
-  const markBucket = (cost_type) => {
-    const bucket = bucketFor(cost_type);
+  const markBucket = (bucket) => {
     if (!inInitiative || !bucket) return;
     setTurnUsed(p => ({ ...p, [bucket]: true }));
   };
 
-  const isBucketUsed = (cost_type) => {
-    const bucket = bucketFor(cost_type);
-    return inInitiative && bucket && turnUsed[bucket];
-  };
+  const isBucketUsed = (bucket) => inInitiative && bucket && turnUsed[bucket];
 
-  const handleUse = async (ability) => {
+  const handleUse = async (ability, section) => {
     if (!ability.tracker_key) return;
     try { await useFeature(ability.tracker_key); } catch {}
-    markBucket(ability.cost_type);
+    markBucket(bucketForAbility(ability, section));
   };
 
-  const handleCastClick = () => {
+  const handleCastClick = (section) => {
+    setCastingBucket(section);
     setCastingSpell(true);
-    markBucket('cast_spell');
+    markBucket(bucketForAbility({ cost_type: 'cast_spell' }, section));
   };
 
   const getUses = (ability) => {
@@ -73,6 +76,16 @@ export default function ActionEconomyTab() {
     const { current, max } = feat;
     if (max === 0) return null;
     return { current, max };
+  };
+
+  const setItemCostType = (idx, value) => {
+    const newItems = items.map((it,i) => i===idx ? { ...it, cost_type: value || null } : it);
+    saveTrackerData({ ...td, inventory: { ...td.inventory, items: newItems } });
+  };
+
+  const handleItemUse = async (idx, itemBucket) => {
+    await useItemCharge(idx, -1);
+    markBucket(itemBucket);
   };
 
   const slotLevels = Object.entries(slots).filter(([,s]) => (s.max||0) > 0);
@@ -99,7 +112,6 @@ export default function ActionEconomyTab() {
         )}
         <div style={{flex:1}}/>
         {inInitiative && <button className="btn btn-secondary btn-sm" onClick={resetTurn}>New Turn</button>}
-        <button className="btn btn-secondary btn-sm" onClick={() => setRest(true)}>Rest</button>
         <button className="btn btn-primary btn-sm" onClick={() => setCustom(true)}>+ Custom</button>
       </div>
 
@@ -130,23 +142,31 @@ export default function ActionEconomyTab() {
             <div style={{padding:'6px 12px',background:'#5d4037',fontSize:11,fontWeight:600,color:'#fff',letterSpacing:1,position:'sticky',top:0,zIndex:1}}>
               ITEMS
             </div>
-            {chargeItems.map(({it, idx}) => (
-              <div key={idx} style={{display:'flex',alignItems:'center',padding:'8px 12px',borderBottom:'1px solid var(--border)',gap:8}}>
-                <div style={{flex:1}}>
-                  <div style={{color:'var(--text-primary)',fontWeight:500,fontSize:13}}>{it.name}</div>
-                  <div style={{color:'var(--text-dim)',fontSize:11}}>recharges {it.charges.recharge?.replace('_',' ')}</div>
+            {chargeItems.map(({it, idx}) => {
+              const itemBucket = ITEM_BUCKET[it.cost_type] || null;
+              const bucketUsed = isBucketUsed(itemBucket);
+              return (
+                <div key={idx} style={{display:'flex',alignItems:'center',padding:'8px 12px',borderBottom:'1px solid var(--border)',gap:8,background: bucketUsed ? 'var(--bg-primary)' : 'transparent',opacity: bucketUsed ? 0.5 : 1}}>
+                  <div style={{flex:1}}>
+                    <div style={{color:'var(--text-primary)',fontWeight:500,fontSize:13}}>{it.name}</div>
+                    <div style={{color:'var(--text-dim)',fontSize:11}}>recharges {it.charges.recharge?.replace('_',' ')}</div>
+                    {bucketUsed && <div style={{color:'var(--warning)',fontSize:10}}>Already used this turn</div>}
+                  </div>
+                  <select value={it.cost_type || ''} onChange={e => setItemCostType(idx, e.target.value)} title="Action economy cost" style={{fontSize:11,padding:'2px 4px',width:78}}>
+                    {ITEM_COST_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                  <div style={{color: it.charges.current > 0 ? 'var(--success)' : 'var(--danger)',fontWeight:600,fontSize:13,minWidth:36,textAlign:'right'}}>{it.charges.current}/{it.charges.max}</div>
+                  {it.granted_spells?.length > 0 ? (
+                    <button className="btn btn-sm" disabled={bucketUsed} style={{background:'var(--accent)',color:'#fff'}} onClick={() => setViewingItemSpells(idx)}>✨</button>
+                  ) : (
+                    <>
+                      <button className="btn btn-sm" disabled={it.charges.current<=0||bucketUsed} style={{background:'var(--danger)',color:'#fff'}} onClick={() => handleItemUse(idx, itemBucket)}>−</button>
+                      <button className="btn btn-sm" disabled={it.charges.current>=it.charges.max} style={{background:'var(--success)',color:'#fff'}} onClick={() => useItemCharge(idx,1)}>+</button>
+                    </>
+                  )}
                 </div>
-                <div style={{color: it.charges.current > 0 ? 'var(--success)' : 'var(--danger)',fontWeight:600,fontSize:13,minWidth:36,textAlign:'right'}}>{it.charges.current}/{it.charges.max}</div>
-                {it.granted_spells?.length > 0 ? (
-                  <button className="btn btn-sm" style={{background:'var(--accent)',color:'#fff'}} onClick={() => setViewingItemSpells(idx)}>✨</button>
-                ) : (
-                  <>
-                    <button className="btn btn-sm" disabled={it.charges.current<=0} style={{background:'var(--danger)',color:'#fff'}} onClick={() => useItemCharge(idx,-1)}>−</button>
-                    <button className="btn btn-sm" disabled={it.charges.current>=it.charges.max} style={{background:'var(--success)',color:'#fff'}} onClick={() => useItemCharge(idx,1)}>+</button>
-                  </>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
@@ -159,7 +179,7 @@ export default function ActionEconomyTab() {
                 {section.toUpperCase()}
               </div>
               {section === 'Action' && isHasted && (() => {
-                const bucketUsed = isBucketUsed('haste_action');
+                const bucketUsed = isBucketUsed('Haste');
                 return (
                   <div style={{display:'flex',alignItems:'center',padding:'8px 12px',borderBottom:'1px solid var(--border)',background: bucketUsed ? 'var(--bg-primary)' : 'var(--bg-card)',opacity: bucketUsed ? 0.5 : 1,gap:8}}>
                     <div style={{flex:1}}>
@@ -167,7 +187,7 @@ export default function ActionEconomyTab() {
                       <div style={{color:'var(--text-dim)',fontSize:11}}>Haste · Attack, Dash, Disengage, Hide, or Use an Object only</div>
                       {bucketUsed && <div style={{color:'var(--warning)',fontSize:10}}>Already used this turn</div>}
                     </div>
-                    <button className="btn btn-sm" onClick={() => markBucket('haste_action')} disabled={bucketUsed} style={{background: bucketUsed ? 'var(--border)' : 'var(--accent)',color:'#fff',minWidth:36}}>
+                    <button className="btn btn-sm" onClick={() => markBucket('Haste')} disabled={bucketUsed} style={{background: bucketUsed ? 'var(--border)' : 'var(--accent)',color:'#fff',minWidth:36}}>
                       USE
                     </button>
                   </div>
@@ -177,25 +197,35 @@ export default function ActionEconomyTab() {
                 const uses = getUses(ability);
                 const depleted = uses && uses.current <= 0;
                 const isCastSpell = ability.cost_type === 'cast_spell';
-                const bucketUsed = isBucketUsed(ability.cost_type);
+                const isTuck = !isCastSpell && !!features[ability.tracker_key]?.spell_picker;
+                const bucket = bucketForAbility(ability, section);
+                const bucketUsed = isBucketUsed(bucket);
                 const unavailable = depleted || bucketUsed;
                 return (
                   <div key={i} style={{display:'flex',alignItems:'center',padding:'8px 12px',borderBottom:'1px solid var(--border)',background: unavailable ? 'var(--bg-primary)' : 'var(--bg-card)',opacity: unavailable ? 0.5 : 1,gap:8}}>
-                    <div style={{flex:1,cursor: ability.description ? 'pointer' : 'default'}} onClick={() => ability.description && setDetail(ability)}>
+                    <div style={{flex:1,cursor: (ability.description || isTuck) ? 'pointer' : 'default'}} onClick={() => { if (isTuck) setTuckTarget({ ability, section }); else if (ability.description) setDetail(ability); }}>
                       <div style={{color: unavailable ? 'var(--text-dim)' : 'var(--text-primary)',fontWeight:500,fontSize:13,textDecoration: depleted ? 'line-through' : 'none'}}>
-                        {ability.name}
+                        {isTuck ? '🃏 ' : ''}{ability.name}
                       </div>
                       {ability.source && <div style={{color:'var(--text-dim)',fontSize:11}}>{ability.source}</div>}
+                      {isTuck && features[ability.tracker_key]?.tucked_spell && (
+                        <div style={{color:'var(--accent-light)',fontSize:11}}>Tucked: {features[ability.tracker_key].tucked_spell}</div>
+                      )}
                       {bucketUsed && !depleted && <div style={{color:'var(--warning)',fontSize:10}}>Already used this turn</div>}
                     </div>
                     {uses && <div style={{color: uses.current > 0 ? 'var(--success)' : 'var(--danger)',fontWeight:600,fontSize:13,minWidth:36,textAlign:'right'}}>{uses.current}/{uses.max}</div>}
                     {isCastSpell && (
-                      <button className="btn btn-sm" onClick={handleCastClick} disabled={bucketUsed} style={{background: bucketUsed ? 'var(--border)' : 'var(--accent)',color:'#fff',minWidth:36}}>
+                      <button className="btn btn-sm" onClick={() => handleCastClick(section)} disabled={bucketUsed} style={{background: bucketUsed ? 'var(--border)' : 'var(--accent)',color:'#fff',minWidth:36}}>
                         CAST
                       </button>
                     )}
-                    {!isCastSpell && ability.tracker_key && !depleted && (
-                      <button className="btn btn-sm" onClick={() => handleUse(ability)} disabled={bucketUsed}
+                    {isTuck && (
+                      <button className="btn btn-sm" onClick={() => setTuckTarget({ ability, section })} disabled={bucketUsed} style={{background: bucketUsed ? 'var(--border)' : 'var(--accent)',color:'#fff',minWidth:36}}>
+                        OPEN
+                      </button>
+                    )}
+                    {!isCastSpell && !isTuck && ability.tracker_key && !depleted && (
+                      <button className="btn btn-sm" onClick={() => handleUse(ability, section)} disabled={bucketUsed}
                         style={{background: bucketUsed ? 'var(--border)' : 'var(--accent)',color:'#fff',minWidth:36}}>
                         USE
                       </button>
@@ -210,23 +240,24 @@ export default function ActionEconomyTab() {
 
       {detail    && <AbilityDetailModal ability={detail} onClose={() => setDetail(null)} />}
       {showCustom && <CustomAbilityModal onClose={() => setCustom(false)} />}
-      {showRest   && (
-        <RestModal onClose={() => setRest(false)} onRest={async (type) => {
-          const result = await doRest(type);
-          resetTurn();
-          setRest(false);
-          setRestSummary({ summary: result.summary, restType: type });
-        }} />
+      {castingSpell && (
+        <CastSpellPickerModal bucket={castingBucket} onClose={() => { setCastingSpell(false); setCastingBucket(null); }} />
       )}
-      {restSummary && (
-        <RestSummaryModal summary={restSummary.summary} restType={restSummary.restType} onClose={() => setRestSummary(null)} />
-      )}
-      {castingSpell && <CastSpellPickerModal onClose={() => setCastingSpell(false)} />}
       {viewingItemSpells !== null && (
         <ItemSpellsModal
           item={items[viewingItemSpells]}
-          onCast={(chargeCost) => useItemCharge(viewingItemSpells, -chargeCost)}
+          onCast={(chargeCost) => {
+            useItemCharge(viewingItemSpells, -chargeCost);
+            markBucket(ITEM_BUCKET[items[viewingItemSpells]?.cost_type] || null);
+          }}
           onClose={() => setViewingItemSpells(null)}
+        />
+      )}
+      {tuckTarget && (
+        <SpellTuckModal
+          ability={tuckTarget.ability}
+          onUse={() => markBucket(bucketForAbility(tuckTarget.ability, tuckTarget.section))}
+          onClose={() => setTuckTarget(null)}
         />
       )}
     </div>
