@@ -157,6 +157,14 @@ def parse_character_pdf(file_bytes, spell_db_by_name=None):
     speed = (fields.get("Speed") or "").strip()
     senses = (fields.get("AdditionalSenses") or "").strip()
 
+    hd_match = re.search(r"(\d+)\s*d\s*(\d+)", fields.get("Total") or "", re.I)
+    if hd_match:
+        hd_total, hd_die = int(hd_match.group(1)), int(hd_match.group(2))
+    else:
+        hd_total, hd_die = total_level, 8
+    hd_used = _parse_int(fields.get("HD"), 0)
+    hit_dice = {"current": max(0, hd_total - hd_used), "total": hd_total, "die_size": hd_die}
+
     resistances, immunities, vulnerabilities = [], [], []
     for line in (fields.get("Defenses") or "").split("\n"):
         line = line.strip()
@@ -348,6 +356,7 @@ def parse_character_pdf(file_bytes, spell_db_by_name=None):
         "item_charges": {},
         "conditions": [],
         "hp": {"current": current_hp, "max": max_hp, "temp": temp_hp},
+        "hit_dice": hit_dice,
         "ac": ac,
         "initiative": initiative,
         "inspiration": inspiration,
@@ -455,6 +464,14 @@ def resync_character(old_tracker_data, old_spell_data, source_pdf_bytes, class_l
     }
     merged_td["save_proficiencies"] = new_td["save_proficiencies"]
     merged_td["skill_proficiencies"] = new_td["skill_proficiencies"]
+
+    old_hd = old_tracker_data.get("hit_dice")
+    new_hd = new_td["hit_dice"]
+    if old_hd:
+        spent = max(0, old_hd.get("total", new_hd["total"]) - old_hd.get("current", new_hd["current"]))
+        merged_td["hit_dice"] = {**new_hd, "current": max(0, new_hd["total"] - spent)}
+    else:
+        merged_td["hit_dice"] = new_hd
 
     merged_sd = dict(old_spell_data)
     merged_sd["known_spells"] = _merge_known_spells(old_spell_data.get("known_spells"), new_sd["known_spells"])

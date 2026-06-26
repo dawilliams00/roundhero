@@ -65,6 +65,7 @@ export default function ItemSpellsModal({ item, onCast, onClose }) {
             onCast: () => onCast(viewing.chargeCost),
           }}
           onClose={() => setViewing(null)}
+          onCastSuccess={onClose}
         />
       )}
     </div>

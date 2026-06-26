@@ -32,6 +32,13 @@ def apply_rest(tracker_data, spell_data, rest_type="long"):
         td["conditions"] = []
         if "hp" in td:
             td["hp"]["current"] = td["hp"].get("max", td["hp"]["current"])
+        hd = td.get("hit_dice")
+        if hd and hd.get("total", 0) > 0:
+            before = hd.get("current", 0)
+            regain = max(1, hd["total"] // 2)
+            hd["current"] = min(hd["total"], before + regain)
+            if hd["current"] > before:
+                summary["hit_dice_regained"] = hd["current"] - before
 
     elif rest_type == "short":
         for name, feat in features.items():

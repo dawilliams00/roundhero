@@ -64,8 +64,8 @@ export default function InventoryTab() {
           <div style={{color:'var(--text-secondary)',fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:1,flex:1}}>
             Items <span style={{color:'var(--text-dim)',fontWeight:400}}>· {totalWeight.toFixed(1)} lb</span>
           </div>
-          <button className="btn btn-secondary btn-sm" onClick={() => setBrowsing(true)}>Browse Items</button>
-          <button className="btn btn-primary btn-sm" onClick={() => setAdding(true)}>+ Add Item</button>
+          <button className="btn btn-secondary btn-sm" onClick={() => setBrowsing(true)}>Add from DB</button>
+          <button className="btn btn-primary btn-sm" onClick={() => setAdding(true)}>+ Add Custom</button>
         </div>
 
         {items.length === 0 ? (

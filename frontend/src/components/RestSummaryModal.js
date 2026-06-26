@@ -1,8 +1,8 @@
 import React from 'react';
 
 export default function RestSummaryModal({ summary, restType, onClose }) {
-  const { features_reset = [], items_recharged = [], slots_restored } = summary || {};
-  const nothingChanged = features_reset.length === 0 && items_recharged.length === 0 && !slots_restored;
+  const { features_reset = [], items_recharged = [], slots_restored, hit_dice_regained } = summary || {};
+  const nothingChanged = features_reset.length === 0 && items_recharged.length === 0 && !slots_restored && !hit_dice_regained;
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -16,6 +16,12 @@ export default function RestSummaryModal({ summary, restType, onClose }) {
               <div style={{marginBottom:10}}>
                 <div style={{color:'var(--accent-light)',fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:1}}>Spell Slots</div>
                 <div style={{color:'var(--text-secondary)',fontSize:13}}>Restored</div>
+              </div>
+            )}
+            {hit_dice_regained > 0 && (
+              <div style={{marginBottom:10}}>
+                <div style={{color:'var(--accent-light)',fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:1}}>Hit Dice</div>
+                <div style={{color:'var(--text-secondary)',fontSize:13}}>Regained {hit_dice_regained}</div>
               </div>
             )}
             {features_reset.length > 0 && (

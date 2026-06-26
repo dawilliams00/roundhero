@@ -69,8 +69,9 @@ export default function CharacterHeader({ onBack }) {
     await saveTrackerData({ ...td, hp: { ...hp, current: newHp, max: maxHp } });
   };
 
-  const setAc   = (v) => saveTrackerData({ ...td, ac: v });
-  const setInit = (v) => saveTrackerData({ ...td, initiative: v });
+  const setAc     = (v) => saveTrackerData({ ...td, ac: v });
+  const setInit   = (v) => saveTrackerData({ ...td, initiative: v });
+  const setTempHp = (v) => saveTrackerData({ ...td, hp: { ...hp, temp: Math.max(0, v) } });
   const toggleInspiration = () => saveTrackerData({ ...td, inspiration: !insp });
 
   const hpPct = maxHp > 0 ? curHp / maxHp : 0;
@@ -99,7 +100,7 @@ export default function CharacterHeader({ onBack }) {
             <button onClick={() => adjustHp(-1)} style={{background:'var(--danger)',color:'#fff',borderRadius:4,width:24,height:24,fontWeight:700,fontSize:14}}>−</button>
             <div style={{textAlign:'center',minWidth:60}}>
               <div style={{color:hpCol,fontWeight:700,fontSize:22,lineHeight:1}}>{curHp}<span style={{color:'var(--text-dim)',fontSize:13}}>/{maxHp}</span></div>
-              <div style={{color:'var(--text-dim)',fontSize:10,marginTop:1}}>HP{hp.temp>0?` (+${hp.temp})`:''}</div>
+              <div style={{color:'var(--text-dim)',fontSize:10,marginTop:1}}>HP</div>
               <div style={{width:60,height:3,background:'var(--border)',borderRadius:2,marginTop:2}}>
                 <div style={{width:`${hpPct*100}%`,height:'100%',background:hpCol,borderRadius:2,transition:'width 0.3s'}}/>
               </div>
@@ -107,8 +108,13 @@ export default function CharacterHeader({ onBack }) {
             <button onClick={() => adjustHp(1)} style={{background:'var(--success)',color:'#fff',borderRadius:4,width:24,height:24,fontWeight:700,fontSize:14}}>+</button>
           </div>
 
+          <EditableStat label="Temp HP" value={hp.temp||0} onSave={setTempHp} />
           <EditableStat label="AC" value={ac} onSave={setAc} />
           <EditableStat label="INIT" value={init} onSave={setInit} />
+          <div style={{textAlign:'center',minWidth:36}}>
+            <div style={{color:'var(--accent-light)',fontWeight:700,fontSize:16}}>+{prof}</div>
+            <div style={{color:'var(--text-dim)',fontSize:9,textTransform:'uppercase'}}>Prof</div>
+          </div>
           <div onClick={toggleInspiration} style={{textAlign:'center',minWidth:36,cursor:'pointer'}}>
             <div style={{fontSize:18,lineHeight:1,filter: insp ? 'none' : 'grayscale(1) opacity(0.4)'}}>⭐</div>
             <div style={{color:'var(--text-dim)',fontSize:9,textTransform:'uppercase'}}>Insp</div>

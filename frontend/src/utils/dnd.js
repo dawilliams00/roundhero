@@ -77,4 +77,5 @@ export const SECTION_COLORS = {
   'Reaction':     '#4a0072',
   'Free Action':  '#1b5e20',
   'Passive':      '#212121',
+  'Haste':        '#006064',
 };

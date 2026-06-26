@@ -41,7 +41,7 @@ export default function CastSpellPickerModal({ onClose }) {
         <button className="btn btn-secondary" style={{width:'100%',marginTop:16}} onClick={onClose}>Close</button>
       </div>
 
-      {viewing && <SpellDetailModal spell={viewing} onClose={() => setViewing(null)} />}
+      {viewing && <SpellDetailModal spell={viewing} onClose={() => setViewing(null)} onCastSuccess={onClose} />}
     </div>
   );
 }

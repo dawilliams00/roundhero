@@ -2,15 +2,23 @@ import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
 
 export default function TrackerTab() {
-  const { character, saveTrackerData } = useCharacter();
+  const { character, saveTrackerData, addActiveEffect, removeActiveEffect } = useCharacter();
   const [editHP, setEditHP] = useState(false);
   const [hpInput, setHpInput] = useState('');
+  const [newEffect, setNewEffect] = useState('');
 
   if (!character) return null;
   const td       = character.tracker_data || {};
   const features = td.features   || {};
   const charges  = td.item_charges || {};
   const conds    = td.conditions || [];
+  const effects  = td.active_effects || [];
+
+  const handleAddEffect = () => {
+    if (!newEffect.trim()) return;
+    addActiveEffect(newEffect.trim());
+    setNewEffect('');
+  };
 
   const adjustFeature = async (name, delta) => {
     const feat = features[name];
@@ -29,9 +37,17 @@ export default function TrackerTab() {
   const featList  = Object.entries(features).filter(([,v]) => v.max > 0);
   const infoList  = Object.entries(features).filter(([,v]) => v.max === 0);
   const chargeList = Object.entries(charges);
+  const hd = td.hit_dice;
 
   return (
     <div style={{flex:1,overflowY:'auto',padding:12}}>
+      {hd && hd.total > 0 && (
+        <div className="card" style={{marginBottom:12,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+          <div style={{color:'var(--text-secondary)',fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:1}}>Hit Dice</div>
+          <div style={{color:'var(--accent-light)',fontWeight:700,fontSize:15}}>{hd.current}/{hd.total} <span style={{color:'var(--text-dim)',fontWeight:400,fontSize:12}}>(d{hd.die_size})</span></div>
+        </div>
+      )}
+
       {featList.length > 0 && (
         <div className="card" style={{marginBottom:12}}>
           <div style={{color:'var(--text-secondary)',fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:1,marginBottom:10}}>Features & Abilities</div>
@@ -81,6 +97,23 @@ export default function TrackerTab() {
           ))}
         </div>
       )}
+
+      <div className="card" style={{marginBottom:12}}>
+        <div style={{color:'var(--accent-light)',fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:1,marginBottom:8}}>Active Effects</div>
+        {effects.length > 0 && (
+          <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:8}}>
+            {effects.map(e => (
+              <div key={e} onClick={() => removeActiveEffect(e)} style={{cursor:'pointer',background:'rgba(124,77,255,0.15)',border:'1px solid var(--accent-light)',color:'var(--accent-light)',borderRadius:12,padding:'3px 10px',fontSize:12}}>
+                {e} ×
+              </div>
+            ))}
+          </div>
+        )}
+        <div style={{display:'flex',gap:6}}>
+          <input value={newEffect} onChange={e=>setNewEffect(e.target.value)} onKeyDown={e=>e.key==='Enter'&&handleAddEffect()} placeholder="e.g. Hasted, Bardic Inspiration..." style={{flex:1}} />
+          <button className="btn btn-secondary btn-sm" onClick={handleAddEffect}>Add</button>
+        </div>
+      </div>
 
       {conds.length > 0 && (
         <div className="card" style={{marginBottom:12}}>

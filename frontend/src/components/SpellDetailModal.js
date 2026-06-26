@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
 
-export default function SpellDetailModal({ spell, onRemove, onClose, chargeMode }) {
-  const { character, useSlot } = useCharacter();
+const SELF_TARGET_EFFECTS = { haste: 'Hasted' };
+
+export default function SpellDetailModal({ spell, onRemove, onClose, chargeMode, onCastSuccess }) {
+  const { character, useSlot, addActiveEffect } = useCharacter();
   const [casting, setCasting] = useState(false);
   const [cast, setCast]       = useState(null);
+  const [awaitingTarget, setAwaitingTarget] = useState(false);
 
   if (!character) return null;
   const slots = character.tracker_data?.spell_slots || {};
@@ -14,6 +17,9 @@ export default function SpellDetailModal({ spell, onRemove, onClose, chargeMode 
     .map(([lvl]) => parseInt(lvl))
     .sort((a,b) => a-b);
   const [castLevel, setCastLevel] = useState(availableLevels[0] || spell.level_int);
+  const selfEffect = SELF_TARGET_EFFECTS[spell.name?.toLowerCase()];
+
+  const finish = () => { onClose(); if (onCastSuccess) onCastSuccess(); };
 
   const doCast = async () => {
     setCasting(true);
@@ -27,12 +33,22 @@ export default function SpellDetailModal({ spell, onRemove, onClose, chargeMode 
         await useSlot(castLevel);
         setCast(`Cast at level ${castLevel}!`);
       }
+      if (selfEffect) {
+        setAwaitingTarget(true);
+      } else {
+        setTimeout(finish, 700);
+      }
     } finally { setCasting(false); }
+  };
+
+  const chooseTarget = async (isSelf) => {
+    if (isSelf) await addActiveEffect(selfEffect);
+    finish();
   };
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={e => e.stopPropagation()}>
+      <div className="modal" style={{maxWidth:420}} onClick={e => e.stopPropagation()}>
         <h2>{spell.name}</h2>
         <div style={{color:'var(--text-dim)',fontSize:12,marginBottom:12}}>
           {spell.level_int === 0 ? 'Cantrip' : `Level ${spell.level_int}`} · {spell.school}
@@ -47,7 +63,15 @@ export default function SpellDetailModal({ spell, onRemove, onClose, chargeMode 
         <p style={{color:'var(--text-secondary)',lineHeight:1.7,whiteSpace:'pre-wrap'}}>{spell.description}</p>
 
         <div style={{borderTop:'1px solid var(--border)',marginTop:12,paddingTop:12}}>
-          {chargeMode ? (
+          {awaitingTarget ? (
+            <>
+              <div style={{color:'var(--text-secondary)',fontSize:13,marginBottom:8,textAlign:'center'}}>Apply {selfEffect} to:</div>
+              <div style={{display:'flex',gap:8}}>
+                <button className="btn btn-primary" style={{flex:1}} onClick={() => chooseTarget(true)}>Self</button>
+                <button className="btn btn-secondary" style={{flex:1}} onClick={() => chooseTarget(false)}>Ally</button>
+              </div>
+            </>
+          ) : chargeMode ? (
             <>
               <div style={{color:'var(--text-dim)',fontSize:12,marginBottom:8}}>
                 {chargeMode.chargesCurrent}/{chargeMode.chargesMax} charges on {chargeMode.itemName}

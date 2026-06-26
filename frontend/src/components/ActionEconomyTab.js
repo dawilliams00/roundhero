@@ -16,7 +16,7 @@ export default function ActionEconomyTab() {
   const [restSummary, setRestSummary] = useState(null);
   const [castingSpell, setCastingSpell] = useState(false);
   const [viewingItemSpells, setViewingItemSpells] = useState(null);
-  const [turnUsed, setTurnUsed] = useState({ Action: false, 'Bonus Action': false, Reaction: false });
+  const [turnUsed, setTurnUsed] = useState({ Action: false, 'Bonus Action': false, Reaction: false, Haste: false });
 
   if (!character) return null;
 
@@ -27,19 +27,32 @@ export default function ActionEconomyTab() {
   const items    = td.inventory?.items || [];
   const chargeItems = items.map((it,i) => ({ it, idx: i })).filter(({it}) => it.charges);
   const inInitiative = !!td.in_initiative;
+  const isHasted = (td.active_effects || []).includes('Hasted');
 
-  const resetTurn = () => setTurnUsed({ Action: false, 'Bonus Action': false, Reaction: false });
+  const resetTurn = () => setTurnUsed({ Action: false, 'Bonus Action': false, Reaction: false, Haste: false });
 
   const toggleInitiative = () => {
     saveTrackerData({ ...td, in_initiative: !inInitiative });
     if (inInitiative) resetTurn();
   };
 
+  const bucketFor = (cost_type) => {
+    if (['action','cast_spell'].includes(cost_type)) return 'Action';
+    if (cost_type === 'bonus_action') return 'Bonus Action';
+    if (cost_type === 'reaction') return 'Reaction';
+    if (cost_type === 'haste_action') return 'Haste';
+    return null;
+  };
+
   const markBucket = (cost_type) => {
-    if (!inInitiative) return;
-    if (['action','cast_spell'].includes(cost_type)) setTurnUsed(p => ({ ...p, Action: true }));
-    else if (cost_type === 'bonus_action') setTurnUsed(p => ({ ...p, 'Bonus Action': true }));
-    else if (cost_type === 'reaction') setTurnUsed(p => ({ ...p, Reaction: true }));
+    const bucket = bucketFor(cost_type);
+    if (!inInitiative || !bucket) return;
+    setTurnUsed(p => ({ ...p, [bucket]: true }));
+  };
+
+  const isBucketUsed = (cost_type) => {
+    const bucket = bucketFor(cost_type);
+    return inInitiative && bucket && turnUsed[bucket];
   };
 
   const handleUse = async (ability) => {
@@ -67,12 +80,12 @@ export default function ActionEconomyTab() {
   return (
     <div style={{flex:1,overflow:'hidden',display:'flex',flexDirection:'column'}}>
       <div style={{display:'flex',gap:8,padding:'8px 12px',borderBottom:'1px solid var(--border)',alignItems:'center',flexShrink:0,flexWrap:'wrap'}}>
-        <button className="btn btn-sm" onClick={toggleInitiative} style={{background: inInitiative ? 'var(--success)' : 'var(--bg-hover)',color: inInitiative ? '#fff' : 'var(--text-secondary)',fontWeight:600}}>
-          {inInitiative ? '⚔ In Initiative' : 'Not in Initiative'}
+        <button className="btn btn-sm" onClick={toggleInitiative} style={{background: inInitiative ? 'var(--danger)' : 'var(--success)',color: '#fff',fontWeight:600}}>
+          {inInitiative ? 'Stop Initiative' : 'Start Initiative'}
         </button>
         {inInitiative && (
           <div style={{display:'flex',gap:4}}>
-            {['Action','Bonus Action','Reaction'].map(s => (
+            {(isHasted ? ['Action','Bonus Action','Reaction','Haste'] : ['Action','Bonus Action','Reaction']).map(s => (
               <div key={s} style={{fontSize:11,padding:'3px 8px',borderRadius:12,
                 background: turnUsed[s] ? 'var(--border)' : SECTION_COLORS[s],
                 color: turnUsed[s] ? 'var(--text-dim)' : '#fff',
@@ -139,27 +152,45 @@ export default function ActionEconomyTab() {
               <div style={{padding:'6px 12px',background:SECTION_COLORS[section],fontSize:11,fontWeight:600,color:'#fff',letterSpacing:1,position:'sticky',top:0,zIndex:1}}>
                 {section.toUpperCase()}
               </div>
+              {section === 'Action' && isHasted && (() => {
+                const bucketUsed = isBucketUsed('haste_action');
+                return (
+                  <div style={{display:'flex',alignItems:'center',padding:'8px 12px',borderBottom:'1px solid var(--border)',background: bucketUsed ? 'var(--bg-primary)' : 'var(--bg-card)',opacity: bucketUsed ? 0.5 : 1,gap:8}}>
+                    <div style={{flex:1}}>
+                      <div style={{color: bucketUsed ? 'var(--text-dim)' : 'var(--text-primary)',fontWeight:500,fontSize:13}}>Haste Action</div>
+                      <div style={{color:'var(--text-dim)',fontSize:11}}>Haste · Attack, Dash, Disengage, Hide, or Use an Object only</div>
+                      {bucketUsed && <div style={{color:'var(--warning)',fontSize:10}}>Already used this turn</div>}
+                    </div>
+                    <button className="btn btn-sm" onClick={() => markBucket('haste_action')} disabled={bucketUsed} style={{background: bucketUsed ? 'var(--border)' : 'var(--accent)',color:'#fff',minWidth:36}}>
+                      USE
+                    </button>
+                  </div>
+                );
+              })()}
               {abilities.map((ability, i) => {
                 const uses = getUses(ability);
                 const depleted = uses && uses.current <= 0;
                 const isCastSpell = ability.cost_type === 'cast_spell';
+                const bucketUsed = isBucketUsed(ability.cost_type);
+                const unavailable = depleted || bucketUsed;
                 return (
-                  <div key={i} style={{display:'flex',alignItems:'center',padding:'8px 12px',borderBottom:'1px solid var(--border)',background: depleted ? 'var(--bg-primary)' : 'var(--bg-card)',opacity: depleted ? 0.6 : 1,gap:8}}>
+                  <div key={i} style={{display:'flex',alignItems:'center',padding:'8px 12px',borderBottom:'1px solid var(--border)',background: unavailable ? 'var(--bg-primary)' : 'var(--bg-card)',opacity: unavailable ? 0.5 : 1,gap:8}}>
                     <div style={{flex:1,cursor: ability.description ? 'pointer' : 'default'}} onClick={() => ability.description && setDetail(ability)}>
-                      <div style={{color: depleted ? 'var(--text-dim)' : 'var(--text-primary)',fontWeight:500,fontSize:13,textDecoration: depleted ? 'line-through' : 'none'}}>
+                      <div style={{color: unavailable ? 'var(--text-dim)' : 'var(--text-primary)',fontWeight:500,fontSize:13,textDecoration: depleted ? 'line-through' : 'none'}}>
                         {ability.name}
                       </div>
                       {ability.source && <div style={{color:'var(--text-dim)',fontSize:11}}>{ability.source}</div>}
+                      {bucketUsed && !depleted && <div style={{color:'var(--warning)',fontSize:10}}>Already used this turn</div>}
                     </div>
                     {uses && <div style={{color: uses.current > 0 ? 'var(--success)' : 'var(--danger)',fontWeight:600,fontSize:13,minWidth:36,textAlign:'right'}}>{uses.current}/{uses.max}</div>}
                     {isCastSpell && (
-                      <button className="btn btn-sm" onClick={handleCastClick} style={{background:'var(--accent)',color:'#fff',minWidth:36}}>
+                      <button className="btn btn-sm" onClick={handleCastClick} disabled={bucketUsed} style={{background: bucketUsed ? 'var(--border)' : 'var(--accent)',color:'#fff',minWidth:36}}>
                         CAST
                       </button>
                     )}
                     {!isCastSpell && ability.tracker_key && !depleted && (
-                      <button className="btn btn-sm" onClick={() => handleUse(ability)}
-                        style={{background: depleted ? 'var(--border)' : 'var(--accent)',color:'#fff',minWidth:36}}>
+                      <button className="btn btn-sm" onClick={() => handleUse(ability)} disabled={bucketUsed}
+                        style={{background: bucketUsed ? 'var(--border)' : 'var(--accent)',color:'#fff',minWidth:36}}>
                         USE
                       </button>
                     )}

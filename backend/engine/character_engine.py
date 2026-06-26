@@ -107,6 +107,7 @@ def build_tracker_data(class_name, level, ability_scores):
         "inspiration":  False,
         "traits":       {"resistances": [], "immunities": [], "vulnerabilities": [], "advantages": []},
         "inventory":    {"currency": {"cp": 0, "sp": 0, "ep": 0, "gp": 0, "pp": 0}, "items": []},
+        "hit_dice":     {"current": level, "total": level, "die_size": hit_die},
     }
 
 def build_spell_data(class_name, level):
