@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
 import { calcSaves, ABILITY_KEYS, ABILITY_LABELS, rollD20 } from '../utils/dnd';
+import D20Icon from './D20Icon';
 
 export default function SavesModal({ onClose }) {
   const { character } = useCharacter();
@@ -21,7 +22,9 @@ export default function SavesModal({ onClose }) {
         {lastRoll && (
           <div style={{background:'var(--bg-primary)',borderRadius:'var(--radius-sm)',padding:'8px 10px',marginBottom:10,textAlign:'center'}}>
             <span style={{color:'var(--text-secondary)',fontSize:12}}>{lastRoll.label}: </span>
-            <span style={{color: lastRoll.d===20 ? 'var(--success)' : lastRoll.d===1 ? 'var(--danger)' : 'var(--text-primary)',fontWeight:600}}>🎲{lastRoll.d}</span>
+            <span style={{color: lastRoll.d===20 ? 'var(--success)' : lastRoll.d===1 ? 'var(--danger)' : 'var(--text-primary)',fontWeight:600}}>
+              <D20Icon size={15} color={lastRoll.d===20 ? 'var(--success)' : lastRoll.d===1 ? 'var(--danger)' : 'var(--accent-light)'} style={{marginRight:3}} />{lastRoll.d}
+            </span>
             <span style={{color:'var(--text-dim)'}}> {lastRoll.bonus>=0?'+':''}{lastRoll.bonus} = </span>
             <span style={{color:'var(--accent-light)',fontWeight:700,fontSize:16}}>{lastRoll.total}</span>
           </div>
