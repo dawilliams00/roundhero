@@ -90,7 +90,24 @@ def build_tracker_data(class_name, level, ability_scores):
             features["Indomitable"]["current"] = indom_uses
 
     spell_slots = get_spell_slots(class_name, level)
-    return {"features": features, "spell_slots": spell_slots, "item_charges": {}, "conditions": []}
+
+    hit_die = cls.get("hit_die", 8)
+    max_hp = hit_die + con_mod
+    max_hp += (level - 1) * (hit_die // 2 + 1 + con_mod)
+    dex_mod = modifier(scores.get("DEX", 10))
+
+    return {
+        "features":     features,
+        "spell_slots":  spell_slots,
+        "item_charges": {},
+        "conditions":   [],
+        "hp":           {"current": max_hp, "max": max_hp, "temp": 0},
+        "ac":           10 + dex_mod,
+        "initiative":   dex_mod,
+        "inspiration":  False,
+        "traits":       {"resistances": [], "immunities": [], "vulnerabilities": [], "advantages": []},
+        "inventory":    {"currency": {"cp": 0, "sp": 0, "ep": 0, "gp": 0, "pp": 0}, "items": []},
+    }
 
 def build_spell_data(class_name, level):
     caster_type = SPELLCASTER_TYPE.get(class_name, "none")
@@ -98,6 +115,7 @@ def build_spell_data(class_name, level):
         "class":        class_name,
         "caster_type":  caster_type,
         "spell_lists":  {},
+        "active_list":  None,
         "known_spells": [],
         "prepared":     [],
     }

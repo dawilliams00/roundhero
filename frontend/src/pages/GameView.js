@@ -5,9 +5,10 @@ import CharacterHeader from '../components/CharacterHeader';
 import ActionEconomyTab from '../components/ActionEconomyTab';
 import TrackerTab from '../components/TrackerTab';
 import SpellsTab from '../components/SpellsTab';
+import InventoryTab from '../components/InventoryTab';
 import NotesTab from '../components/NotesTab';
 
-const TABS = ['⚔️ Actions','📋 Tracker','✨ Spells','📝 Notes'];
+const TABS = ['⚔️ Actions','📋 Tracker','✨ Spells','🎒 Items','📝 Notes'];
 
 export default function GameView() {
   const { id }                    = useParams();
@@ -38,7 +39,8 @@ export default function GameView() {
         {activeTab === 0 && <ActionEconomyTab />}
         {activeTab === 1 && <TrackerTab />}
         {activeTab === 2 && <SpellsTab />}
-        {activeTab === 3 && <NotesTab />}
+        {activeTab === 3 && <InventoryTab />}
+        {activeTab === 4 && <NotesTab />}
       </div>
     </div>
   );

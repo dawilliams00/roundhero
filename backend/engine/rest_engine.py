@@ -14,6 +14,8 @@ def apply_rest(tracker_data, spell_data, rest_type="long"):
             mx = int(slot.get("max", 0))
             slot["current"] = mx
         td["conditions"] = []
+        if "hp" in td:
+            td["hp"]["current"] = td["hp"].get("max", td["hp"]["current"])
 
     elif rest_type == "short":
         for name, feat in features.items():

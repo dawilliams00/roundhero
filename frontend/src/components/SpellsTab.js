@@ -4,6 +4,7 @@ import { slotColor } from '../utils/dnd';
 import SpellBrowserModal from './SpellBrowserModal';
 import SpellDetailModal from './SpellDetailModal';
 import CustomSpellModal from './CustomSpellModal';
+import SpellListManagerModal from './SpellListManagerModal';
 
 export default function SpellsTab() {
   const { character, useSlot, saveSpellData } = useCharacter();
@@ -12,12 +13,18 @@ export default function SpellsTab() {
   const [browsing, setBrowsing]   = useState(false);
   const [viewing, setViewing]     = useState(null);
   const [addingCustom, setAddingCustom] = useState(false);
+  const [managingLists, setManagingLists] = useState(false);
 
   if (!character) return null;
   const sd    = character.spell_data || {};
   const slots = character.tracker_data?.spell_slots || {};
   const knownSpells = sd.known_spells || [];
-  const spells = knownSpells.filter(s => {
+  const spellLists  = sd.spell_lists || {};
+  const activeList  = sd.active_list || null;
+  const visibleSpells = activeList && spellLists[activeList]
+    ? knownSpells.filter(s => spellLists[activeList].includes(s.name))
+    : knownSpells;
+  const spells = visibleSpells.filter(s => {
     const matchSearch = !search || s.name?.toLowerCase().includes(search.toLowerCase());
     const matchFilter = filter === 'all' || (filter === 'cantrip' ? s.level_int===0 : s.level_int===parseInt(filter));
     return matchSearch && matchFilter;
@@ -30,6 +37,9 @@ export default function SpellsTab() {
   };
   const removeSpell = (spell) => {
     saveSpellData({ ...sd, known_spells: knownSpells.filter(s => s.name !== spell.name) });
+  };
+  const saveLists = (newLists, newActive) => {
+    saveSpellData({ ...sd, spell_lists: newLists, active_list: newActive });
   };
 
   return (
@@ -54,6 +64,11 @@ export default function SpellsTab() {
 
       {knownSpells.length > 0 ? (
         <div className="card">
+          <div style={{display:'flex',gap:8,marginBottom:10,alignItems:'center'}}>
+            <span style={{color:'var(--text-dim)',fontSize:11}}>Showing:</span>
+            <div style={{flex:1,fontWeight:600,color:'var(--accent-light)',fontSize:13}}>{activeList || 'All Known Spells'}</div>
+            <button className="btn btn-secondary btn-sm" onClick={() => setManagingLists(true)}>Spell Lists</button>
+          </div>
           <div style={{display:'flex',gap:8,marginBottom:12,flexWrap:'wrap'}}>
             <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search spells..." style={{flex:1,minWidth:120}} />
             <select value={filter} onChange={e=>setFilter(e.target.value)} style={{minWidth:80}}>
@@ -91,6 +106,15 @@ export default function SpellsTab() {
 
       {addingCustom && (
         <CustomSpellModal onAdd={addSpell} onClose={() => setAddingCustom(false)} />
+      )}
+      {managingLists && (
+        <SpellListManagerModal
+          knownSpells={knownSpells}
+          spellLists={spellLists}
+          activeList={activeList}
+          onSave={saveLists}
+          onClose={() => setManagingLists(false)}
+        />
       )}
       {browsing && (
         <SpellBrowserModal
