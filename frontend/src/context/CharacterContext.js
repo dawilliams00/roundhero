@@ -73,6 +73,12 @@ export function CharacterProvider({ children }) {
     return r.data;
   }, [character]);
 
+  const saveTrackerData = useCallback(async (trackerData) => {
+    if (!character) return;
+    const r = await api.put(`/tracker/${character.id}`, trackerData);
+    setCharacter(prev => ({ ...prev, tracker_data: r.data }));
+  }, [character]);
+
   const useItemCharge = useCallback(async (itemIndex, delta) => {
     if (!character) return;
     const items = character.tracker_data.inventory.items;
@@ -82,12 +88,6 @@ export function CharacterProvider({ children }) {
     const newItems = items.map((it,i) => i===itemIndex ? { ...it, charges: { ...it.charges, current: cur } } : it);
     await saveTrackerData({ ...character.tracker_data, inventory: { ...character.tracker_data.inventory, items: newItems } });
   }, [character, saveTrackerData]);
-
-  const saveTrackerData = useCallback(async (trackerData) => {
-    if (!character) return;
-    const r = await api.put(`/tracker/${character.id}`, trackerData);
-    setCharacter(prev => ({ ...prev, tracker_data: r.data }));
-  }, [character]);
 
   const saveSpellData = useCallback(async (spellData) => {
     if (!character) return;
