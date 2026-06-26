@@ -92,11 +92,18 @@ export function CharacterProvider({ children }) {
     return r.data;
   }, []);
 
+  const resyncCharacter = useCallback(async () => {
+    if (!character) return;
+    const r = await api.post(`/characters/${character.id}/resync`);
+    setCharacter(r.data);
+    return r.data;
+  }, [character]);
+
   return (
     <CharacterContext.Provider value={{
       character, characters, loading,
       fetchCharacters, loadCharacter, updateCharacter,
-      useFeature, useSlot, doRest, saveTrackerData, saveSpellData, importCharacter, setCharacter,
+      useFeature, useSlot, doRest, saveTrackerData, saveSpellData, importCharacter, resyncCharacter, setCharacter,
     }}>
       {children}
     </CharacterContext.Provider>

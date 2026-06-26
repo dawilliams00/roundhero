@@ -197,7 +197,7 @@ def parse_character_pdf(file_bytes, spell_db_by_name=None):
         items.append({
             "name": n, "quantity": qty, "weight": weight, "rarity": "Common",
             "equipped": False, "attunement": n in attuned_names, "attuned": n in attuned_names,
-            "description": "", "charges": None, "granted_spells": [],
+            "description": "", "charges": None, "granted_spells": [], "_source": "pdf",
         })
 
     item_by_name = {it["name"]: it for it in items}
@@ -229,14 +229,14 @@ def parse_character_pdf(file_bytes, spell_db_by_name=None):
             suffix += 1
         features[nm] = {
             "current": f["max_uses"], "max": f["max_uses"], "rest_type": f["rest_type"],
-            "action": f["action"], "description": f["description"].strip(),
+            "action": f["action"], "description": f["description"].strip(), "_source": "pdf",
         }
 
     actions_text = "\n".join(fields[k] for k in _numbered_keys(fields, "Actions") if fields.get(k))
     if actions_text.strip():
         features["Standard Actions Reference"] = {
             "current": 0, "max": 0, "rest_type": "none", "action": "Passive",
-            "description": actions_text.strip(),
+            "description": actions_text.strip(), "_source": "pdf",
         }
 
     current_level = None
@@ -292,6 +292,7 @@ def parse_character_pdf(file_bytes, spell_db_by_name=None):
                 "description": f"Imported from character sheet. Source: {source}",
                 "classes": [],
             }
+        entry["_source"] = "pdf"
 
         if source in item_by_name:
             item_by_name[source]["granted_spells"].append({
@@ -348,6 +349,16 @@ def parse_character_pdf(file_bytes, spell_db_by_name=None):
         "senses": senses,
     }
 
+    ae_data = build_ae_data_from_features(features, class_level_raw)
+    return {
+        "name": name, "class_name": class_level_raw, "subclass": None, "race": race,
+        "level": total_level, "ability_scores": ability_scores,
+        "tracker_data": tracker_data, "spell_data": spell_data, "ae_data": ae_data,
+        "notes": {"general": notes_text},
+    }
+
+
+def build_ae_data_from_features(features, class_level_raw):
     ae_data = {"Action": list(STOCK_ACTIONS), "Bonus Action": list(STOCK_BONUS),
                "Reaction": list(STOCK_REACTIONS), "Free Action": [], "Passive": []}
     for fname, f in features.items():
@@ -357,10 +368,84 @@ def parse_character_pdf(file_bytes, spell_db_by_name=None):
             "cost_type": "feature" if f["max"] > 0 else "passive",
             "tracker_key": fname, "description": f["description"],
         })
+    return ae_data
 
-    return {
-        "name": name, "class_name": class_level_raw, "subclass": None, "race": race,
-        "level": total_level, "ability_scores": ability_scores,
-        "tracker_data": tracker_data, "spell_data": spell_data, "ae_data": ae_data,
-        "notes": {"general": notes_text},
+
+def _merge_features(old_features, new_features):
+    merged = {}
+    for name, f in (old_features or {}).items():
+        if f.get("_source") != "pdf":
+            merged[name] = f
+    for name, nf in new_features.items():
+        of = (old_features or {}).get(name)
+        if of:
+            cur = of.get("current", nf["max"])
+            cur = max(0, min(cur, nf["max"])) if nf["max"] else cur
+            merged[name] = {**nf, "current": cur}
+        else:
+            merged[name] = nf
+    return merged
+
+
+def _merge_spell_slots(old_slots, new_slots):
+    merged = {}
+    for lvl, s in new_slots.items():
+        old_s = (old_slots or {}).get(lvl)
+        cur = max(0, min(old_s["current"], s["max"])) if old_s else s["max"]
+        merged[lvl] = {"current": cur, "max": s["max"]}
+    return merged
+
+
+def _merge_known_spells(old_spells, new_spells):
+    merged = [s for s in (old_spells or []) if s.get("_source") != "pdf"]
+    merged.extend(new_spells)
+    return merged
+
+
+def _merge_inventory_items(old_items, new_items):
+    old_by_name = {it["name"]: it for it in (old_items or [])}
+    seen_new = set()
+    merged = []
+    for it in new_items:
+        seen_new.add(it["name"])
+        old = old_by_name.get(it["name"])
+        if old and old.get("_source") == "pdf":
+            merged_item = dict(it)
+            merged_item["quantity"] = old.get("quantity", it["quantity"])
+            merged_item["equipped"] = old.get("equipped", it["equipped"])
+            merged_item["attuned"] = old.get("attuned", it["attuned"])
+            if old.get("charges") and it.get("charges"):
+                merged_item["charges"] = {**it["charges"], "current": max(0, min(old["charges"].get("current", 0), it["charges"]["max"]))}
+            elif old.get("charges") and not it.get("charges"):
+                merged_item["charges"] = old["charges"]
+            merged.append(merged_item)
+        else:
+            merged.append(it)
+    for it in (old_items or []):
+        if it.get("_source") != "pdf" and it["name"] not in seen_new:
+            merged.append(it)
+    return merged
+
+
+def resync_character(old_tracker_data, old_spell_data, source_pdf_bytes, class_level_raw, spell_db_by_name=None):
+    fresh = parse_character_pdf(source_pdf_bytes, spell_db_by_name=spell_db_by_name)
+    new_td = fresh["tracker_data"]
+    new_sd = fresh["spell_data"]
+
+    merged_features = _merge_features(old_tracker_data.get("features"), new_td["features"])
+    merged_td = dict(old_tracker_data)
+    merged_td["features"] = merged_features
+    merged_td["spell_slots"] = _merge_spell_slots(old_tracker_data.get("spell_slots"), new_td["spell_slots"])
+    merged_td["inventory"] = {
+        "currency": old_tracker_data.get("inventory", {}).get("currency", new_td["inventory"]["currency"]),
+        "items": _merge_inventory_items(old_tracker_data.get("inventory", {}).get("items"), new_td["inventory"]["items"]),
     }
+    merged_td["save_proficiencies"] = new_td["save_proficiencies"]
+    merged_td["skill_proficiencies"] = new_td["skill_proficiencies"]
+
+    merged_sd = dict(old_spell_data)
+    merged_sd["known_spells"] = _merge_known_spells(old_spell_data.get("known_spells"), new_sd["known_spells"])
+
+    merged_ae = build_ae_data_from_features(merged_features, class_level_raw)
+
+    return merged_td, merged_sd, merged_ae

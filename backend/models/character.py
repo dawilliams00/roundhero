@@ -16,6 +16,7 @@ class Character(db.Model):
     _spell_data     = db.Column("spell_data", db.Text, default="{}")
     _ae_data        = db.Column("ae_data", db.Text, default="{}")
     _notes          = db.Column("notes", db.Text, default="{}")
+    source_pdf      = db.Column(db.LargeBinary, nullable=True)
     created_at      = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at      = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -67,6 +68,7 @@ class Character(db.Model):
             "spell_data":     self.spell_data,
             "ae_data":        self.ae_data,
             "notes":          self.notes,
+            "has_source_pdf": self.source_pdf is not None,
             "created_at":     self.created_at.isoformat(),
             "updated_at":     self.updated_at.isoformat(),
         }

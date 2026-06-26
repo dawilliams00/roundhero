@@ -3,7 +3,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from database import db
 from models.character import Character
 from engine.character_engine import build_character
-from engine.pdf_import import parse_character_pdf
+from engine.pdf_import import parse_character_pdf, resync_character
 from engine.spell_data import get_all_spells
 
 characters_bp = Blueprint("characters", __name__)
@@ -47,8 +47,9 @@ def import_character():
     file = request.files.get("file")
     if not file:
         return jsonify({"error": "No file uploaded"}), 400
+    file_bytes = file.read()
     try:
-        parsed = parse_character_pdf(file.read(), spell_db_by_name=_SPELL_DB_BY_NAME)
+        parsed = parse_character_pdf(file_bytes, spell_db_by_name=_SPELL_DB_BY_NAME)
     except Exception:
         return jsonify({"error": "Could not parse this PDF. Make sure it's a D&D Beyond character sheet export."}), 400
 
@@ -65,9 +66,30 @@ def import_character():
     char.spell_data     = parsed["spell_data"]
     char.ae_data        = parsed["ae_data"]
     char.notes          = parsed["notes"]
+    char.source_pdf     = file_bytes
     db.session.add(char)
     db.session.commit()
     return jsonify(char.to_dict()), 201
+
+@characters_bp.route("/<int:char_id>/resync", methods=["POST"])
+@jwt_required()
+def resync_character_route(char_id):
+    user_id = int(get_jwt_identity())
+    char = Character.query.filter_by(id=char_id, user_id=user_id).first_or_404()
+    if not char.source_pdf:
+        return jsonify({"error": "This character wasn't created from a PDF import, so there's nothing to re-sync from."}), 400
+    try:
+        merged_td, merged_sd, merged_ae = resync_character(
+            char.tracker_data, char.spell_data, char.source_pdf, char.class_name,
+            spell_db_by_name=_SPELL_DB_BY_NAME,
+        )
+    except Exception:
+        return jsonify({"error": "Could not re-sync from the stored PDF."}), 400
+    char.tracker_data = merged_td
+    char.spell_data   = merged_sd
+    char.ae_data      = merged_ae
+    db.session.commit()
+    return jsonify(char.to_dict()), 200
 
 @characters_bp.route("/<int:char_id>", methods=["GET"])
 @jwt_required()

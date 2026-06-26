@@ -2,7 +2,28 @@ from flask import Flask
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from database import db
+from sqlalchemy import text
 import os
+
+# Lightweight additive-column migrations. db.create_all() only creates missing
+# tables, never alters existing ones, so any new column added to a model must
+# be listed here too or it will be silently absent on already-deployed databases.
+PENDING_COLUMNS = [
+    ("characters", "source_pdf", "BYTEA", "BLOB"),
+]
+
+def _apply_pending_migrations(app):
+    is_sqlite = app.config["SQLALCHEMY_DATABASE_URI"].startswith("sqlite")
+    with db.engine.connect() as conn:
+        for table, column, pg_type, sqlite_type in PENDING_COLUMNS:
+            try:
+                if is_sqlite:
+                    conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {column} {sqlite_type}"))
+                else:
+                    conn.execute(text(f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS {column} {pg_type}"))
+                conn.commit()
+            except Exception:
+                conn.rollback()
 
 def create_app():
     app = Flask(__name__)
@@ -32,6 +53,7 @@ def create_app():
 
     with app.app_context():
         db.create_all()
+        _apply_pending_migrations(app)
 
     return app
 
