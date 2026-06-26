@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
+import { schoolColor } from '../utils/dnd';
 
 const SELF_TARGET_EFFECTS = { haste: 'Hasted' };
 
-export default function SpellDetailModal({ spell, onRemove, onClose, chargeMode, onCastSuccess }) {
+export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuccess }) {
   const { character, useSlot, addActiveEffect } = useCharacter();
   const [casting, setCasting] = useState(false);
   const [cast, setCast]       = useState(null);
@@ -50,7 +51,7 @@ export default function SpellDetailModal({ spell, onRemove, onClose, chargeMode,
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal modal-flex modal-lg" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>{spell.name}</h2>
+          <h2 style={{color: schoolColor(spell.school)}}>{spell.name}</h2>
           <div style={{color:'var(--text-dim)',fontSize:12}}>
             {spell.level_int === 0 ? 'Cantrip' : `Level ${spell.level_int}`} · {spell.school}
             {spell.ritual ? ' · Ritual' : ''}{spell.concentration ? ' · Concentration' : ''}
@@ -109,14 +110,7 @@ export default function SpellDetailModal({ spell, onRemove, onClose, chargeMode,
             )}
             {cast && <div style={{color:'var(--success)',fontSize:12,marginTop:6,textAlign:'center'}}>{cast}</div>}
           </div>
-          <div style={{display:'flex',gap:8,width:'100%'}}>
-            {onRemove && (
-              <button className="btn btn-danger" style={{flex:1}} onClick={() => { onRemove(spell); onClose(); }}>
-                Remove from Known Spells
-              </button>
-            )}
-            <button className="btn btn-secondary" style={{flex:1}} onClick={onClose}>Close</button>
-          </div>
+          <button className="btn btn-secondary" style={{width:'100%'}} onClick={onClose}>Close</button>
         </div>
       </div>
     </div>

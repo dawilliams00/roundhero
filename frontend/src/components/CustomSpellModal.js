@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import api from '../utils/api';
 
 const SCHOOLS = ['Abjuration','Conjuration','Divination','Enchantment','Evocation','Illusion','Necromancy','Transmutation'];
 
@@ -7,24 +8,35 @@ export default function CustomSpellModal({ onAdd, onClose }) {
     name: '', level_int: 0, school: 'Evocation', ritual: false, concentration: false,
     casting_time: '1 action', range: '', components: '', duration: '', description: '',
   });
+  const [saving, setSaving] = useState(false);
   const set = (k,v) => setForm(f => ({...f,[k]:v}));
 
-  const submit = () => {
-    if (!form.name) return;
-    onAdd({
+  const submit = async () => {
+    if (!form.name || saving) return;
+    setSaving(true);
+    const payload = {
       ...form,
       level: String(form.level_int),
       level_int: parseInt(form.level_int),
       classes: [],
       source: 'Custom',
-    });
-    onClose();
+    };
+    try {
+      // Saved to the shared spell database (not just this character) so it's available
+      // to add to any of this user's characters/lists going forward.
+      const r = await api.post('/content/spells', payload);
+      onAdd(r.data);
+      onClose();
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={e => e.stopPropagation()}>
         <h2>Add Custom Spell</h2>
+        <div style={{color:'var(--text-dim)',fontSize:11,marginBottom:12}}>Saved to your spell library — available to add to any of your characters.</div>
         <div className="form-group"><label>Name</label><input value={form.name} onChange={e => set('name',e.target.value)} placeholder="Spell name" autoFocus /></div>
         <div className="form-row">
           <div className="form-group"><label>Level (0=cantrip)</label><input type="number" min={0} max={9} value={form.level_int} onChange={e => set('level_int',e.target.value)} /></div>
@@ -45,7 +57,7 @@ export default function CustomSpellModal({ onAdd, onClose }) {
         <div className="form-group"><label>Description</label><textarea value={form.description} onChange={e => set('description',e.target.value)} rows={3} style={{width:'100%',resize:'vertical'}} /></div>
         <div style={{display:'flex',gap:8,marginTop:8}}>
           <button className="btn btn-secondary" style={{flex:1}} onClick={onClose}>Cancel</button>
-          <button className="btn btn-primary" style={{flex:2}} disabled={!form.name} onClick={submit}>Add Spell</button>
+          <button className="btn btn-primary" style={{flex:2}} disabled={!form.name||saving} onClick={submit}>{saving ? 'Saving...' : 'Add Spell'}</button>
         </div>
       </div>
     </div>

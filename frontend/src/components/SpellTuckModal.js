@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
+import { schoolColor, slotBadgeTextColor } from '../utils/dnd';
 
 export default function SpellTuckModal({ ability, onClose, onUse }) {
   const { character, saveTrackerData } = useCharacter();
@@ -71,10 +72,10 @@ export default function SpellTuckModal({ ability, onClose, onUse }) {
                 <div style={{color:'var(--text-dim)',fontSize:12,textAlign:'center',padding:24}}>No known spells. Add some in the Spells tab first.</div>
               ) : knownSpells.map((s,i) => (
                 <div key={i} onClick={() => tuckSpell(s)} style={{display:'flex',alignItems:'center',gap:8,padding:'8px 4px',borderBottom:'1px solid var(--border)',cursor:'pointer'}}>
-                  <div style={{background: s.level_int===0?'var(--text-dim)':`var(--slot-${s.level_int})`,color:'#fff',borderRadius:4,padding:'1px 6px',fontSize:10,fontWeight:600,minWidth:24,textAlign:'center'}}>
+                  <div style={{background: s.level_int===0?'var(--text-dim)':`var(--slot-${s.level_int})`,color: s.level_int===0 ? '#fff' : slotBadgeTextColor(s.level_int),borderRadius:4,padding:'1px 6px',fontSize:10,fontWeight:600,minWidth:24,textAlign:'center'}}>
                     {s.level_int===0?'C':s.level_int}
                   </div>
-                  <div style={{color:'var(--text-primary)',fontSize:13}}>{s.name}</div>
+                  <div style={{color: schoolColor(s.school),fontSize:13}}>{s.name}</div>
                 </div>
               ))}
             </>

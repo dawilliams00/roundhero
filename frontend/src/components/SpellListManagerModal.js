@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { schoolColor } from '../utils/dnd';
 
 export default function SpellListManagerModal({ knownSpells, spellLists, activeList, maxPrepared, onSave, onClose }) {
   const lists = spellLists || {};
@@ -66,7 +67,7 @@ export default function SpellListManagerModal({ knownSpells, spellLists, activeL
               return (
                 <label key={s.name} style={{display:'flex',alignItems:'center',gap:8,padding:'5px 4px',cursor: disabled ? 'not-allowed' : 'pointer',opacity: disabled ? 0.4 : 1}}>
                   <input type="checkbox" checked={checked} disabled={disabled} onChange={() => toggleSpell(s.name)} />
-                  <span style={{fontSize:13,color:'var(--text-primary)'}}>{s.name}</span>
+                  <span style={{fontSize:13,color: schoolColor(s.school)}}>{s.name}</span>
                   <span style={{fontSize:11,color:'var(--text-dim)'}}>{s.level_int===0?'Cantrip':`Lv${s.level_int}`}</span>
                 </label>
               );

@@ -90,3 +90,20 @@ export const spellCastBucket = (castingTime) => {
 
 export const rollD20 = () => 1 + Math.floor(Math.random() * 20);
 export const rollDie = sides => 1 + Math.floor(Math.random() * sides);
+
+export const SCHOOL_COLORS = {
+  Abjuration:     '#4A90E2',
+  Conjuration:    '#F5A623',
+  Divination:     '#9013FE',
+  Enchantment:    '#E91E63',
+  Evocation:      '#FF5722',
+  Illusion:       '#607D8B',
+  Necromancy:     '#795548',
+  Transmutation:  '#4CAF50',
+};
+export const schoolColor = school => SCHOOL_COLORS[school] || 'var(--text-primary)';
+
+// Slot levels 1-3 use light backgrounds (see --slot-1/2/3 in index.css) where white text
+// fails contrast - use dark text on those, white on the darker levels 4-9.
+const LIGHT_SLOT_LEVELS = new Set([1, 2, 3]);
+export const slotBadgeTextColor = level => LIGHT_SLOT_LEVELS.has(level) ? '#16213e' : '#fff';

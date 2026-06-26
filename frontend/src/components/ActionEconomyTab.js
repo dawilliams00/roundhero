@@ -58,8 +58,9 @@ export default function ActionEconomyTab() {
   const isBucketUsed = (bucket) => inInitiative && bucket && turnUsed[bucket];
 
   const handleUse = async (ability, section) => {
-    if (!ability.tracker_key) return;
-    try { await useFeature(ability.tracker_key); } catch {}
+    if (ability.tracker_key) {
+      try { await useFeature(ability.tracker_key); } catch {}
+    }
     markBucket(bucketForAbility(ability, section));
   };
 
@@ -224,7 +225,7 @@ export default function ActionEconomyTab() {
                         OPEN
                       </button>
                     )}
-                    {!isCastSpell && !isTuck && ability.tracker_key && !depleted && (
+                    {!isCastSpell && !isTuck && !depleted && (
                       <button className="btn btn-sm" onClick={() => handleUse(ability, section)} disabled={bucketUsed}
                         style={{background: bucketUsed ? 'var(--border)' : 'var(--accent)',color:'#fff',minWidth:36}}>
                         USE

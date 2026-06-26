@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import api from '../utils/api';
+import { schoolColor, slotBadgeTextColor } from '../utils/dnd';
 
-export default function SpellBrowserModal({ character, knownSpells, onAdd, onClose }) {
+export default function SpellBrowserModal({ character, knownSpells, onAdd, onRemove, onClose }) {
   const [allSpells, setAllSpells] = useState([]);
   const [loading, setLoading]     = useState(true);
   const [search, setSearch]       = useState('');
@@ -25,6 +26,7 @@ export default function SpellBrowserModal({ character, knownSpells, onAdd, onClo
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" style={{maxWidth:480,maxHeight:'80vh',display:'flex',flexDirection:'column'}} onClick={e => e.stopPropagation()}>
         <h2>Add Spells</h2>
+        <div style={{color:'var(--text-dim)',fontSize:11,marginBottom:10}}>Click Remove to take a spell out of your known spells.</div>
         <div style={{display:'flex',gap:8,marginBottom:12,flexWrap:'wrap'}}>
           <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search spells..." style={{flex:1,minWidth:120}} />
           <select value={filter} onChange={e=>setFilter(e.target.value)} style={{minWidth:80}}>
@@ -42,20 +44,19 @@ export default function SpellBrowserModal({ character, knownSpells, onAdd, onClo
             const isKnown = knownNames.has(spell.name);
             return (
               <div key={spell.name} style={{display:'flex',alignItems:'center',gap:8,padding:'8px 0',borderBottom:'1px solid var(--border)'}}>
-                <div style={{background: spell.level_int===0 ? 'var(--text-dim)' : `var(--slot-${spell.level_int})`,color:'#fff',borderRadius:4,padding:'1px 6px',fontSize:10,fontWeight:600,minWidth:24,textAlign:'center'}}>
+                <div style={{background: spell.level_int===0 ? 'var(--text-dim)' : `var(--slot-${spell.level_int})`,color: spell.level_int===0 ? '#fff' : slotBadgeTextColor(spell.level_int),borderRadius:4,padding:'1px 6px',fontSize:10,fontWeight:600,minWidth:24,textAlign:'center'}}>
                   {spell.level_int===0?'C':spell.level_int}
                 </div>
                 <div style={{flex:1}}>
-                  <div style={{color:'var(--text-primary)',fontWeight:500,fontSize:13}}>{spell.name}</div>
+                  <div style={{color: schoolColor(spell.school),fontWeight:500,fontSize:13}}>{spell.name}</div>
                   <div style={{color:'var(--text-dim)',fontSize:11}}>{spell.school} {spell.ritual?'· Ritual':''} {spell.concentration?'· Concentration':''}</div>
                 </div>
                 <button
-                  className={isKnown ? 'btn btn-secondary' : 'btn btn-primary'}
-                  disabled={isKnown}
-                  onClick={() => onAdd(spell)}
+                  className={isKnown ? 'btn btn-danger' : 'btn btn-primary'}
+                  onClick={() => isKnown ? onRemove(spell) : onAdd(spell)}
                   style={{fontSize:11,padding:'4px 10px'}}
                 >
-                  {isKnown ? 'Added' : 'Add'}
+                  {isKnown ? 'Remove' : 'Add'}
                 </button>
               </div>
             );

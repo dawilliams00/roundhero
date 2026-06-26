@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../utils/api';
+import { schoolColor, slotBadgeTextColor } from '../utils/dnd';
 import SpellDetailModal from './SpellDetailModal';
 
 export default function ItemSpellsModal({ item, onCast, onClose }) {
@@ -41,11 +42,11 @@ export default function ItemSpellsModal({ item, onCast, onClose }) {
               const spell = resolveSpell(g);
               return (
                 <div key={i} onClick={() => setViewing({ spell, chargeCost: g.charge_cost || 1 })} style={{display:'flex',alignItems:'center',gap:8,padding:'8px 0',borderBottom:'1px solid var(--border)',cursor:'pointer'}}>
-                  <div style={{background: spell.level_int===0 ? 'var(--text-dim)' : `var(--slot-${spell.level_int})`,color:'#fff',borderRadius:4,padding:'1px 6px',fontSize:10,fontWeight:600,minWidth:24,textAlign:'center'}}>
+                  <div style={{background: spell.level_int===0 ? 'var(--text-dim)' : `var(--slot-${spell.level_int})`,color: spell.level_int===0 ? '#fff' : slotBadgeTextColor(spell.level_int),borderRadius:4,padding:'1px 6px',fontSize:10,fontWeight:600,minWidth:24,textAlign:'center'}}>
                     {spell.level_int===0?'C':spell.level_int}
                   </div>
                   <div style={{flex:1}}>
-                    <div style={{color:'var(--text-primary)',fontWeight:500,fontSize:13}}>{spell.name}</div>
+                    <div style={{color: schoolColor(spell.school),fontWeight:500,fontSize:13}}>{spell.name}</div>
                     <div style={{color:'var(--text-dim)',fontSize:11}}>{spell.school}</div>
                   </div>
                   <div style={{color:'var(--text-dim)',fontSize:11}}>{g.charge_cost || 1} chg</div>
