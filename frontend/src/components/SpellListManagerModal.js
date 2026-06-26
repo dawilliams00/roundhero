@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 
 export default function SpellListManagerModal({ knownSpells, spellLists, activeList, maxPrepared, onSave, onClose }) {
-  const [lists, setLists]   = useState(spellLists || {});
-  const [active, setActive] = useState(activeList || null);
+  const lists = spellLists || {};
   const [editing, setEditing] = useState(null); // name being created/edited, or null for browse view
   const [editName, setEditName] = useState('');
   const [editSelected, setEditSelected] = useState(new Set());
@@ -32,26 +31,22 @@ export default function SpellListManagerModal({ knownSpells, spellLists, activeL
     const newLists = { ...lists };
     if (editing !== '__new__' && editing !== editName) delete newLists[editing];
     newLists[editName] = Array.from(editSelected);
-    setLists(newLists);
-    if (editing === '__new__') setActive(editName);
+    const newActive = editing === '__new__' ? editName : activeList;
+    onSave(newLists, newActive);
     setEditing(null);
   };
 
   const deleteList = (name) => {
     const newLists = { ...lists };
     delete newLists[name];
-    setLists(newLists);
-    if (active === name) setActive(null);
+    onSave(newLists, activeList === name ? null : activeList);
   };
 
-  const commit = () => {
-    onSave(lists, active);
-    onClose();
-  };
+  const setActiveList = (name) => onSave(lists, name);
 
   if (editing !== null) {
-    const selectableSpells = knownSpells.filter(s => !s.ritual && !s.granted_by);
-    const alwaysAvailable  = knownSpells.filter(s => s.ritual || s.granted_by);
+    const selectableSpells = knownSpells.filter(s => !s.ritual && !s.granted_by && s.level_int !== 0);
+    const alwaysAvailable  = knownSpells.filter(s => s.ritual || s.granted_by || s.level_int === 0);
     const selectedCount = Array.from(editSelected).filter(n => selectableSpells.some(s => s.name === n)).length;
     const atCap = maxPrepared != null && selectedCount >= maxPrepared;
     return (
@@ -79,12 +74,12 @@ export default function SpellListManagerModal({ knownSpells, spellLists, activeL
           </div>
           {alwaysAvailable.length > 0 && (
             <>
-              <div style={{color:'var(--text-dim)',fontSize:11,margin:'10px 0 4px'}}>Always available (rituals & granted spells — don't count against the cap):</div>
+              <div style={{color:'var(--text-dim)',fontSize:11,margin:'10px 0 4px'}}>Always available (cantrips, rituals &amp; granted spells — don't count against the cap):</div>
               <div style={{maxHeight:120,overflowY:'auto',border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',padding:8}}>
                 {alwaysAvailable.map(s => (
                   <div key={s.name} style={{display:'flex',alignItems:'center',gap:8,padding:'4px'}}>
                     <span style={{fontSize:13,color:'var(--text-secondary)'}}>{s.name}</span>
-                    <span style={{fontSize:10,color:'var(--text-dim)'}}>{s.ritual ? 'Ritual' : `Granted by ${s.granted_by}`}</span>
+                    <span style={{fontSize:10,color:'var(--text-dim)'}}>{s.level_int === 0 ? 'Cantrip' : s.ritual ? 'Ritual' : `Granted by ${s.granted_by}`}</span>
                   </div>
                 ))}
               </div>
@@ -103,30 +98,27 @@ export default function SpellListManagerModal({ knownSpells, spellLists, activeL
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" style={{maxWidth:420}} onClick={e => e.stopPropagation()}>
         <h2>Spell Lists</h2>
-        <div style={{color:'var(--text-dim)',fontSize:12,marginBottom:10}}>Switch quickly between prepared-spell loadouts.</div>
+        <div style={{color:'var(--text-dim)',fontSize:12,marginBottom:10}}>Switch quickly between prepared-spell loadouts. Changes here save immediately.</div>
         <div
-          onClick={() => setActive(null)}
-          style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'8px 10px',borderRadius:'var(--radius-sm)',border:`1px solid ${active===null?'var(--accent)':'var(--border)'}`,marginBottom:6,cursor:'pointer'}}
+          onClick={() => setActiveList(null)}
+          style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'8px 10px',borderRadius:'var(--radius-sm)',border:`1px solid ${activeList===null?'var(--accent)':'var(--border)'}`,marginBottom:6,cursor:'pointer'}}
         >
           <span style={{color:'var(--text-primary)',fontWeight:500}}>All Known Spells</span>
-          {active===null && <span style={{color:'var(--accent-light)',fontSize:12}}>Active</span>}
+          {activeList===null && <span style={{color:'var(--accent-light)',fontSize:12}}>Active</span>}
         </div>
         {Object.keys(lists).map(name => (
-          <div key={name} style={{display:'flex',alignItems:'center',gap:8,padding:'8px 10px',borderRadius:'var(--radius-sm)',border:`1px solid ${active===name?'var(--accent)':'var(--border)'}`,marginBottom:6}}>
-            <div onClick={() => setActive(name)} style={{flex:1,cursor:'pointer'}}>
+          <div key={name} style={{display:'flex',alignItems:'center',gap:8,padding:'8px 10px',borderRadius:'var(--radius-sm)',border:`1px solid ${activeList===name?'var(--accent)':'var(--border)'}`,marginBottom:6}}>
+            <div onClick={() => setActiveList(name)} style={{flex:1,cursor:'pointer'}}>
               <div style={{color:'var(--text-primary)',fontWeight:500}}>{name}</div>
               <div style={{color:'var(--text-dim)',fontSize:11}}>{(lists[name]||[]).length} spells</div>
             </div>
-            {active===name && <span style={{color:'var(--accent-light)',fontSize:12}}>Active</span>}
+            {activeList===name && <span style={{color:'var(--accent-light)',fontSize:12}}>Active</span>}
             <button className="btn btn-secondary btn-sm" onClick={() => startEdit(name)}>Edit</button>
             <button className="btn btn-danger btn-sm" onClick={() => deleteList(name)}>×</button>
           </div>
         ))}
         <button className="btn btn-secondary" style={{width:'100%',marginTop:8}} onClick={startNew}>+ New List</button>
-        <div style={{display:'flex',gap:8,marginTop:16}}>
-          <button className="btn btn-secondary" style={{flex:1}} onClick={onClose}>Cancel</button>
-          <button className="btn btn-primary" style={{flex:2}} onClick={commit}>Save</button>
-        </div>
+        <button className="btn btn-primary" style={{width:'100%',marginTop:16}} onClick={onClose}>Close</button>
       </div>
     </div>
   );

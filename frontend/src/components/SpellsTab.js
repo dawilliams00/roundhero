@@ -22,7 +22,7 @@ export default function SpellsTab() {
   const spellLists  = sd.spell_lists || {};
   const activeList  = sd.active_list || null;
   const maxPrepared = maxPreparedSpells(character.class_name, character.ability_scores);
-  const isAlwaysAvailable = s => s.ritual || !!s.granted_by;
+  const isAlwaysAvailable = s => s.ritual || !!s.granted_by || s.level_int === 0;
   const visibleSpells = activeList && spellLists[activeList]
     ? knownSpells.filter(s => spellLists[activeList].includes(s.name) || isAlwaysAvailable(s))
     : knownSpells;
@@ -66,13 +66,19 @@ export default function SpellsTab() {
 
       {knownSpells.length > 0 ? (
         <div className="card">
-          <div style={{display:'flex',gap:8,marginBottom:10,alignItems:'center'}}>
-            <span style={{color:'var(--text-dim)',fontSize:11}}>Showing:</span>
-            <div style={{flex:1,fontWeight:600,color:'var(--accent-light)',fontSize:13}}>
-              {activeList || 'All Known Spells'}
-              {maxPrepared != null && <span style={{color:'var(--text-dim)',fontWeight:400,fontSize:11}}> · prepares up to {maxPrepared}</span>}
-            </div>
-            <button className="btn btn-secondary btn-sm" onClick={() => setManagingLists(true)}>Spell Lists</button>
+          <div style={{display:'flex',gap:8,marginBottom:10,alignItems:'center',flexWrap:'wrap'}}>
+            <span style={{color:'var(--text-dim)',fontSize:11}}>Loaded list:</span>
+            <select
+              value={activeList || ''}
+              onChange={e => saveLists(spellLists, e.target.value || null)}
+              style={{fontWeight:600,color:'var(--accent-light)',fontSize:13,minWidth:140}}
+            >
+              <option value="">All Known Spells</option>
+              {Object.keys(spellLists).map(name => <option key={name} value={name}>{name}</option>)}
+            </select>
+            {maxPrepared != null && <span style={{color:'var(--text-dim)',fontSize:11}}>prepares up to {maxPrepared} (cantrips don't count)</span>}
+            <div style={{flex:1}}/>
+            <button className="btn btn-secondary btn-sm" onClick={() => setManagingLists(true)}>Manage Lists</button>
           </div>
           <div style={{display:'flex',gap:8,marginBottom:12,flexWrap:'wrap'}}>
             <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search spells..." style={{flex:1,minWidth:120}} />

@@ -12,7 +12,7 @@ export default function CastSpellPickerModal({ onClose, bucket }) {
   const knownSpells = sd.known_spells || [];
   const spellLists  = sd.spell_lists || {};
   const activeList  = sd.active_list || null;
-  const isAlwaysAvailable = s => s.ritual || !!s.granted_by;
+  const isAlwaysAvailable = s => s.ritual || !!s.granted_by || s.level_int === 0;
   const visibleSpells = activeList && spellLists[activeList]
     ? knownSpells.filter(s => spellLists[activeList].includes(s.name) || isAlwaysAvailable(s))
     : knownSpells;
