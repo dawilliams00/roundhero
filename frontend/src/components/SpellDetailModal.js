@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
 
-export default function SpellDetailModal({ spell, onRemove, onClose }) {
+export default function SpellDetailModal({ spell, onRemove, onClose, chargeMode }) {
   const { character, useSlot } = useCharacter();
   const [casting, setCasting] = useState(false);
   const [cast, setCast]       = useState(null);
@@ -16,12 +16,17 @@ export default function SpellDetailModal({ spell, onRemove, onClose }) {
   const [castLevel, setCastLevel] = useState(availableLevels[0] || spell.level_int);
 
   const doCast = async () => {
-    if (isCantrip) { setCast('Cast! (no slot used)'); return; }
-    if (!castLevel) return;
     setCasting(true);
     try {
-      await useSlot(castLevel);
-      setCast(`Cast at level ${castLevel}!`);
+      if (chargeMode) {
+        await chargeMode.onCast();
+        setCast(`Cast using ${chargeMode.chargeCost} charge${chargeMode.chargeCost===1?'':'s'}!`);
+      } else if (isCantrip) {
+        setCast('Cast! (no slot used)');
+      } else if (castLevel) {
+        await useSlot(castLevel);
+        setCast(`Cast at level ${castLevel}!`);
+      }
     } finally { setCasting(false); }
   };
 
@@ -42,20 +47,37 @@ export default function SpellDetailModal({ spell, onRemove, onClose }) {
         <p style={{color:'var(--text-secondary)',lineHeight:1.7,whiteSpace:'pre-wrap'}}>{spell.description}</p>
 
         <div style={{borderTop:'1px solid var(--border)',marginTop:12,paddingTop:12}}>
-          {!isCantrip && availableLevels.length > 1 && (
-            <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:8}}>
-              <span style={{color:'var(--text-dim)',fontSize:12}}>Cast at level:</span>
-              <select value={castLevel} onChange={e => setCastLevel(parseInt(e.target.value))}>
-                {availableLevels.map(l => <option key={l} value={l}>{l}</option>)}
-              </select>
-            </div>
-          )}
-          {!isCantrip && availableLevels.length === 0 ? (
-            <div style={{color:'var(--danger)',fontSize:12,marginBottom:8}}>No spell slots available.</div>
+          {chargeMode ? (
+            <>
+              <div style={{color:'var(--text-dim)',fontSize:12,marginBottom:8}}>
+                {chargeMode.chargesCurrent}/{chargeMode.chargesMax} charges on {chargeMode.itemName}
+              </div>
+              {chargeMode.chargesCurrent < chargeMode.chargeCost ? (
+                <div style={{color:'var(--danger)',fontSize:12,marginBottom:8}}>Not enough charges remaining.</div>
+              ) : (
+                <button className="btn btn-primary" style={{width:'100%'}} disabled={casting} onClick={doCast}>
+                  {casting ? 'Casting...' : `Cast — Use ${chargeMode.chargeCost} Charge${chargeMode.chargeCost===1?'':'s'}`}
+                </button>
+              )}
+            </>
           ) : (
-            <button className="btn btn-primary" style={{width:'100%'}} disabled={casting} onClick={doCast}>
-              {casting ? 'Casting...' : isCantrip ? 'Cast (Cantrip)' : `Cast — Use Level ${castLevel} Slot`}
-            </button>
+            <>
+              {!isCantrip && availableLevels.length > 1 && (
+                <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:8}}>
+                  <span style={{color:'var(--text-dim)',fontSize:12}}>Cast at level:</span>
+                  <select value={castLevel} onChange={e => setCastLevel(parseInt(e.target.value))}>
+                    {availableLevels.map(l => <option key={l} value={l}>{l}</option>)}
+                  </select>
+                </div>
+              )}
+              {!isCantrip && availableLevels.length === 0 ? (
+                <div style={{color:'var(--danger)',fontSize:12,marginBottom:8}}>No spell slots available.</div>
+              ) : (
+                <button className="btn btn-primary" style={{width:'100%'}} disabled={casting} onClick={doCast}>
+                  {casting ? 'Casting...' : isCantrip ? 'Cast (Cantrip)' : `Cast — Use Level ${castLevel} Slot`}
+                </button>
+              )}
+            </>
           )}
           {cast && <div style={{color:'var(--success)',fontSize:12,marginTop:6,textAlign:'center'}}>{cast}</div>}
         </div>

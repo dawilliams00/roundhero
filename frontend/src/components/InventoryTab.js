@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
 import AddItemModal from './AddItemModal';
+import ItemSpellsModal from './ItemSpellsModal';
 
 const CURRENCIES = ['cp','sp','ep','gp','pp'];
 
@@ -8,6 +9,7 @@ export default function InventoryTab() {
   const { character, saveTrackerData } = useCharacter();
   const [adding, setAdding]   = useState(false);
   const [editing, setEditing] = useState(null);
+  const [viewingSpells, setViewingSpells] = useState(null);
 
   if (!character) return null;
   const td  = character.tracker_data || {};
@@ -20,6 +22,13 @@ export default function InventoryTab() {
   const updateItem = (idx, item) => save({ ...inv, items: items.map((it,i) => i===idx ? item : it) });
   const removeItem = (idx) => save({ ...inv, items: items.filter((_,i) => i!==idx) });
   const setCurrency = (k, v) => save({ ...inv, currency: { ...inv.currency, [k]: parseInt(v)||0 } });
+
+  const castItemSpell = (idx, chargeCost) => {
+    const item = items[idx];
+    if (!item.charges) return;
+    const cur = Math.max(0, (item.charges.current||0) - chargeCost);
+    updateItem(idx, { ...item, charges: { ...item.charges, current: cur } });
+  };
 
   const useCharge = (idx, delta) => {
     const item = items[idx];
@@ -70,6 +79,9 @@ export default function InventoryTab() {
                 </div>
                 <div style={{color:'var(--text-dim)',fontSize:11}}>{item.rarity} {item.weight ? `· ${item.weight} lb` : ''}</div>
               </div>
+              {item.granted_spells?.length > 0 && (
+                <button className="btn btn-secondary btn-sm" onClick={() => setViewingSpells(i)}>✨ Spells</button>
+              )}
               <button className="btn btn-secondary btn-sm" onClick={() => removeItem(i)}>×</button>
             </div>
             {item.charges && (
@@ -87,6 +99,13 @@ export default function InventoryTab() {
       {adding && <AddItemModal onSave={addItem} onClose={() => setAdding(false)} />}
       {editing !== null && (
         <AddItemModal item={items[editing]} onSave={(it) => updateItem(editing, it)} onClose={() => setEditing(null)} />
+      )}
+      {viewingSpells !== null && (
+        <ItemSpellsModal
+          item={items[viewingSpells]}
+          onCast={(chargeCost) => castItemSpell(viewingSpells, chargeCost)}
+          onClose={() => setViewingSpells(null)}
+        />
       )}
     </div>
   );

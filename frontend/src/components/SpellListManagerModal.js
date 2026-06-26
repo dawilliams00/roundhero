@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-export default function SpellListManagerModal({ knownSpells, spellLists, activeList, onSave, onClose }) {
+export default function SpellListManagerModal({ knownSpells, spellLists, activeList, maxPrepared, onSave, onClose }) {
   const [lists, setLists]   = useState(spellLists || {});
   const [active, setActive] = useState(activeList || null);
   const [editing, setEditing] = useState(null); // name being created/edited, or null for browse view
@@ -50,23 +50,46 @@ export default function SpellListManagerModal({ knownSpells, spellLists, activeL
   };
 
   if (editing !== null) {
+    const selectableSpells = knownSpells.filter(s => !s.ritual && !s.granted_by);
+    const alwaysAvailable  = knownSpells.filter(s => s.ritual || s.granted_by);
+    const selectedCount = Array.from(editSelected).filter(n => selectableSpells.some(s => s.name === n)).length;
+    const atCap = maxPrepared != null && selectedCount >= maxPrepared;
     return (
       <div className="modal-overlay" onClick={onClose}>
         <div className="modal" style={{maxWidth:420,maxHeight:'80vh',display:'flex',flexDirection:'column'}} onClick={e => e.stopPropagation()}>
           <h2>{editing === '__new__' ? 'New Spell List' : `Edit "${editing}"`}</h2>
           <div className="form-group"><label>List Name</label><input value={editName} onChange={e=>setEditName(e.target.value)} placeholder="e.g. Balanced Outdoors" autoFocus /></div>
-          <div style={{color:'var(--text-dim)',fontSize:11,margin:'8px 0'}}>Select spells for this list:</div>
-          <div style={{flex:1,overflowY:'auto',border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',padding:8}}>
-            {knownSpells.length === 0 ? (
-              <div style={{color:'var(--text-dim)',fontSize:12,padding:8}}>No known spells yet — add some first.</div>
-            ) : knownSpells.map(s => (
-              <label key={s.name} style={{display:'flex',alignItems:'center',gap:8,padding:'5px 4px',cursor:'pointer'}}>
-                <input type="checkbox" checked={editSelected.has(s.name)} onChange={() => toggleSpell(s.name)} />
-                <span style={{fontSize:13,color:'var(--text-primary)'}}>{s.name}</span>
-                <span style={{fontSize:11,color:'var(--text-dim)'}}>{s.level_int===0?'Cantrip':`Lv${s.level_int}`}</span>
-              </label>
-            ))}
+          <div style={{color:'var(--text-dim)',fontSize:11,margin:'8px 0'}}>
+            Select spells to prepare{maxPrepared != null && ` (${selectedCount} / ${maxPrepared})`}:
           </div>
+          <div style={{flex:1,overflowY:'auto',border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',padding:8}}>
+            {selectableSpells.length === 0 ? (
+              <div style={{color:'var(--text-dim)',fontSize:12,padding:8}}>No known spells yet — add some first.</div>
+            ) : selectableSpells.map(s => {
+              const checked = editSelected.has(s.name);
+              const disabled = !checked && atCap;
+              return (
+                <label key={s.name} style={{display:'flex',alignItems:'center',gap:8,padding:'5px 4px',cursor: disabled ? 'not-allowed' : 'pointer',opacity: disabled ? 0.4 : 1}}>
+                  <input type="checkbox" checked={checked} disabled={disabled} onChange={() => toggleSpell(s.name)} />
+                  <span style={{fontSize:13,color:'var(--text-primary)'}}>{s.name}</span>
+                  <span style={{fontSize:11,color:'var(--text-dim)'}}>{s.level_int===0?'Cantrip':`Lv${s.level_int}`}</span>
+                </label>
+              );
+            })}
+          </div>
+          {alwaysAvailable.length > 0 && (
+            <>
+              <div style={{color:'var(--text-dim)',fontSize:11,margin:'10px 0 4px'}}>Always available (rituals & granted spells — don't count against the cap):</div>
+              <div style={{maxHeight:120,overflowY:'auto',border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',padding:8}}>
+                {alwaysAvailable.map(s => (
+                  <div key={s.name} style={{display:'flex',alignItems:'center',gap:8,padding:'4px'}}>
+                    <span style={{fontSize:13,color:'var(--text-secondary)'}}>{s.name}</span>
+                    <span style={{fontSize:10,color:'var(--text-dim)'}}>{s.ritual ? 'Ritual' : `Granted by ${s.granted_by}`}</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
           <div style={{display:'flex',gap:8,marginTop:12}}>
             <button className="btn btn-secondary" style={{flex:1}} onClick={() => setEditing(null)}>Cancel</button>
             <button className="btn btn-primary" style={{flex:2}} disabled={!editName.trim()} onClick={saveList}>Save List</button>

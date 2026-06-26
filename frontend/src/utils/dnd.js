@@ -52,6 +52,24 @@ export const hpColor = (current, max) => {
 
 export const slotColor = level => `var(--slot-${Math.min(level, 9)})`;
 
+export const PREPARED_CASTER_ABILITY = { Wizard:'INT', Cleric:'WIS', Druid:'WIS', Paladin:'CHA', Ranger:'WIS', Artificer:'INT' };
+export const HALF_LEVEL_PREP_CLASSES = ['Paladin','Ranger','Artificer'];
+
+// Returns null if the class doesn't use daily spell preparation (e.g. Sorcerer/Bard/Warlock know fixed spells)
+export const maxPreparedSpells = (classNameRaw, abilityScores) => {
+  if (!classNameRaw) return null;
+  const parts = String(classNameRaw).split('/').map(p => p.trim());
+  const m = parts[0].match(/^(.+?)\s+(\d+)\s*$/);
+  if (!m) return null;
+  const className = m[1].trim();
+  const classLevel = parseInt(m[2]);
+  const ability = PREPARED_CASTER_ABILITY[className];
+  if (!ability) return null;
+  const mod = modifier(abilityScores?.[ability] ?? 10);
+  const effLevel = HALF_LEVEL_PREP_CLASSES.includes(className) ? Math.floor(classLevel / 2) : classLevel;
+  return Math.max(1, effLevel + mod);
+};
+
 export const SECTION_ORDER = ['Action','Bonus Action','Reaction','Free Action','Passive'];
 export const SECTION_COLORS = {
   'Action':       '#7f0000',

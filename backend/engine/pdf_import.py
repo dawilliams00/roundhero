@@ -24,6 +24,11 @@ SKILL_FIELD_MAP = {
 
 SAVE_FIELD_MAP = {"Str": "STR", "Dex": "DEX", "Con": "CON", "Int": "INT", "Wis": "WIS", "Cha": "CHA"}
 
+FEATURE_BLOCKLIST = {
+    "ability score improvement", "proficiencies", "languages", "size", "speed",
+    "creature type", "hit points", "skills",
+}
+
 STOCK_ACTIONS = [
     {"name": "Attack",       "source": "Core 5e", "source_type": "raw", "cost_type": "action",      "description": "Make one or more melee or ranged attacks. Number of attacks depends on class and level."},
     {"name": "Cast a Spell", "source": "Core 5e", "source_type": "raw", "cost_type": "cast_spell",  "description": "Cast a spell with a casting time of 1 action."},
@@ -192,15 +197,31 @@ def parse_character_pdf(file_bytes, spell_db_by_name=None):
         items.append({
             "name": n, "quantity": qty, "weight": weight, "rarity": "Common",
             "equipped": False, "attunement": n in attuned_names, "attuned": n in attuned_names,
-            "description": "", "charges": None,
+            "description": "", "charges": None, "granted_spells": [],
         })
 
+    item_by_name = {it["name"]: it for it in items}
     inventory = {"currency": currency, "items": items}
+
+    for key in fields:
+        wm = re.match(r"^Wpn Notes (\d+)$", key)
+        if not wm:
+            continue
+        cm = re.search(r"(\d+)\s*/\s*(\d+)\s*Charges", fields[key] or "", re.I)
+        if not cm:
+            continue
+        n = wm.group(1)
+        name_key = "Wpn Name" if n == "1" else f"Wpn Name {n}"
+        wname = (fields.get(name_key) or "").strip()
+        if wname in item_by_name:
+            item_by_name[wname]["charges"] = {"current": int(cm.group(1)), "max": int(cm.group(2)), "recharge": "dawn"}
 
     feature_blobs = [fields[k] for k in _numbered_keys(fields, "FeaturesTraits")]
     parsed_features = _parse_features(feature_blobs)
     features = {}
     for f in parsed_features:
+        if f["name"].strip().lower() in FEATURE_BLOCKLIST:
+            continue
         nm = f["name"]
         suffix = 2
         while nm in features:
@@ -239,6 +260,12 @@ def parse_character_pdf(file_bytes, spell_db_by_name=None):
             row = spell_rows.setdefault(idx, {"level": current_level})
             row[field] = fval
 
+    class_names = set()
+    for part in class_level_raw.split("/"):
+        cm = re.match(r"\s*(.+?)\s+\d+\s*$", part.strip())
+        if cm:
+            class_names.add(cm.group(1).strip().lower())
+
     known_spells = []
     spell_db_by_name = spell_db_by_name or {}
     for idx in sorted(spell_rows.keys()):
@@ -248,6 +275,7 @@ def parse_character_pdf(file_bytes, spell_db_by_name=None):
             continue
         clean_name = re.sub(r"\s*\[R\]\s*$", "", raw_name).strip()
         level = row.get("level", 0)
+        source = (row.get("Source") or "").strip()
         master = spell_db_by_name.get(clean_name.lower())
         if master:
             entry = dict(master)
@@ -261,9 +289,18 @@ def parse_character_pdf(file_bytes, spell_db_by_name=None):
                 "range": (row.get("Range") or "").strip(),
                 "components": (row.get("Components") or "").strip(),
                 "duration": duration,
-                "description": f"Imported from character sheet. Source: {(row.get('Source') or '').strip()}",
+                "description": f"Imported from character sheet. Source: {source}",
                 "classes": [],
             }
+
+        if source in item_by_name:
+            item_by_name[source]["granted_spells"].append({
+                "name": entry["name"], "level_int": entry.get("level_int", level), "charge_cost": 1,
+            })
+            continue
+
+        if source and source.lower() not in class_names:
+            entry["granted_by"] = source
         known_spells.append(entry)
 
     spell_slots = {str(lvl): {"current": mx, "max": mx} for lvl, mx in slot_max.items() if lvl > 0}

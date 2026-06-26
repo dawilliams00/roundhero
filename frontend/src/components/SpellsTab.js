@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
-import { slotColor } from '../utils/dnd';
+import { slotColor, maxPreparedSpells } from '../utils/dnd';
 import SpellBrowserModal from './SpellBrowserModal';
 import SpellDetailModal from './SpellDetailModal';
 import CustomSpellModal from './CustomSpellModal';
@@ -21,8 +21,10 @@ export default function SpellsTab() {
   const knownSpells = sd.known_spells || [];
   const spellLists  = sd.spell_lists || {};
   const activeList  = sd.active_list || null;
+  const maxPrepared = maxPreparedSpells(character.class_name, character.ability_scores);
+  const isAlwaysAvailable = s => s.ritual || !!s.granted_by;
   const visibleSpells = activeList && spellLists[activeList]
-    ? knownSpells.filter(s => spellLists[activeList].includes(s.name))
+    ? knownSpells.filter(s => spellLists[activeList].includes(s.name) || isAlwaysAvailable(s))
     : knownSpells;
   const spells = visibleSpells.filter(s => {
     const matchSearch = !search || s.name?.toLowerCase().includes(search.toLowerCase());
@@ -66,7 +68,10 @@ export default function SpellsTab() {
         <div className="card">
           <div style={{display:'flex',gap:8,marginBottom:10,alignItems:'center'}}>
             <span style={{color:'var(--text-dim)',fontSize:11}}>Showing:</span>
-            <div style={{flex:1,fontWeight:600,color:'var(--accent-light)',fontSize:13}}>{activeList || 'All Known Spells'}</div>
+            <div style={{flex:1,fontWeight:600,color:'var(--accent-light)',fontSize:13}}>
+              {activeList || 'All Known Spells'}
+              {maxPrepared != null && <span style={{color:'var(--text-dim)',fontWeight:400,fontSize:11}}> · prepares up to {maxPrepared}</span>}
+            </div>
             <button className="btn btn-secondary btn-sm" onClick={() => setManagingLists(true)}>Spell Lists</button>
           </div>
           <div style={{display:'flex',gap:8,marginBottom:12,flexWrap:'wrap'}}>
@@ -87,7 +92,7 @@ export default function SpellsTab() {
                 </div>
                 <div style={{flex:1}}>
                   <div style={{color:'var(--text-primary)',fontWeight:500,fontSize:13}}>{spell.name}</div>
-                  <div style={{color:'var(--text-dim)',fontSize:11}}>{spell.school} {spell.ritual?'· Ritual':''} {spell.concentration?'· Concentration':''}</div>
+                  <div style={{color:'var(--text-dim)',fontSize:11}}>{spell.school} {spell.ritual?'· Ritual':''} {spell.concentration?'· Concentration':''} {spell.granted_by?`· Granted by ${spell.granted_by}`:''}</div>
                 </div>
               </div>
             </div>
@@ -112,6 +117,7 @@ export default function SpellsTab() {
           knownSpells={knownSpells}
           spellLists={spellLists}
           activeList={activeList}
+          maxPrepared={maxPrepared}
           onSave={saveLists}
           onClose={() => setManagingLists(false)}
         />
