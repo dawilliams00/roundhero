@@ -101,7 +101,7 @@ def build_tracker_data(class_name, level, ability_scores):
         "spell_slots":  spell_slots,
         "item_charges": {},
         "conditions":   [],
-        "hp":           {"current": max_hp, "max": max_hp, "temp": 0},
+        "hp":           {"current": max_hp, "max": max_hp, "temp": 0, "max_override": None},
         "ac":           10 + dex_mod,
         "initiative":   dex_mod,
         "inspiration":  False,
@@ -142,25 +142,27 @@ def build_ae_data(class_name, level):
         {"name": "Readied Action",     "source": "Core 5e", "source_type": "raw", "cost_type": "reaction", "description": "Trigger the action you prepared with the Ready action."},
     ]
     features_raw = get_features_up_to_level(class_name, level)
-    class_features = []
+    sections = {"Action": [], "Bonus Action": [], "Reaction": [], "Free Action": [], "Passive": []}
+    cost_type_map = {"Action": "action", "Bonus Action": "bonus_action", "Reaction": "reaction", "Free Action": "free_action", "Passive": "passive"}
     for feat in features_raw:
         action = feat.get("action", "Passive")
-        if action == "Passive":
+        section = action if action in sections else "Passive"
+        if section == "Passive":
             continue
-        class_features.append({
+        sections[section].append({
             "name":        feat["name"],
             "source":      class_name,
             "source_type": "class",
-            "cost_type":   "feature",
+            "cost_type":   cost_type_map[section],
             "tracker_key": feat["name"],
             "description": feat.get("description", ""),
         })
     return {
-        "Action":        stock_actions + [f for f in class_features if f.get("cost_type") == "action" or "Action" in f.get("name","")],
-        "Bonus Action":  stock_bonus   + [f for f in class_features if "Bonus" in f.get("name","")],
-        "Reaction":      stock_reactions + [f for f in class_features if "Reaction" in f.get("name","")],
-        "Free Action":   [],
-        "Passive":       [f for f in class_features if f.get("cost_type") == "passive"],
+        "Action":        stock_actions + sections["Action"],
+        "Bonus Action":  stock_bonus   + sections["Bonus Action"],
+        "Reaction":      stock_reactions + sections["Reaction"],
+        "Free Action":   sections["Free Action"],
+        "Passive":       sections["Passive"],
     }
 
 def build_character(data):

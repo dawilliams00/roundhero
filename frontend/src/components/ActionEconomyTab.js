@@ -9,7 +9,7 @@ import CastSpellPickerModal from './CastSpellPickerModal';
 import ItemSpellsModal from './ItemSpellsModal';
 
 export default function ActionEconomyTab() {
-  const { character, useFeature, useSlot, doRest, saveTrackerData, useItemCharge } = useCharacter();
+  const { character, useFeature, useSlot, restoreSlot, doRest, saveTrackerData, useItemCharge } = useCharacter();
   const [detail, setDetail]     = useState(null);
   const [showCustom, setCustom] = useState(false);
   const [showRest, setRest]     = useState(false);
@@ -107,13 +107,19 @@ export default function ActionEconomyTab() {
         <div style={{padding:'8px 12px',borderBottom:'1px solid var(--border)',display:'flex',gap:8,flexWrap:'wrap',alignItems:'center',flexShrink:0}}>
           <span style={{color:'var(--text-dim)',fontSize:11,minWidth:40}}>Slots:</span>
           {slotLevels.map(([lvl, slot]) => (
-            <button key={lvl} onClick={() => useSlot(parseInt(lvl))} disabled={slot.current<=0}
-              style={{display:'flex',alignItems:'center',gap:4,padding:'3px 8px',borderRadius:12,
-                background: slot.current > 0 ? `var(--slot-${lvl})` : 'var(--border)',
-                color: slot.current > 0 ? '#fff' : 'var(--text-dim)',
-                border:'none',fontSize:12,fontWeight:500,opacity: slot.current<=0 ? 0.5 : 1}}>
-              L{lvl} {slot.current}/{slot.max}
-            </button>
+            <div key={lvl} style={{display:'flex',alignItems:'center',gap:2}}>
+              <button onClick={() => useSlot(parseInt(lvl))} disabled={slot.current<=0}
+                style={{display:'flex',alignItems:'center',gap:4,padding:'3px 8px',borderRadius:'12px 0 0 12px',
+                  background: slot.current > 0 ? `var(--slot-${lvl})` : 'var(--border)',
+                  color: slot.current > 0 ? '#fff' : 'var(--text-dim)',
+                  border:'none',fontSize:12,fontWeight:500,opacity: slot.current<=0 ? 0.5 : 1}}>
+                L{lvl} {slot.current}/{slot.max}
+              </button>
+              <button onClick={() => restoreSlot(parseInt(lvl))} disabled={slot.current>=slot.max} title="Restore 1 slot (undo accidental cast)"
+                style={{padding:'3px 6px',borderRadius:'0 12px 12px 0',background:'var(--bg-hover)',color:'var(--text-dim)',border:'none',fontSize:12,opacity: slot.current>=slot.max ? 0.4 : 1}}>
+                ↺
+              </button>
+            </div>
           ))}
         </div>
       )}

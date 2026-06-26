@@ -3,6 +3,7 @@ import { useCharacter } from '../context/CharacterContext';
 import AddItemModal from './AddItemModal';
 import ItemSpellsModal from './ItemSpellsModal';
 import ItemBrowserModal from './ItemBrowserModal';
+import ItemDetailModal from './ItemDetailModal';
 
 const CURRENCIES = ['cp','sp','ep','gp','pp'];
 
@@ -11,6 +12,7 @@ export default function InventoryTab() {
   const [adding, setAdding]   = useState(false);
   const [browsing, setBrowsing] = useState(false);
   const [editing, setEditing] = useState(null);
+  const [viewing, setViewing] = useState(null);
   const [viewingSpells, setViewingSpells] = useState(null);
 
   if (!character) return null;
@@ -73,7 +75,7 @@ export default function InventoryTab() {
         ) : items.map((item, i) => (
           <div key={i} style={{padding:'10px 0',borderBottom:'1px solid var(--border)'}}>
             <div style={{display:'flex',alignItems:'center',gap:8}}>
-              <div style={{flex:1,cursor:'pointer'}} onClick={() => setEditing(i)}>
+              <div style={{flex:1,cursor:'pointer'}} onClick={() => setViewing(i)}>
                 <div style={{display:'flex',alignItems:'center',gap:6}}>
                   <span style={{color:'var(--text-primary)',fontWeight:500,fontSize:13}}>{item.name}</span>
                   {item.quantity > 1 && <span style={{color:'var(--text-dim)',fontSize:11}}>×{item.quantity}</span>}
@@ -103,6 +105,13 @@ export default function InventoryTab() {
       {browsing && <ItemBrowserModal existingItems={items} onAdd={addItem} onClose={() => setBrowsing(false)} />}
       {editing !== null && (
         <AddItemModal item={items[editing]} onSave={(it) => updateItem(editing, it)} onClose={() => setEditing(null)} />
+      )}
+      {viewing !== null && (
+        <ItemDetailModal
+          item={items[viewing]}
+          onEdit={() => { setEditing(viewing); setViewing(null); }}
+          onClose={() => setViewing(null)}
+        />
       )}
       {viewingSpells !== null && (
         <ItemSpellsModal

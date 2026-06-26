@@ -79,6 +79,15 @@ export function CharacterProvider({ children }) {
     setCharacter(prev => ({ ...prev, tracker_data: r.data }));
   }, [character]);
 
+  const restoreSlot = useCallback(async (level) => {
+    if (!character) return;
+    const slots = character.tracker_data.spell_slots;
+    const slot = slots[String(level)];
+    if (!slot) return;
+    const newCurrent = Math.min(slot.max, (slot.current||0) + 1);
+    await saveTrackerData({ ...character.tracker_data, spell_slots: { ...slots, [level]: { ...slot, current: newCurrent } } });
+  }, [character, saveTrackerData]);
+
   const useItemCharge = useCallback(async (itemIndex, delta) => {
     if (!character) return;
     const items = character.tracker_data.inventory.items;
@@ -131,7 +140,7 @@ export function CharacterProvider({ children }) {
     <CharacterContext.Provider value={{
       character, characters, loading,
       fetchCharacters, loadCharacter, updateCharacter,
-      useFeature, useSlot, doRest, saveTrackerData, saveSpellData, importCharacter, resyncCharacter, deleteCharacter, useItemCharge, addActiveEffect, removeActiveEffect, setCharacter,
+      useFeature, useSlot, restoreSlot, doRest, saveTrackerData, saveSpellData, importCharacter, resyncCharacter, deleteCharacter, useItemCharge, addActiveEffect, removeActiveEffect, setCharacter,
     }}>
       {children}
     </CharacterContext.Provider>

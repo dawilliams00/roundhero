@@ -355,7 +355,7 @@ def parse_character_pdf(file_bytes, spell_db_by_name=None):
         "spell_slots": spell_slots,
         "item_charges": {},
         "conditions": [],
-        "hp": {"current": current_hp, "max": max_hp, "temp": temp_hp},
+        "hp": {"current": current_hp, "max": max_hp, "temp": temp_hp, "max_override": None},
         "hit_dice": hit_dice,
         "ac": ac,
         "initiative": initiative,
@@ -383,11 +383,12 @@ def parse_character_pdf(file_bytes, spell_db_by_name=None):
 def build_ae_data_from_features(features, class_level_raw):
     ae_data = {"Action": list(STOCK_ACTIONS), "Bonus Action": list(STOCK_BONUS),
                "Reaction": list(STOCK_REACTIONS), "Free Action": [], "Passive": []}
+    cost_type_map = {"Action": "action", "Bonus Action": "bonus_action", "Reaction": "reaction", "Free Action": "free_action", "Passive": "passive"}
     for fname, f in features.items():
         section = f["action"] if f["action"] in ae_data else "Passive"
         ae_data[section].append({
             "name": fname, "source": class_level_raw, "source_type": "imported",
-            "cost_type": "feature" if f["max"] > 0 else "passive",
+            "cost_type": cost_type_map[section],
             "tracker_key": fname, "description": f["description"],
         })
     return ae_data

@@ -17,7 +17,10 @@ export default function ItemSpellsModal({ item, onCast, onClose }) {
 
   const resolveSpell = (granted) => {
     const master = spellDb[granted.name.toLowerCase()];
-    if (master) return master;
+    if (master) {
+      const lvl = granted.cast_level ?? master.level_int;
+      return { ...master, level_int: lvl, level: String(lvl) };
+    }
     return {
       name: granted.name, level_int: granted.level_int || 0, level: String(granted.level_int || 0),
       school: '', ritual: false, concentration: false, casting_time: '', range: '', components: '',

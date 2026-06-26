@@ -4,6 +4,7 @@ import { modifier, modStr, hpColor, profBonus, ABILITY_KEYS } from '../utils/dnd
 import SavesModal from './SavesModal';
 import SkillsModal from './SkillsModal';
 import TraitsModal from './TraitsModal';
+import HPModal from './HPModal';
 
 function EditableStat({ label, value, onSave }) {
   const [editing, setEditing] = useState(false);
@@ -42,6 +43,7 @@ export default function CharacterHeader({ onBack }) {
   const [showSaves, setShowSaves]   = useState(false);
   const [showSkills, setShowSkills] = useState(false);
   const [showTraits, setShowTraits] = useState(false);
+  const [showHP, setShowHP]         = useState(false);
 
   if (!character) return null;
 
@@ -51,7 +53,8 @@ export default function CharacterHeader({ onBack }) {
   const slots  = td?.spell_slots || {};
   const prof   = profBonus(level);
   const con    = modifier(ab?.CON || 10);
-  const maxHp  = hp.max || (level * (({ Barbarian:12,Fighter:10,Paladin:10,Ranger:10,Monk:8,Rogue:8,Bard:8,Cleric:8,Druid:8,Warlock:8,Sorcerer:6,Wizard:6 }[class_name] || 8) / 2 + 1 + con));
+  const calcMaxHp = hp.max || (level * (({ Barbarian:12,Fighter:10,Paladin:10,Ranger:10,Monk:8,Rogue:8,Bard:8,Cleric:8,Druid:8,Warlock:8,Sorcerer:6,Wizard:6 }[class_name] || 8) / 2 + 1 + con));
+  const maxHp  = (hp.max_override > 0) ? hp.max_override : calcMaxHp;
   const curHp  = hp.current ?? maxHp;
   const ac     = td?.ac ?? (10 + dexMod);
   const init   = td?.initiative ?? dexMod;
@@ -66,7 +69,7 @@ export default function CharacterHeader({ onBack }) {
 
   const adjustHp = async delta => {
     const newHp = Math.max(0, Math.min(maxHp, curHp + delta));
-    await saveTrackerData({ ...td, hp: { ...hp, current: newHp, max: maxHp } });
+    await saveTrackerData({ ...td, hp: { ...hp, current: newHp, max: calcMaxHp } });
   };
 
   const setAc     = (v) => saveTrackerData({ ...td, ac: v });
@@ -98,7 +101,7 @@ export default function CharacterHeader({ onBack }) {
         <div style={{display:'flex',gap:12,alignItems:'center',flexWrap:'wrap'}}>
           <div style={{display:'flex',alignItems:'center',gap:6}}>
             <button onClick={() => adjustHp(-1)} style={{background:'var(--danger)',color:'#fff',borderRadius:4,width:24,height:24,fontWeight:700,fontSize:14}}>−</button>
-            <div style={{textAlign:'center',minWidth:60}}>
+            <div onClick={() => setShowHP(true)} style={{textAlign:'center',minWidth:60,cursor:'pointer'}}>
               <div style={{color:hpCol,fontWeight:700,fontSize:22,lineHeight:1}}>{curHp}<span style={{color:'var(--text-dim)',fontSize:13}}>/{maxHp}</span></div>
               <div style={{color:'var(--text-dim)',fontSize:10,marginTop:1}}>HP</div>
               <div style={{width:60,height:3,background:'var(--border)',borderRadius:2,marginTop:2}}>
@@ -157,6 +160,7 @@ export default function CharacterHeader({ onBack }) {
       {showSaves  && <SavesModal  onClose={() => setShowSaves(false)}  />}
       {showSkills && <SkillsModal onClose={() => setShowSkills(false)} />}
       {showTraits && <TraitsModal onClose={() => setShowTraits(false)} />}
+      {showHP     && <HPModal     onClose={() => setShowHP(false)}     />}
     </>
   );
 }
