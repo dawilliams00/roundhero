@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useCharacter } from '../context/CharacterContext';
+import api from '../utils/api';
 import { schoolColor, slotBadgeTextColor } from '../utils/dnd';
 
 export default function SpellTuckModal({ ability, onClose, onUse }) {
@@ -7,6 +8,18 @@ export default function SpellTuckModal({ ability, onClose, onUse }) {
   const [picking, setPicking] = useState(false);
   const [search, setSearch] = useState('');
   const [castResult, setCastResult] = useState(null);
+  const [classSpells, setClassSpells] = useState([]);
+  const [loadingSpells, setLoadingSpells] = useState(false);
+
+  const baseClass = (character?.class_name || '').split(/[\s/]/)[0];
+
+  useEffect(() => {
+    if (!picking || !baseClass) return;
+    setLoadingSpells(true);
+    api.get('/content/spells', { params: { class_name: baseClass } })
+      .then(r => setClassSpells(r.data))
+      .finally(() => setLoadingSpells(false));
+  }, [picking, baseClass]);
 
   if (!character) return null;
 
@@ -18,7 +31,7 @@ export default function SpellTuckModal({ ability, onClose, onUse }) {
   const current = feat.current ?? 0;
   const max = feat.max ?? 1;
 
-  const knownSpells = (character.spell_data?.known_spells || [])
+  const pickableSpells = classSpells
     .filter(s => !search || s.name.toLowerCase().includes(search.toLowerCase()))
     .sort((a,b) => (a.level_int - b.level_int) || a.name.localeCompare(b.name));
 
@@ -67,10 +80,12 @@ export default function SpellTuckModal({ ability, onClose, onUse }) {
             </>
           ) : (
             <>
-              <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search known spells..." style={{width:'100%',marginBottom:10}} autoFocus />
-              {knownSpells.length === 0 ? (
-                <div style={{color:'var(--text-dim)',fontSize:12,textAlign:'center',padding:24}}>No known spells. Add some in the Spells tab first.</div>
-              ) : knownSpells.map((s,i) => (
+              <input value={search} onChange={e=>setSearch(e.target.value)} placeholder={`Search ${baseClass || 'class'} spell list...`} style={{width:'100%',marginBottom:10}} autoFocus />
+              {loadingSpells ? (
+                <div style={{color:'var(--text-dim)',fontSize:12,textAlign:'center',padding:24}}>Loading spell list...</div>
+              ) : pickableSpells.length === 0 ? (
+                <div style={{color:'var(--text-dim)',fontSize:12,textAlign:'center',padding:24}}>No spells found for {baseClass || 'this class'}.</div>
+              ) : pickableSpells.map((s,i) => (
                 <div key={i} onClick={() => tuckSpell(s)} style={{display:'flex',alignItems:'center',gap:8,padding:'8px 4px',borderBottom:'1px solid var(--border)',cursor:'pointer'}}>
                   <div style={{background: s.level_int===0?'var(--text-dim)':`var(--slot-${s.level_int})`,color: s.level_int===0 ? '#fff' : slotBadgeTextColor(s.level_int),borderRadius:4,padding:'1px 6px',fontSize:10,fontWeight:600,minWidth:24,textAlign:'center'}}>
                     {s.level_int===0?'C':s.level_int}

@@ -40,11 +40,11 @@ function EditableStat({ label, value, onSave, color }) {
   );
 }
 
-function PMStat({ label, value, color, onAdjust }) {
+function PMStat({ label, value, color, onAdjust, onClick }) {
   return (
     <div style={{display:'flex',alignItems:'center',gap:4}}>
       <button onClick={() => onAdjust(-1)} style={{background:'var(--danger)',color:'#fff',borderRadius:4,width:22,height:22,fontWeight:700,fontSize:13,flexShrink:0}}>−</button>
-      <div className="stat-box">
+      <div className="stat-box" onClick={onClick} style={{cursor: onClick ? 'pointer' : 'default'}}>
         <div className="stat-value" style={{color}}>{value}</div>
         <div className="stat-label">{label}</div>
       </div>
@@ -59,6 +59,41 @@ function AbilityBox({ abbr, score }) {
       <div className="stat-label" style={{marginTop:0,marginBottom:2}}>{abbr}</div>
       <div className="stat-value">{score}</div>
       <div className="stat-sub">{modStr(score)}</div>
+    </div>
+  );
+}
+
+const COIN_TYPES = [
+  { key: 'pp', abbr: 'PP', color: '#E0E0E8' },
+  { key: 'gp', abbr: 'GP', color: '#E5B80B' },
+  { key: 'ep', abbr: 'EP', color: '#C9D67D' },
+  { key: 'sp', abbr: 'SP', color: '#B8C2CC' },
+  { key: 'cp', abbr: 'CP', color: '#C58444' },
+];
+
+function CoinInput({ coin, value, onCommit }) {
+  const [val, setVal] = useState(value);
+  return (
+    <div style={{display:'flex',alignItems:'center',gap:6}}>
+      <span style={{color: coin.color, fontWeight:700, fontSize:11, minWidth:20}}>{coin.abbr}</span>
+      <input
+        value={val}
+        onChange={e => setVal(e.target.value)}
+        onFocus={() => setVal(value)}
+        onBlur={() => { const n = parseInt(val)||0; setVal(n); if (n !== value) onCommit(n); }}
+        onKeyDown={e => e.key === 'Enter' && e.target.blur()}
+        style={{width:80,textAlign:'right',padding:'2px 8px',fontSize:13,fontWeight:600,border:`1px solid ${coin.color}`,borderRadius:'var(--radius-sm)',background:'var(--bg-card)',color: coin.color}}
+      />
+    </div>
+  );
+}
+
+function CurrencyBox({ currency, onCommit }) {
+  return (
+    <div style={{display:'flex',flexDirection:'column',gap:3}}>
+      {COIN_TYPES.map(coin => (
+        <CoinInput key={coin.key} coin={coin} value={currency[coin.key] || 0} onCommit={v => onCommit(coin.key, v)} />
+      ))}
     </div>
   );
 }
@@ -78,6 +113,8 @@ export default function CharacterHeader({ onBack }) {
   const dexMod = modifier(ab?.DEX || 10);
   const hp     = td?.hp || { current: null, max: null, temp: 0 };
   const slots  = td?.spell_slots || {};
+  const inventory = td?.inventory || { currency: {}, items: [] };
+  const currency  = inventory.currency || {};
   const prof   = profBonus(level);
   const con    = modifier(ab?.CON || 10);
   const calcMaxHp = hp.max || (level * (({ Barbarian:12,Fighter:10,Paladin:10,Ranger:10,Monk:8,Rogue:8,Bard:8,Cleric:8,Druid:8,Warlock:8,Sorcerer:6,Wizard:6 }[class_name] || 8) / 2 + 1 + con));
@@ -110,8 +147,8 @@ export default function CharacterHeader({ onBack }) {
   const setAc     = (v) => saveTrackerData({ ...td, ac: v });
   const setInit   = (v) => saveTrackerData({ ...td, initiative: v });
   const toggleInspiration = () => saveTrackerData({ ...td, inspiration: !insp });
+  const setCurrencyCoin = (k, v) => saveTrackerData({ ...td, inventory: { ...inventory, currency: { ...currency, [k]: v } } });
 
-  const hpPct = maxHp > 0 ? curHp / maxHp : 0;
   const hpCol = hpColor(curHp, maxHp);
 
   const slotLevels = Object.entries(slots).filter(([,s]) => s.max > 0);
@@ -134,11 +171,8 @@ export default function CharacterHeader({ onBack }) {
         </div>
 
         <div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}>
-          <PMStat label="HP" value={`${curHp}/${maxHp}`} color={hpCol} onAdjust={adjustHp} />
+          <PMStat label="HP" value={`${curHp}/${maxHp}`} color={hpCol} onAdjust={adjustHp} onClick={() => setShowHP(true)} />
           {tempHp > 0 && <PMStat label="Temp HP" value={tempHp} color={hpCol} onAdjust={adjustTempHp} />}
-          <div onClick={() => setShowHP(true)} style={{width:60,height:3,background:'var(--border)',borderRadius:2,cursor:'pointer',alignSelf:'center'}} title="Open HP management">
-            <div style={{width:`${hpPct*100}%`,height:'100%',background:hpCol,borderRadius:2,transition:'width 0.3s'}}/>
-          </div>
 
           <EditableStat label="AC" value={ac} onSave={setAc} />
           <EditableStat label="INIT" value={init} onSave={setInit} />
@@ -156,6 +190,8 @@ export default function CharacterHeader({ onBack }) {
               <AbilityBox key={k} abbr={k} score={ab?.[k]||10} />
             ))}
           </div>
+
+          <CurrencyBox currency={currency} onCommit={setCurrencyCoin} />
 
           {slotLevels.length > 0 && (
             <div style={{display:'flex',gap:4,flexWrap:'wrap',alignItems:'center'}}>

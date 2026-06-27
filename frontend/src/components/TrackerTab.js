@@ -2,22 +2,43 @@ import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
 
 export default function TrackerTab() {
-  const { character, saveTrackerData, addActiveEffect, removeActiveEffect } = useCharacter();
+  const { character, saveTrackerData, updateCharacter, addActiveEffect, removeActiveEffect } = useCharacter();
   const [editHP, setEditHP] = useState(false);
   const [hpInput, setHpInput] = useState('');
   const [newEffect, setNewEffect] = useState('');
 
   if (!character) return null;
   const td       = character.tracker_data || {};
+  const ae       = character.ae_data || {};
   const features = td.features   || {};
   const charges  = td.item_charges || {};
   const conds    = td.conditions || [];
   const effects  = td.active_effects || [];
+  const items    = td.inventory?.items || [];
+
+  const isCustomFeature = (name) => Object.values(ae).some(arr => (arr||[]).some(a => a.tracker_key === name && a.source_type === 'custom'));
+  const removeFeature = async (name) => {
+    if (!window.confirm(`Remove "${name}"? This can't be undone.`)) return;
+    const newFeatures = { ...features };
+    delete newFeatures[name];
+    const newAe = {};
+    for (const [section, arr] of Object.entries(ae)) {
+      newAe[section] = (arr||[]).filter(a => a.tracker_key !== name);
+    }
+    await updateCharacter(character.id, { tracker_data: { ...td, features: newFeatures }, ae_data: newAe });
+  };
 
   const handleAddEffect = () => {
     if (!newEffect.trim()) return;
     addActiveEffect(newEffect.trim());
     setNewEffect('');
+  };
+
+  const attunableItems = items.map((it,i) => ({ it, idx: i })).filter(({it}) => it.attunement);
+  const attunedCount = attunableItems.filter(({it}) => it.attuned).length;
+  const toggleAttuned = (idx) => {
+    const newItems = items.map((it,i) => i===idx ? { ...it, attuned: !it.attuned } : it);
+    saveTrackerData({ ...td, inventory: { ...td.inventory, items: newItems } });
   };
 
   const adjustFeature = async (name, delta) => {
@@ -48,6 +69,23 @@ export default function TrackerTab() {
         </div>
       )}
 
+      {attunableItems.length > 0 && (
+        <div className="card" style={{marginBottom:12}}>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
+            <div style={{color:'var(--text-secondary)',fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:1}}>Attunement</div>
+            <div style={{color: attunedCount > 3 ? 'var(--danger)' : 'var(--accent-light)',fontWeight:700,fontSize:15}}>{attunedCount}/3</div>
+          </div>
+          {attunableItems.map(({it, idx}) => (
+            <div key={idx} onClick={() => toggleAttuned(idx)} style={{display:'flex',alignItems:'center',gap:8,padding:'6px 0',borderBottom:'1px solid var(--border)',cursor:'pointer'}}>
+              <div style={{width:8,height:8,borderRadius:'50%',background: it.attuned ? 'var(--accent-light)' : 'transparent',border:'1px solid var(--accent-light)',flexShrink:0}}/>
+              <span style={{color: it.attuned ? 'var(--text-primary)' : 'var(--text-dim)',fontSize:13,flex:1}}>{it.name}</span>
+              <span style={{color:'var(--text-dim)',fontSize:11}}>{it.attuned ? 'Attuned' : 'Click to attune'}</span>
+            </div>
+          ))}
+          {attunedCount > 3 && <div style={{color:'var(--danger)',fontSize:11,marginTop:6}}>Over the 3-item attunement limit.</div>}
+        </div>
+      )}
+
       {featList.length > 0 && (
         <div className="card" style={{marginBottom:12}}>
           <div style={{color:'var(--text-secondary)',fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:1,marginBottom:10}}>Features & Abilities</div>
@@ -61,6 +99,9 @@ export default function TrackerTab() {
                 <button onClick={() => adjustFeature(name,-1)} style={{background:'var(--danger)',color:'#fff',borderRadius:4,width:22,height:22,fontWeight:700,fontSize:14}}>−</button>
                 <span style={{color: feat.current>0 ? 'var(--success)' : 'var(--danger)',fontWeight:700,fontSize:15,minWidth:36,textAlign:'center'}}>{feat.current}/{feat.max}</span>
                 <button onClick={() => adjustFeature(name,1)} style={{background:'var(--success)',color:'#fff',borderRadius:4,width:22,height:22,fontWeight:700,fontSize:14}}>+</button>
+                {isCustomFeature(name) && (
+                  <button onClick={() => removeFeature(name)} title="Remove this custom ability" style={{background:'var(--bg-hover)',color:'var(--text-dim)',borderRadius:4,width:22,height:22,fontWeight:700,fontSize:14,marginLeft:4}}>×</button>
+                )}
               </div>
             </div>
           ))}
@@ -90,9 +131,14 @@ export default function TrackerTab() {
         <div className="card" style={{marginBottom:12}}>
           <div style={{color:'var(--text-secondary)',fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:1,marginBottom:10}}>Passive Features</div>
           {infoList.map(([name, feat]) => (
-            <div key={name} style={{padding:'6px 0',borderBottom:'1px solid var(--border)'}}>
-              <div style={{color:'var(--text-primary)',fontSize:13,fontWeight:500}}>{name}</div>
-              {feat.description && <div style={{color:'var(--text-dim)',fontSize:11,marginTop:2,lineHeight:1.5}}>{feat.description.substring(0,120)}{feat.description.length>120?'…':''}</div>}
+            <div key={name} style={{padding:'6px 0',borderBottom:'1px solid var(--border)',display:'flex',alignItems:'flex-start',gap:8}}>
+              <div style={{flex:1}}>
+                <div style={{color:'var(--text-primary)',fontSize:13,fontWeight:500}}>{name}</div>
+                {feat.description && <div style={{color:'var(--text-dim)',fontSize:11,marginTop:2,lineHeight:1.5}}>{feat.description.substring(0,120)}{feat.description.length>120?'…':''}</div>}
+              </div>
+              {isCustomFeature(name) && (
+                <button onClick={() => removeFeature(name)} title="Remove this custom ability" style={{background:'var(--bg-hover)',color:'var(--text-dim)',borderRadius:4,width:22,height:22,fontWeight:700,fontSize:14,flexShrink:0}}>×</button>
+              )}
             </div>
           ))}
         </div>

@@ -5,8 +5,6 @@ import ItemSpellsModal from './ItemSpellsModal';
 import ItemBrowserModal from './ItemBrowserModal';
 import ItemDetailModal from './ItemDetailModal';
 
-const CURRENCIES = ['cp','sp','ep','gp','pp'];
-
 export default function InventoryTab() {
   const { character, saveTrackerData } = useCharacter();
   const [adding, setAdding]   = useState(false);
@@ -25,7 +23,6 @@ export default function InventoryTab() {
   const addItem = (item) => save({ ...inv, items: [...items, item] });
   const updateItem = (idx, item) => save({ ...inv, items: items.map((it,i) => i===idx ? item : it) });
   const removeItem = (idx) => save({ ...inv, items: items.filter((_,i) => i!==idx) });
-  const setCurrency = (k, v) => save({ ...inv, currency: { ...inv.currency, [k]: parseInt(v)||0 } });
 
   const castItemSpell = (idx, chargeCost) => {
     const item = items[idx];
@@ -45,22 +42,6 @@ export default function InventoryTab() {
 
   return (
     <div style={{flex:1,overflowY:'auto',padding:12}}>
-      <div className="card" style={{marginBottom:12}}>
-        <div style={{color:'var(--text-secondary)',fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:1,marginBottom:10}}>Currency</div>
-        <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
-          {CURRENCIES.map(c => (
-            <div key={c} style={{textAlign:'center'}}>
-              <input
-                type="number" min={0} value={inv.currency?.[c] ?? 0}
-                onChange={e => setCurrency(c, e.target.value)}
-                style={{width:56,textAlign:'center'}}
-              />
-              <div style={{color:'var(--text-dim)',fontSize:10,textTransform:'uppercase',marginTop:2}}>{c}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
       <div className="card">
         <div style={{display:'flex',alignItems:'center',marginBottom:10}}>
           <div style={{color:'var(--text-secondary)',fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:1,flex:1}}>
