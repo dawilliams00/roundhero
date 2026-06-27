@@ -8,6 +8,7 @@ import ItemDetailModal from './ItemDetailModal';
 import SpellTuckModal from './SpellTuckModal';
 import WeaponAttackModal from './WeaponAttackModal';
 import ConcentrationModal from './ConcentrationModal';
+import SorceryPointsModal from './SorceryPointsModal';
 
 const ITEM_BUCKET = { action: 'Action', bonus_action: 'Bonus Action', reaction: 'Reaction' };
 const ITEM_COST_OPTIONS = [
@@ -32,6 +33,7 @@ export default function ActionEconomyTab() {
   // dismissed per-turn only - they don't consume anything, just a "got it" ack that
   // resets on New Turn / re-entering combat, same lifecycle as the turn-bucket state.
   const [dismissedReminders, setDismissedReminders] = useState({});
+  const [showSorceryPoints, setShowSorceryPoints] = useState(false);
 
   if (!character) return null;
 
@@ -46,6 +48,12 @@ export default function ActionEconomyTab() {
   const isHasted = (td.active_effects || []).includes(HASTED_EFFECT);
   const concSlots = td.concentration?.slots || [];
   const concMaxSlots = concentrationSlotCount(items);
+  // Sorcery Points/Metamagic management (SorceryPointsModal) is also reachable from the
+  // Feats/Attunement tab - surfaced here too since "anything with a use/rest/charge
+  // belongs on the AE tab" is the standing rule for this tab now. Detected by substring
+  // so it works whether the feature is the engine's exact name or a PDF-imported variant.
+  const sorceryFeatureName = Object.keys(features).find(n => n.toLowerCase().includes('font of magic'));
+  const knownMetamagic = td.metamagic_known || [];
 
   // Lethargic RAW lasts "until the end of your next turn" - this app has no real
   // round/turn counter to time that precisely against, so clicking New Turn (the
@@ -312,9 +320,10 @@ export default function ActionEconomyTab() {
                 const depleted = uses && uses.current <= 0;
                 const isCastSpell = ability.cost_type === 'cast_spell';
                 const isTuck = !isCastSpell && !!features[ability.tracker_key]?.spell_picker;
+                const isSorcery = !isCastSpell && !isTuck && ability.tracker_key === sorceryFeatureName;
                 const bucket = bucketForAbility(ability, section);
                 const bucketUsed = isBucketUsed(bucket);
-                const unavailable = depleted || bucketUsed;
+                const unavailable = (depleted && !isSorcery) || bucketUsed;
                 return (
                   <div key={i} style={{display:'flex',alignItems:'center',padding:'8px 12px',borderBottom:'1px solid var(--border)',background: unavailable ? 'var(--bg-primary)' : 'var(--bg-card)',opacity: unavailable ? 0.5 : 1,gap:8}}>
                     <div style={{width:60,flexShrink:0,display:'flex',justifyContent:'center'}}>
@@ -328,20 +337,28 @@ export default function ActionEconomyTab() {
                           OPEN
                         </button>
                       )}
-                      {!isCastSpell && !isTuck && !depleted && (
+                      {isSorcery && (
+                        <button className="btn btn-sm" onClick={() => setShowSorceryPoints(true)} style={{background:'var(--accent)',color:'#fff',minWidth:36}}>
+                          🔮
+                        </button>
+                      )}
+                      {!isCastSpell && !isTuck && !isSorcery && !depleted && (
                         <button className="btn btn-sm" onClick={() => handleUse(ability, section)} disabled={bucketUsed}
                           style={{background: bucketUsed ? 'var(--border)' : 'var(--accent)',color:'#fff',minWidth:36}}>
                           USE
                         </button>
                       )}
                     </div>
-                    <div style={{flex:1,cursor:'pointer'}} onClick={() => { if (isTuck) setTuckTarget({ ability, section }); else setDetail(ability); }}>
-                      <div style={{color: unavailable ? 'var(--text-dim)' : 'var(--text-primary)',fontWeight:500,fontSize:13,textDecoration: depleted ? 'line-through' : 'none'}}>
+                    <div style={{flex:1,cursor:'pointer'}} onClick={() => { if (isTuck) setTuckTarget({ ability, section }); else if (isSorcery) setShowSorceryPoints(true); else setDetail(ability); }}>
+                      <div style={{color: unavailable ? 'var(--text-dim)' : 'var(--text-primary)',fontWeight:500,fontSize:13,textDecoration: depleted && !isSorcery ? 'line-through' : 'none'}}>
                         {isTuck ? '🃏 ' : ''}{ability.name}
                       </div>
                       {ability.source && <div style={{color:'var(--text-dim)',fontSize:11}}>{ability.source}</div>}
                       {isTuck && features[ability.tracker_key]?.tucked_spell && (
                         <div style={{color:'var(--accent-light)',fontSize:11}}>Tucked: {features[ability.tracker_key].tucked_spell}</div>
+                      )}
+                      {isSorcery && knownMetamagic.length > 0 && (
+                        <div style={{color:'var(--accent-light)',fontSize:11}}>Metamagic: {knownMetamagic.join(', ')}</div>
                       )}
                       {bucketUsed && !depleted && <div style={{color:'var(--warning)',fontSize:10}}>Already used this turn</div>}
                     </div>
@@ -355,6 +372,9 @@ export default function ActionEconomyTab() {
       </div>
 
       {detail    && <AbilityDetailModal ability={detail} onClose={() => setDetail(null)} />}
+      {showSorceryPoints && sorceryFeatureName && (
+        <SorceryPointsModal featureName={sorceryFeatureName} onClose={() => setShowSorceryPoints(false)} />
+      )}
       {castingSpell && (
         <CastSpellPickerModal bucket={castingBucket} onClose={() => { setCastingSpell(false); setCastingBucket(null); }} />
       )}
