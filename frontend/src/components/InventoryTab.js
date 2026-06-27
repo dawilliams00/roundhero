@@ -7,6 +7,15 @@ import ItemBrowserModal from './ItemBrowserModal';
 import WeaponBrowserModal from './WeaponBrowserModal';
 import ItemDetailModal from './ItemDetailModal';
 
+const RARITY_ORDER = ['Common','Uncommon','Rare','Very Rare','Legendary','Artifact'];
+const SORT_OPTIONS = [
+  { value: 'default',  label: 'Sort: Default' },
+  { value: 'name',     label: 'Sort: Name (A-Z)' },
+  { value: 'weight',   label: 'Sort: Weight (heaviest)' },
+  { value: 'rarity',   label: 'Sort: Rarity' },
+  { value: 'equipped', label: 'Sort: Equipped first' },
+];
+
 export default function InventoryTab() {
   const { character, saveTrackerData } = useCharacter();
   const [adding, setAdding]   = useState(false);
@@ -15,6 +24,7 @@ export default function InventoryTab() {
   const [editing, setEditing] = useState(null);
   const [viewing, setViewing] = useState(null);
   const [viewingSpells, setViewingSpells] = useState(null);
+  const [sortBy, setSortBy] = useState('default');
 
   if (!character) return null;
   const td  = character.tracker_data || {};
@@ -67,6 +77,19 @@ export default function InventoryTab() {
 
   const totalWeight = items.reduce((sum,it) => sum + (it.weight||0) * (it.quantity||1), 0);
 
+  // Sort a (item, original-index) pairing rather than the items array itself, so every
+  // row's edit/remove/view callback still points at the right item in the unsorted
+  // tracker_data array regardless of display order.
+  const sortedItems = items.map((it, i) => ({ it, idx: i })).sort((a, b) => {
+    switch (sortBy) {
+      case 'name': return a.it.name.localeCompare(b.it.name);
+      case 'weight': return (b.it.weight||0) - (a.it.weight||0);
+      case 'rarity': return RARITY_ORDER.indexOf(a.it.rarity) - RARITY_ORDER.indexOf(b.it.rarity);
+      case 'equipped': return (b.it.equipped?1:0) - (a.it.equipped?1:0);
+      default: return 0;
+    }
+  });
+
   return (
     <div style={{flex:1,overflowY:'auto',padding:12}}>
       <div className="card">
@@ -74,6 +97,9 @@ export default function InventoryTab() {
           <div style={{color:'var(--text-secondary)',fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:1,flex:1}}>
             Items <span style={{color:'var(--text-dim)',fontWeight:400}}>· {totalWeight.toFixed(1)} lb</span>
           </div>
+          <select value={sortBy} onChange={e => setSortBy(e.target.value)} style={{fontSize:11,padding:'2px 4px',marginRight:8}}>
+            {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
           <button className="btn btn-secondary btn-sm" onClick={() => setBrowsing(true)}>Add from DB</button>
           <button className="btn btn-secondary btn-sm" onClick={() => setBrowsingWeapons(true)}>Add Weapon</button>
           <button className="btn btn-primary btn-sm" onClick={() => setAdding(true)}>+ Add Custom</button>
@@ -81,7 +107,7 @@ export default function InventoryTab() {
 
         {items.length === 0 ? (
           <div style={{color:'var(--text-dim)',fontSize:12,textAlign:'center',padding:16}}>No items yet.</div>
-        ) : items.map((item, i) => (
+        ) : sortedItems.map(({it: item, idx: i}) => (
           <div key={i} style={{padding:'10px 0',borderBottom:'1px solid var(--border)'}}>
             <div style={{display:'flex',alignItems:'center',gap:8}}>
               <div style={{flex:1,cursor:'pointer'}} onClick={() => setViewing(i)}>

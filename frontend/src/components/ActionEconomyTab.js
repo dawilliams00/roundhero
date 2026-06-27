@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
-import { SECTION_ORDER, SECTION_COLORS, slotBadgeTextColor } from '../utils/dnd';
+import { SECTION_ORDER, SECTION_COLORS, slotBadgeTextColor, concentrationSlotCount } from '../utils/dnd';
 import AbilityDetailModal from './AbilityDetailModal';
 import CustomAbilityModal from './CustomAbilityModal';
 import CastSpellPickerModal from './CastSpellPickerModal';
@@ -8,6 +8,7 @@ import ItemSpellsModal from './ItemSpellsModal';
 import SpellTuckModal from './SpellTuckModal';
 import FeatBrowserModal from './FeatBrowserModal';
 import WeaponAttackModal from './WeaponAttackModal';
+import ConcentrationModal from './ConcentrationModal';
 
 const ITEM_BUCKET = { action: 'Action', bonus_action: 'Bonus Action', reaction: 'Reaction' };
 const ITEM_COST_OPTIONS = [
@@ -28,6 +29,7 @@ export default function ActionEconomyTab() {
   const [viewingItemSpells, setViewingItemSpells] = useState(null);
   const [tuckTarget, setTuckTarget] = useState(null);
   const [attackingWeapon, setAttackingWeapon] = useState(null);
+  const [showConcentration, setShowConcentration] = useState(false);
 
   if (!character) return null;
 
@@ -40,6 +42,8 @@ export default function ActionEconomyTab() {
   const weaponItems = items.map((it,i) => ({ it, idx: i })).filter(({it}) => it.is_weapon);
   const inInitiative = !!td.in_initiative;
   const isHasted = (td.active_effects || []).includes('Hasted');
+  const concSlots = td.concentration?.slots || [];
+  const concMaxSlots = concentrationSlotCount(items);
 
   const resetTurn = () => setTurnUsed({ Action: false, 'Bonus Action': false, Reaction: false, Haste: false });
 
@@ -122,6 +126,20 @@ export default function ActionEconomyTab() {
         <button className="btn btn-sm" onClick={toggleInitiative} style={{background: inInitiative ? 'var(--danger)' : 'var(--success)',color: '#fff',fontWeight:600}}>
           {inInitiative ? 'Stop Initiative' : 'Start Initiative'}
         </button>
+        <div style={{display:'flex',gap:4}}>
+          {Array.from({ length: concMaxSlots }, (_, idx) => {
+            const spell = (concSlots[idx]?.spell || '').trim();
+            return (
+              <div key={idx} onClick={() => setShowConcentration(true)} title="Concentration - click to manage"
+                style={{fontSize:11,padding:'3px 8px',borderRadius:12,cursor:'pointer',fontWeight:600,
+                  background: spell ? 'var(--success)' : 'var(--border)',
+                  color: spell ? '#fff' : 'var(--text-dim)',
+                  maxWidth:120,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+                CON{concMaxSlots > 1 ? ` ${idx+1}` : ''}: {spell ? spell : '--'}
+              </div>
+            );
+          })}
+        </div>
         {inInitiative && (
           <div style={{display:'flex',gap:4}}>
             {(isHasted ? ['Action','Bonus Action','Reaction','Haste'] : ['Action','Bonus Action','Reaction']).map(s => (
@@ -321,6 +339,7 @@ export default function ActionEconomyTab() {
       {attackingWeapon !== null && (
         <WeaponAttackModal itemIndex={attackingWeapon} onClose={() => setAttackingWeapon(null)} />
       )}
+      {showConcentration && <ConcentrationModal onClose={() => setShowConcentration(false)} />}
     </div>
   );
 }

@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
-import { schoolColor, getSpellcastingBlocks, scaleSpellDamage, rollDamage } from '../utils/dnd';
+import { schoolColor, getSpellcastingBlocks, scaleSpellDamage, rollDamage, concentrationSlotCount } from '../utils/dnd';
 
 const SELF_TARGET_EFFECTS = { haste: 'Hasted' };
 
 export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuccess }) {
-  const { character, useSlot, addActiveEffect } = useCharacter();
+  const { character, useSlot, addActiveEffect, setConcentration } = useCharacter();
   const [casting, setCasting] = useState(false);
   const [cast, setCast]       = useState(null);
   const [awaitingTarget, setAwaitingTarget] = useState(false);
   const [pendingDamage, setPendingDamage] = useState(null);
   const [damageResult, setDamageResult] = useState(null);
+  const [concPrompt, setConcPrompt] = useState(null);
 
   if (!character) return null;
   const slots = character.tracker_data?.spell_slots || {};
@@ -27,6 +28,45 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
 
   const rollNow = () => setDamageResult({ ...pendingDamage, total: rollDamage(pendingDamage) });
 
+  const continueAfterCast = (levelUsed) => {
+    const dmg = scaleSpellDamage(spell, levelUsed);
+    if (dmg) {
+      setPendingDamage(dmg);
+    }
+    if (selfEffect) {
+      setAwaitingTarget(true);
+    } else if (!dmg) {
+      setTimeout(finish, 700);
+    }
+  };
+
+  // Auto-fills an open concentration slot, same as casting does in the Pi tracker this
+  // was ported from. Only prompts the player when every active slot is already taken -
+  // if there's room, it tracks silently. Returns false while waiting on that prompt.
+  const tryTrackConcentration = async (levelUsed) => {
+    if (!spell.concentration) return true;
+    const items = character?.tracker_data?.inventory?.items;
+    const maxSlots = concentrationSlotCount(items);
+    const slots = character?.tracker_data?.concentration?.slots || [];
+    for (let i = 0; i < maxSlots; i++) {
+      if (!slots[i]?.spell) {
+        await setConcentration(i, spell.name, levelUsed);
+        return true;
+      }
+    }
+    setConcPrompt({
+      levelUsed,
+      options: Array.from({ length: maxSlots }, (_, i) => ({ idx: i, spell: slots[i]?.spell || '' })),
+    });
+    return false;
+  };
+
+  const resolveConcPrompt = async (idx, levelUsed) => {
+    if (idx != null) await setConcentration(idx, spell.name, levelUsed);
+    setConcPrompt(null);
+    continueAfterCast(levelUsed);
+  };
+
   const doCast = async () => {
     setCasting(true);
     try {
@@ -41,15 +81,8 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
         setCast(`Cast at level ${castLevel}!`);
         levelUsed = castLevel;
       }
-      const dmg = scaleSpellDamage(spell, levelUsed);
-      if (dmg) {
-        setPendingDamage(dmg);
-      }
-      if (selfEffect) {
-        setAwaitingTarget(true);
-      } else if (!dmg) {
-        setTimeout(finish, 700);
-      }
+      const tracked = await tryTrackConcentration(levelUsed);
+      if (tracked) continueAfterCast(levelUsed);
     } finally { setCasting(false); }
   };
 
@@ -94,7 +127,18 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
           <p style={{color:'var(--text-secondary)',lineHeight:1.7,whiteSpace:'pre-wrap'}}>{spell.description}</p>
         </div>
         <div className="modal-footer" style={{flexDirection:'column'}}>
-          {damageResult ? (
+          {concPrompt ? (
+            <div style={{width:'100%',background:'var(--bg-primary)',borderRadius:'var(--radius-sm)',padding:12,textAlign:'center'}}>
+              <div style={{color:'var(--warning)',fontWeight:700,marginBottom:8}}>Concentration full</div>
+              <div style={{color:'var(--text-secondary)',fontSize:12,marginBottom:10}}>Replace which spell with {spell.name}?</div>
+              {concPrompt.options.map(o => (
+                <button key={o.idx} className="btn btn-secondary" style={{width:'100%',marginBottom:6}} onClick={() => resolveConcPrompt(o.idx, concPrompt.levelUsed)}>
+                  Replace: {o.spell || 'empty'}
+                </button>
+              ))}
+              <button className="btn btn-secondary" style={{width:'100%'}} onClick={() => resolveConcPrompt(null, concPrompt.levelUsed)}>Don't Track</button>
+            </div>
+          ) : damageResult ? (
             <div style={{width:'100%',background:'var(--bg-primary)',borderRadius:'var(--radius-sm)',padding:12,textAlign:'center'}}>
               <div style={{color:'var(--text-dim)',fontSize:11,textTransform:'uppercase',letterSpacing:1,marginBottom:4}}>
                 {damageResult.label} {spell.damage_type} damage

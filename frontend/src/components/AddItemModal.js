@@ -14,6 +14,7 @@ export default function AddItemModal({ item, onSave, onClose }) {
     charges_current: item.charges?.current ?? 0,
     charges_max: item.charges?.max ?? 0,
     recharge: item.charges?.recharge || 'none',
+    recharge_amount: item.charges?.recharge_amount || '',
     granted_spells: item.granted_spells || [],
     is_weapon: !!item.is_weapon,
     weapon_category: item.weapon_category || 'Simple',
@@ -30,7 +31,7 @@ export default function AddItemModal({ item, onSave, onClose }) {
   } : {
     name: '', quantity: 1, weight: 0, rarity: 'Common',
     equipped: false, attunement: false, attuned: false,
-    has_charges: false, charges_current: 0, charges_max: 0, recharge: 'none',
+    has_charges: false, charges_current: 0, charges_max: 0, recharge: 'none', recharge_amount: '',
     description: '', granted_spells: [],
     is_weapon: false, weapon_category: 'Simple', weapon_range: 'Melee',
     damage_dice: '', damage_type: 'Slashing', properties: [],
@@ -58,7 +59,10 @@ export default function AddItemModal({ item, onSave, onClose }) {
       attunement: !!form.attunement,
       attuned: !!form.attuned,
       description: form.description,
-      charges: form.has_charges ? { current: parseInt(form.charges_current)||0, max: parseInt(form.charges_max)||0, recharge: form.recharge } : null,
+      // recharge_amount (e.g. "2d4+2" for a partial recharge like Staff of the Magi) must be
+      // carried through explicitly - omitting it here previously meant editing a partial-
+      // recharge item silently turned it into a full-recharge item on every save.
+      charges: form.has_charges ? { current: parseInt(form.charges_current)||0, max: parseInt(form.charges_max)||0, recharge: form.recharge, ...(form.recharge_amount.trim() ? { recharge_amount: form.recharge_amount.trim() } : {}) } : null,
       granted_spells: form.granted_spells.filter(s => s.name.trim()).map(s => ({ name: s.name.trim(), level_int: parseInt(s.level_int)||0, charge_cost: parseInt(s.charge_cost)||1 })),
       buffs: form.buffs || [],
       // Weapon fields - always include is_weapon explicitly (even false) so
@@ -105,6 +109,7 @@ export default function AddItemModal({ item, onSave, onClose }) {
           <div className="form-row">
             <div className="form-group"><label>Max Charges</label><input type="number" min={0} value={form.charges_max} onChange={e=>{set('charges_max',e.target.value); set('charges_current',e.target.value);}} /></div>
             <div className="form-group"><label>Recharges On</label><select value={form.recharge} onChange={e=>set('recharge',e.target.value)}>{RECHARGES.map(r=><option key={r} value={r}>{r.replace('_',' ')}</option>)}</select></div>
+            <div className="form-group"><label>Recharge Amount</label><input value={form.recharge_amount} onChange={e=>set('recharge_amount',e.target.value)} placeholder="e.g. 2d4+2 (blank = full)" /></div>
           </div>
         )}
         <label style={{display:'flex',alignItems:'center',gap:6,marginBottom:8}}><input type="checkbox" checked={form.is_weapon} onChange={e=>set('is_weapon',e.target.checked)} /> Is this a weapon?</label>

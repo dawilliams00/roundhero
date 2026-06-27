@@ -123,6 +123,20 @@ export const parseClassLevels = (classNameRaw) => {
   }).filter(Boolean);
 };
 
+// Most characters can only concentrate on one spell at a time; a small number of
+// items/features grant a second slot. Rather than hardcoding a specific item name,
+// this scans equipped+attuned items for a description that reads like it grants a
+// second concentration slot.
+export const concentrationSlotCount = (items) => {
+  for (const it of (items || [])) {
+    if (!it.equipped) continue;
+    if (it.attunement && !it.attuned) continue;
+    const desc = (it.description || '').toLowerCase();
+    if (desc.includes('concentration') && /second|two|additional/.test(desc)) return 2;
+  }
+  return 1;
+};
+
 // Whether an item's buffs are currently "live" - worn/wielded, and attuned if
 // attunement is required. Shared by every buff consumer so the gating rule can't
 // drift between them (Staff of the Magi/Robe of the Archmagi being gated wrong

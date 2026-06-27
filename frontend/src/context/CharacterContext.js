@@ -155,11 +155,29 @@ export function CharacterProvider({ children }) {
     await saveTrackerData({ ...character.tracker_data, conditions: conditions.filter(c => c !== name) });
   }, [character, saveTrackerData]);
 
+  const setConcentration = useCallback(async (idx, spellName, level) => {
+    if (!character) return;
+    const conc = character.tracker_data.concentration || {};
+    const slots = [...(conc.slots || [{}, {}])];
+    slots[idx] = { spell: spellName, level: level ?? '' };
+    await saveTrackerData({ ...character.tracker_data, concentration: { ...conc, slots } });
+  }, [character, saveTrackerData]);
+
+  const dropConcentration = useCallback(async (idx) => {
+    if (!character) return;
+    const conc = character.tracker_data.concentration || {};
+    const slots = [...(conc.slots || [{}, {}])];
+    const dropped = slots[idx]?.spell || '';
+    slots[idx] = { spell: '', level: '' };
+    await saveTrackerData({ ...character.tracker_data, concentration: { ...conc, slots } });
+    return dropped;
+  }, [character, saveTrackerData]);
+
   return (
     <CharacterContext.Provider value={{
       character, characters, loading, turnUsed, setTurnUsed, resetTurn,
       fetchCharacters, loadCharacter, updateCharacter,
-      useFeature, useSlot, restoreSlot, doRest, saveTrackerData, saveSpellData, importCharacter, resyncCharacter, deleteCharacter, useItemCharge, addActiveEffect, removeActiveEffect, addCondition, removeCondition, setCharacter,
+      useFeature, useSlot, restoreSlot, doRest, saveTrackerData, saveSpellData, importCharacter, resyncCharacter, deleteCharacter, useItemCharge, addActiveEffect, removeActiveEffect, addCondition, removeCondition, setConcentration, dropConcentration, setCharacter,
     }}>
       {children}
     </CharacterContext.Provider>
