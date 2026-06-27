@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useCharacter } from '../context/CharacterContext';
 import api from '../utils/api';
 import RulesetBrowserModal from './RulesetBrowserModal';
+import CharacterEditorModal from './CharacterEditorModal';
 
 const RULESETS = [
   { value: '2014', label: "5e (2014 / PHB)" },
@@ -23,6 +24,7 @@ export default function SettingsModal({ onClose }) {
   const [localName, setLocalName] = useState(exhaustionRules.name || '');
   const [localDesc, setLocalDesc] = useState(exhaustionRules.description || '');
   const [showBrowser, setShowBrowser] = useState(false);
+  const [showEditor, setShowEditor] = useState(false);
 
   useEffect(() => {
     setLocalName(exhaustionRules.name || '');
@@ -61,6 +63,9 @@ export default function SettingsModal({ onClose }) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={e => e.stopPropagation()}>
         <h2>Settings</h2>
+        <div className="form-group">
+          <button className="btn btn-secondary" style={{width:'100%'}} onClick={() => setShowEditor(true)}>✏️ Edit Character</button>
+        </div>
         <div className="form-group">
           <label>Ruleset</label>
           <select value={ruleset} onChange={e => setRuleset(e.target.value)}>
@@ -114,6 +119,7 @@ export default function SettingsModal({ onClose }) {
       {showBrowser && (
         <RulesetBrowserModal rulesetType="exhaustion" onImport={importRuleset} onClose={() => setShowBrowser(false)} />
       )}
+      {showEditor && <CharacterEditorModal onClose={() => setShowEditor(false)} />}
     </div>
   );
 }

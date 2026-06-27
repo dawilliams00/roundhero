@@ -176,3 +176,78 @@ def build_character(data):
         "spell_data":   build_spell_data(class_name, level),
         "ae_data":      build_ae_data(class_name, level),
     }
+
+def _merge_features_for_level_up(old_features, new_features):
+    # Keeps current usage on features that already existed (so an already-spent Rage use
+    # stays spent), but adopts the freshly-computed max in case it scales with level (e.g.
+    # Barbarian Rage uses). Brand new features at this level get added at full charges.
+    merged = dict(old_features or {})
+    for name, nf in new_features.items():
+        of = merged.get(name)
+        if of:
+            cur = min(of.get("current", nf["max"]), nf["max"]) if nf["max"] else of.get("current", 0)
+            merged[name] = {**nf, "current": cur}
+        else:
+            merged[name] = nf
+    return merged
+
+def _merge_spell_slots_for_level_up(old_slots, new_slots):
+    # A new level can grant more slots at a level the character already had, or a whole
+    # new slot level - current goes up by the same amount max did, so an already-spent
+    # slot stays spent rather than the level-up silently refilling it (that's what a rest
+    # is for); a brand new slot level starts full.
+    merged = {}
+    for lvl, s in new_slots.items():
+        old_s = (old_slots or {}).get(lvl)
+        if old_s:
+            cur = max(0, min(s["max"], old_s.get("current", 0) + (s["max"] - old_s.get("max", 0))))
+        else:
+            cur = s["max"]
+        merged[lvl] = {"current": cur, "max": s["max"]}
+    return merged
+
+def _merge_ae_data_for_level_up(old_ae, new_ae):
+    # build_ae_data always returns the same fixed set of class-sourced entries (plus the
+    # hardcoded stock actions) for a given level - rebuilding it fresh and keeping only the
+    # OLD entries that aren't source_type "class" preserves anything the player added
+    # through +Custom/Browse Feats without duplicating or losing class features on level-up.
+    merged = {}
+    for section, fresh in new_ae.items():
+        kept = [a for a in (old_ae or {}).get(section, []) if a.get("source_type") != "class"]
+        merged[section] = fresh + kept
+    return merged
+
+def level_up_character(old_tracker_data, old_spell_data, old_ae_data, class_name, new_level, ability_scores):
+    """Recomputes HP/spell-slots/class-features for a new level and merges with existing
+    live state (current HP/charges, custom abilities, known spells, inventory). Only
+    meaningful for a class_name the engine actually recognizes (content_packs.CLASSES) -
+    PDF-imported characters typically have a decorated class_name like "Wizard 13" that
+    won't match, and the caller should refuse to call this for those."""
+    new_td = build_tracker_data(class_name, new_level, ability_scores)
+    new_ae = build_ae_data(class_name, new_level)
+
+    merged_td = dict(old_tracker_data)
+    merged_td["features"] = _merge_features_for_level_up(old_tracker_data.get("features"), new_td["features"])
+    merged_td["spell_slots"] = _merge_spell_slots_for_level_up(old_tracker_data.get("spell_slots"), new_td["spell_slots"])
+
+    old_hp = old_tracker_data.get("hp") or new_td["hp"]
+    old_max_hp = old_hp.get("max", new_td["hp"]["max"])
+    hp_gained = max(0, new_td["hp"]["max"] - old_max_hp)
+    merged_td["hp"] = {
+        **old_hp, "max": new_td["hp"]["max"],
+        "current": max(0, min(new_td["hp"]["max"], old_hp.get("current", new_td["hp"]["max"]) + hp_gained)),
+    }
+
+    old_hd = old_tracker_data.get("hit_dice") or new_td["hit_dice"]
+    hd_gained = max(0, new_td["hit_dice"]["total"] - old_hd.get("total", new_td["hit_dice"]["total"]))
+    merged_td["hit_dice"] = {
+        "current": old_hd.get("current", new_td["hit_dice"]["current"]) + hd_gained,
+        "total": new_td["hit_dice"]["total"], "die_size": new_td["hit_dice"]["die_size"],
+    }
+
+    # known_spells/spell_lists/prepared/notes/inventory are intentionally untouched - this
+    # engine doesn't model "you learn N new spells at this level," the player adds any new
+    # known spells manually via the Spells tab, same as they always have.
+    merged_ae = _merge_ae_data_for_level_up(old_ae_data, new_ae)
+
+    return merged_td, dict(old_spell_data), merged_ae, hp_gained

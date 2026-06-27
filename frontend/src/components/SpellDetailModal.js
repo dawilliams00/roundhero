@@ -1,17 +1,20 @@
 import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
 import { schoolColor, getSpellcastingBlocks, getAbilityOverrideBlock, scaleSpellDamage, rollDamage, concentrationSlotCount, HASTED_EFFECT } from '../utils/dnd';
+import InfoModal from './InfoModal';
 
 const SELF_TARGET_EFFECTS = { haste: HASTED_EFFECT };
 
 export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuccess }) {
-  const { character, useSlot, useFeature, addActiveEffect, setConcentration } = useCharacter();
+  const { character, useSlot, useFeature, saveTrackerData, setConcentration, replaceConcentration } = useCharacter();
   const [casting, setCasting] = useState(false);
   const [cast, setCast]       = useState(null);
   const [awaitingTarget, setAwaitingTarget] = useState(false);
   const [pendingDamage, setPendingDamage] = useState(null);
   const [damageResult, setDamageResult] = useState(null);
   const [concPrompt, setConcPrompt] = useState(null);
+  const [concSlotIdx, setConcSlotIdx] = useState(null);
+  const [hasteEndedMessage, setHasteEndedMessage] = useState(null);
 
   if (!character) return null;
   const slots = character.tracker_data?.spell_slots || {};
@@ -78,6 +81,7 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
     for (let i = 0; i < maxSlots; i++) {
       if (!slots[i]?.spell) {
         await setConcentration(i, spell.name, levelUsed);
+        setConcSlotIdx(i);
         return true;
       }
     }
@@ -88,8 +92,19 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
     return false;
   };
 
+  // Replacing an occupied slot (the "concentration full" prompt) needs the same Haste
+  // cleanup as ConcentrationModal's Drop button - whatever spell USED to be in this slot
+  // is what's ending, not the one being cast now.
   const resolveConcPrompt = async (idx, levelUsed) => {
-    if (idx != null) await setConcentration(idx, spell.name, levelUsed);
+    if (idx != null) {
+      const result = await replaceConcentration(idx, spell.name, levelUsed);
+      setConcSlotIdx(idx);
+      if (result?.wasSelfHaste) {
+        setHasteEndedMessage("Haste ended - you are now Lethargic until the end of your next turn. While Lethargic, you can't move or take actions or reactions.");
+      } else if (result?.wasAllyHaste) {
+        setHasteEndedMessage("Your ally's Haste ended - they are now Lethargic until the end of their next turn. While Lethargic, they can't move or take actions or reactions. (Not tracked on their own sheet - just a reminder for the table.)");
+      }
+    }
     setConcPrompt(null);
     continueAfterCast(levelUsed);
   };
@@ -125,8 +140,23 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
     } finally { setCasting(false); }
   };
 
+  // Adding the active effect and tagging the concentration slot's target both have to
+  // land in ONE save built from a single snapshot of tracker_data - two sequential
+  // saveTrackerData-based calls here would have the second one's stale snapshot silently
+  // revert the first's change, the exact bug class already fixed in ConcentrationModal.
   const chooseTarget = async (isSelf) => {
-    if (isSelf) await addActiveEffect(selfEffect);
+    const td = character.tracker_data;
+    const effects = td.active_effects || [];
+    const conc = td.concentration || {};
+    const slots = [...(conc.slots || [{}, {}])];
+    if (concSlotIdx != null && slots[concSlotIdx]) {
+      slots[concSlotIdx] = { ...slots[concSlotIdx], target: isSelf ? 'self' : 'ally' };
+    }
+    await saveTrackerData({
+      ...td,
+      ...(isSelf && !effects.includes(selfEffect) ? { active_effects: [...effects, selfEffect] } : {}),
+      concentration: { ...conc, slots },
+    });
     finish();
   };
 
@@ -268,6 +298,7 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
           )}
         </div>
       </div>
+      {hasteEndedMessage && <InfoModal title="Haste Ended" message={hasteEndedMessage} onClose={() => setHasteEndedMessage(null)} />}
     </div>
   );
 }

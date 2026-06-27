@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import api from '../utils/api';
+import { HASTED_EFFECT, LETHARGIC_CONDITION } from '../utils/dnd';
 
 const CharacterContext = createContext(null);
 
@@ -155,29 +156,65 @@ export function CharacterProvider({ children }) {
     await saveTrackerData({ ...character.tracker_data, conditions: conditions.filter(c => c !== name) });
   }, [character, saveTrackerData]);
 
-  const setConcentration = useCallback(async (idx, spellName, level) => {
+  // Fills an empty slot when a concentration spell is cast - never overwrites an
+  // occupied slot (use replaceConcentration for that), so it never needs Haste cleanup.
+  const setConcentration = useCallback(async (idx, spellName, level, target) => {
     if (!character) return;
     const conc = character.tracker_data.concentration || {};
     const slots = [...(conc.slots || [{}, {}])];
-    slots[idx] = { spell: spellName, level: level ?? '' };
+    slots[idx] = { spell: spellName, level: level ?? '', target };
     await saveTrackerData({ ...character.tracker_data, concentration: { ...conc, slots } });
   }, [character, saveTrackerData]);
 
-  const dropConcentration = useCallback(async (idx) => {
+  // Patches just the target (self/ally) of an already-filled slot, once the player's
+  // self/ally choice resolves - doesn't touch spell/level, so it's safe to call after
+  // setConcentration already filled the slot without knowing the target yet.
+  const setConcentrationTarget = useCallback(async (idx, target) => {
     if (!character) return;
     const conc = character.tracker_data.concentration || {};
     const slots = [...(conc.slots || [{}, {}])];
-    const dropped = slots[idx]?.spell || '';
-    slots[idx] = { spell: '', level: '' };
+    if (!slots[idx]) return;
+    slots[idx] = { ...slots[idx], target };
     await saveTrackerData({ ...character.tracker_data, concentration: { ...conc, slots } });
-    return dropped;
+  }, [character, saveTrackerData]);
+
+  // The one place a concentration slot is cleared or overwritten - used for both a plain
+  // "Drop" and a "replace this slot with my new spell" (the concentration-full prompt).
+  // Whichever spell USED to be in the slot determines cleanup: dropping/replacing a Haste
+  // that was cast on SELF removes the Hasted effect and applies Lethargic to the caster;
+  // on an ALLY, the caster's own effects/conditions are untouched (they were never Hasted)
+  // and the caller is expected to show an info-only reminder instead. This used to be two
+  // separate code paths (ConcentrationModal's Drop button vs SpellDetailModal's replace-
+  // prompt) that only one of them implemented the cleanup for - now there's only one path.
+  const replaceConcentration = useCallback(async (idx, newSpellName = '', newLevel = '', newTarget = undefined) => {
+    if (!character) return null;
+    const td = character.tracker_data;
+    const conc = td.concentration || {};
+    const slots = [...(conc.slots || [{}, {}])];
+    const old = slots[idx] || {};
+    const oldSpell = (old.spell || '').trim();
+    const wasHaste = oldSpell.toLowerCase() === 'haste';
+    const wasSelfHaste = wasHaste && old.target === 'self';
+    const wasAllyHaste = wasHaste && old.target === 'ally';
+    slots[idx] = newSpellName ? { spell: newSpellName, level: newLevel, target: newTarget } : { spell: '', level: '', target: undefined };
+    const activeEffects = td.active_effects || [];
+    const conditions = td.conditions || [];
+    await saveTrackerData({
+      ...td,
+      concentration: { ...conc, slots },
+      ...(wasSelfHaste ? {
+        active_effects: activeEffects.filter(e => e !== HASTED_EFFECT),
+        conditions: conditions.includes(LETHARGIC_CONDITION) ? conditions : [...conditions, LETHARGIC_CONDITION],
+      } : {}),
+    });
+    return { droppedSpell: oldSpell, wasSelfHaste, wasAllyHaste };
   }, [character, saveTrackerData]);
 
   return (
     <CharacterContext.Provider value={{
       character, characters, loading, turnUsed, setTurnUsed, resetTurn,
       fetchCharacters, loadCharacter, updateCharacter,
-      useFeature, useSlot, restoreSlot, doRest, saveTrackerData, saveSpellData, importCharacter, resyncCharacter, deleteCharacter, useItemCharge, addActiveEffect, removeActiveEffect, addCondition, removeCondition, setConcentration, dropConcentration, setCharacter,
+      useFeature, useSlot, restoreSlot, doRest, saveTrackerData, saveSpellData, importCharacter, resyncCharacter, deleteCharacter, useItemCharge, addActiveEffect, removeActiveEffect, addCondition, removeCondition, setConcentration, setConcentrationTarget, replaceConcentration, setCharacter,
     }}>
       {children}
     </CharacterContext.Provider>

@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
-import { concentrationSlotCount, HASTED_EFFECT, LETHARGIC_CONDITION, HARDCODED_CONDITION_INFO } from '../utils/dnd';
+import { concentrationSlotCount } from '../utils/dnd';
 import InfoModal from './InfoModal';
 
 export default function ConcentrationModal({ onClose }) {
-  const { character, saveTrackerData } = useCharacter();
+  const { character, replaceConcentration } = useCharacter();
   const [infoMessage, setInfoMessage] = useState(null);
   if (!character) return null;
   const td = character.tracker_data || {};
@@ -12,29 +12,12 @@ export default function ConcentrationModal({ onClose }) {
   const slots = td.concentration?.slots || [];
   const maxSlots = concentrationSlotCount(items);
 
-  // Build and save every change from one consistent snapshot of tracker_data in a single
-  // call. Dropping, then separately removing the Hasted effect, then separately adding the
-  // Lethargic condition (three sequential saveTrackerData-based calls) each spread the SAME
-  // stale pre-click tracker_data, so the second/third call's save clobbered the first's
-  // change - the slot looked like it never dropped, and Haste never actually went away.
   const drop = async (idx) => {
-    const conc = td.concentration || {};
-    const newSlots = [...(conc.slots || [{}, {}])];
-    const dropped = (newSlots[idx]?.spell || '').trim();
-    newSlots[idx] = { spell: '', level: '' };
-    const wasHaste = dropped.toLowerCase() === 'haste';
-    const activeEffects = td.active_effects || [];
-    const conditions = td.conditions || [];
-    await saveTrackerData({
-      ...td,
-      concentration: { ...conc, slots: newSlots },
-      ...(wasHaste ? {
-        active_effects: activeEffects.filter(e => e !== HASTED_EFFECT),
-        conditions: conditions.includes(LETHARGIC_CONDITION) ? conditions : [...conditions, LETHARGIC_CONDITION],
-      } : {}),
-    });
-    if (wasHaste) {
-      setInfoMessage(`Haste ended - ${LETHARGIC_CONDITION} applied.\n\n${HARDCODED_CONDITION_INFO[LETHARGIC_CONDITION]}`);
+    const result = await replaceConcentration(idx);
+    if (result?.wasSelfHaste) {
+      setInfoMessage("Haste ended - you are now Lethargic until the end of your next turn. While Lethargic, you can't move or take actions or reactions.");
+    } else if (result?.wasAllyHaste) {
+      setInfoMessage("Your ally's Haste ended - they are now Lethargic until the end of their next turn. While Lethargic, they can't move or take actions or reactions. (Not tracked on their own sheet - just a reminder for the table.)");
     }
   };
 

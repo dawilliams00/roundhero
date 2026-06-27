@@ -2,7 +2,8 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from database import db
 from models.character import Character
-from engine.character_engine import build_character
+from engine.character_engine import build_character, level_up_character
+from engine.content_packs import CLASSES
 from engine.pdf_import import parse_character_pdf, resync_character
 from engine.spell_data import get_all_spells
 
@@ -90,6 +91,26 @@ def resync_character_route(char_id):
     char.ae_data      = merged_ae
     db.session.commit()
     return jsonify(char.to_dict()), 200
+
+@characters_bp.route("/<int:char_id>/level_up", methods=["POST"])
+@jwt_required()
+def level_up_character_route(char_id):
+    user_id = int(get_jwt_identity())
+    char = Character.query.filter_by(id=char_id, user_id=user_id).first_or_404()
+    if char.class_name not in CLASSES:
+        return jsonify({"error": f"\"{char.class_name}\" isn't a single recognized class, so automatic level-up isn't available for this character (this usually means it was PDF-imported, possibly multiclass). Edit the level and add any new features/spell slots yourself."}), 400
+    if char.level >= 20:
+        return jsonify({"error": "Already at level 20."}), 400
+    new_level = char.level + 1
+    merged_td, merged_sd, merged_ae, hp_gained = level_up_character(
+        char.tracker_data, char.spell_data, char.ae_data, char.class_name, new_level, char.ability_scores,
+    )
+    char.level = new_level
+    char.tracker_data = merged_td
+    char.spell_data = merged_sd
+    char.ae_data = merged_ae
+    db.session.commit()
+    return jsonify({**char.to_dict(), "level_up_summary": {"new_level": new_level, "hp_gained": hp_gained}}), 200
 
 @characters_bp.route("/<int:char_id>", methods=["GET"])
 @jwt_required()

@@ -13,6 +13,16 @@ import ConditionsModal from './ConditionsModal';
 import InfoModal from './InfoModal';
 import NumberPadPopover from './NumberPadPopover';
 
+// Mechanical side-effects of active_effects that are easy to forget about mid-combat,
+// shown as their own header chips instead of only ever appearing once in a cast popup -
+// matches this app's general philosophy of putting state in the player's face rather
+// than relying on memory. AC's own Haste bonus already shows on the AC stat box itself
+// (see hasteAcBonus below), so it isn't duplicated here. Add future mechanically-modeled
+// effects here rather than hardcoding a new one-off chip elsewhere.
+const EFFECT_MECHANICAL_NOTES = {
+  [HASTED_EFFECT]: [{ t: 'ADV on DEX saves', d: 'From Haste' }],
+};
+
 function EditableStat({ label, value, onSave, color, title }) {
   const [editing, setEditing] = useState(false);
   const [val, setVal] = useState(value);
@@ -205,6 +215,7 @@ export default function CharacterHeader({ onBack }) {
   const traits = td?.traits || { resistances: [], immunities: [], vulnerabilities: [], advantages: [], disadvantages: [] };
   const traitName = t => (typeof t === 'string' ? t : t?.name) || '';
   const traitChips = [
+    ...activeEffects.flatMap(e => (EFFECT_MECHANICAL_NOTES[e] || []).map(n => ({...n, c:'var(--accent-light)'}))),
     ...(traits.resistances||[]).map(t => ({t: traitName(t), d: t?.description, c:'var(--text-dim)'})),
     ...(traits.immunities||[]).map(t => ({t: traitName(t), d: t?.description, c:'var(--success)'})),
     ...(traits.vulnerabilities||[]).map(t => ({t: traitName(t), d: t?.description, c:'var(--danger)'})),
@@ -236,8 +247,8 @@ export default function CharacterHeader({ onBack }) {
   return (
     <>
       <div style={{background:'var(--bg-secondary)',borderBottom:'1px solid var(--border)',padding:'8px 12px',flexShrink:0}}>
-        <div style={{display:'flex',gap:12,alignItems:'flex-start'}}>
-          <div style={{flex:1,minWidth:0}}>
+        <div style={{display:'flex',gap:12,alignItems:'flex-start',flexWrap:'wrap'}}>
+          <div style={{minWidth:0}}>
             <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:8}}>
               <button onClick={onBack} style={{background:'none',color:'var(--text-dim)',fontSize:18,padding:'0 4px'}}>←</button>
               <div>
@@ -304,7 +315,7 @@ export default function CharacterHeader({ onBack }) {
             )}
           </div>
 
-          <div style={{width:340,flexShrink:0,display:'flex',gap:14,flexWrap:'wrap',alignItems:'flex-start',paddingTop:2}}>
+          <div style={{flexShrink:0,display:'flex',gap:14,flexWrap:'wrap',alignItems:'flex-start',paddingTop:2}}>
             <PMStat
               label="Exhaustion"
               value={exhaustion}
@@ -341,7 +352,7 @@ export default function CharacterHeader({ onBack }) {
             </div>
           </div>
 
-          <div style={{display:'flex',gap:10,flexShrink:0}}>
+          <div style={{display:'flex',gap:10,flexShrink:0,marginLeft:'auto'}}>
             <CurrencyBox currency={currency} onCommit={setCurrencyCoin} />
             <div style={{display:'flex',flexDirection:'column',gap:4}}>
               <button className="btn btn-secondary btn-sm" onClick={() => setShowSaves(true)}>SAVES</button>
