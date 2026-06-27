@@ -30,7 +30,7 @@ export default function SpellsTab() {
     const matchSearch = !search || s.name?.toLowerCase().includes(search.toLowerCase());
     const matchFilter = filter === 'all' || (filter === 'cantrip' ? s.level_int===0 : s.level_int===parseInt(filter));
     return matchSearch && matchFilter;
-  });
+  }).sort((a,b) => (a.level_int - b.level_int) || a.name.localeCompare(b.name));
   const levels = [...new Set(knownSpells.map(s=>s.level_int))].sort((a,b)=>a-b);
   const slotLevels = Object.entries(slots).filter(([,s])=>(s.max||0)>0);
   const hasAvailableSlot = (spell) => slotLevels.some(([lvl,s]) => parseInt(lvl) >= spell.level_int && (s.current||0) > 0);

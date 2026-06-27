@@ -26,7 +26,11 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
 
   const finish = () => { onClose(); if (onCastSuccess) onCastSuccess(); };
 
-  const rollNow = () => setDamageResult({ ...pendingDamage, total: rollDamage(pendingDamage) });
+  const rollNow = () => setDamageResult({
+    ...pendingDamage,
+    total: rollDamage(pendingDamage),
+    secondaryTotal: pendingDamage.secondary ? rollDamage(pendingDamage.secondary) : undefined,
+  });
 
   const continueAfterCast = (levelUsed) => {
     const dmg = scaleSpellDamage(spell, levelUsed);
@@ -119,7 +123,7 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
           </div>
           {spell.damage_dice && (
             <div style={{display:'flex',gap:12,flexWrap:'wrap',fontSize:12,color:'var(--text-secondary)',marginBottom:12}}>
-              <div><b>Damage:</b> {spell.damage_dice} {spell.damage_type}</div>
+              <div><b>Damage:</b> {spell.damage_dice} {spell.damage_type}{spell.secondary_damage_dice ? ` + ${spell.secondary_damage_dice} ${spell.secondary_damage_type}` : ''}</div>
               {spell.is_attack && <div><b>Attack:</b> {spell.attack_type}</div>}
               {spell.save_type_abbr && <div><b>Save:</b> {spell.save_type_abbr} (half on success)</div>}
             </div>
@@ -141,11 +145,22 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
           ) : damageResult ? (
             <div style={{width:'100%',background:'var(--bg-primary)',borderRadius:'var(--radius-sm)',padding:12,textAlign:'center'}}>
               <div style={{color:'var(--text-dim)',fontSize:11,textTransform:'uppercase',letterSpacing:1,marginBottom:4}}>
-                {damageResult.label} {spell.damage_type} damage
+                {damageResult.label} {spell.damage_type}{damageResult.secondary ? ` + ${damageResult.secondary.label} ${damageResult.secondary.type}` : ''} damage
                 {spell.save_type_abbr ? ` · ${spell.save_type_abbr} DC vs caster · half on success` : ''}
                 {spell.is_attack ? ' · requires a spell attack roll' : ''}
               </div>
-              <div style={{color:'var(--accent-light)',fontWeight:700,fontSize:28}}>{damageResult.total}</div>
+              <div style={{display:'flex',gap:20,justifyContent:'center'}}>
+                <div>
+                  <div style={{color:'var(--accent-light)',fontWeight:700,fontSize:28}}>{damageResult.total}</div>
+                  {damageResult.secondary && <div style={{color:'var(--text-dim)',fontSize:10}}>{spell.damage_type}</div>}
+                </div>
+                {damageResult.secondary && (
+                  <div>
+                    <div style={{color:'var(--accent-light)',fontWeight:700,fontSize:28}}>{damageResult.secondaryTotal}</div>
+                    <div style={{color:'var(--text-dim)',fontSize:10}}>{damageResult.secondary.type}</div>
+                  </div>
+                )}
+              </div>
               <div style={{display:'flex',gap:8,marginTop:10}}>
                 <button className="btn btn-secondary" style={{flex:1}} onClick={rollNow}>Reroll</button>
                 <button className="btn btn-primary" style={{flex:1}} onClick={finish}>Done</button>
@@ -154,7 +169,7 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
           ) : pendingDamage ? (
             <div style={{width:'100%',background:'var(--bg-primary)',borderRadius:'var(--radius-sm)',padding:12,textAlign:'center'}}>
               <div style={{color:'var(--text-dim)',fontSize:11,textTransform:'uppercase',letterSpacing:1,marginBottom:10}}>
-                {pendingDamage.label} {spell.damage_type} damage
+                {pendingDamage.label} {spell.damage_type}{pendingDamage.secondary ? ` + ${pendingDamage.secondary.label} ${pendingDamage.secondary.type}` : ''} damage
                 {spell.save_type_abbr ? ` · ${spell.save_type_abbr} DC vs caster · half on success` : ''}
                 {spell.is_attack ? ' · requires a spell attack roll' : ''}
               </div>

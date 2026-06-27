@@ -78,7 +78,89 @@ def create_custom_feat():
 
 @content_bp.route("/items", methods=["GET"])
 def list_items():
-    return jsonify(get_all_items()), 200
+    base = get_all_items()
+    # Two distinct homebrew layers, unlike spells/feats/monsters which only have one:
+    # "item_override" rows correct a canon entry IN PLACE (matched by name) so the fix
+    # reaches everyone and every already-owned copy via the existing per-character Refresh
+    # button - the original magic_items.json on disk never changes. "item" rows are fully
+    # independent duplicates/new homebrew items, same pattern as monster duplication.
+    overrides = {c.name.lower(): c for c in CustomContent.query.filter_by(content_type="item_override").all()}
+    merged_base = []
+    for item in base:
+        ov = overrides.get(item["name"].lower())
+        merged_base.append({**ov.data, "_override_id": ov.id, "_source": "canon_override"} if ov else item)
+    customs = [c.to_dict() for c in CustomContent.query.filter_by(content_type="item").all()]
+    return jsonify(merged_base + customs), 200
+
+@content_bp.route("/items", methods=["POST"])
+@jwt_required()
+def create_custom_item():
+    user_id = int(get_jwt_identity())
+    payload = request.get_json() or {}
+    if not (payload.get("name") or "").strip():
+        return jsonify({"error": "Item name is required"}), 400
+    entry = CustomContent(user_id=user_id, content_type="item", name=payload["name"].strip())
+    entry.data = payload
+    db.session.add(entry)
+    db.session.commit()
+    return jsonify(entry.to_dict()), 201
+
+@content_bp.route("/items/<int:custom_id>", methods=["PUT"])
+@jwt_required()
+def update_custom_item(custom_id):
+    entry = CustomContent.query.filter_by(id=custom_id, content_type="item").first()
+    if not entry:
+        return jsonify({"error": "Custom item not found"}), 404
+    payload = request.get_json() or {}
+    if not (payload.get("name") or "").strip():
+        return jsonify({"error": "Item name is required"}), 400
+    entry.name = payload["name"].strip()
+    entry.data = payload
+    db.session.commit()
+    return jsonify(entry.to_dict()), 200
+
+@content_bp.route("/items/<int:custom_id>", methods=["DELETE"])
+@jwt_required()
+def delete_custom_item(custom_id):
+    entry = CustomContent.query.filter_by(id=custom_id, content_type="item").first()
+    if not entry:
+        return jsonify({"error": "Custom item not found"}), 404
+    db.session.delete(entry)
+    db.session.commit()
+    return jsonify({"ok": True}), 200
+
+@content_bp.route("/items/override", methods=["PUT"])
+@jwt_required()
+def upsert_item_override():
+    user_id = int(get_jwt_identity())
+    payload = request.get_json() or {}
+    # _canon_name is the ORIGINAL canon item's name, kept separate from payload["name"]
+    # (which the admin-edit form may have changed) so the override stays matched to the
+    # right canon entry even if its displayed name is edited.
+    canon_name = (payload.pop("_canon_name", None) or payload.get("name") or "").strip()
+    if not canon_name:
+        return jsonify({"error": "Item name is required"}), 400
+    entry = CustomContent.query.filter_by(content_type="item_override").filter(
+        db.func.lower(CustomContent.name) == canon_name.lower()
+    ).first()
+    if not entry:
+        entry = CustomContent(user_id=user_id, content_type="item_override", name=canon_name)
+        db.session.add(entry)
+    entry.data = payload
+    db.session.commit()
+    return jsonify({**entry.data, "_override_id": entry.id, "_source": "canon_override"}), 200
+
+@content_bp.route("/items/override/<string:name>", methods=["DELETE"])
+@jwt_required()
+def delete_item_override(name):
+    entry = CustomContent.query.filter_by(content_type="item_override").filter(
+        db.func.lower(CustomContent.name) == name.lower()
+    ).first()
+    if not entry:
+        return jsonify({"error": "Override not found"}), 404
+    db.session.delete(entry)
+    db.session.commit()
+    return jsonify({"ok": True}), 200
 
 @content_bp.route("/monsters", methods=["GET"])
 def list_monsters():

@@ -9,7 +9,7 @@ import InventoryTab from '../components/InventoryTab';
 import NotesTab from '../components/NotesTab';
 import BestiaryTab from '../components/BestiaryTab';
 
-const TABS = ['⚔️ Actions','📋 Tracker','✨ Spells','🎒 Inventory','📝 Notes','🐉 Bestiary'];
+const TABS = ['⚔️ Actions','📋 Feats/Attunement','✨ Spells','🎒 Inventory','📝 Notes','🐉 Bestiary'];
 
 export default function GameView() {
   const { id }                    = useParams();

@@ -2,12 +2,16 @@ import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
 import AbilityDetailModal from './AbilityDetailModal';
 import ConfirmModal from './ConfirmModal';
+import CustomAbilityModal from './CustomAbilityModal';
+import FeatBrowserModal from './FeatBrowserModal';
 
 export default function TrackerTab() {
   const { character, saveTrackerData, updateCharacter, addActiveEffect, removeActiveEffect } = useCharacter();
   const [newEffect, setNewEffect] = useState('');
   const [detail, setDetail] = useState(null);
   const [confirmRemove, setConfirmRemove] = useState(null);
+  const [showCustom, setCustom] = useState(false);
+  const [showFeatBrowser, setShowFeatBrowser] = useState(false);
 
   if (!character) return null;
   const td       = character.tracker_data || {};
@@ -44,6 +48,26 @@ export default function TrackerTab() {
     saveTrackerData({ ...td, inventory: { ...td.inventory, items: newItems } });
   };
 
+  const addFeatFromLibrary = async (feat) => {
+    const key = feat.name;
+    const newAbility = { name: feat.name, source: feat.source, source_type: 'custom', cost_type: feat.cost_type, tracker_key: key, description: feat.description };
+    const newAe = { ...ae };
+    if (!newAe[feat.section]) newAe[feat.section] = [];
+    newAe[feat.section] = [...newAe[feat.section], newAbility];
+    const newTd = { ...td };
+    if (feat.max_uses > 0 || feat.isTuck) {
+      newTd.features = {
+        ...newTd.features,
+        [key]: {
+          current: feat.max_uses || 0, max: feat.max_uses || 0,
+          rest_type: feat.rest_type, action: feat.section, description: feat.description,
+          ...(feat.isTuck ? { spell_picker: true, tucked_spell: '', tucked_level: '' } : {}),
+        },
+      };
+    }
+    await updateCharacter(character.id, { ae_data: newAe, tracker_data: newTd });
+  };
+
   const adjustFeature = async (name, delta) => {
     const feat = features[name];
     if (!feat) return;
@@ -65,6 +89,10 @@ export default function TrackerTab() {
 
   return (
     <div style={{flex:1,overflowY:'auto',padding:12}}>
+      <div style={{display:'flex',gap:8,justifyContent:'flex-end',marginBottom:12}}>
+        <button className="btn btn-secondary btn-sm" onClick={() => setShowFeatBrowser(true)}>Browse Feats</button>
+        <button className="btn btn-primary btn-sm" onClick={() => setCustom(true)}>+ Custom</button>
+      </div>
       {hd && hd.total > 0 && (
         <div className="card" style={{marginBottom:12,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
           <div style={{color:'var(--text-secondary)',fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:1}}>Hit Dice</div>
@@ -174,6 +202,8 @@ export default function TrackerTab() {
       )}
 
       {detail && <AbilityDetailModal ability={detail} onClose={() => setDetail(null)} />}
+      {showCustom && <CustomAbilityModal onClose={() => setCustom(false)} />}
+      {showFeatBrowser && <FeatBrowserModal onAdd={addFeatFromLibrary} onClose={() => setShowFeatBrowser(false)} />}
       {confirmRemove && (
         <ConfirmModal
           title="Remove Ability?"

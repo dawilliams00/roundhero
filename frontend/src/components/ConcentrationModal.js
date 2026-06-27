@@ -4,7 +4,7 @@ import { concentrationSlotCount, HASTED_EFFECT, LETHARGIC_CONDITION, HARDCODED_C
 import InfoModal from './InfoModal';
 
 export default function ConcentrationModal({ onClose }) {
-  const { character, dropConcentration, removeActiveEffect, addCondition } = useCharacter();
+  const { character, saveTrackerData } = useCharacter();
   const [infoMessage, setInfoMessage] = useState(null);
   if (!character) return null;
   const td = character.tracker_data || {};
@@ -12,11 +12,28 @@ export default function ConcentrationModal({ onClose }) {
   const slots = td.concentration?.slots || [];
   const maxSlots = concentrationSlotCount(items);
 
+  // Build and save every change from one consistent snapshot of tracker_data in a single
+  // call. Dropping, then separately removing the Hasted effect, then separately adding the
+  // Lethargic condition (three sequential saveTrackerData-based calls) each spread the SAME
+  // stale pre-click tracker_data, so the second/third call's save clobbered the first's
+  // change - the slot looked like it never dropped, and Haste never actually went away.
   const drop = async (idx) => {
-    const dropped = await dropConcentration(idx);
-    if (dropped && dropped.toLowerCase() === 'haste') {
-      await removeActiveEffect(HASTED_EFFECT);
-      await addCondition(LETHARGIC_CONDITION);
+    const conc = td.concentration || {};
+    const newSlots = [...(conc.slots || [{}, {}])];
+    const dropped = (newSlots[idx]?.spell || '').trim();
+    newSlots[idx] = { spell: '', level: '' };
+    const wasHaste = dropped.toLowerCase() === 'haste';
+    const activeEffects = td.active_effects || [];
+    const conditions = td.conditions || [];
+    await saveTrackerData({
+      ...td,
+      concentration: { ...conc, slots: newSlots },
+      ...(wasHaste ? {
+        active_effects: activeEffects.filter(e => e !== HASTED_EFFECT),
+        conditions: conditions.includes(LETHARGIC_CONDITION) ? conditions : [...conditions, LETHARGIC_CONDITION],
+      } : {}),
+    });
+    if (wasHaste) {
       setInfoMessage(`Haste ended - ${LETHARGIC_CONDITION} applied.\n\n${HARDCODED_CONDITION_INFO[LETHARGIC_CONDITION]}`);
     }
   };

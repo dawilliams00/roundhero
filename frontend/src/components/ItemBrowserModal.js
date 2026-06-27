@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import api from '../utils/api';
 import { formatItemBuff } from '../utils/dnd';
+import AddItemModal from './AddItemModal';
+import InfoModal from './InfoModal';
 
 // One unified browser for everything in the reference DB - magic items (potions,
 // scrolls, staves, wands, etc.) and mundane weapons both show up in the same
@@ -10,19 +12,51 @@ export default function ItemBrowserModal({ existingItems, onAdd, onClose }) {
   const [loading, setLoading]   = useState(true);
   const [search, setSearch]     = useState('');
   const [viewing, setViewing]   = useState(null);
+  // mode: 'admin' edits the canon entry in place for everyone (an override row matched
+  // by name - the static magic_items.json on disk is never touched), 'duplicate' clones
+  // it into an independent homebrew copy, 'homebrew-edit' edits an existing duplicate.
+  const [editingMaster, setEditingMaster] = useState(null);
+  const [infoMessage, setInfoMessage] = useState(null);
 
-  useEffect(() => {
-    Promise.all([
-      api.get('/content/items'),
-      api.get('/content/equipment'),
-    ]).then(([itemsRes, equipRes]) => {
-      const items = (itemsRes.data || []).map(it => ({ ...it, _kind: 'item' }));
-      const weapons = (equipRes.data || [])
-        .filter(e => e.equipment_category === 'Weapon')
-        .map(w => ({ ...w, _kind: 'weapon' }));
-      setAllEntries([...items, ...weapons].sort((a, b) => a.name.localeCompare(b.name)));
-    }).finally(() => setLoading(false));
-  }, []);
+  const loadEntries = () => Promise.all([
+    api.get('/content/items'),
+    api.get('/content/equipment'),
+  ]).then(([itemsRes, equipRes]) => {
+    const items = (itemsRes.data || []).map(it => ({ ...it, _kind: 'item' }));
+    const weapons = (equipRes.data || [])
+      .filter(e => e.equipment_category === 'Weapon')
+      .map(w => ({ ...w, _kind: 'weapon' }));
+    setAllEntries([...items, ...weapons].sort((a, b) => a.name.localeCompare(b.name)));
+  });
+
+  useEffect(() => { loadEntries().finally(() => setLoading(false)); }, []);
+
+  const saveMasterEdit = async (out) => {
+    if (editingMaster.mode === 'admin') {
+      await api.put('/content/items/override', { ...out, _canon_name: editingMaster.item.name });
+      setInfoMessage(`"${out.name}" updated for everyone - already-owned copies can pick this up via the Inventory tab's 🔄 Refresh button.`);
+    } else if (editingMaster.mode === 'duplicate') {
+      await api.post('/content/items', out);
+      setInfoMessage(`"${out.name}" added as a homebrew item - the original is untouched.`);
+    } else {
+      await api.put(`/content/items/${editingMaster.item._custom_id}`, out);
+    }
+    await loadEntries();
+    setEditingMaster(null);
+    setViewing(null);
+  };
+
+  const deleteHomebrewItem = async () => {
+    await api.delete(`/content/items/${viewing._custom_id}`);
+    await loadEntries();
+    setViewing(null);
+  };
+
+  const revertOverride = async () => {
+    await api.delete(`/content/items/override/${encodeURIComponent(viewing.name)}`);
+    await loadEntries();
+    setViewing(null);
+  };
 
   const existingNames = new Set((existingItems || []).map(it => it.name));
   const entries = allEntries.filter(it => !search || it.name.toLowerCase().includes(search.toLowerCase()));
@@ -92,6 +126,8 @@ export default function ItemBrowserModal({ existingItems, onAdd, onClose }) {
                   {viewing.type && <span style={{fontSize:11,color:'var(--text-dim)',border:'1px solid var(--border-light)',borderRadius:8,padding:'2px 8px'}}>{viewing.type}</span>}
                   {viewing.weight ? <span style={{fontSize:11,color:'var(--text-dim)',border:'1px solid var(--border-light)',borderRadius:8,padding:'2px 8px'}}>{viewing.weight} lb</span> : null}
                   {viewing.attunement && <span style={{fontSize:11,color:'var(--accent-light)',border:'1px solid var(--accent-light)',borderRadius:8,padding:'2px 8px'}}>Requires Attunement</span>}
+                  {viewing._source === 'custom' && <span style={{fontSize:11,color:'var(--accent-light)',border:'1px solid var(--accent-light)',borderRadius:8,padding:'2px 8px'}}>Homebrew</span>}
+                  {viewing._source === 'canon_override' && <span style={{fontSize:11,color:'var(--warning)',border:'1px solid var(--warning)',borderRadius:8,padding:'2px 8px'}}>Admin-edited</span>}
                 </>
               )}
             </div>
@@ -154,13 +190,36 @@ export default function ItemBrowserModal({ existingItems, onAdd, onClose }) {
               </>
             )}
           </div>
-          <div className="modal-footer">
+          <div className="modal-footer" style={{flexWrap:'wrap'}}>
             <button className="btn btn-secondary" onClick={() => setViewing(null)}>Back</button>
+            {!isWeapon && viewing._source === 'custom' && (
+              <button className="btn btn-secondary" onClick={() => setEditingMaster({ mode: 'homebrew-edit', item: viewing })}>✏️ Edit</button>
+            )}
+            {!isWeapon && viewing._source === 'custom' && (
+              <button className="btn btn-secondary" style={{color:'var(--danger)'}} onClick={deleteHomebrewItem}>🗑️ Delete</button>
+            )}
+            {!isWeapon && viewing._source !== 'custom' && (
+              <button className="btn btn-secondary" onClick={() => setEditingMaster({ mode: 'admin', item: viewing })}>✏️ Admin Edit</button>
+            )}
+            {!isWeapon && viewing._source !== 'custom' && (
+              <button className="btn btn-secondary" onClick={() => setEditingMaster({ mode: 'duplicate', item: viewing })}>📋 Duplicate</button>
+            )}
+            {!isWeapon && viewing._source === 'canon_override' && (
+              <button className="btn btn-secondary" style={{color:'var(--warning)'}} onClick={revertOverride}>↺ Revert</button>
+            )}
             <button className={isAdded ? 'btn btn-secondary' : 'btn btn-primary'} disabled={isAdded} onClick={() => { addEntry(viewing); setViewing(null); }}>
               {isAdded ? 'Added' : 'Add to Inventory'}
             </button>
           </div>
         </div>
+        {editingMaster && (
+          <AddItemModal
+            item={editingMaster.mode === 'duplicate' ? { ...editingMaster.item, name: `${editingMaster.item.name} (Homebrew)` } : editingMaster.item}
+            onSave={saveMasterEdit}
+            onClose={() => setEditingMaster(null)}
+          />
+        )}
+        {infoMessage && <InfoModal title="Item Library" message={infoMessage} onClose={() => setInfoMessage(null)} />}
       </div>
     );
   }
@@ -198,6 +257,7 @@ export default function ItemBrowserModal({ existingItems, onAdd, onClose }) {
         </div>
         <button className="btn btn-secondary" style={{width:'100%',marginTop:16}} onClick={onClose}>Close</button>
       </div>
+      {infoMessage && <InfoModal title="Item Library" message={infoMessage} onClose={() => setInfoMessage(null)} />}
     </div>
   );
 }

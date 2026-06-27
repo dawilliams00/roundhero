@@ -2,11 +2,9 @@ import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
 import { SECTION_ORDER, SECTION_COLORS, slotBadgeTextColor, concentrationSlotCount, HASTED_EFFECT } from '../utils/dnd';
 import AbilityDetailModal from './AbilityDetailModal';
-import CustomAbilityModal from './CustomAbilityModal';
 import CastSpellPickerModal from './CastSpellPickerModal';
 import ItemSpellsModal from './ItemSpellsModal';
 import SpellTuckModal from './SpellTuckModal';
-import FeatBrowserModal from './FeatBrowserModal';
 import WeaponAttackModal from './WeaponAttackModal';
 import ConcentrationModal from './ConcentrationModal';
 
@@ -20,10 +18,8 @@ const ITEM_COST_OPTIONS = [
 ];
 
 export default function ActionEconomyTab() {
-  const { character, updateCharacter, useFeature, useSlot, restoreSlot, saveTrackerData, useItemCharge, turnUsed, setTurnUsed } = useCharacter();
+  const { character, useFeature, useSlot, restoreSlot, saveTrackerData, useItemCharge, turnUsed, setTurnUsed } = useCharacter();
   const [detail, setDetail]     = useState(null);
-  const [showCustom, setCustom] = useState(false);
-  const [showFeatBrowser, setShowFeatBrowser] = useState(false);
   const [castingSpell, setCastingSpell] = useState(false);
   const [castingBucket, setCastingBucket] = useState(null);
   const [viewingItemSpells, setViewingItemSpells] = useState(null);
@@ -98,26 +94,6 @@ export default function ActionEconomyTab() {
     markBucket(itemBucket);
   };
 
-  const addFeatFromLibrary = async (feat) => {
-    const key = feat.name;
-    const newAbility = { name: feat.name, source: feat.source, source_type: 'custom', cost_type: feat.cost_type, tracker_key: key, description: feat.description };
-    const newAe = { ...ae };
-    if (!newAe[feat.section]) newAe[feat.section] = [];
-    newAe[feat.section] = [...newAe[feat.section], newAbility];
-    const newTd = { ...td };
-    if (feat.max_uses > 0 || feat.isTuck) {
-      newTd.features = {
-        ...newTd.features,
-        [key]: {
-          current: feat.max_uses || 0, max: feat.max_uses || 0,
-          rest_type: feat.rest_type, action: feat.section, description: feat.description,
-          ...(feat.isTuck ? { spell_picker: true, tucked_spell: '', tucked_level: '' } : {}),
-        },
-      };
-    }
-    await updateCharacter(character.id, { ae_data: newAe, tracker_data: newTd });
-  };
-
   const slotLevels = Object.entries(slots).filter(([,s]) => (s.max||0) > 0);
 
   return (
@@ -156,8 +132,6 @@ export default function ActionEconomyTab() {
         )}
         <div style={{flex:1}}/>
         {inInitiative && <button className="btn btn-secondary btn-sm" onClick={resetTurn}>New Turn</button>}
-        <button className="btn btn-secondary btn-sm" onClick={() => setShowFeatBrowser(true)}>Browse Feats</button>
-        <button className="btn btn-primary btn-sm" onClick={() => setCustom(true)}>+ Custom</button>
       </div>
 
       {slotLevels.length > 0 && (
@@ -314,8 +288,6 @@ export default function ActionEconomyTab() {
       </div>
 
       {detail    && <AbilityDetailModal ability={detail} onClose={() => setDetail(null)} />}
-      {showCustom && <CustomAbilityModal onClose={() => setCustom(false)} />}
-      {showFeatBrowser && <FeatBrowserModal onAdd={addFeatFromLibrary} onClose={() => setShowFeatBrowser(false)} />}
       {castingSpell && (
         <CastSpellPickerModal bucket={castingBucket} onClose={() => { setCastingSpell(false); setCastingBucket(null); }} />
       )}

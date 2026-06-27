@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useCharacter } from '../context/CharacterContext';
 import api from '../utils/api';
-import { modifier, modStr, hpColor, profBonus, ABILITY_KEYS, getSpellcastingBlocks, computeItemBonuses, effectiveAbilityScores, HASTED_EFFECT, HARDCODED_CONDITION_INFO } from '../utils/dnd';
+import { modifier, modStr, hpColor, profBonus, ABILITY_KEYS, getSpellcastingBlocks, computeItemBonuses, effectiveAbilityScores, HASTED_EFFECT, HARDCODED_CONDITION_INFO, EXHAUSTION_RAW_TEXT } from '../utils/dnd';
 import SavesModal from './SavesModal';
 import SkillsModal from './SkillsModal';
 import TraitsModal from './TraitsModal';
@@ -179,6 +179,7 @@ export default function CharacterHeader({ onBack }) {
   const [showSettings, setShowSettings] = useState(false);
   const [showConditions, setShowConditions] = useState(false);
   const [viewingCondition, setViewingCondition] = useState(null);
+  const [showExhaustionInfo, setShowExhaustionInfo] = useState(false);
   const [conditionInfo, setConditionInfo] = useState({});
 
   useEffect(() => {
@@ -335,6 +336,7 @@ export default function CharacterHeader({ onBack }) {
               value={exhaustion}
               color={exhaustion >= 5 ? 'var(--danger)' : exhaustion >= 3 ? 'var(--warning)' : undefined}
               onAdjust={d => saveTrackerData({ ...td, exhaustion: Math.max(0, Math.min(6, exhaustion + d)) })}
+              onClick={() => setShowExhaustionInfo(true)}
               title={exhaustionTitle}
             />
             <div style={{display:'flex',gap:4,flexWrap:'wrap',alignItems:'center'}}>
@@ -398,6 +400,13 @@ export default function CharacterHeader({ onBack }) {
           title={viewingCondition}
           message={conditionInfo[viewingCondition] || 'No description available.'}
           onClose={() => setViewingCondition(null)}
+        />
+      )}
+      {showExhaustionInfo && (
+        <InfoModal
+          title={exhaustionRules.mode === 'homebrew' ? (exhaustionRules.name || 'Homebrew Exhaustion') : 'Exhaustion (RAW)'}
+          message={exhaustionRules.mode === 'homebrew' ? (exhaustionRules.description || 'No description set yet - add one in Settings.') : EXHAUSTION_RAW_TEXT}
+          onClose={() => setShowExhaustionInfo(false)}
         />
       )}
     </>

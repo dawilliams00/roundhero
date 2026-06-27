@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import api from '../utils/api';
 
 const RARITIES = ['Common','Uncommon','Rare','Very Rare','Legendary','Artifact'];
 const RECHARGES = ['none','dawn','dusk','short_rest','long_rest'];
@@ -41,12 +42,28 @@ export default function AddItemModal({ item, onSave, onClose }) {
   const set = (k,v) => setForm(f => ({...f,[k]:v}));
   const toggleProperty = (p) => setForm(f => ({...f, properties: f.properties.includes(p) ? f.properties.filter(x=>x!==p) : [...f.properties, p]}));
 
+  // Lets "Granted Spells" rows search the real spell library (canon + homebrew, same data
+  // SpellBrowserModal uses) instead of free-typing a name - guarantees an exact match so
+  // ItemSpellsModal's resolveSpell() can find it, and fills in the spell's real level_int
+  // instead of it silently defaulting to 0/cantrip.
+  const [spellOptions, setSpellOptions] = useState([]);
+  const [activeSpellRow, setActiveSpellRow] = useState(null);
+  useEffect(() => { api.get('/content/spells').then(r => setSpellOptions(r.data)).catch(() => {}); }, []);
+
   const addSpellRow = () => set('granted_spells', [...form.granted_spells, { name: '', level_int: 0, charge_cost: 1 }]);
   const updateSpellRow = (i, key, val) => {
     const next = form.granted_spells.map((s, idx) => idx === i ? { ...s, [key]: val } : s);
     set('granted_spells', next);
   };
   const removeSpellRow = (i) => set('granted_spells', form.granted_spells.filter((_, idx) => idx !== i));
+  const pickSpell = (i, spell) => {
+    // One merged update, not two sequential updateSpellRow calls - each of those reads
+    // form.granted_spells from the same stale render closure, so the second call would
+    // overwrite the first's change instead of compounding with it.
+    const next = form.granted_spells.map((s, idx) => idx === i ? { ...s, name: spell.name, level_int: spell.level_int } : s);
+    set('granted_spells', next);
+    setActiveSpellRow(null);
+  };
 
   const submit = () => {
     if (!form.name) return;
@@ -147,13 +164,37 @@ export default function AddItemModal({ item, onSave, onClose }) {
         <div className="form-group"><label>Description</label><textarea value={form.description} onChange={e=>set('description',e.target.value)} rows={3} style={{width:'100%',resize:'vertical'}} /></div>
 
         <div style={{color:'var(--text-dim)',fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:1,margin:'12px 0 6px'}}>Granted Spells</div>
-        {form.granted_spells.map((s, i) => (
-          <div key={i} style={{display:'flex',gap:6,marginBottom:6,alignItems:'center'}}>
-            <input value={s.name} onChange={e=>updateSpellRow(i,'name',e.target.value)} placeholder="Spell name" style={{flex:1}} />
-            <input type="number" min={1} value={s.charge_cost} onChange={e=>updateSpellRow(i,'charge_cost',e.target.value)} title="Charge cost" style={{width:56}} />
-            <button className="btn btn-secondary btn-sm" onClick={()=>removeSpellRow(i)}>×</button>
-          </div>
-        ))}
+        {form.granted_spells.map((s, i) => {
+          const query = s.name.trim().toLowerCase();
+          const matches = activeSpellRow === i && query
+            ? spellOptions.filter(sp => sp.name.toLowerCase().includes(query)).slice(0, 8)
+            : [];
+          return (
+            <div key={i} style={{display:'flex',gap:6,marginBottom:6,alignItems:'flex-start'}}>
+              <div style={{position:'relative',flex:1}}>
+                <input
+                  value={s.name}
+                  onChange={e => { updateSpellRow(i,'name',e.target.value); setActiveSpellRow(i); }}
+                  onFocus={() => setActiveSpellRow(i)}
+                  onBlur={() => setTimeout(() => setActiveSpellRow(c => c === i ? null : c), 150)}
+                  placeholder="Search spell name..."
+                  style={{width:'100%'}}
+                />
+                {matches.length > 0 && (
+                  <div style={{position:'absolute',top:'100%',left:0,right:0,zIndex:20,background:'var(--bg-card)',border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',maxHeight:160,overflowY:'auto',boxShadow:'var(--shadow)'}}>
+                    {matches.map(sp => (
+                      <div key={sp.name} onMouseDown={() => pickSpell(i, sp)} style={{padding:'6px 10px',cursor:'pointer',fontSize:12,color:'var(--text-primary)',borderBottom:'1px solid var(--border)'}}>
+                        {sp.name} <span style={{color:'var(--text-dim)'}}>({sp.level_int===0?'Cantrip':`L${sp.level_int}`})</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <input type="number" min={1} value={s.charge_cost} onChange={e=>updateSpellRow(i,'charge_cost',e.target.value)} title="Charge cost" style={{width:56}} />
+              <button className="btn btn-secondary btn-sm" onClick={()=>removeSpellRow(i)}>×</button>
+            </div>
+          );
+        })}
         <button className="btn btn-secondary btn-sm" onClick={addSpellRow}>+ Add Granted Spell</button>
 
         <div style={{display:'flex',gap:8,marginTop:16}}>

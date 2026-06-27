@@ -8,6 +8,19 @@ export const HARDCODED_CONDITION_INFO = {
   Lethargic: "When Haste ends, you can't move or take actions or reactions until the end of your next turn.",
 };
 
+// RAW (PHB 2014) exhaustion levels - not in conditions.json since exhaustion is tracked
+// as its own 0-6 integer, not a checkable condition. Effects are cumulative.
+export const EXHAUSTION_RAW_TEXT = `Effects are cumulative - each level includes the effects of all lower levels.
+
+1: Disadvantage on ability checks
+2: Speed halved
+3: Disadvantage on attack rolls and saving throws
+4: Hit point maximum halved
+5: Speed reduced to 0
+6: Death
+
+Finishing a long rest reduces a creature's exhaustion level by 1, provided they have also had some food and drink.`;
+
 export const ABILITY_KEYS = ['STR','DEX','CON','INT','WIS','CHA'];
 export const ABILITY_LABELS = { STR:'Strength', DEX:'Dexterity', CON:'Constitution', INT:'Intelligence', WIS:'Wisdom', CHA:'Charisma' };
 export const SKILL_MAP = {
@@ -285,7 +298,21 @@ export const scaleSpellDamage = (spell, castLevel) => {
       count += (castLevel - parseInt(scale[3])) * parseInt(scale[1]);
     }
   }
-  return { count, sides, bonus, label: `${count}d${sides}${bonus ? `+${bonus}` : ''}` };
+  const result = { count, sides, bonus, label: `${count}d${sides}${bonus ? `+${bonus}` : ''}` };
+  // A few spells deal two different damage types in one hit (Ice Storm: bludgeoning + cold,
+  // Flame Strike: fire + radiant, Meteor Swarm: fire + bludgeoning) - damage_dice/damage_type
+  // alone can only model one. secondary_damage_dice/type carries the other. Fixed at its
+  // printed dice, not scaled - none of these spells scale the secondary half on upcast.
+  if (spell.secondary_damage_dice) {
+    const sec = spell.secondary_damage_dice.match(/(\d+)d(\d+)\s*(?:\+\s*(\d+))?/i);
+    if (sec) {
+      const sCount = parseInt(sec[1]);
+      const sSides = parseInt(sec[2]);
+      const sBonus = sec[3] ? parseInt(sec[3]) : 0;
+      result.secondary = { count: sCount, sides: sSides, bonus: sBonus, label: `${sCount}d${sSides}${sBonus ? `+${sBonus}` : ''}`, type: spell.secondary_damage_type };
+    }
+  }
+  return result;
 };
 
 export const rollDamage = ({ count, sides, bonus }) => {

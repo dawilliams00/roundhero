@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useCharacter } from '../context/CharacterContext';
 
 const RULESETS = [
@@ -8,15 +8,32 @@ const RULESETS = [
 
 export default function SettingsModal({ onClose }) {
   const { character, saveTrackerData } = useCharacter();
+  const td = character?.tracker_data || {};
+  const settings = td.settings || {};
+  const exhaustionRules = settings.exhaustion_rules || { mode: 'raw', name: '', description: '' };
+
+  // Local buffer for the two free-text fields - saveTrackerData round-trips to the server
+  // on every call, and binding the inputs directly to the remote value meant every
+  // keystroke fired its own save; if a later keystroke's response came back before an
+  // earlier one's, the earlier (shorter) text would win and "eat" what was just typed.
+  // Typing fast enough to outrun the round-trip dropped letters - this is why slow typing
+  // "worked". Buffering locally and saving once on blur avoids the race entirely.
+  const [localName, setLocalName] = useState(exhaustionRules.name || '');
+  const [localDesc, setLocalDesc] = useState(exhaustionRules.description || '');
+
+  useEffect(() => {
+    setLocalName(exhaustionRules.name || '');
+    setLocalDesc(exhaustionRules.description || '');
+  }, [character?.id]);
+
   if (!character) return null;
 
-  const td = character.tracker_data || {};
-  const settings = td.settings || {};
   const ruleset = settings.ruleset || '2014';
-  const exhaustionRules = settings.exhaustion_rules || { mode: 'raw', name: '', description: '' };
 
   const setRuleset = (value) => saveTrackerData({ ...td, settings: { ...settings, ruleset: value } });
   const setExhaustionRules = (patch) => saveTrackerData({ ...td, settings: { ...settings, exhaustion_rules: { ...exhaustionRules, ...patch } } });
+  const commitName = () => { if (localName !== (exhaustionRules.name || '')) setExhaustionRules({ name: localName }); };
+  const commitDesc = () => { if (localDesc !== (exhaustionRules.description || '')) setExhaustionRules({ description: localDesc }); };
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -45,14 +62,16 @@ export default function SettingsModal({ onClose }) {
           {exhaustionRules.mode === 'homebrew' && (
             <>
               <input
-                value={exhaustionRules.name || ''}
-                onChange={e => setExhaustionRules({ name: e.target.value })}
+                value={localName}
+                onChange={e => setLocalName(e.target.value)}
+                onBlur={commitName}
                 placeholder="Homebrew ruleset name"
                 style={{marginTop:8}}
               />
               <textarea
-                value={exhaustionRules.description || ''}
-                onChange={e => setExhaustionRules({ description: e.target.value })}
+                value={localDesc}
+                onChange={e => setLocalDesc(e.target.value)}
+                onBlur={commitDesc}
                 placeholder="What do your homebrew exhaustion rules actually do?"
                 rows={3}
                 style={{width:'100%',resize:'vertical',marginTop:6}}

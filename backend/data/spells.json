@@ -2403,7 +2403,7 @@
         "Wizard"
       ],
       "spell_index": 356,
-      "damage_type": "Cold",
+      "damage_type": "Piercing",
       "attack_type": "ranged",
       "save_type": "Dexterity Save",
       "save_type_abbr": "DEX",
@@ -2415,7 +2415,9 @@
       "components_short": "S/M",
       "tags_short": "Damage",
       "effect_short": "1d10",
-      "higher_level": "When you cast this spell using a spell slot of 2nd level or higher, the cold damage increases by 1d6 for each slot level above 1st."
+      "higher_level": "When you cast this spell using a spell slot of 2nd level or higher, the cold damage increases by 1d6 for each slot level above 1st.",
+      "secondary_damage_dice": "2d6",
+      "secondary_damage_type": "Cold"
     },
     {
       "name": "Identify",
@@ -7620,7 +7622,7 @@
         "Wizard"
       ],
       "spell_index": 279,
-      "damage_type": "Cold",
+      "damage_type": "Bludgeoning",
       "save_type": "Dexterity Save",
       "higher_level": "When you cast this spell using a spell slot of 5th level or higher, the bludgeoning damage increases by 1d8 for each slot level above 4th.",
       "save_type_abbr": "DEX",
@@ -7632,7 +7634,9 @@
       "duration_short": "Inst.",
       "components_short": "V/S/M",
       "tags_short": "Buff, Damage",
-      "effect_short": "2d8"
+      "effect_short": "2d8",
+      "secondary_damage_dice": "4d6",
+      "secondary_damage_type": "Cold"
     },
     {
       "name": "Locate Creature",
@@ -7920,7 +7924,7 @@
       ],
       "spell_index": 377,
       "area": "20 ft ft radius sphere",
-      "damage_type": "Lightning",
+      "damage_type": "Bludgeoning",
       "attack_type": "ranged",
       "save_type": "Strength Save",
       "save_type_abbr": "STR",
@@ -7932,7 +7936,9 @@
       "components_short": "V/S",
       "tags_short": "Buff, Debuff, Utility, Damage",
       "effect_short": "2d6",
-      "higher_level": "When you cast this spell using a spell slot of 5th level or higher, the damage for each of its effects increases by 1d6 for each slot level above 4th."
+      "higher_level": "When you cast this spell using a spell slot of 5th level or higher, the damage for each of its effects increases by 1d6 for each slot level above 4th.",
+      "secondary_damage_dice": "4d6",
+      "secondary_damage_type": "Lightning"
     },
     {
       "name": "Vitriolic Sphere",
@@ -8653,7 +8659,9 @@
       "duration_short": "Inst.",
       "components_short": "V/S/M",
       "tags_short": "Buff, Damage",
-      "effect_short": "4d6"
+      "effect_short": "4d6",
+      "secondary_damage_dice": "4d6",
+      "secondary_damage_type": "Radiant"
     },
     {
       "name": "Geas",
@@ -11909,7 +11917,9 @@
       "duration_short": "Inst.",
       "components_short": "V/S",
       "tags_short": "Damage",
-      "effect_short": "20d6"
+      "effect_short": "20d6",
+      "secondary_damage_dice": "20d6",
+      "secondary_damage_type": "Bludgeoning"
     },
     {
       "name": "Power Word Heal",
