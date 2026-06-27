@@ -47,12 +47,14 @@ def create_app():
     from routes.tracker import tracker_bp
     from routes.spells import spells_bp
     from routes.content import content_bp
+    from routes.feedback import feedback_bp
 
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
     app.register_blueprint(characters_bp, url_prefix="/api/characters")
     app.register_blueprint(tracker_bp, url_prefix="/api/tracker")
     app.register_blueprint(spells_bp, url_prefix="/api/spells")
     app.register_blueprint(content_bp, url_prefix="/api/content")
+    app.register_blueprint(feedback_bp, url_prefix="/api/feedback")
 
     with app.app_context():
         db.create_all()

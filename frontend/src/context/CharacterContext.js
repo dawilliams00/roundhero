@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
 import api from '../utils/api';
 import { HASTED_EFFECT, LETHARGIC_CONDITION } from '../utils/dnd';
 
@@ -7,10 +7,32 @@ const CharacterContext = createContext(null);
 const EMPTY_TURN = { Action: false, 'Bonus Action': false, Reaction: false, Haste: false };
 
 export function CharacterProvider({ children }) {
-  const [character, setCharacter]   = useState(null);
+  const [character, setCharacterState] = useState(null);
   const [characters, setCharacters] = useState([]);
   const [loading, setLoading]       = useState(false);
   const [turnUsed, setTurnUsed]     = useState(EMPTY_TURN);
+
+  // characterRef always holds the LATEST character, updated synchronously in the same
+  // tick as setCharacterState (not via a useEffect, which only runs after React commits
+  // and re-renders - too late for what this is for). A function like doCast in
+  // SpellDetailModal awaits multiple context calls in sequence (useSlot, then
+  // tryTrackConcentration's setConcentration); each of those calls is a closure bound to
+  // whatever `character` existed when SpellDetailModal last rendered BEFORE the click -
+  // re-renders triggered by the EARLIER awaited call's state update don't retroactively
+  // change what the ALREADY-RUNNING doCast closure references. Without this ref, a
+  // function that spreads `character.tracker_data` to build its save payload would spread
+  // a stale pre-click snapshot, silently reverting whatever the earlier call (e.g. a
+  // spell slot decrement) had just persisted. setConcentration/replaceConcentration/
+  // setConcentrationTarget and spendSorceryPoints read from the ref instead specifically
+  // because they're the ones actually called in that kind of sequence.
+  const characterRef = useRef(null);
+  const setCharacter = useCallback((updater) => {
+    setCharacterState(prev => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      characterRef.current = next;
+      return next;
+    });
+  }, []);
 
   const resetTurn = useCallback(() => setTurnUsed(EMPTY_TURN), []);
 
@@ -158,25 +180,30 @@ export function CharacterProvider({ children }) {
 
   // Fills an empty slot when a concentration spell is cast - never overwrites an
   // occupied slot (use replaceConcentration for that), so it never needs Haste cleanup.
+  // Reads characterRef (see above) rather than the closure `character`, because doCast
+  // calls this AFTER useSlot already changed tracker_data - a closure-captured `character`
+  // here would still be the pre-cast snapshot and would revert that slot use on save.
   const setConcentration = useCallback(async (idx, spellName, level, target) => {
-    if (!character) return;
-    const conc = character.tracker_data.concentration || {};
+    const cur = characterRef.current;
+    if (!cur) return;
+    const conc = cur.tracker_data.concentration || {};
     const slots = [...(conc.slots || [{}, {}])];
     slots[idx] = { spell: spellName, level: level ?? '', target };
-    await saveTrackerData({ ...character.tracker_data, concentration: { ...conc, slots } });
-  }, [character, saveTrackerData]);
+    await saveTrackerData({ ...cur.tracker_data, concentration: { ...conc, slots } });
+  }, [saveTrackerData]);
 
   // Patches just the target (self/ally) of an already-filled slot, once the player's
   // self/ally choice resolves - doesn't touch spell/level, so it's safe to call after
   // setConcentration already filled the slot without knowing the target yet.
   const setConcentrationTarget = useCallback(async (idx, target) => {
-    if (!character) return;
-    const conc = character.tracker_data.concentration || {};
+    const cur = characterRef.current;
+    if (!cur) return;
+    const conc = cur.tracker_data.concentration || {};
     const slots = [...(conc.slots || [{}, {}])];
     if (!slots[idx]) return;
     slots[idx] = { ...slots[idx], target };
-    await saveTrackerData({ ...character.tracker_data, concentration: { ...conc, slots } });
-  }, [character, saveTrackerData]);
+    await saveTrackerData({ ...cur.tracker_data, concentration: { ...conc, slots } });
+  }, [saveTrackerData]);
 
   // The one place a concentration slot is cleared or overwritten - used for both a plain
   // "Drop" and a "replace this slot with my new spell" (the concentration-full prompt).
@@ -187,8 +214,9 @@ export function CharacterProvider({ children }) {
   // separate code paths (ConcentrationModal's Drop button vs SpellDetailModal's replace-
   // prompt) that only one of them implemented the cleanup for - now there's only one path.
   const replaceConcentration = useCallback(async (idx, newSpellName = '', newLevel = '', newTarget = undefined) => {
-    if (!character) return null;
-    const td = character.tracker_data;
+    const cur = characterRef.current;
+    if (!cur) return null;
+    const td = cur.tracker_data;
     const conc = td.concentration || {};
     const slots = [...(conc.slots || [{}, {}])];
     const old = slots[idx] || {};
@@ -208,13 +236,26 @@ export function CharacterProvider({ children }) {
       } : {}),
     });
     return { droppedSpell: oldSpell, wasSelfHaste, wasAllyHaste };
-  }, [character, saveTrackerData]);
+  }, [saveTrackerData]);
+
+  // Deducts a class resource (e.g. Sorcery Points) by name - used for applying Metamagic
+  // mid-cast, after a spell slot may have already been used in the same doCast sequence.
+  // Reads characterRef for the same reason setConcentration does.
+  const spendFeatureCharges = useCallback(async (featureName, amount) => {
+    const cur = characterRef.current;
+    if (!cur) return;
+    const td = cur.tracker_data;
+    const feat = td.features?.[featureName];
+    if (!feat) return;
+    const newCurrent = Math.max(0, (feat.current || 0) - amount);
+    await saveTrackerData({ ...td, features: { ...td.features, [featureName]: { ...feat, current: newCurrent } } });
+  }, [saveTrackerData]);
 
   return (
     <CharacterContext.Provider value={{
       character, characters, loading, turnUsed, setTurnUsed, resetTurn,
       fetchCharacters, loadCharacter, updateCharacter,
-      useFeature, useSlot, restoreSlot, doRest, saveTrackerData, saveSpellData, importCharacter, resyncCharacter, deleteCharacter, useItemCharge, addActiveEffect, removeActiveEffect, addCondition, removeCondition, setConcentration, setConcentrationTarget, replaceConcentration, setCharacter,
+      useFeature, useSlot, restoreSlot, doRest, saveTrackerData, saveSpellData, importCharacter, resyncCharacter, deleteCharacter, useItemCharge, addActiveEffect, removeActiveEffect, addCondition, removeCondition, setConcentration, setConcentrationTarget, replaceConcentration, spendFeatureCharges, setCharacter,
     }}>
       {children}
     </CharacterContext.Provider>

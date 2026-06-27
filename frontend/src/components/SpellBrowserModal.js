@@ -20,7 +20,7 @@ export default function SpellBrowserModal({ character, knownSpells, onAdd, onRem
     const matchSearch = !search || s.name.toLowerCase().includes(search.toLowerCase());
     const matchFilter = filter === 'all' || (filter === 'cantrip' ? s.level_int === 0 : s.level_int === parseInt(filter));
     return matchSearch && matchFilter;
-  });
+  }).sort((a,b) => (a.level_int - b.level_int) || a.name.localeCompare(b.name));
 
   return (
     <div className="modal-overlay" onClick={onClose}>

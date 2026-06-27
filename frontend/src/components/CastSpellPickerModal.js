@@ -17,7 +17,8 @@ export default function CastSpellPickerModal({ onClose, bucket }) {
     ? knownSpells.filter(s => spellLists[activeList].includes(s.name) || isAlwaysAvailable(s))
     : knownSpells;
   const bucketFiltered = bucket ? visibleSpells.filter(s => spellCastBucket(s.casting_time) === bucket) : visibleSpells;
-  const spells = bucketFiltered.filter(s => !search || s.name.toLowerCase().includes(search.toLowerCase()));
+  const spells = bucketFiltered.filter(s => !search || s.name.toLowerCase().includes(search.toLowerCase()))
+    .sort((a,b) => (a.level_int - b.level_int) || a.name.localeCompare(b.name));
 
   return (
     <div className="modal-overlay" onClick={onClose}>

@@ -5,6 +5,8 @@ import AbilityDetailModal from './AbilityDetailModal';
 import ConfirmModal from './ConfirmModal';
 import CustomAbilityModal from './CustomAbilityModal';
 import FeatBrowserModal from './FeatBrowserModal';
+import FeatureEditModal from './FeatureEditModal';
+import SorceryPointsModal from './SorceryPointsModal';
 import InfoModal from './InfoModal';
 
 export default function TrackerTab() {
@@ -15,6 +17,8 @@ export default function TrackerTab() {
   const [showCustom, setCustom] = useState(false);
   const [showFeatBrowser, setShowFeatBrowser] = useState(false);
   const [infoMessage, setInfoMessage] = useState(null);
+  const [editingFeature, setEditingFeature] = useState(null);
+  const [showSorceryPoints, setShowSorceryPoints] = useState(false);
 
   if (!character) return null;
   const td       = character.tracker_data || {};
@@ -113,6 +117,11 @@ export default function TrackerTab() {
 
   const featList  = Object.entries(features).filter(([,v]) => v.max > 0);
   const infoList  = Object.entries(features).filter(([,v]) => v.max === 0);
+  // Name-based, not class-based - matches whatever the feature is actually called on
+  // THIS character's sheet (manually-built characters get "Font of Magic (Sorcerer
+  // Points)" verbatim from content_packs.py; older or PDF-imported ones might just say
+  // "Font of Magic"), so Flexible Casting/Metamagic management works either way.
+  const sorceryFeatureName = Object.keys(features).find(n => n.toLowerCase().includes('font of magic'));
   const chargeList = Object.entries(charges);
 
   return (
@@ -152,8 +161,12 @@ export default function TrackerTab() {
                 <button onClick={() => adjustFeature(name,-1)} style={{background:'var(--danger)',color:'#fff',borderRadius:4,width:22,height:22,fontWeight:700,fontSize:14}}>−</button>
                 <span style={{color: feat.current>0 ? 'var(--success)' : 'var(--danger)',fontWeight:700,fontSize:15,minWidth:36,textAlign:'center'}}>{feat.current}/{feat.max}</span>
                 <button onClick={() => adjustFeature(name,1)} style={{background:'var(--success)',color:'#fff',borderRadius:4,width:22,height:22,fontWeight:700,fontSize:14}}>+</button>
+                {name === sorceryFeatureName && (
+                  <button className="btn btn-secondary btn-sm" onClick={() => setShowSorceryPoints(true)} style={{marginLeft:4}}>🔮 Manage</button>
+                )}
+                <button onClick={() => setEditingFeature(name)} title="Edit this feature" style={{background:'var(--bg-hover)',color:'var(--text-dim)',borderRadius:4,width:22,height:22,fontWeight:700,fontSize:12,marginLeft:4}}>✏️</button>
                 {isDeletable(name) && (
-                  <button onClick={() => setConfirmRemove(name)} title="Remove this ability" style={{background:'var(--bg-hover)',color:'var(--text-dim)',borderRadius:4,width:22,height:22,fontWeight:700,fontSize:14,marginLeft:4}}>×</button>
+                  <button onClick={() => setConfirmRemove(name)} title="Remove this ability" style={{background:'var(--bg-hover)',color:'var(--text-dim)',borderRadius:4,width:22,height:22,fontWeight:700,fontSize:14}}>×</button>
                 )}
               </div>
             </div>
@@ -189,6 +202,10 @@ export default function TrackerTab() {
                 <div style={{color:'var(--text-primary)',fontSize:13,fontWeight:500}}>{name}</div>
                 {feat.description && <div style={{color:'var(--text-dim)',fontSize:11,marginTop:2,lineHeight:1.5}}>{feat.description.substring(0,120)}{feat.description.length>120?'…':''}</div>}
               </div>
+              {name === sorceryFeatureName && (
+                <button className="btn btn-secondary btn-sm" onClick={(e) => { e.stopPropagation(); setShowSorceryPoints(true); }}>🔮 Manage</button>
+              )}
+              <button onClick={(e) => { e.stopPropagation(); setEditingFeature(name); }} title="Edit this feature" style={{background:'var(--bg-hover)',color:'var(--text-dim)',borderRadius:4,width:22,height:22,fontWeight:700,fontSize:12,flexShrink:0}}>✏️</button>
               {isDeletable(name) && (
                 <button onClick={(e) => { e.stopPropagation(); setConfirmRemove(name); }} title="Remove this ability" style={{background:'var(--bg-hover)',color:'var(--text-dim)',borderRadius:4,width:22,height:22,fontWeight:700,fontSize:14,flexShrink:0}}>×</button>
               )}
@@ -227,6 +244,12 @@ export default function TrackerTab() {
       {showCustom && <CustomAbilityModal onClose={() => setCustom(false)} />}
       {showFeatBrowser && <FeatBrowserModal onAdd={addFeatFromLibrary} onClose={() => setShowFeatBrowser(false)} />}
       {infoMessage && <InfoModal title="Feats" message={infoMessage} onClose={() => setInfoMessage(null)} />}
+      {editingFeature && (
+        <FeatureEditModal name={editingFeature} feature={features[editingFeature]} onClose={() => setEditingFeature(null)} />
+      )}
+      {showSorceryPoints && sorceryFeatureName && (
+        <SorceryPointsModal featureName={sorceryFeatureName} onClose={() => setShowSorceryPoints(false)} />
+      )}
       {confirmRemove && (
         <ConfirmModal
           title="Remove Ability?"

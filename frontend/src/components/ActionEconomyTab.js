@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
-import { SECTION_ORDER, SECTION_COLORS, slotBadgeTextColor, concentrationSlotCount, HASTED_EFFECT } from '../utils/dnd';
+import { SECTION_ORDER, SECTION_COLORS, slotBadgeTextColor, concentrationSlotCount, HASTED_EFFECT, LETHARGIC_CONDITION } from '../utils/dnd';
 import AbilityDetailModal from './AbilityDetailModal';
 import CastSpellPickerModal from './CastSpellPickerModal';
 import ItemSpellsModal from './ItemSpellsModal';
@@ -43,7 +43,17 @@ export default function ActionEconomyTab() {
   const concSlots = td.concentration?.slots || [];
   const concMaxSlots = concentrationSlotCount(items);
 
-  const resetTurn = () => setTurnUsed({ Action: false, 'Bonus Action': false, Reaction: false, Haste: false });
+  // Lethargic RAW lasts "until the end of your next turn" - this app has no real
+  // round/turn counter to time that precisely against, so clicking New Turn (the
+  // simplest stand-in for "a turn has passed") clears it. Simplified, but matches the
+  // rest of this app's philosophy of tracking state rather than enforcing exact timing.
+  const resetTurn = () => {
+    setTurnUsed({ Action: false, 'Bonus Action': false, Reaction: false, Haste: false });
+    const conditions = td.conditions || [];
+    if (conditions.includes(LETHARGIC_CONDITION)) {
+      saveTrackerData({ ...td, conditions: conditions.filter(c => c !== LETHARGIC_CONDITION) });
+    }
+  };
 
   const toggleInitiative = () => {
     saveTrackerData({ ...td, in_initiative: !inInitiative });

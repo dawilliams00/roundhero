@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
-import { schoolColor, getSpellcastingBlocks, getAbilityOverrideBlock, scaleSpellDamage, rollDamage, concentrationSlotCount, HASTED_EFFECT } from '../utils/dnd';
+import { schoolColor, getSpellcastingBlocks, getAbilityOverrideBlock, scaleSpellDamage, rollDamage, concentrationSlotCount, HASTED_EFFECT, METAMAGIC_OPTIONS, metamagicCost } from '../utils/dnd';
 import InfoModal from './InfoModal';
 
 const SELF_TARGET_EFFECTS = { haste: HASTED_EFFECT };
 
 export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuccess }) {
-  const { character, useSlot, useFeature, saveTrackerData, setConcentration, replaceConcentration } = useCharacter();
+  const { character, useSlot, useFeature, saveTrackerData, setConcentration, replaceConcentration, spendFeatureCharges } = useCharacter();
   const [casting, setCasting] = useState(false);
   const [cast, setCast]       = useState(null);
   const [awaitingTarget, setAwaitingTarget] = useState(false);
@@ -15,6 +15,7 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
   const [concPrompt, setConcPrompt] = useState(null);
   const [concSlotIdx, setConcSlotIdx] = useState(null);
   const [hasteEndedMessage, setHasteEndedMessage] = useState(null);
+  const [metamagicChoice, setMetamagicChoice] = useState('');
 
   if (!character) return null;
   const slots = character.tracker_data?.spell_slots || {};
@@ -40,6 +41,13 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
   const freeUseFeature = spell.free_use_feature;
   const freeUseCharge = freeUseFeature ? character.tracker_data?.features?.[freeUseFeature] : null;
   const freeUseAvailable = !!freeUseCharge && (freeUseCharge.current || 0) > 0;
+  // Metamagic - name-based, not class-based, same reasoning as the Sorcery Points
+  // detection in TrackerTab.js. Not offered for chargeMode (item-granted) casts - keeps
+  // scope to the common case of a Sorcerer casting their own spell.
+  const knownMetamagic = character.tracker_data?.metamagic_known || [];
+  const sorceryFeatureName = Object.keys(character.tracker_data?.features || {}).find(n => n.toLowerCase().includes('font of magic'));
+  const sorceryPoints = sorceryFeatureName ? (character.tracker_data.features[sorceryFeatureName]?.current || 0) : 0;
+  const metamagicAvailable = !chargeMode && knownMetamagic.length > 0;
   // For a charge-cast spell (e.g. Lightning Bolt via Staff of the Magi), spell.level_int is
   // already overridden to the item's fixed cast_level - that's the level this preview and
   // the eventual cast both need, not the cast-level dropdown (which doesn't apply here).
@@ -113,14 +121,25 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
     setCasting(true);
     try {
       let levelUsed = spell.level_int;
+      // Spend the Metamagic cost FIRST, before anything else touches tracker_data this
+      // cast - spendFeatureCharges reads characterRef fresh regardless of ordering (see
+      // CharacterContext.js), but doing it first keeps the sequence easy to reason about.
+      let metaNote = '';
+      if (metamagicChoice && sorceryFeatureName) {
+        const cost = metamagicCost(metamagicChoice, { level_int: isCantrip ? 0 : (castLevel || spell.level_int) });
+        if (sorceryPoints >= cost) {
+          await spendFeatureCharges(sorceryFeatureName, cost);
+          metaNote = ` + ${metamagicChoice} (${cost} SP)`;
+        }
+      }
       if (chargeMode) {
         await chargeMode.onCast();
-        setCast(`Cast using ${chargeMode.chargeCost} charge${chargeMode.chargeCost===1?'':'s'}!`);
+        setCast(`Cast using ${chargeMode.chargeCost} charge${chargeMode.chargeCost===1?'':'s'}!${metaNote}`);
       } else if (isCantrip) {
-        setCast('Cast! (no slot used)');
+        setCast(`Cast! (no slot used)${metaNote}`);
       } else if (castLevel) {
         await useSlot(castLevel);
-        setCast(`Cast at level ${castLevel}!`);
+        setCast(`Cast at level ${castLevel}!${metaNote}`);
         levelUsed = castLevel;
       }
       const tracked = await tryTrackConcentration(levelUsed);
@@ -275,6 +294,24 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
                         <select value={castLevel} onChange={e => setCastLevel(parseInt(e.target.value))}>
                           {availableLevels.map(l => <option key={l} value={l}>{l}</option>)}
                         </select>
+                      </div>
+                    )}
+                    {metamagicAvailable && (
+                      <div style={{marginBottom:8}}>
+                        <div style={{display:'flex',alignItems:'center',gap:8}}>
+                          <span style={{color:'var(--text-dim)',fontSize:12}}>Metamagic:</span>
+                          <select value={metamagicChoice} onChange={e => setMetamagicChoice(e.target.value)}>
+                            <option value="">None</option>
+                            {knownMetamagic.map(name => {
+                              const cost = metamagicCost(name, { level_int: isCantrip ? 0 : (castLevel || spell.level_int) });
+                              return <option key={name} value={name} disabled={sorceryPoints < cost}>{name} ({cost} SP)</option>;
+                            })}
+                          </select>
+                          <span style={{color:'var(--text-dim)',fontSize:11}}>{sorceryPoints} SP available</span>
+                        </div>
+                        {metamagicChoice && (
+                          <div style={{color:'var(--accent-light)',fontSize:11,marginTop:4}}>{METAMAGIC_OPTIONS[metamagicChoice]?.text}</div>
+                        )}
                       </div>
                     )}
                     {!isCantrip && freeUseAvailable && (

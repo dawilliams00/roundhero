@@ -21,6 +21,37 @@ export const EXHAUSTION_RAW_TEXT = `Effects are cumulative - each level includes
 
 Finishing a long rest reduces a creature's exhaustion level by 1, provided they have also had some food and drink.`;
 
+// Sorcerer's Font of Magic / Metamagic, paraphrased in our own words (mechanical intent
+// only, not the printed rules text) - point cost per option, plus a short plain-language
+// summary the player applies themselves. Twinned Spell's cost depends on the spell being
+// cast (its level, minimum 1 for a cantrip); every other option is a flat cost. The 8
+// PHB options plus Tasha's Cauldron's Seeking Spell and Transmuted Spell.
+export const METAMAGIC_OPTIONS = {
+  'Careful Spell':    { cost: 1, text: "Pick up to your CHA modifier (minimum 1) creatures who'd be forced to save against this spell - they automatically succeed, no roll needed." },
+  'Distant Spell':    { cost: 1, text: "Double this spell's range. If it's a touch spell, its range becomes 30 feet instead." },
+  'Empowered Spell':  { cost: 1, text: "Reroll up to your CHA modifier (minimum 1) of this spell's damage dice and keep the new results. Only once per casting." },
+  'Extended Spell':   { cost: 1, text: "Double this spell's duration (must be 1 minute or longer to start), up to a 24-hour cap." },
+  'Heightened Spell': { cost: 3, text: "One target of this spell has disadvantage on its first saving throw against it." },
+  'Quickened Spell':  { cost: 2, text: "Cast this spell as a bonus action instead of its normal action casting time." },
+  'Subtle Spell':     { cost: 1, text: "Cast this spell with no verbal or somatic components." },
+  'Twinned Spell':    { cost: 'level', text: "This spell can only target one creature and doesn't say \"self\" - target a second creature in range with the same casting. Costs sorcery points equal to the spell's level (1 for a cantrip)." },
+  'Seeking Spell':    { cost: 2, text: "(Tasha's Cauldron) If this spell needed an attack roll and missed, reroll the d20 and use the new result. Stacks with another Metamagic option used this same cast." },
+  'Transmuted Spell': { cost: 1, text: "(Tasha's Cauldron) Swap this spell's damage type to a different one from acid, cold, fire, lightning, poison, or thunder." },
+};
+
+export const metamagicCost = (optionName, spell) => {
+  const opt = METAMAGIC_OPTIONS[optionName];
+  if (!opt) return 0;
+  return opt.cost === 'level' ? Math.max(1, spell?.level_int || 1) : opt.cost;
+};
+
+// Flexible Casting (also Font of Magic): converting points into a slot costs more than
+// the slot's level, converting a slot into points gives back exactly the slot's level.
+// No slot higher than 5th can be created this way.
+export const SORCERY_POINTS_TO_SLOT_COST = { 1: 2, 2: 3, 3: 5, 4: 6, 5: 7 };
+
+Finishing a long rest reduces a creature's exhaustion level by 1, provided they have also had some food and drink.`;
+
 export const ABILITY_KEYS = ['STR','DEX','CON','INT','WIS','CHA'];
 export const ABILITY_LABELS = { STR:'Strength', DEX:'Dexterity', CON:'Constitution', INT:'Intelligence', WIS:'Wisdom', CHA:'Charisma' };
 export const SKILL_MAP = {

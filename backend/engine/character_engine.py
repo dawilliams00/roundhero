@@ -91,13 +91,10 @@ def build_tracker_data(class_name, level, ability_scores):
 
     if class_name == "Sorcerer":
         # RAW: sorcery points = sorcerer level, starting at 2nd level (Font of Magic).
-        # Tracked as a plain scaling counter, same as Rage/Ki - what each Metamagic
-        # option actually DOES mechanically isn't modeled, same "track the resource,
-        # the player applies RAW" philosophy as conditions/exhaustion.
         sp_max = level if level >= 2 else 0
-        if "Font of Magic" in features:
-            features["Font of Magic"]["max"] = sp_max
-            features["Font of Magic"]["current"] = sp_max
+        if "Font of Magic (Sorcerer Points)" in features:
+            features["Font of Magic (Sorcerer Points)"]["max"] = sp_max
+            features["Font of Magic (Sorcerer Points)"]["current"] = sp_max
 
     spell_slots = get_spell_slots(class_name, level)
 

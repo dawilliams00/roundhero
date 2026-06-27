@@ -12,6 +12,7 @@ import SettingsModal from './SettingsModal';
 import ConditionsModal from './ConditionsModal';
 import InfoModal from './InfoModal';
 import NumberPadPopover from './NumberPadPopover';
+import FeedbackModal from './FeedbackModal';
 
 // Mechanical side-effects of active_effects that are easy to forget about mid-combat,
 // shown as their own header chips instead of only ever appearing once in a cast popup -
@@ -165,6 +166,7 @@ export default function CharacterHeader({ onBack }) {
   const [viewingCondition, setViewingCondition] = useState(null);
   const [showExhaustionInfo, setShowExhaustionInfo] = useState(false);
   const [conditionInfo, setConditionInfo] = useState({});
+  const [showFeedback, setShowFeedback] = useState(false);
 
   useEffect(() => {
     api.get('/content/conditions').then(r => {
@@ -256,6 +258,7 @@ export default function CharacterHeader({ onBack }) {
                 <div style={{color:'var(--text-dim)',fontSize:11}}>L{level} {race} {class_name}</div>
               </div>
               <button className="btn-icon" title="Settings" onClick={() => setShowSettings(true)} style={{fontSize:14,padding:'4px 7px'}}>⚙️</button>
+              <button className="btn-icon" title="Send Feedback / Suggest a Feature" onClick={() => setShowFeedback(true)} style={{fontSize:14,padding:'4px 7px'}}>💬</button>
             </div>
 
             <div style={{display:'flex',gap:8,alignItems:'flex-start',flexWrap:'wrap'}}>
@@ -391,6 +394,7 @@ export default function CharacterHeader({ onBack }) {
         <RestSummaryModal summary={restSummary.summary} restType={restSummary.restType} onClose={() => setRestSummary(null)} />
       )}
       {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
+      {showFeedback && <FeedbackModal onClose={() => setShowFeedback(false)} />}
       {showConditions && <ConditionsModal onClose={() => setShowConditions(false)} />}
       {viewingCondition && (
         <InfoModal

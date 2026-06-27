@@ -45,9 +45,11 @@ export default function SpellListManagerModal({ knownSpells, spellLists, activeL
 
   const setActiveList = (name) => onSave(lists, name);
 
+  const byLevelThenName = (a,b) => (a.level_int - b.level_int) || a.name.localeCompare(b.name);
+
   if (editing !== null) {
-    const selectableSpells = knownSpells.filter(s => !s.ritual && !s.granted_by && s.level_int !== 0);
-    const alwaysAvailable  = knownSpells.filter(s => s.ritual || s.granted_by || s.level_int === 0);
+    const selectableSpells = knownSpells.filter(s => !s.ritual && !s.granted_by && s.level_int !== 0).sort(byLevelThenName);
+    const alwaysAvailable  = knownSpells.filter(s => s.ritual || s.granted_by || s.level_int === 0).sort(byLevelThenName);
     const selectedCount = Array.from(editSelected).filter(n => selectableSpells.some(s => s.name === n)).length;
     const atCap = maxPrepared != null && selectedCount >= maxPrepared;
     return (
