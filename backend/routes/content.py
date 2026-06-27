@@ -82,7 +82,48 @@ def list_items():
 
 @content_bp.route("/monsters", methods=["GET"])
 def list_monsters():
-    return jsonify(get_all_monsters()), 200
+    base = get_all_monsters()
+    # Same shared-homebrew pattern as spells/feats - a duplicated-and-renamed monster
+    # (see Bestiary's "Duplicate" button) is visible to everyone, not just its creator.
+    customs = [c.to_dict() for c in CustomContent.query.filter_by(content_type="monster").all()]
+    return jsonify(base + customs), 200
+
+@content_bp.route("/monsters", methods=["POST"])
+@jwt_required()
+def create_custom_monster():
+    user_id = int(get_jwt_identity())
+    payload = request.get_json() or {}
+    if not (payload.get("name") or "").strip():
+        return jsonify({"error": "Monster name is required"}), 400
+    entry = CustomContent(user_id=user_id, content_type="monster", name=payload["name"].strip())
+    entry.data = payload
+    db.session.add(entry)
+    db.session.commit()
+    return jsonify(entry.to_dict()), 201
+
+@content_bp.route("/monsters/<int:custom_id>", methods=["PUT"])
+@jwt_required()
+def update_custom_monster(custom_id):
+    entry = CustomContent.query.filter_by(id=custom_id, content_type="monster").first()
+    if not entry:
+        return jsonify({"error": "Custom monster not found"}), 404
+    payload = request.get_json() or {}
+    if not (payload.get("name") or "").strip():
+        return jsonify({"error": "Monster name is required"}), 400
+    entry.name = payload["name"].strip()
+    entry.data = payload
+    db.session.commit()
+    return jsonify(entry.to_dict()), 200
+
+@content_bp.route("/monsters/<int:custom_id>", methods=["DELETE"])
+@jwt_required()
+def delete_custom_monster(custom_id):
+    entry = CustomContent.query.filter_by(id=custom_id, content_type="monster").first()
+    if not entry:
+        return jsonify({"error": "Custom monster not found"}), 404
+    db.session.delete(entry)
+    db.session.commit()
+    return jsonify({"ok": True}), 200
 
 @content_bp.route("/conditions", methods=["GET"])
 def list_conditions():

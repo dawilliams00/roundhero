@@ -2,6 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import api from '../utils/api';
 import { useCharacter } from '../context/CharacterContext';
 import MonsterDetailModal from './MonsterDetailModal';
+import DuplicateMonsterModal from './DuplicateMonsterModal';
+import MonsterEditModal from './MonsterEditModal';
 import InfoModal from './InfoModal';
 import ConfirmModal from './ConfirmModal';
 
@@ -18,10 +20,34 @@ export default function BestiaryTab() {
   const [viewingActive, setViewingActive] = useState(null);
   const [infoMessage, setInfoMessage] = useState(null);
   const [confirmDismiss, setConfirmDismiss] = useState(null);
+  const [duplicating, setDuplicating] = useState(null);
+  const [editingMonster, setEditingMonster] = useState(null);
+
+  const loadMonsters = () => api.get('/content/monsters').then(r => setMonsters(r.data));
 
   useEffect(() => {
-    api.get('/content/monsters').then(r => setMonsters(r.data)).finally(() => setLoading(false));
+    loadMonsters().finally(() => setLoading(false));
   }, []);
+
+  const submitDuplicate = async (newMonster) => {
+    await api.post('/content/monsters', newMonster);
+    await loadMonsters();
+    setDuplicating(null);
+    setViewing(null);
+    setInfoMessage(`"${newMonster.name}" added as a homebrew creature - find it in the list to edit further.`);
+  };
+
+  const saveEditedMonster = async (data) => {
+    await api.put(`/content/monsters/${editingMonster._custom_id}`, data);
+    await loadMonsters();
+    setEditingMonster(null);
+  };
+
+  const deleteEditedMonster = async () => {
+    await api.delete(`/content/monsters/${editingMonster._custom_id}`);
+    await loadMonsters();
+    setEditingMonster(null);
+  };
 
   const types = useMemo(() => [...new Set(monsters.map(m => m.type))].sort(), [monsters]);
   const crs = useMemo(() => CR_ORDER.filter(cr => monsters.some(m => m.challenge_rating === cr)), [monsters]);
@@ -108,9 +134,12 @@ export default function BestiaryTab() {
           ) : filtered.length === 0 ? (
             <div style={{color:'var(--text-dim)',textAlign:'center',padding:24}}>No monsters found.</div>
           ) : filtered.map(m => (
-            <div key={m.name} style={{display:'flex',alignItems:'center',gap:8,padding:'8px 0',borderBottom:'1px solid var(--border)',cursor:'pointer'}} onClick={() => setViewing(m)}>
+            <div key={m._custom_id ? `custom_${m._custom_id}` : `srd_${m.name}`} style={{display:'flex',alignItems:'center',gap:8,padding:'8px 0',borderBottom:'1px solid var(--border)',cursor:'pointer'}} onClick={() => setViewing(m)}>
               <div style={{flex:1}}>
-                <div style={{color:'var(--text-primary)',fontWeight:500,fontSize:13}}>{m.name}</div>
+                <div style={{display:'flex',alignItems:'center',gap:6}}>
+                  <span style={{color:'var(--text-primary)',fontWeight:500,fontSize:13}}>{m.name}</span>
+                  {m._source === 'custom' && <span style={{fontSize:10,color:'var(--accent-light)',border:'1px solid var(--accent-light)',borderRadius:8,padding:'0 6px'}}>Homebrew</span>}
+                </div>
                 <div style={{color:'var(--text-dim)',fontSize:11}}>{m.size} {m.type} · {m.alignment}</div>
               </div>
               <div style={{color:'var(--accent-light)',fontSize:12,fontWeight:600,minWidth:50,textAlign:'right'}}>CR {m.challenge_rating}</div>
@@ -119,8 +148,22 @@ export default function BestiaryTab() {
         </div>
       </div>
 
-      {viewing && <MonsterDetailModal monster={viewing} onClose={() => setViewing(null)} onSummon={summonCreature} />}
+      {viewing && (
+        <MonsterDetailModal
+          monster={viewing}
+          onClose={() => setViewing(null)}
+          onSummon={summonCreature}
+          onDuplicate={(m) => setDuplicating(m)}
+          onEdit={(m) => { setEditingMonster(m); setViewing(null); }}
+        />
+      )}
       {viewingActive && <MonsterDetailModal monster={viewingActive} onClose={() => setViewingActive(null)} />}
+      {duplicating && (
+        <DuplicateMonsterModal monster={duplicating} onDuplicate={submitDuplicate} onClose={() => setDuplicating(null)} />
+      )}
+      {editingMonster && (
+        <MonsterEditModal monster={editingMonster} onSave={saveEditedMonster} onDelete={deleteEditedMonster} onClose={() => setEditingMonster(null)} />
+      )}
       {infoMessage && <InfoModal message={infoMessage} onClose={() => setInfoMessage(null)} />}
       {confirmDismiss && (
         <ConfirmModal

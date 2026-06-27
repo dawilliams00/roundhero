@@ -41,8 +41,9 @@ function ActionBlock({ title, items }) {
   );
 }
 
-export default function MonsterDetailModal({ monster: m, onClose, onSummon }) {
+export default function MonsterDetailModal({ monster: m, onClose, onSummon, onDuplicate, onEdit }) {
   if (!m) return null;
+  const isCustom = m._source === 'custom';
   const speed = Object.entries(m.speed || {}).map(([k, v]) => k === 'walk' ? `${v} ft.` : `${k} ${v} ft.`).join(', ');
   const skills = Object.entries(m.skills || {}).map(([k, v]) => `${k} ${v>=0?'+':''}${v}`).join(', ');
 
@@ -57,6 +58,7 @@ export default function MonsterDetailModal({ monster: m, onClose, onSummon }) {
           <div style={{display:'flex',gap:10,flexWrap:'wrap',marginTop:6}}>
             <span style={{color:'var(--accent-light)',fontSize:12,fontWeight:600}}>CR {m.challenge_rating}</span>
             {m.source && <span style={{color:'var(--text-dim)',fontSize:12}}>{m.source}</span>}
+            {isCustom && <span style={{color:'var(--accent-light)',fontSize:12,border:'1px solid var(--accent-light)',borderRadius:8,padding:'0 6px'}}>Homebrew</span>}
           </div>
         </div>
         <div className="modal-body">
@@ -99,6 +101,8 @@ export default function MonsterDetailModal({ monster: m, onClose, onSummon }) {
         </div>
         <div className="modal-footer">
           <button className="btn btn-secondary" onClick={onClose}>Close</button>
+          {!isCustom && onDuplicate && <button className="btn btn-secondary" onClick={() => onDuplicate(m)}>📋 Duplicate</button>}
+          {isCustom && onEdit && <button className="btn btn-secondary" onClick={() => onEdit(m)}>✏️ Edit</button>}
           {onSummon && <button className="btn btn-primary" onClick={() => onSummon(m)}>🐉 Summon</button>}
         </div>
       </div>
