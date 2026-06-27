@@ -4,7 +4,6 @@ import api from '../utils/api';
 import AddItemModal from './AddItemModal';
 import ItemSpellsModal from './ItemSpellsModal';
 import ItemBrowserModal from './ItemBrowserModal';
-import WeaponBrowserModal from './WeaponBrowserModal';
 import ItemDetailModal from './ItemDetailModal';
 import RechargeItemModal from './RechargeItemModal';
 import InfoModal from './InfoModal';
@@ -22,7 +21,6 @@ export default function InventoryTab() {
   const { character, saveTrackerData } = useCharacter();
   const [adding, setAdding]   = useState(false);
   const [browsing, setBrowsing] = useState(false);
-  const [browsingWeapons, setBrowsingWeapons] = useState(false);
   const [editing, setEditing] = useState(null);
   const [viewing, setViewing] = useState(null);
   const [viewingSpells, setViewingSpells] = useState(null);
@@ -114,8 +112,7 @@ export default function InventoryTab() {
           <select value={sortBy} onChange={e => setSortBy(e.target.value)} style={{fontSize:11,padding:'2px 4px',marginRight:8}}>
             {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
-          <button className="btn btn-secondary btn-sm" onClick={() => setBrowsing(true)}>Add from DB</button>
-          <button className="btn btn-secondary btn-sm" onClick={() => setBrowsingWeapons(true)}>Add Weapon</button>
+          <button className="btn btn-secondary btn-sm" onClick={() => setBrowsing(true)}>Add Item</button>
           <button className="btn btn-primary btn-sm" onClick={() => setAdding(true)}>+ Add Custom</button>
         </div>
 
@@ -172,7 +169,6 @@ export default function InventoryTab() {
 
       {adding && <AddItemModal onSave={addItem} onClose={() => setAdding(false)} />}
       {browsing && <ItemBrowserModal existingItems={items} onAdd={addItem} onClose={() => setBrowsing(false)} />}
-      {browsingWeapons && <WeaponBrowserModal onAdd={addItem} onClose={() => setBrowsingWeapons(false)} />}
       {editing !== null && (
         <AddItemModal item={items[editing]} onSave={(it) => updateItem(editing, it)} onClose={() => setEditing(null)} />
       )}

@@ -44,11 +44,11 @@ function EditableStat({ label, value, onSave, color, title }) {
   );
 }
 
-function PMStat({ label, value, color, onAdjust, onClick }) {
+function PMStat({ label, value, color, onAdjust, onClick, title }) {
   return (
     <div style={{display:'flex',alignItems:'center',gap:4}}>
       <button onClick={() => onAdjust(-1)} style={{background:'var(--danger)',color:'#fff',borderRadius:4,width:22,height:22,fontWeight:700,fontSize:13,flexShrink:0}}>−</button>
-      <div className="stat-box" onClick={onClick} style={{cursor: onClick ? 'pointer' : 'default'}}>
+      <div className="stat-box" onClick={onClick} title={title} style={{cursor: onClick ? 'pointer' : 'default'}}>
         <div className="stat-value" style={{color}}>{value}</div>
         <div className="stat-label">{label}</div>
       </div>
@@ -220,6 +220,10 @@ export default function CharacterHeader({ onBack }) {
   const init   = td?.initiative ?? dexMod;
   const insp   = !!td?.inspiration;
   const exhaustion = td?.exhaustion || 0;
+  const exhaustionRules = td?.settings?.exhaustion_rules || { mode: 'raw' };
+  const exhaustionTitle = exhaustionRules.mode === 'homebrew'
+    ? `${exhaustionRules.name || 'Homebrew exhaustion'}${exhaustionRules.description ? `: ${exhaustionRules.description}` : ''}`
+    : 'RAW exhaustion (set in Settings)';
   // Exhaustion has its own stepper below, so don't double-count it if it's ever
   // also present as a legacy free-text condition string.
   const conditions = (td?.conditions || []).filter(c => c !== 'Exhaustion');
@@ -331,6 +335,7 @@ export default function CharacterHeader({ onBack }) {
               value={exhaustion}
               color={exhaustion >= 5 ? 'var(--danger)' : exhaustion >= 3 ? 'var(--warning)' : undefined}
               onAdjust={d => saveTrackerData({ ...td, exhaustion: Math.max(0, Math.min(6, exhaustion + d)) })}
+              title={exhaustionTitle}
             />
             <div style={{display:'flex',gap:4,flexWrap:'wrap',alignItems:'center'}}>
               {activeEffects.map(e => (
