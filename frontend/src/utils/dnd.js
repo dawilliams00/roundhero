@@ -279,6 +279,19 @@ export const getSpellcastingBlocks = (classNameRaw, abilityScores, totalLevel, i
     });
 };
 
+// Some feats grant a known spell with its OWN fixed spellcasting ability, overriding
+// whatever the character's class would normally use for it (e.g. Draconic Healing lets
+// you pick INT/WIS/CHA for the granted Cure Wounds, independent of your class). Same
+// attack/DC math as getSpellcastingBlocks, just keyed off one fixed ability instead of
+// the class->ability map - this is also why it works for non-casters with no spellBlocks.
+export const getAbilityOverrideBlock = (ability, abilityScores, totalLevel, items) => {
+  const prof = profBonus(totalLevel);
+  const { spell_attack_modifier: itemAtk, spell_dc_modifier: itemDc } = computeItemBonuses(items);
+  const effAb = effectiveAbilityScores(abilityScores, items);
+  const mod = modifier(effAb?.[ability] ?? 10);
+  return { className: null, ability, attackMod: mod + prof + itemAtk, saveDC: 8 + mod + prof + itemDc };
+};
+
 // Scales a spell's printed damage_dice up using its higher_level scaling text, if the
 // spell was cast above its base level. Only handles the common "+NdM per slot level
 // above Xth" phrasing; spells that scale differently (e.g. extra missiles) aren't scaled.

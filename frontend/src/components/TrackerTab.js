@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
+import api from '../utils/api';
 import AbilityDetailModal from './AbilityDetailModal';
 import ConfirmModal from './ConfirmModal';
 import CustomAbilityModal from './CustomAbilityModal';
@@ -65,17 +66,35 @@ export default function TrackerTab() {
     if (!newAe[feat.section]) newAe[feat.section] = [];
     newAe[feat.section] = [...newAe[feat.section], newAbility];
     const newTd = { ...td };
-    if (feat.max_uses > 0 || feat.isTuck) {
+    if (feat.max_uses > 0 || feat.isTuck || feat.grantsSpell) {
       newTd.features = {
         ...newTd.features,
         [key]: {
           current: feat.max_uses || 0, max: feat.max_uses || 0,
           rest_type: feat.rest_type, action: feat.section, description: feat.description,
           ...(feat.isTuck ? { spell_picker: true, tucked_spell: '', tucked_level: '' } : {}),
+          ...(feat.grantsSpell ? { granted_spell: feat.grantedSpellName, ability_override: feat.abilityOverride || null } : {}),
         },
       };
     }
-    await updateCharacter(character.id, { ae_data: newAe, tracker_data: newTd });
+    // A library feat that grants a spell (e.g. Draconic Healing) needs the full spell
+    // object added to spell_data.known_spells too, not just the feature charge - that's
+    // what makes it show up in the Spells tab and be castable at all.
+    let newSd = null;
+    if (feat.grantsSpell && feat.grantedSpellName) {
+      try {
+        const r = await api.get('/content/spells');
+        const master = r.data.find(s => s.name.toLowerCase() === feat.grantedSpellName.toLowerCase());
+        const sd = character.spell_data || {};
+        const known = sd.known_spells || [];
+        if (master && !known.some(s => s.name.toLowerCase() === master.name.toLowerCase())) {
+          newSd = { ...sd, known_spells: [...known, { ...master, granted_by: feat.name, ability_override: feat.abilityOverride || null, free_use_feature: key }] };
+        }
+      } catch {
+        // Non-fatal - the feature/charge still gets attached even if the spell lookup failed.
+      }
+    }
+    await updateCharacter(character.id, { ae_data: newAe, tracker_data: newTd, ...(newSd ? { spell_data: newSd } : {}) });
   };
 
   const adjustFeature = async (name, delta) => {

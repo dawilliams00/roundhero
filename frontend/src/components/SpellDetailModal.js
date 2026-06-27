@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
-import { schoolColor, getSpellcastingBlocks, scaleSpellDamage, rollDamage, concentrationSlotCount, HASTED_EFFECT } from '../utils/dnd';
+import { schoolColor, getSpellcastingBlocks, getAbilityOverrideBlock, scaleSpellDamage, rollDamage, concentrationSlotCount, HASTED_EFFECT } from '../utils/dnd';
 
 const SELF_TARGET_EFFECTS = { haste: HASTED_EFFECT };
 
 export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuccess }) {
-  const { character, useSlot, addActiveEffect, setConcentration } = useCharacter();
+  const { character, useSlot, useFeature, addActiveEffect, setConcentration } = useCharacter();
   const [casting, setCasting] = useState(false);
   const [cast, setCast]       = useState(null);
   const [awaitingTarget, setAwaitingTarget] = useState(false);
@@ -23,6 +23,20 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
   const [castLevel, setCastLevel] = useState(availableLevels[0] || spell.level_int);
   const selfEffect = SELF_TARGET_EFFECTS[spell.name?.toLowerCase()];
   const spellBlocks = getSpellcastingBlocks(character.class_name, character.ability_scores, character.level, character.tracker_data?.inventory?.items);
+  // A feat-granted spell (e.g. Draconic Healing's Cure Wounds) can fix its own
+  // spellcasting ability independent of the character's class - replaces the class
+  // blocks entirely for this spell rather than adding to them, since the feat text reads
+  // as "this spell always uses X," not "in addition to your class ability."
+  const displayBlocks = spell.ability_override
+    ? [getAbilityOverrideBlock(spell.ability_override, character.ability_scores, character.level, character.tracker_data?.inventory?.items)]
+    : spellBlocks;
+  // free_use_feature names a tracker_data.features entry with a charge that casts this
+  // spell without a slot (e.g. "once per long rest") - independent of whether the
+  // character has any spell slots at all, which is what lets a non-caster use a
+  // feat-granted spell that the class-spell-slot system has no idea about.
+  const freeUseFeature = spell.free_use_feature;
+  const freeUseCharge = freeUseFeature ? character.tracker_data?.features?.[freeUseFeature] : null;
+  const freeUseAvailable = !!freeUseCharge && (freeUseCharge.current || 0) > 0;
   // For a charge-cast spell (e.g. Lightning Bolt via Staff of the Magi), spell.level_int is
   // already overridden to the item's fixed cast_level - that's the level this preview and
   // the eventual cast both need, not the cast-level dropdown (which doesn't apply here).
@@ -99,6 +113,18 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
     } finally { setCasting(false); }
   };
 
+  // Free cast via a feat's charge (e.g. Draconic Healing, once per long rest) - always
+  // at the spell's own base level, independent of whether a slot was ever available.
+  const doFreeCast = async () => {
+    setCasting(true);
+    try {
+      await useFeature(freeUseFeature);
+      setCast(`Cast free (${freeUseFeature})!`);
+      const tracked = await tryTrackConcentration(spell.level_int);
+      if (tracked) continueAfterCast(spell.level_int);
+    } finally { setCasting(false); }
+  };
+
   const chooseTarget = async (isSelf) => {
     if (isSelf) await addActiveEffect(selfEffect);
     finish();
@@ -113,11 +139,11 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
             {spell.level_int === 0 ? 'Cantrip' : `Level ${spell.level_int}`} · {spell.school}
             {spell.ritual ? ' · Ritual' : ''}{spell.concentration ? ' · Concentration' : ''}
           </div>
-          {spellBlocks.length > 0 && (
+          {displayBlocks.length > 0 && (
             <div style={{display:'flex',gap:10,flexWrap:'wrap',marginTop:6}}>
-              {spellBlocks.map(b => (
-                <span key={b.className} style={{color:'var(--accent-light)',fontSize:12,fontWeight:600}}>
-                  {b.className}: {b.attackMod>=0?'+':''}{b.attackMod} atk · DC {b.saveDC}
+              {displayBlocks.map(b => (
+                <span key={b.className || b.ability} style={{color:'var(--accent-light)',fontSize:12,fontWeight:600}}>
+                  {b.className ? `${b.className}: ` : `${b.ability}: `}{b.attackMod>=0?'+':''}{b.attackMod} atk · DC {b.saveDC}
                 </span>
               ))}
             </div>
@@ -221,8 +247,13 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
                         </select>
                       </div>
                     )}
+                    {!isCantrip && freeUseAvailable && (
+                      <button className="btn btn-primary" style={{width:'100%',marginBottom:8}} disabled={casting} onClick={doFreeCast}>
+                        {casting ? 'Casting...' : `Cast Free (${freeUseFeature}: ${freeUseCharge.current}/${freeUseCharge.max})`}
+                      </button>
+                    )}
                     {!isCantrip && availableLevels.length === 0 ? (
-                      <div style={{color:'var(--danger)',fontSize:12,marginBottom:8}}>No spell slots available.</div>
+                      !freeUseAvailable && <div style={{color:'var(--danger)',fontSize:12,marginBottom:8}}>No spell slots available.</div>
                     ) : (
                       <button className="btn btn-primary" style={{width:'100%'}} disabled={casting} onClick={doCast}>
                         {casting ? 'Casting...' : isCantrip ? 'Cast (Cantrip)' : `Cast — Use Level ${castLevel} Slot`}

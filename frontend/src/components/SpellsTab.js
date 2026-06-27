@@ -34,6 +34,10 @@ export default function SpellsTab() {
   const levels = [...new Set(knownSpells.map(s=>s.level_int))].sort((a,b)=>a-b);
   const slotLevels = Object.entries(slots).filter(([,s])=>(s.max||0)>0);
   const hasAvailableSlot = (spell) => slotLevels.some(([lvl,s]) => parseInt(lvl) >= spell.level_int && (s.current||0) > 0);
+  // A feat-granted spell with a free-use charge (e.g. Draconic Healing) must stay
+  // castable even with zero spell slots - this is the actual bug behind "the app says
+  // he can't cast it" for a non-caster who only knows one spell through a feat.
+  const hasFreeUse = (spell) => spell.free_use_feature && (character.tracker_data?.features?.[spell.free_use_feature]?.current || 0) > 0;
   const spellBlocks = getSpellcastingBlocks(character.class_name, character.ability_scores, character.level, character.tracker_data?.inventory?.items);
 
   const addSpell = (spell) => {
@@ -111,7 +115,7 @@ export default function SpellsTab() {
         {knownSpells.length > 0 && (
           <div className="card">
             {spells.map((spell,i) => {
-              const castable = spell.level_int === 0 || hasAvailableSlot(spell);
+              const castable = spell.level_int === 0 || hasAvailableSlot(spell) || hasFreeUse(spell);
               return (
                 <div key={i} style={{display:'flex',alignItems:'center',gap:8,padding:'8px 0',borderBottom:'1px solid var(--border)'}}>
                   <div style={{flex:1,cursor:'pointer'}} onClick={() => setViewing(spell)}>
