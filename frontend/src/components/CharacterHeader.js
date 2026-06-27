@@ -179,9 +179,11 @@ export default function CharacterHeader({ onBack }) {
         </div>
 
         <div style={{display:'flex',gap:8,alignItems:'flex-start',flexWrap:'wrap'}}>
-          <PMStat label="HP" value={`${curHp}/${maxHp}`} color={hpCol} onAdjust={adjustHp} onClick={() => setShowHP(true)} />
+          <div style={{display:'flex',flexDirection:'column',gap:4}}>
+            <PMStat label="HP" value={`${curHp}/${maxHp}`} color={hpCol} onAdjust={adjustHp} onClick={() => setShowHP(true)} />
+            {spellBlocks.map(block => <SpellcastBox key={block.className} block={block} />)}
+          </div>
           {tempHp > 0 && <PMStat label="Temp HP" value={tempHp} color={hpCol} onAdjust={adjustTempHp} />}
-          {spellBlocks.map(block => <SpellcastBox key={block.className} block={block} />)}
 
           <EditableStat label="AC" value={ac} onSave={setAc} />
           <EditableStat label="INIT" value={init} onSave={setInit} />
