@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
-import { slotColor, maxPreparedSpells, schoolColor, slotBadgeTextColor } from '../utils/dnd';
+import { maxPreparedSpells, schoolColor, slotBadgeTextColor } from '../utils/dnd';
 import SpellBrowserModal from './SpellBrowserModal';
 import SpellDetailModal from './SpellDetailModal';
 import CustomSpellModal from './CustomSpellModal';
@@ -33,6 +33,7 @@ export default function SpellsTab() {
   });
   const levels = [...new Set(knownSpells.map(s=>s.level_int))].sort((a,b)=>a-b);
   const slotLevels = Object.entries(slots).filter(([,s])=>(s.max||0)>0);
+  const hasAvailableSlot = (spell) => slotLevels.some(([lvl,s]) => parseInt(lvl) >= spell.level_int && (s.current||0) > 0);
 
   const addSpell = (spell) => {
     saveSpellData({ ...sd, known_spells: [...knownSpells, spell] });
@@ -45,77 +46,94 @@ export default function SpellsTab() {
   };
 
   return (
-    <div style={{flex:1,overflowY:'auto',padding:12}}>
-      <div className="card" style={{marginBottom:12}}>
-        <div style={{display:'flex',alignItems:'center',marginBottom:10,gap:8,flexWrap:'wrap'}}>
-          <div style={{color:'var(--text-secondary)',fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:1,flex:1}}>Spell Slots</div>
-          <button className="btn btn-secondary btn-sm" onClick={() => setManagingLists(true)}>Manage Lists</button>
-          <button className="btn btn-secondary btn-sm" onClick={() => setBrowsing(true)}>+ Add Spells</button>
-          <button className="btn btn-primary btn-sm" onClick={() => setAddingCustom(true)}>+ Custom Spell</button>
-        </div>
-        {slotLevels.length > 0 ? (
-          <div style={{display:'flex',flexWrap:'wrap',gap:12}}>
-            {slotLevels.map(([lvl,slot]) => (
-              <div key={lvl} style={{textAlign:'center'}}>
-                <div style={{fontSize:10,color:'var(--text-dim)',marginBottom:4}}>L{lvl}</div>
-                <div style={{display:'flex',gap:3,alignItems:'center'}}>
-                  {Array.from({length:slot.max}).map((_,i) => (
-                    <button key={i} onClick={() => i===slot.current-1 && useSlot(parseInt(lvl))} style={{width:16,height:16,borderRadius:'50%',border:`2px solid var(--slot-${lvl})`,background: i<slot.current ? `var(--slot-${lvl})` : 'transparent',cursor: i===slot.current-1 ? 'pointer' : 'default'}}/>
-                  ))}
-                  <button onClick={() => restoreSlot(parseInt(lvl))} disabled={slot.current>=slot.max} title="Restore 1 slot (undo accidental cast)"
-                    style={{marginLeft:4,padding:'1px 5px',borderRadius:8,background:'var(--bg-hover)',color:'var(--text-dim)',border:'none',fontSize:11,opacity: slot.current>=slot.max ? 0.4 : 1}}>↺</button>
-                </div>
-              </div>
-            ))}
+    <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
+      <div style={{padding:12,flexShrink:0}}>
+        <div className="card" style={{marginBottom:12}}>
+          <div style={{display:'flex',alignItems:'center',marginBottom:10,gap:8,flexWrap:'wrap'}}>
+            <div style={{color:'var(--text-secondary)',fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:1,flex:1}}>Spell Slots</div>
+            <button className="btn btn-secondary btn-sm" onClick={() => setManagingLists(true)}>Manage Lists</button>
+            <button className="btn btn-secondary btn-sm" onClick={() => setBrowsing(true)}>+ Add Spells</button>
+            <button className="btn btn-primary btn-sm" onClick={() => setAddingCustom(true)}>+ Custom Spell</button>
           </div>
-        ) : (
-          <div style={{color:'var(--text-dim)',fontSize:12}}>No spell slots for this character.</div>
+          {slotLevels.length > 0 ? (
+            <div style={{display:'flex',flexWrap:'wrap',gap:12}}>
+              {slotLevels.map(([lvl,slot]) => (
+                <div key={lvl} style={{textAlign:'center'}}>
+                  <div style={{fontSize:10,color:'var(--text-dim)',marginBottom:4}}>L{lvl}</div>
+                  <div style={{display:'flex',gap:3,alignItems:'center'}}>
+                    {Array.from({length:slot.max}).map((_,i) => (
+                      <button key={i} onClick={() => i===slot.current-1 && useSlot(parseInt(lvl))} style={{width:16,height:16,borderRadius:'50%',border:`2px solid var(--slot-${lvl})`,background: i<slot.current ? `var(--slot-${lvl})` : 'transparent',cursor: i===slot.current-1 ? 'pointer' : 'default'}}/>
+                    ))}
+                    <button onClick={() => restoreSlot(parseInt(lvl))} disabled={slot.current>=slot.max} title="Restore 1 slot (undo accidental cast)"
+                      style={{marginLeft:4,padding:'1px 5px',borderRadius:8,background:'var(--bg-hover)',color:'var(--text-dim)',border:'none',fontSize:11,opacity: slot.current>=slot.max ? 0.4 : 1}}>↺</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{color:'var(--text-dim)',fontSize:12}}>No spell slots for this character.</div>
+          )}
+        </div>
+
+        {knownSpells.length > 0 && (
+          <div className="card">
+            <div style={{display:'flex',gap:8,marginBottom:10,alignItems:'center',flexWrap:'wrap'}}>
+              <span style={{color:'var(--text-dim)',fontSize:11}}>Loaded list:</span>
+              <select
+                value={activeList || ''}
+                onChange={e => saveLists(spellLists, e.target.value || null)}
+                style={{fontWeight:600,color:'var(--accent-light)',fontSize:13,minWidth:140}}
+              >
+                <option value="">All Known Spells</option>
+                {Object.keys(spellLists).map(name => <option key={name} value={name}>{name}</option>)}
+              </select>
+              {maxPrepared != null && <span style={{color:'var(--text-dim)',fontSize:11}}>prepares up to {maxPrepared} (cantrips don't count)</span>}
+            </div>
+            <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+              <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search spells..." style={{flex:1,minWidth:120}} />
+              <select value={filter} onChange={e=>setFilter(e.target.value)} style={{minWidth:80}}>
+                <option value="all">All</option>
+                <option value="cantrip">Cantrips</option>
+                {levels.filter(l=>l>0).map(l=><option key={l} value={l}>Level {l}</option>)}
+              </select>
+            </div>
+          </div>
         )}
       </div>
 
-      {knownSpells.length > 0 && (
-        <div className="card">
-          <div style={{display:'flex',gap:8,marginBottom:10,alignItems:'center',flexWrap:'wrap'}}>
-            <span style={{color:'var(--text-dim)',fontSize:11}}>Loaded list:</span>
-            <select
-              value={activeList || ''}
-              onChange={e => saveLists(spellLists, e.target.value || null)}
-              style={{fontWeight:600,color:'var(--accent-light)',fontSize:13,minWidth:140}}
-            >
-              <option value="">All Known Spells</option>
-              {Object.keys(spellLists).map(name => <option key={name} value={name}>{name}</option>)}
-            </select>
-            {maxPrepared != null && <span style={{color:'var(--text-dim)',fontSize:11}}>prepares up to {maxPrepared} (cantrips don't count)</span>}
-          </div>
-          <div style={{display:'flex',gap:8,marginBottom:12,flexWrap:'wrap'}}>
-            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search spells..." style={{flex:1,minWidth:120}} />
-            <select value={filter} onChange={e=>setFilter(e.target.value)} style={{minWidth:80}}>
-              <option value="all">All</option>
-              <option value="cantrip">Cantrips</option>
-              {levels.filter(l=>l>0).map(l=><option key={l} value={l}>Level {l}</option>)}
-            </select>
-          </div>
-          {spells.map((spell,i) => (
-            <div key={i} onClick={() => setViewing(spell)} style={{padding:'8px 0',borderBottom:'1px solid var(--border)',cursor:'pointer'}}>
-              <div style={{display:'flex',alignItems:'center',gap:8}}>
-                <div style={{background: spell.level_int===0 ? 'var(--text-dim)' : `var(--slot-${spell.level_int})`,color: spell.level_int===0 ? '#fff' : slotBadgeTextColor(spell.level_int),borderRadius:4,padding:'1px 6px',fontSize:10,fontWeight:600,minWidth:24,textAlign:'center'}}>
-                  {spell.level_int===0?'C':spell.level_int}
+      <div style={{flex:1,overflowY:'auto',padding:'0 12px 12px'}}>
+        {knownSpells.length > 0 && (
+          <div className="card">
+            {spells.map((spell,i) => {
+              const castable = spell.level_int === 0 || hasAvailableSlot(spell);
+              return (
+                <div key={i} style={{display:'flex',alignItems:'center',gap:8,padding:'8px 0',borderBottom:'1px solid var(--border)'}}>
+                  <div style={{flex:1,cursor:'pointer'}} onClick={() => setViewing(spell)}>
+                    <div style={{display:'flex',alignItems:'center',gap:8}}>
+                      <div style={{background: spell.level_int===0 ? 'var(--text-dim)' : `var(--slot-${spell.level_int})`,color: spell.level_int===0 ? '#fff' : slotBadgeTextColor(spell.level_int),borderRadius:4,padding:'1px 6px',fontSize:10,fontWeight:600,minWidth:24,textAlign:'center'}}>
+                        {spell.level_int===0?'C':spell.level_int}
+                      </div>
+                      <div style={{flex:1}}>
+                        <div style={{color: schoolColor(spell.school),fontWeight:500,fontSize:13}}>{spell.name}</div>
+                        <div style={{color:'var(--text-dim)',fontSize:11}}>{spell.school} {spell.ritual?'· Ritual':''} {spell.concentration?'· Concentration':''} {spell.granted_by?`· Granted by ${spell.granted_by}`:''}</div>
+                      </div>
+                    </div>
+                  </div>
+                  <button className="btn btn-sm" disabled={!castable} onClick={() => setViewing(spell)} style={{background: castable ? 'var(--accent)' : 'var(--border)',color:'#fff',minWidth:48}}>
+                    Cast
+                  </button>
                 </div>
-                <div style={{flex:1}}>
-                  <div style={{color: schoolColor(spell.school),fontWeight:500,fontSize:13}}>{spell.name}</div>
-                  <div style={{color:'var(--text-dim)',fontSize:11}}>{spell.school} {spell.ritual?'· Ritual':''} {spell.concentration?'· Concentration':''} {spell.granted_by?`· Granted by ${spell.granted_by}`:''}</div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-      {knownSpells.length === 0 && (
-        <div className="card" style={{textAlign:'center',padding:32}}>
-          <div style={{fontSize:32,marginBottom:8}}>✨</div>
-          <div style={{color:'var(--text-secondary)'}}>No spells added yet — use the buttons above to add some.</div>
-        </div>
-      )}
+              );
+            })}
+          </div>
+        )}
+        {knownSpells.length === 0 && (
+          <div className="card" style={{textAlign:'center',padding:32}}>
+            <div style={{fontSize:32,marginBottom:8}}>✨</div>
+            <div style={{color:'var(--text-secondary)'}}>No spells added yet — use the buttons above to add some.</div>
+          </div>
+        )}
+      </div>
 
       {addingCustom && (
         <CustomSpellModal onAdd={addSpell} onClose={() => setAddingCustom(false)} />

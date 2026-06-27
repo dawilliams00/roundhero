@@ -115,6 +115,10 @@ export default function CharacterHeader({ onBack }) {
   const slots  = td?.spell_slots || {};
   const inventory = td?.inventory || { currency: {}, items: [] };
   const currency  = inventory.currency || {};
+  const invItems  = inventory.items || [];
+  const attunedCount = invItems.filter(it => it.attunement && it.attuned).length;
+  const attunableCount = invItems.filter(it => it.attunement).length;
+  const hd = td?.hit_dice;
   const prof   = profBonus(level);
   const con    = modifier(ab?.CON || 10);
   const calcMaxHp = hp.max || (level * (({ Barbarian:12,Fighter:10,Paladin:10,Ranger:10,Monk:8,Rogue:8,Bard:8,Cleric:8,Druid:8,Warlock:8,Sorcerer:6,Wizard:6 }[class_name] || 8) / 2 + 1 + con));
@@ -160,17 +164,11 @@ export default function CharacterHeader({ onBack }) {
           <button onClick={onBack} style={{background:'none',color:'var(--text-dim)',fontSize:18,padding:'0 4px'}}>←</button>
           <div style={{flex:1}}>
             <div style={{fontFamily:"'Cinzel',serif",color:'var(--accent-light)',fontSize:16,lineHeight:1.2}}>{name}</div>
-            <div style={{color:'var(--text-dim)',fontSize:11}}>L{level} {race} {class_name} · Prof +{prof}</div>
-          </div>
-          <div style={{display:'flex',gap:6}}>
-            <button className="btn btn-secondary btn-sm" onClick={() => setShowRest(true)}>🌙 REST</button>
-            <button className="btn btn-secondary btn-sm" onClick={() => setShowSaves(true)}>SAVES</button>
-            <button className="btn btn-secondary btn-sm" onClick={() => setShowSkills(true)}>SKILLS</button>
-            <button className="btn btn-secondary btn-sm" onClick={() => setShowTraits(true)}>TRAITS</button>
+            <div style={{color:'var(--text-dim)',fontSize:11}}>L{level} {race} {class_name}</div>
           </div>
         </div>
 
-        <div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}>
+        <div style={{display:'flex',gap:8,alignItems:'flex-start',flexWrap:'wrap'}}>
           <PMStat label="HP" value={`${curHp}/${maxHp}`} color={hpCol} onAdjust={adjustHp} onClick={() => setShowHP(true)} />
           {tempHp > 0 && <PMStat label="Temp HP" value={tempHp} color={hpCol} onAdjust={adjustTempHp} />}
 
@@ -185,13 +183,19 @@ export default function CharacterHeader({ onBack }) {
             <div className="stat-label">Insp</div>
           </div>
 
-          <div style={{display:'flex',gap:6}}>
-            {ABILITY_KEYS.map(k => (
-              <AbilityBox key={k} abbr={k} score={ab?.[k]||10} />
-            ))}
-          </div>
+          {hd && hd.total > 0 && (
+            <div className="stat-box">
+              <div className="stat-value" style={{fontSize:14}}>{hd.current}/{hd.total}</div>
+              <div className="stat-label">d{hd.die_size} HD</div>
+            </div>
+          )}
 
-          <CurrencyBox currency={currency} onCommit={setCurrencyCoin} />
+          {attunableCount > 0 && (
+            <div className="stat-box">
+              <div className="stat-value" style={{color: attunedCount > 3 ? 'var(--danger)' : 'var(--accent-light)'}}>{attunedCount}/3</div>
+              <div className="stat-label">Attune</div>
+            </div>
+          )}
 
           {slotLevels.length > 0 && (
             <div style={{display:'flex',gap:4,flexWrap:'wrap',alignItems:'center'}}>
@@ -207,6 +211,22 @@ export default function CharacterHeader({ onBack }) {
               ))}
             </div>
           )}
+
+          <div style={{display:'flex',gap:6}}>
+            {ABILITY_KEYS.map(k => (
+              <AbilityBox key={k} abbr={k} score={ab?.[k]||10} />
+            ))}
+          </div>
+
+          <div style={{display:'flex',gap:10,marginLeft:'auto'}}>
+            <CurrencyBox currency={currency} onCommit={setCurrencyCoin} />
+            <div style={{display:'flex',flexDirection:'column',gap:4}}>
+              <button className="btn btn-secondary btn-sm" onClick={() => setShowSaves(true)}>SAVES</button>
+              <button className="btn btn-secondary btn-sm" onClick={() => setShowSkills(true)}>SKILLS</button>
+              <button className="btn btn-secondary btn-sm" onClick={() => setShowTraits(true)}>TRAITS</button>
+              <button className="btn btn-secondary btn-sm" onClick={() => setShowRest(true)}>🌙 REST</button>
+            </div>
+          </div>
         </div>
 
         {traitChips.length > 0 && (

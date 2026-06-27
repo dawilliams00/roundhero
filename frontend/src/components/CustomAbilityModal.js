@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
+import api from '../utils/api';
 import { SECTION_ORDER } from '../utils/dnd';
 
 const REST_TYPES = ['long','short','none'];
@@ -32,6 +33,17 @@ export default function CustomAbilityModal({ onClose }) {
         },
       };
     }
+    try {
+      // Saved to the shared feat library too, so anyone can search for and add this
+      // exact feat to a future character instead of re-typing it from scratch.
+      await api.post('/content/feats', {
+        name: form.name, section: form.section, cost_type: costType, source: form.source,
+        description: form.description, max_uses: parseInt(form.max_uses) || 0,
+        rest_type: form.rest_type, isSpell: form.isSpell, isTuck: form.isTuck,
+      });
+    } catch {
+      // Non-fatal - the character still gets the ability even if the library save failed.
+    }
     await updateCharacter(character.id, { ae_data: newAe, tracker_data: newTd });
     setSaving(false);
     onClose();
@@ -41,6 +53,7 @@ export default function CustomAbilityModal({ onClose }) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={e => e.stopPropagation()}>
         <h2>Add Custom Ability</h2>
+        <div style={{color:'var(--text-dim)',fontSize:11,marginBottom:12}}>Saved to your feat library too — searchable to add to any future character.</div>
         <div className="form-group"><label>Name</label><input value={form.name} onChange={e => set('name',e.target.value)} placeholder="Ability name" autoFocus /></div>
         <div className="form-row">
           <div className="form-group"><label>Section</label><select value={form.section} onChange={e => set('section',e.target.value)}>{SECTION_ORDER.map(s => <option key={s}>{s}</option>)}</select></div>

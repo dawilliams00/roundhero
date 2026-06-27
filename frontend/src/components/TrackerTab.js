@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
+import AbilityDetailModal from './AbilityDetailModal';
 
 export default function TrackerTab() {
   const { character, saveTrackerData, updateCharacter, addActiveEffect, removeActiveEffect } = useCharacter();
-  const [editHP, setEditHP] = useState(false);
-  const [hpInput, setHpInput] = useState('');
   const [newEffect, setNewEffect] = useState('');
+  const [detail, setDetail] = useState(null);
 
   if (!character) return null;
   const td       = character.tracker_data || {};
@@ -16,7 +16,9 @@ export default function TrackerTab() {
   const effects  = td.active_effects || [];
   const items    = td.inventory?.items || [];
 
-  const isCustomFeature = (name) => Object.values(ae).some(arr => (arr||[]).some(a => a.tracker_key === name && a.source_type === 'custom'));
+  // Anything that isn't a hardcoded class-engine feature can be removed - PDF-imported
+  // features come back on the next Re-sync if deleted by mistake, custom ones don't need to.
+  const isDeletable = (name) => Object.values(ae).some(arr => (arr||[]).some(a => a.tracker_key === name && a.source_type !== 'class'));
   const removeFeature = async (name) => {
     if (!window.confirm(`Remove "${name}"? This can't be undone.`)) return;
     const newFeatures = { ...features };
@@ -91,7 +93,7 @@ export default function TrackerTab() {
           <div style={{color:'var(--text-secondary)',fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:1,marginBottom:10}}>Features & Abilities</div>
           {featList.map(([name, feat]) => (
             <div key={name} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'8px 0',borderBottom:'1px solid var(--border)'}}>
-              <div style={{flex:1}}>
+              <div style={{flex:1,cursor:'pointer'}} onClick={() => setDetail({ name, description: feat.description, source: `${feat.rest_type} rest · ${feat.action}` })}>
                 <div style={{color:'var(--text-primary)',fontWeight:500,fontSize:13}}>{name}</div>
                 <div style={{color:'var(--text-dim)',fontSize:11}}>{feat.rest_type} rest · {feat.action}</div>
               </div>
@@ -99,8 +101,8 @@ export default function TrackerTab() {
                 <button onClick={() => adjustFeature(name,-1)} style={{background:'var(--danger)',color:'#fff',borderRadius:4,width:22,height:22,fontWeight:700,fontSize:14}}>−</button>
                 <span style={{color: feat.current>0 ? 'var(--success)' : 'var(--danger)',fontWeight:700,fontSize:15,minWidth:36,textAlign:'center'}}>{feat.current}/{feat.max}</span>
                 <button onClick={() => adjustFeature(name,1)} style={{background:'var(--success)',color:'#fff',borderRadius:4,width:22,height:22,fontWeight:700,fontSize:14}}>+</button>
-                {isCustomFeature(name) && (
-                  <button onClick={() => removeFeature(name)} title="Remove this custom ability" style={{background:'var(--bg-hover)',color:'var(--text-dim)',borderRadius:4,width:22,height:22,fontWeight:700,fontSize:14,marginLeft:4}}>×</button>
+                {isDeletable(name) && (
+                  <button onClick={() => removeFeature(name)} title="Remove this ability" style={{background:'var(--bg-hover)',color:'var(--text-dim)',borderRadius:4,width:22,height:22,fontWeight:700,fontSize:14,marginLeft:4}}>×</button>
                 )}
               </div>
             </div>
@@ -131,13 +133,13 @@ export default function TrackerTab() {
         <div className="card" style={{marginBottom:12}}>
           <div style={{color:'var(--text-secondary)',fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:1,marginBottom:10}}>Passive Features</div>
           {infoList.map(([name, feat]) => (
-            <div key={name} style={{padding:'6px 0',borderBottom:'1px solid var(--border)',display:'flex',alignItems:'flex-start',gap:8}}>
+            <div key={name} style={{padding:'6px 0',borderBottom:'1px solid var(--border)',display:'flex',alignItems:'flex-start',gap:8,cursor:'pointer'}} onClick={() => setDetail({ name, description: feat.description, source: feat.action })}>
               <div style={{flex:1}}>
                 <div style={{color:'var(--text-primary)',fontSize:13,fontWeight:500}}>{name}</div>
                 {feat.description && <div style={{color:'var(--text-dim)',fontSize:11,marginTop:2,lineHeight:1.5}}>{feat.description.substring(0,120)}{feat.description.length>120?'…':''}</div>}
               </div>
-              {isCustomFeature(name) && (
-                <button onClick={() => removeFeature(name)} title="Remove this custom ability" style={{background:'var(--bg-hover)',color:'var(--text-dim)',borderRadius:4,width:22,height:22,fontWeight:700,fontSize:14,flexShrink:0}}>×</button>
+              {isDeletable(name) && (
+                <button onClick={(e) => { e.stopPropagation(); removeFeature(name); }} title="Remove this ability" style={{background:'var(--bg-hover)',color:'var(--text-dim)',borderRadius:4,width:22,height:22,fontWeight:700,fontSize:14,flexShrink:0}}>×</button>
               )}
             </div>
           ))}
@@ -169,6 +171,8 @@ export default function TrackerTab() {
           </div>
         </div>
       )}
+
+      {detail && <AbilityDetailModal ability={detail} onClose={() => setDetail(null)} />}
     </div>
   );
 }
