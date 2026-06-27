@@ -25693,6 +25693,1328 @@
       ],
       "page_no": 356,
       "source": "5e Core Rules"
+    },
+    {
+      "name": "Vampire, Bat Form",
+      "description": "",
+      "size": "Medium",
+      "type": "undead",
+      "subtype": "shapechanger",
+      "group": null,
+      "alignment": "lawful evil",
+      "armor_class": 16,
+      "armor_desc": "natural",
+      "hit_points": 144,
+      "hit_dice": "17d8+68",
+      "speed": {
+        "walk": 5,
+        "fly": 30
+      },
+      "ability_scores": {
+        "strength": 18,
+        "dexterity": 18,
+        "constitution": 18,
+        "intelligence": 17,
+        "wisdom": 15,
+        "charisma": 18
+      },
+      "saves": {
+        "dex": 9,
+        "wis": 7,
+        "cha": 9
+      },
+      "skills": {
+        "perception": 7,
+        "stealth": 9
+      },
+      "damage_vulnerabilities": "",
+      "damage_resistances": "necrotic, bludgeoning, piercing, and slashing from nonmagical weapons",
+      "damage_immunities": "",
+      "condition_immunities": "",
+      "senses": "darkvision 120 ft., passive Perception 17",
+      "languages": "the languages it knew in life",
+      "challenge_rating": "13",
+      "cr": 13,
+      "actions": [
+        {
+          "name": "Bite",
+          "desc": "Melee Weapon Attack: +9 to hit, reach 5 ft., one willing creature, or a creature that is grappled by the vampire, incapacitated, or restrained. Hit: 7 (1d6 + 4) piercing damage plus 10 (3d6) necrotic damage. The target's hit point maximum is reduced by an amount equal to the necrotic damage taken, and the vampire regains hit points equal to that amount. The reduction lasts until the target finishes a long rest. The target dies if this effect reduces its hit point maximum to 0. A humanoid slain in this way and then buried in the ground rises the following night as a vampire spawn under the vampire's control."
+        },
+        {
+          "name": "Charm",
+          "desc": "The vampire targets one humanoid it can see within 30 ft. of it. If the target can see the vampire, the target must succeed on a DC 17 Wisdom saving throw against this magic or be charmed by the vampire. The charmed target regards the vampire as a trusted friend to be heeded and protected. Although the target isn't under the vampire's control, it takes the vampire's requests or actions in the most favorable way it can, and it is a willing target for the vampire's bit attack.\nEach time the vampire or the vampire's companions do anything harmful to the target, it can repeat the saving throw, ending the effect on itself on a success. Otherwise, the effect lasts 24 hours or until the vampire is destroyed, is on a different plane of existence than the target, or takes a bonus action to end the effect."
+        },
+        {
+          "name": "Children of the Night",
+          "desc": "The vampire magically calls 2d4 swarms of bats or rats, provided that the sun isn't up. While outdoors, the vampire can call 3d6 wolves instead. The called creatures arrive in 1d4 rounds, acting as allies of the vampire and obeying its spoken commands. The beasts remain for 1 hour, until the vampire dies, or until the vampire dismisses them as a bonus action."
+        }
+      ],
+      "bonus_actions": [],
+      "reactions": [],
+      "legendary_desc": "",
+      "legendary_actions": [
+        {
+          "name": "Move",
+          "desc": "The vampire moves up to its speed without provoking opportunity attacks."
+        },
+        {
+          "name": "Unarmed Strike",
+          "desc": "The vampire makes one unarmed strike."
+        },
+        {
+          "name": "Bite (Costs 2 Actions)",
+          "desc": "The vampire makes one bite attack."
+        }
+      ],
+      "special_abilities": [
+        {
+          "name": "Shapechanger",
+          "desc": "If the vampire isn't in sun light or running water, it can use its action to polymorph into a Tiny bat or a Medium cloud of mist, or back into its true form.\nWhile in bat form, the vampire can't speak, its walking speed is 5 feet, and it has a flying speed of 30 feet. Its statistics, other than its size and speed, are unchanged. Anything it is wearing transforms with it, but nothing it is carrying does. It reverts to its true form if it dies.\nWhile in mist form, the vampire can't take any actions, speak, or manipulate objects. It is weightless, has a flying speed of 20 feet, can hover, and can enter a hostile creature's space and stop there. In addition, if air can pass through a space, the mist can do so without squeezing, and it can't pass through water. It has advantage on Strength, Dexterity, and Constitution saving throws, and it is immune to all nonmagical damage, except the damage it takes from sunlight."
+        },
+        {
+          "name": "Legendary Resistance",
+          "desc": "If the vampire fails a saving throw, it can choose to succeed instead."
+        },
+        {
+          "name": "Misty Escape",
+          "desc": "When it drops to 0 hit points outside its resting place, the vampire transforms into a cloud of mist (as in the Shapechanger trait) instead of falling unconscious, provided that it isn't in sunlight or running water. If it can't transform, it is destroyed.\nWhile it has 0 hit points in mist form, it can't revert to its vampire form, and it must reach its resting place within 2 hours or be destroyed. Once in its resting place, it reverts to its vampire form. It is then paralyzed until it regains at least 1 hit point. After spending 1 hour in its resting place with 0 hit points, it regains 1 hit point."
+        },
+        {
+          "name": "Regeneration",
+          "desc": "The vampire regains 20 hit points at the start of its turn if it has at least 1 hit point and isn't in sunlight or running water. If the vampire takes radiant damage or damage from holy water, this trait doesn't function at the start of the vampire's next turn."
+        },
+        {
+          "name": "Spider Climb",
+          "desc": "The vampire can climb difficult surfaces, including upside down on ceilings, without needing to make an ability check."
+        },
+        {
+          "name": "Vampire Weaknesses",
+          "desc": "The vampire has the following flaws:\nForbiddance. The vampire can't enter a residence without an invitation from one of the occupants.\nHarmed by Running Water. The vampire takes 20 acid damage if it ends its turn in running water.\nStake to the Heart. If a piercing weapon made of wood is driven into the vampire's heart while the vampire is incapacitated in its resting place, the vampire is paralyzed until the stake is removed.\nSunlight Hypersensitivity. The vampire takes 20 radiant damage when it starts its turn in sunlight. While in sunlight, it has disadvantage on attack rolls and ability checks."
+        }
+      ],
+      "spell_list": [],
+      "environments": [],
+      "page_no": null,
+      "source": "5e SRD (5e-bits/5e-database)"
+    },
+    {
+      "name": "Vampire, Mist Form",
+      "description": "",
+      "size": "Medium",
+      "type": "undead",
+      "subtype": "shapechanger",
+      "group": null,
+      "alignment": "lawful evil",
+      "armor_class": 16,
+      "armor_desc": "natural",
+      "hit_points": 144,
+      "hit_dice": "17d8+68",
+      "speed": {
+        "fly": 20
+      },
+      "ability_scores": {
+        "strength": 18,
+        "dexterity": 18,
+        "constitution": 18,
+        "intelligence": 17,
+        "wisdom": 15,
+        "charisma": 18
+      },
+      "saves": {
+        "dex": 9,
+        "wis": 7,
+        "cha": 9
+      },
+      "skills": {
+        "perception": 7,
+        "stealth": 9
+      },
+      "damage_vulnerabilities": "",
+      "damage_resistances": "necrotic, bludgeoning, piercing, and slashing from nonmagical weapons",
+      "damage_immunities": "",
+      "condition_immunities": "",
+      "senses": "darkvision 120 ft., passive Perception 17",
+      "languages": "the languages it knew in life",
+      "challenge_rating": "13",
+      "cr": 13,
+      "actions": [],
+      "bonus_actions": [],
+      "reactions": [],
+      "legendary_desc": "",
+      "legendary_actions": [
+        {
+          "name": "Move",
+          "desc": "The vampire moves up to its speed without provoking opportunity attacks."
+        },
+        {
+          "name": "Unarmed Strike",
+          "desc": "The vampire makes one unarmed strike."
+        },
+        {
+          "name": "Bite (Costs 2 Actions)",
+          "desc": "The vampire makes one bite attack."
+        }
+      ],
+      "special_abilities": [
+        {
+          "name": "Shapechanger",
+          "desc": "If the vampire isn't in sun light or running water, it can use its action to polymorph into a Tiny bat or a Medium cloud of mist, or back into its true form.\nWhile in bat form, the vampire can't speak, its walking speed is 5 feet, and it has a flying speed of 30 feet. Its statistics, other than its size and speed, are unchanged. Anything it is wearing transforms with it, but nothing it is carrying does. It reverts to its true form if it dies.\nWhile in mist form, the vampire can't take any actions, speak, or manipulate objects. It is weightless, has a flying speed of 20 feet, can hover, and can enter a hostile creature's space and stop there. In addition, if air can pass through a space, the mist can do so without squeezing, and it can't pass through water. It has advantage on Strength, Dexterity, and Constitution saving throws, and it is immune to all nonmagical damage, except the damage it takes from sunlight."
+        },
+        {
+          "name": "Legendary Resistance",
+          "desc": "If the vampire fails a saving throw, it can choose to succeed instead."
+        },
+        {
+          "name": "Misty Escape",
+          "desc": "When it drops to 0 hit points outside its resting place, the vampire transforms into a cloud of mist (as in the Shapechanger trait) instead of falling unconscious, provided that it isn't in sunlight or running water. If it can't transform, it is destroyed.\nWhile it has 0 hit points in mist form, it can't revert to its vampire form, and it must reach its resting place within 2 hours or be destroyed. Once in its resting place, it reverts to its vampire form. It is then paralyzed until it regains at least 1 hit point. After spending 1 hour in its resting place with 0 hit points, it regains 1 hit point."
+        },
+        {
+          "name": "Regeneration",
+          "desc": "The vampire regains 20 hit points at the start of its turn if it has at least 1 hit point and isn't in sunlight or running water. If the vampire takes radiant damage or damage from holy water, this trait doesn't function at the start of the vampire's next turn."
+        },
+        {
+          "name": "Spider Climb",
+          "desc": "The vampire can climb difficult surfaces, including upside down on ceilings, without needing to make an ability check."
+        },
+        {
+          "name": "Vampire Weaknesses",
+          "desc": "The vampire has the following flaws:\nForbiddance. The vampire can't enter a residence without an invitation from one of the occupants.\nHarmed by Running Water. The vampire takes 20 acid damage if it ends its turn in running water.\nStake to the Heart. If a piercing weapon made of wood is driven into the vampire's heart while the vampire is incapacitated in its resting place, the vampire is paralyzed until the stake is removed.\nSunlight Hypersensitivity. The vampire takes 20 radiant damage when it starts its turn in sunlight. While in sunlight, it has disadvantage on attack rolls and ability checks."
+        }
+      ],
+      "spell_list": [],
+      "environments": [],
+      "page_no": null,
+      "source": "5e SRD (5e-bits/5e-database)"
+    },
+    {
+      "name": "Vampire, Vampire Form",
+      "description": "",
+      "size": "Medium",
+      "type": "undead",
+      "subtype": "shapechanger",
+      "group": null,
+      "alignment": "lawful evil",
+      "armor_class": 16,
+      "armor_desc": "natural",
+      "hit_points": 144,
+      "hit_dice": "17d8+68",
+      "speed": {
+        "walk": 30
+      },
+      "ability_scores": {
+        "strength": 18,
+        "dexterity": 18,
+        "constitution": 18,
+        "intelligence": 17,
+        "wisdom": 15,
+        "charisma": 18
+      },
+      "saves": {
+        "dex": 9,
+        "wis": 7,
+        "cha": 9
+      },
+      "skills": {
+        "perception": 7,
+        "stealth": 9
+      },
+      "damage_vulnerabilities": "",
+      "damage_resistances": "necrotic, bludgeoning, piercing, and slashing from nonmagical weapons",
+      "damage_immunities": "",
+      "condition_immunities": "",
+      "senses": "darkvision 120 ft., passive Perception 17",
+      "languages": "the languages it knew in life",
+      "challenge_rating": "13",
+      "cr": 13,
+      "actions": [
+        {
+          "name": "Multiattack",
+          "desc": "The vampire makes two attacks, only one of which can be a bite attack."
+        },
+        {
+          "name": "Unarmed Strike",
+          "desc": "Melee Weapon Attack: +9 to hit, reach 5 ft., one creature. Hit: 8 (1d8 + 4) bludgeoning damage. Instead of dealing damage, the vampire can grapple the target (escape DC 18)."
+        },
+        {
+          "name": "Bite",
+          "desc": "Melee Weapon Attack: +9 to hit, reach 5 ft., one willing creature, or a creature that is grappled by the vampire, incapacitated, or restrained. Hit: 7 (1d6 + 4) piercing damage plus 10 (3d6) necrotic damage. The target's hit point maximum is reduced by an amount equal to the necrotic damage taken, and the vampire regains hit points equal to that amount. The reduction lasts until the target finishes a long rest. The target dies if this effect reduces its hit point maximum to 0. A humanoid slain in this way and then buried in the ground rises the following night as a vampire spawn under the vampire's control."
+        },
+        {
+          "name": "Charm",
+          "desc": "The vampire targets one humanoid it can see within 30 ft. of it. If the target can see the vampire, the target must succeed on a DC 17 Wisdom saving throw against this magic or be charmed by the vampire. The charmed target regards the vampire as a trusted friend to be heeded and protected. Although the target isn't under the vampire's control, it takes the vampire's requests or actions in the most favorable way it can, and it is a willing target for the vampire's bit attack.\nEach time the vampire or the vampire's companions do anything harmful to the target, it can repeat the saving throw, ending the effect on itself on a success. Otherwise, the effect lasts 24 hours or until the vampire is destroyed, is on a different plane of existence than the target, or takes a bonus action to end the effect."
+        },
+        {
+          "name": "Children of the Night",
+          "desc": "The vampire magically calls 2d4 swarms of bats or rats, provided that the sun isn't up. While outdoors, the vampire can call 3d6 wolves instead. The called creatures arrive in 1d4 rounds, acting as allies of the vampire and obeying its spoken commands. The beasts remain for 1 hour, until the vampire dies, or until the vampire dismisses them as a bonus action."
+        }
+      ],
+      "bonus_actions": [],
+      "reactions": [],
+      "legendary_desc": "",
+      "legendary_actions": [
+        {
+          "name": "Move",
+          "desc": "The vampire moves up to its speed without provoking opportunity attacks."
+        },
+        {
+          "name": "Unarmed Strike",
+          "desc": "The vampire makes one unarmed strike."
+        },
+        {
+          "name": "Bite (Costs 2 Actions)",
+          "desc": "The vampire makes one bite attack."
+        }
+      ],
+      "special_abilities": [
+        {
+          "name": "Shapechanger",
+          "desc": "If the vampire isn't in sun light or running water, it can use its action to polymorph into a Tiny bat or a Medium cloud of mist, or back into its true form.\nWhile in bat form, the vampire can't speak, its walking speed is 5 feet, and it has a flying speed of 30 feet. Its statistics, other than its size and speed, are unchanged. Anything it is wearing transforms with it, but nothing it is carrying does. It reverts to its true form if it dies.\nWhile in mist form, the vampire can't take any actions, speak, or manipulate objects. It is weightless, has a flying speed of 20 feet, can hover, and can enter a hostile creature's space and stop there. In addition, if air can pass through a space, the mist can do so without squeezing, and it can't pass through water. It has advantage on Strength, Dexterity, and Constitution saving throws, and it is immune to all nonmagical damage, except the damage it takes from sunlight."
+        },
+        {
+          "name": "Legendary Resistance",
+          "desc": "If the vampire fails a saving throw, it can choose to succeed instead."
+        },
+        {
+          "name": "Misty Escape",
+          "desc": "When it drops to 0 hit points outside its resting place, the vampire transforms into a cloud of mist (as in the Shapechanger trait) instead of falling unconscious, provided that it isn't in sunlight or running water. If it can't transform, it is destroyed.\nWhile it has 0 hit points in mist form, it can't revert to its vampire form, and it must reach its resting place within 2 hours or be destroyed. Once in its resting place, it reverts to its vampire form. It is then paralyzed until it regains at least 1 hit point. After spending 1 hour in its resting place with 0 hit points, it regains 1 hit point."
+        },
+        {
+          "name": "Regeneration",
+          "desc": "The vampire regains 20 hit points at the start of its turn if it has at least 1 hit point and isn't in sunlight or running water. If the vampire takes radiant damage or damage from holy water, this trait doesn't function at the start of the vampire's next turn."
+        },
+        {
+          "name": "Spider Climb",
+          "desc": "The vampire can climb difficult surfaces, including upside down on ceilings, without needing to make an ability check."
+        },
+        {
+          "name": "Vampire Weaknesses",
+          "desc": "The vampire has the following flaws:\nForbiddance. The vampire can't enter a residence without an invitation from one of the occupants.\nHarmed by Running Water. The vampire takes 20 acid damage if it ends its turn in running water.\nStake to the Heart. If a piercing weapon made of wood is driven into the vampire's heart while the vampire is incapacitated in its resting place, the vampire is paralyzed until the stake is removed.\nSunlight Hypersensitivity. The vampire takes 20 radiant damage when it starts its turn in sunlight. While in sunlight, it has disadvantage on attack rolls and ability checks."
+        }
+      ],
+      "spell_list": [],
+      "environments": [],
+      "page_no": null,
+      "source": "5e SRD (5e-bits/5e-database)"
+    },
+    {
+      "name": "Werebear, Bear Form",
+      "description": "",
+      "size": "Medium",
+      "type": "humanoid",
+      "subtype": "human",
+      "group": null,
+      "alignment": "neutral good",
+      "armor_class": 11,
+      "armor_desc": "natural",
+      "hit_points": 135,
+      "hit_dice": "18d8+54",
+      "speed": {
+        "walk": 40,
+        "climb": 30
+      },
+      "ability_scores": {
+        "strength": 19,
+        "dexterity": 10,
+        "constitution": 17,
+        "intelligence": 11,
+        "wisdom": 12,
+        "charisma": 12
+      },
+      "saves": {},
+      "skills": {
+        "perception": 7
+      },
+      "damage_vulnerabilities": "",
+      "damage_resistances": "",
+      "damage_immunities": "bludgeoning, piercing, and slashing from nonmagical weapons that aren't silvered",
+      "condition_immunities": "",
+      "senses": "passive Perception 17",
+      "languages": "",
+      "challenge_rating": "5",
+      "cr": 5,
+      "actions": [
+        {
+          "name": "Multiattack",
+          "desc": "In bear form, the werebear makes two claw attacks. In humanoid form, it makes two greataxe attacks. In hybrid form, it can attack like a bear or a humanoid."
+        },
+        {
+          "name": "Bite",
+          "desc": "Melee Weapon Attack: +7 to hit, reach 5 ft., one target. Hit: 15 (2d10 + 4) piercing damage. If the target is a humanoid, it must succeed on a DC 14 Constitution saving throw or be cursed with werebear lycanthropy."
+        },
+        {
+          "name": "Claw",
+          "desc": "Melee Weapon Attack: +7 to hit, reach 5 ft., one target. Hit: 13 (2d8 + 4) slashing damage."
+        }
+      ],
+      "bonus_actions": [],
+      "reactions": [],
+      "legendary_desc": "",
+      "legendary_actions": [],
+      "special_abilities": [
+        {
+          "name": "Shapechanger",
+          "desc": "The werebear can use its action to polymorph into a Large bear-humanoid hybrid or into a Large bear, or back into its true form, which is humanoid. Its statistics, other than its size and AC, are the same in each form. Any equipment it is wearing or carrying isn't transformed. It reverts to its true form if it dies."
+        },
+        {
+          "name": "Keen Smell",
+          "desc": "The werebear has advantage on Wisdom (Perception) checks that rely on smell."
+        }
+      ],
+      "spell_list": [],
+      "environments": [],
+      "page_no": null,
+      "source": "5e SRD (5e-bits/5e-database)"
+    },
+    {
+      "name": "Werebear, Human Form",
+      "description": "",
+      "size": "Medium",
+      "type": "humanoid",
+      "subtype": "human",
+      "group": null,
+      "alignment": "neutral good",
+      "armor_class": 10,
+      "armor_desc": "dex",
+      "hit_points": 135,
+      "hit_dice": "18d8+54",
+      "speed": {
+        "walk": 30
+      },
+      "ability_scores": {
+        "strength": 19,
+        "dexterity": 10,
+        "constitution": 17,
+        "intelligence": 11,
+        "wisdom": 12,
+        "charisma": 12
+      },
+      "saves": {},
+      "skills": {
+        "perception": 7
+      },
+      "damage_vulnerabilities": "",
+      "damage_resistances": "",
+      "damage_immunities": "bludgeoning, piercing, and slashing from nonmagical weapons that aren't silvered",
+      "condition_immunities": "",
+      "senses": "passive Perception 17",
+      "languages": "Common",
+      "challenge_rating": "5",
+      "cr": 5,
+      "actions": [
+        {
+          "name": "Multiattack",
+          "desc": "In bear form, the werebear makes two claw attacks. In humanoid form, it makes two greataxe attacks. In hybrid form, it can attack like a bear or a humanoid."
+        },
+        {
+          "name": "Greataxe",
+          "desc": "Melee Weapon Attack: +7 to hit, reach 5 ft., one target. Hit: 10 (1d12 + 4) slashing damage."
+        }
+      ],
+      "bonus_actions": [],
+      "reactions": [],
+      "legendary_desc": "",
+      "legendary_actions": [],
+      "special_abilities": [
+        {
+          "name": "Shapechanger",
+          "desc": "The werebear can use its action to polymorph into a Large bear-humanoid hybrid or into a Large bear, or back into its true form, which is humanoid. Its statistics, other than its size and AC, are the same in each form. Any equipment it is wearing or carrying isn't transformed. It reverts to its true form if it dies."
+        },
+        {
+          "name": "Keen Smell",
+          "desc": "The werebear has advantage on Wisdom (Perception) checks that rely on smell."
+        }
+      ],
+      "spell_list": [],
+      "environments": [],
+      "page_no": null,
+      "source": "5e SRD (5e-bits/5e-database)"
+    },
+    {
+      "name": "Werebear, Hybrid Form",
+      "description": "",
+      "size": "Medium",
+      "type": "humanoid",
+      "subtype": "human",
+      "group": null,
+      "alignment": "neutral good",
+      "armor_class": 11,
+      "armor_desc": "natural",
+      "hit_points": 135,
+      "hit_dice": "18d8+54",
+      "speed": {
+        "walk": 40,
+        "climb": 30
+      },
+      "ability_scores": {
+        "strength": 19,
+        "dexterity": 10,
+        "constitution": 17,
+        "intelligence": 11,
+        "wisdom": 12,
+        "charisma": 12
+      },
+      "saves": {},
+      "skills": {
+        "perception": 7
+      },
+      "damage_vulnerabilities": "",
+      "damage_resistances": "",
+      "damage_immunities": "bludgeoning, piercing, and slashing from nonmagical weapons that aren't silvered",
+      "condition_immunities": "",
+      "senses": "passive Perception 17",
+      "languages": "Common",
+      "challenge_rating": "5",
+      "cr": 5,
+      "actions": [
+        {
+          "name": "Multiattack",
+          "desc": "In bear form, the werebear makes two claw attacks. In humanoid form, it makes two greataxe attacks. In hybrid form, it can attack like a bear or a humanoid."
+        },
+        {
+          "name": "Bite",
+          "desc": "Melee Weapon Attack: +7 to hit, reach 5 ft., one target. Hit: 15 (2d10 + 4) piercing damage. If the target is a humanoid, it must succeed on a DC 14 Constitution saving throw or be cursed with werebear lycanthropy."
+        },
+        {
+          "name": "Claw",
+          "desc": "Melee Weapon Attack: +7 to hit, reach 5 ft., one target. Hit: 13 (2d8 + 4) slashing damage."
+        },
+        {
+          "name": "Greataxe",
+          "desc": "Melee Weapon Attack: +7 to hit, reach 5 ft., one target. Hit: 10 (1d12 + 4) slashing damage."
+        }
+      ],
+      "bonus_actions": [],
+      "reactions": [],
+      "legendary_desc": "",
+      "legendary_actions": [],
+      "special_abilities": [
+        {
+          "name": "Shapechanger",
+          "desc": "The werebear can use its action to polymorph into a Large bear-humanoid hybrid or into a Large bear, or back into its true form, which is humanoid. Its statistics, other than its size and AC, are the same in each form. Any equipment it is wearing or carrying isn't transformed. It reverts to its true form if it dies."
+        },
+        {
+          "name": "Keen Smell",
+          "desc": "The werebear has advantage on Wisdom (Perception) checks that rely on smell."
+        }
+      ],
+      "spell_list": [],
+      "environments": [],
+      "page_no": null,
+      "source": "5e SRD (5e-bits/5e-database)"
+    },
+    {
+      "name": "Wereboar, Boar Form",
+      "description": "",
+      "size": "Medium",
+      "type": "humanoid",
+      "subtype": "human",
+      "group": null,
+      "alignment": "neutral evil",
+      "armor_class": 11,
+      "armor_desc": "natural",
+      "hit_points": 78,
+      "hit_dice": "12d8+24",
+      "speed": {
+        "walk": 40
+      },
+      "ability_scores": {
+        "strength": 17,
+        "dexterity": 10,
+        "constitution": 15,
+        "intelligence": 10,
+        "wisdom": 11,
+        "charisma": 8
+      },
+      "saves": {},
+      "skills": {
+        "perception": 2
+      },
+      "damage_vulnerabilities": "",
+      "damage_resistances": "",
+      "damage_immunities": "bludgeoning, piercing, and slashing from nonmagical weapons that aren't silvered",
+      "condition_immunities": "",
+      "senses": "passive Perception 12",
+      "languages": "",
+      "challenge_rating": "4",
+      "cr": 4,
+      "actions": [
+        {
+          "name": "Tusks",
+          "desc": "Melee Weapon Attack: +5 to hit, reach 5 ft., one target. Hit: 10 (2d6 + 3) slashing damage. If the target is a humanoid, it must succeed on a DC 12 Constitution saving throw or be cursed with wereboar lycanthropy."
+        }
+      ],
+      "bonus_actions": [],
+      "reactions": [],
+      "legendary_desc": "",
+      "legendary_actions": [],
+      "special_abilities": [
+        {
+          "name": "Shapechanger",
+          "desc": "The wereboar can use its action to polymorph into a boar-humanoid hybrid or into a boar, or back into its true form, which is humanoid. Its statistics, other than its AC, are the same in each form. Any equipment it is wearing or carrying isn't transformed. It reverts to its true form if it dies."
+        },
+        {
+          "name": "Charge (Boar or Hybrid Form Only)",
+          "desc": "If the wereboar moves at least 15 feet straight toward a target and then hits it with its tusks on the same turn, the target takes an extra 7 (2d6) slashing damage. If the target is a creature, it must succeed on a DC 13 Strength saving throw or be knocked prone."
+        },
+        {
+          "name": "Relentless",
+          "desc": "If the wereboar takes 14 damage or less that would reduce it to 0 hit points, it is reduced to 1 hit point instead."
+        }
+      ],
+      "spell_list": [],
+      "environments": [],
+      "page_no": null,
+      "source": "5e SRD (5e-bits/5e-database)"
+    },
+    {
+      "name": "Wereboar, Human Form",
+      "description": "",
+      "size": "Medium",
+      "type": "humanoid",
+      "subtype": "human",
+      "group": null,
+      "alignment": "neutral evil",
+      "armor_class": 10,
+      "armor_desc": "dex",
+      "hit_points": 78,
+      "hit_dice": "12d8+24",
+      "speed": {
+        "walk": 30
+      },
+      "ability_scores": {
+        "strength": 17,
+        "dexterity": 10,
+        "constitution": 15,
+        "intelligence": 10,
+        "wisdom": 11,
+        "charisma": 8
+      },
+      "saves": {},
+      "skills": {
+        "perception": 2
+      },
+      "damage_vulnerabilities": "",
+      "damage_resistances": "",
+      "damage_immunities": "bludgeoning, piercing, and slashing from nonmagical weapons that aren't silvered",
+      "condition_immunities": "",
+      "senses": "passive Perception 12",
+      "languages": "Common (can't speak in boar form)",
+      "challenge_rating": "4",
+      "cr": 4,
+      "actions": [
+        {
+          "name": "Multiattack",
+          "desc": "The wereboar makes two attacks, only one of which can be with its tusks."
+        },
+        {
+          "name": "Maul",
+          "desc": "Melee Weapon Attack: +5 to hit, reach 5 ft., one target. Hit: 10 (2d6 + 3) bludgeoning damage."
+        }
+      ],
+      "bonus_actions": [],
+      "reactions": [],
+      "legendary_desc": "",
+      "legendary_actions": [],
+      "special_abilities": [
+        {
+          "name": "Shapechanger",
+          "desc": "The wereboar can use its action to polymorph into a boar-humanoid hybrid or into a boar, or back into its true form, which is humanoid. Its statistics, other than its AC, are the same in each form. Any equipment it is wearing or carrying isn't transformed. It reverts to its true form if it dies."
+        },
+        {
+          "name": "Relentless",
+          "desc": "If the wereboar takes 14 damage or less that would reduce it to 0 hit points, it is reduced to 1 hit point instead."
+        }
+      ],
+      "spell_list": [],
+      "environments": [],
+      "page_no": null,
+      "source": "5e SRD (5e-bits/5e-database)"
+    },
+    {
+      "name": "Wereboar, Hybrid Form",
+      "description": "",
+      "size": "Medium",
+      "type": "humanoid",
+      "subtype": "human",
+      "group": null,
+      "alignment": "neutral evil",
+      "armor_class": 11,
+      "armor_desc": "natural",
+      "hit_points": 78,
+      "hit_dice": "12d8+24",
+      "speed": {
+        "walk": 30
+      },
+      "ability_scores": {
+        "strength": 17,
+        "dexterity": 10,
+        "constitution": 15,
+        "intelligence": 10,
+        "wisdom": 11,
+        "charisma": 8
+      },
+      "saves": {},
+      "skills": {
+        "perception": 2
+      },
+      "damage_vulnerabilities": "",
+      "damage_resistances": "",
+      "damage_immunities": "bludgeoning, piercing, and slashing from nonmagical weapons that aren't silvered",
+      "condition_immunities": "",
+      "senses": "passive Perception 12",
+      "languages": "Common",
+      "challenge_rating": "4",
+      "cr": 4,
+      "actions": [
+        {
+          "name": "Multiattack",
+          "desc": "The wereboar makes two attacks, only one of which can be with its tusks."
+        },
+        {
+          "name": "Maul",
+          "desc": "Melee Weapon Attack: +5 to hit, reach 5 ft., one target. Hit: 10 (2d6 + 3) bludgeoning damage."
+        },
+        {
+          "name": "Tusks",
+          "desc": "Melee Weapon Attack: +5 to hit, reach 5 ft., one target. Hit: 10 (2d6 + 3) slashing damage. If the target is a humanoid, it must succeed on a DC 12 Constitution saving throw or be cursed with wereboar lycanthropy."
+        }
+      ],
+      "bonus_actions": [],
+      "reactions": [],
+      "legendary_desc": "",
+      "legendary_actions": [],
+      "special_abilities": [
+        {
+          "name": "Shapechanger",
+          "desc": "The wereboar can use its action to polymorph into a boar-humanoid hybrid or into a boar, or back into its true form, which is humanoid. Its statistics, other than its AC, are the same in each form. Any equipment it is wearing or carrying isn't transformed. It reverts to its true form if it dies."
+        },
+        {
+          "name": "Charge (Boar or Hybrid Form Only)",
+          "desc": "If the wereboar moves at least 15 feet straight toward a target and then hits it with its tusks on the same turn, the target takes an extra 7 (2d6) slashing damage. If the target is a creature, it must succeed on a DC 13 Strength saving throw or be knocked prone."
+        },
+        {
+          "name": "Relentless",
+          "desc": "If the wereboar takes 14 damage or less that would reduce it to 0 hit points, it is reduced to 1 hit point instead."
+        }
+      ],
+      "spell_list": [],
+      "environments": [],
+      "page_no": null,
+      "source": "5e SRD (5e-bits/5e-database)"
+    },
+    {
+      "name": "Wererat, Human Form",
+      "description": "",
+      "size": "Medium",
+      "type": "humanoid",
+      "subtype": "human",
+      "group": null,
+      "alignment": "lawful evil",
+      "armor_class": 12,
+      "armor_desc": "dex",
+      "hit_points": 33,
+      "hit_dice": "6d8+6",
+      "speed": {
+        "walk": 30
+      },
+      "ability_scores": {
+        "strength": 10,
+        "dexterity": 15,
+        "constitution": 12,
+        "intelligence": 11,
+        "wisdom": 10,
+        "charisma": 8
+      },
+      "saves": {},
+      "skills": {
+        "perception": 2,
+        "stealth": 4
+      },
+      "damage_vulnerabilities": "",
+      "damage_resistances": "",
+      "damage_immunities": "bludgeoning, piercing, and slashing from nonmagical weapons that aren't silvered",
+      "condition_immunities": "",
+      "senses": "passive Perception 12",
+      "languages": "Common",
+      "challenge_rating": "2",
+      "cr": 2,
+      "actions": [
+        {
+          "name": "Multiattack",
+          "desc": "The wererat makes two attacks, only one of which can be a bite."
+        },
+        {
+          "name": "Shortsword",
+          "desc": "Melee Weapon Attack: +4 to hit, reach 5 ft., one target. Hit: 5 (1d6 + 2) piercing damage."
+        },
+        {
+          "name": "Hand Crossbow",
+          "desc": "Ranged Weapon Attack: +4 to hit, range 30/120 ft., one target. Hit: 5 (1d6 + 2) piercing damage."
+        }
+      ],
+      "bonus_actions": [],
+      "reactions": [],
+      "legendary_desc": "",
+      "legendary_actions": [],
+      "special_abilities": [
+        {
+          "name": "Shapechanger",
+          "desc": "The wererat can use its action to polymorph into a rat-humanoid hybrid or into a giant rat, or back into its true form, which is humanoid. Its statistics, other than its size, are the same in each form. Any equipment it is wearing or carrying isn't transformed. It reverts to its true form if it dies."
+        },
+        {
+          "name": "Keen Smell",
+          "desc": "The wererat has advantage on Wisdom (Perception) checks that rely on smell."
+        }
+      ],
+      "spell_list": [],
+      "environments": [],
+      "page_no": null,
+      "source": "5e SRD (5e-bits/5e-database)"
+    },
+    {
+      "name": "Wererat, Hybrid Form",
+      "description": "",
+      "size": "Medium",
+      "type": "humanoid",
+      "subtype": "human",
+      "group": null,
+      "alignment": "lawful evil",
+      "armor_class": 12,
+      "armor_desc": "natural",
+      "hit_points": 33,
+      "hit_dice": "6d8+6",
+      "speed": {
+        "walk": 30
+      },
+      "ability_scores": {
+        "strength": 10,
+        "dexterity": 15,
+        "constitution": 12,
+        "intelligence": 11,
+        "wisdom": 10,
+        "charisma": 8
+      },
+      "saves": {},
+      "skills": {
+        "perception": 2,
+        "stealth": 4
+      },
+      "damage_vulnerabilities": "",
+      "damage_resistances": "",
+      "damage_immunities": "bludgeoning, piercing, and slashing from nonmagical weapons that aren't silvered",
+      "condition_immunities": "",
+      "senses": "passive Perception 12",
+      "languages": "Common",
+      "challenge_rating": "2",
+      "cr": 2,
+      "actions": [
+        {
+          "name": "Multiattack",
+          "desc": "The wererat makes two attacks, only one of which can be a bite."
+        },
+        {
+          "name": "Bite",
+          "desc": "Melee Weapon Attack: +4 to hit, reach 5 ft., one target. Hit: 4 (1d4 + 2) piercing damage. If the target is a humanoid, it must succeed on a DC 11 Constitution saving throw or be cursed with wererat lycanthropy."
+        },
+        {
+          "name": "Shortsword",
+          "desc": "Melee Weapon Attack: +4 to hit, reach 5 ft., one target. Hit: 5 (1d6 + 2) piercing damage."
+        },
+        {
+          "name": "Hand Crossbow",
+          "desc": "Ranged Weapon Attack: +4 to hit, range 30/120 ft., one target. Hit: 5 (1d6 + 2) piercing damage."
+        }
+      ],
+      "bonus_actions": [],
+      "reactions": [],
+      "legendary_desc": "",
+      "legendary_actions": [],
+      "special_abilities": [
+        {
+          "name": "Shapechanger",
+          "desc": "The wererat can use its action to polymorph into a rat-humanoid hybrid or into a giant rat, or back into its true form, which is humanoid. Its statistics, other than its size, are the same in each form. Any equipment it is wearing or carrying isn't transformed. It reverts to its true form if it dies."
+        },
+        {
+          "name": "Keen Smell",
+          "desc": "The wererat has advantage on Wisdom (Perception) checks that rely on smell."
+        }
+      ],
+      "spell_list": [],
+      "environments": [],
+      "page_no": null,
+      "source": "5e SRD (5e-bits/5e-database)"
+    },
+    {
+      "name": "Wererat, Rat Form",
+      "description": "",
+      "size": "Medium",
+      "type": "humanoid",
+      "subtype": "human",
+      "group": null,
+      "alignment": "lawful evil",
+      "armor_class": 12,
+      "armor_desc": "natural",
+      "hit_points": 33,
+      "hit_dice": "6d8+6",
+      "speed": {
+        "walk": 30
+      },
+      "ability_scores": {
+        "strength": 10,
+        "dexterity": 15,
+        "constitution": 12,
+        "intelligence": 11,
+        "wisdom": 10,
+        "charisma": 8
+      },
+      "saves": {},
+      "skills": {
+        "perception": 2,
+        "stealth": 4
+      },
+      "damage_vulnerabilities": "",
+      "damage_resistances": "",
+      "damage_immunities": "bludgeoning, piercing, and slashing from nonmagical weapons that aren't silvered",
+      "condition_immunities": "",
+      "senses": "darkvision 60 ft., passive Perception 12",
+      "languages": "",
+      "challenge_rating": "2",
+      "cr": 2,
+      "actions": [
+        {
+          "name": "Bite",
+          "desc": "Melee Weapon Attack: +4 to hit, reach 5 ft., one target. Hit: 4 (1d4 + 2) piercing damage. If the target is a humanoid, it must succeed on a DC 11 Constitution saving throw or be cursed with wererat lycanthropy."
+        }
+      ],
+      "bonus_actions": [],
+      "reactions": [],
+      "legendary_desc": "",
+      "legendary_actions": [],
+      "special_abilities": [
+        {
+          "name": "Shapechanger",
+          "desc": "The wererat can use its action to polymorph into a rat-humanoid hybrid or into a giant rat, or back into its true form, which is humanoid. Its statistics, other than its size, are the same in each form. Any equipment it is wearing or carrying isn't transformed. It reverts to its true form if it dies."
+        },
+        {
+          "name": "Keen Smell",
+          "desc": "The wererat has advantage on Wisdom (Perception) checks that rely on smell."
+        }
+      ],
+      "spell_list": [],
+      "environments": [],
+      "page_no": null,
+      "source": "5e SRD (5e-bits/5e-database)"
+    },
+    {
+      "name": "Weretiger, Human Form",
+      "description": "",
+      "size": "Medium",
+      "type": "humanoid",
+      "subtype": "human",
+      "group": null,
+      "alignment": "neutral",
+      "armor_class": 12,
+      "armor_desc": "dex",
+      "hit_points": 120,
+      "hit_dice": "16d8+48",
+      "speed": {
+        "walk": 30
+      },
+      "ability_scores": {
+        "strength": 17,
+        "dexterity": 15,
+        "constitution": 16,
+        "intelligence": 10,
+        "wisdom": 13,
+        "charisma": 11
+      },
+      "saves": {},
+      "skills": {
+        "perception": 5,
+        "stealth": 4
+      },
+      "damage_vulnerabilities": "",
+      "damage_resistances": "",
+      "damage_immunities": "bludgeoning, piercing, and slashing from nonmagical weapons that aren't silvered",
+      "condition_immunities": "",
+      "senses": "darkvision 60 ft., passive Perception 15",
+      "languages": "Common",
+      "challenge_rating": "4",
+      "cr": 4,
+      "actions": [
+        {
+          "name": "Multiattack",
+          "desc": "In humanoid form, the weretiger makes two scimitar attacks or two longbow attacks. In hybrid form, it can attack like a humanoid or make two claw attacks."
+        },
+        {
+          "name": "Scimitar",
+          "desc": "Melee Weapon Attack: +5 to hit, reach 5 ft., one target. Hit: 6 (1d6 + 3) slashing damage."
+        },
+        {
+          "name": "Longbow",
+          "desc": "Ranged Weapon Attack: +4 to hit, range 150/600 ft., one target. Hit: 6 (1d8 + 2) piercing damage."
+        }
+      ],
+      "bonus_actions": [],
+      "reactions": [],
+      "legendary_desc": "",
+      "legendary_actions": [],
+      "special_abilities": [
+        {
+          "name": "Shapechanger",
+          "desc": "The weretiger can use its action to polymorph into a tiger-humanoid hybrid or into a tiger, or back into its true form, which is humanoid. Its statistics, other than its size, are the same in each form. Any equipment it is wearing or carrying isn't transformed. It reverts to its true form if it dies."
+        },
+        {
+          "name": "Keen Hearing and Smell",
+          "desc": "The weretiger has advantage on Wisdom (Perception) checks that rely on hearing or smell."
+        }
+      ],
+      "spell_list": [],
+      "environments": [],
+      "page_no": null,
+      "source": "5e SRD (5e-bits/5e-database)"
+    },
+    {
+      "name": "Weretiger, Hybrid Form",
+      "description": "",
+      "size": "Medium",
+      "type": "humanoid",
+      "subtype": "human",
+      "group": null,
+      "alignment": "neutral",
+      "armor_class": 12,
+      "armor_desc": "dex",
+      "hit_points": 120,
+      "hit_dice": "16d8+48",
+      "speed": {
+        "walk": 30
+      },
+      "ability_scores": {
+        "strength": 17,
+        "dexterity": 15,
+        "constitution": 16,
+        "intelligence": 10,
+        "wisdom": 13,
+        "charisma": 11
+      },
+      "saves": {},
+      "skills": {
+        "perception": 5,
+        "stealth": 4
+      },
+      "damage_vulnerabilities": "",
+      "damage_resistances": "",
+      "damage_immunities": "bludgeoning, piercing, and slashing from nonmagical weapons that aren't silvered",
+      "condition_immunities": "",
+      "senses": "darkvision 60 ft., passive Perception 15",
+      "languages": "Common",
+      "challenge_rating": "4",
+      "cr": 4,
+      "actions": [
+        {
+          "name": "Multiattack",
+          "desc": "In humanoid form, the weretiger makes two scimitar attacks or two longbow attacks. In hybrid form, it can attack like a humanoid or make two claw attacks."
+        },
+        {
+          "name": "Bite",
+          "desc": "Melee Weapon Attack: +5 to hit, reach 5 ft., one target. Hit: 8 (1d10 + 3) piercing damage. If the target is a humanoid, it must succeed on a DC 13 Constitution saving throw or be cursed with weretiger lycanthropy."
+        },
+        {
+          "name": "Claw",
+          "desc": "Melee Weapon Attack: +5 to hit, reach 5 ft., one target. Hit: 7 (1d8 + 3) slashing damage."
+        },
+        {
+          "name": "Scimitar",
+          "desc": "Melee Weapon Attack: +5 to hit, reach 5 ft., one target. Hit: 6 (1d6 + 3) slashing damage."
+        },
+        {
+          "name": "Longbow",
+          "desc": "Ranged Weapon Attack: +4 to hit, range 150/600 ft., one target. Hit: 6 (1d8 + 2) piercing damage."
+        }
+      ],
+      "bonus_actions": [],
+      "reactions": [],
+      "legendary_desc": "",
+      "legendary_actions": [],
+      "special_abilities": [
+        {
+          "name": "Shapechanger",
+          "desc": "The weretiger can use its action to polymorph into a tiger-humanoid hybrid or into a tiger, or back into its true form, which is humanoid. Its statistics, other than its size, are the same in each form. Any equipment it is wearing or carrying isn't transformed. It reverts to its true form if it dies."
+        },
+        {
+          "name": "Keen Hearing and Smell",
+          "desc": "The weretiger has advantage on Wisdom (Perception) checks that rely on hearing or smell."
+        },
+        {
+          "name": "Pounce",
+          "desc": "If the weretiger moves at least 15 feet straight toward a creature and then hits it with a claw attack on the same turn, that target must succeed on a DC 14 Strength saving throw or be knocked prone. If the target is prone, the weretiger can make one bite attack against it as a bonus action."
+        }
+      ],
+      "spell_list": [],
+      "environments": [],
+      "page_no": null,
+      "source": "5e SRD (5e-bits/5e-database)"
+    },
+    {
+      "name": "Weretiger, Tiger Form",
+      "description": "",
+      "size": "Medium",
+      "type": "humanoid",
+      "subtype": "human",
+      "group": null,
+      "alignment": "neutral",
+      "armor_class": 12,
+      "armor_desc": "natural",
+      "hit_points": 120,
+      "hit_dice": "16d8+48",
+      "speed": {
+        "walk": 40
+      },
+      "ability_scores": {
+        "strength": 17,
+        "dexterity": 15,
+        "constitution": 16,
+        "intelligence": 10,
+        "wisdom": 13,
+        "charisma": 11
+      },
+      "saves": {},
+      "skills": {
+        "perception": 5,
+        "stealth": 4
+      },
+      "damage_vulnerabilities": "",
+      "damage_resistances": "",
+      "damage_immunities": "bludgeoning, piercing, and slashing from nonmagical weapons that aren't silvered",
+      "condition_immunities": "",
+      "senses": "darkvision 60 ft., passive Perception 15",
+      "languages": "",
+      "challenge_rating": "4",
+      "cr": 4,
+      "actions": [
+        {
+          "name": "Bite",
+          "desc": "Melee Weapon Attack: +5 to hit, reach 5 ft., one target. Hit: 8 (1d10 + 3) piercing damage. If the target is a humanoid, it must succeed on a DC 13 Constitution saving throw or be cursed with weretiger lycanthropy."
+        },
+        {
+          "name": "Claw",
+          "desc": "Melee Weapon Attack: +5 to hit, reach 5 ft., one target. Hit: 7 (1d8 + 3) slashing damage."
+        }
+      ],
+      "bonus_actions": [],
+      "reactions": [],
+      "legendary_desc": "",
+      "legendary_actions": [],
+      "special_abilities": [
+        {
+          "name": "Shapechanger",
+          "desc": "The weretiger can use its action to polymorph into a tiger-humanoid hybrid or into a tiger, or back into its true form, which is humanoid. Its statistics, other than its size, are the same in each form. Any equipment it is wearing or carrying isn't transformed. It reverts to its true form if it dies."
+        },
+        {
+          "name": "Keen Hearing and Smell",
+          "desc": "The weretiger has advantage on Wisdom (Perception) checks that rely on hearing or smell."
+        },
+        {
+          "name": "Pounce",
+          "desc": "If the weretiger moves at least 15 feet straight toward a creature and then hits it with a claw attack on the same turn, that target must succeed on a DC 14 Strength saving throw or be knocked prone. If the target is prone, the weretiger can make one bite attack against it as a bonus action."
+        }
+      ],
+      "spell_list": [],
+      "environments": [],
+      "page_no": null,
+      "source": "5e SRD (5e-bits/5e-database)"
+    },
+    {
+      "name": "Werewolf, Human Form",
+      "description": "",
+      "size": "Medium",
+      "type": "humanoid",
+      "subtype": "human",
+      "group": null,
+      "alignment": "chaotic evil",
+      "armor_class": 11,
+      "armor_desc": "dex",
+      "hit_points": 58,
+      "hit_dice": "9d8+18",
+      "speed": {
+        "walk": 30
+      },
+      "ability_scores": {
+        "strength": 15,
+        "dexterity": 13,
+        "constitution": 14,
+        "intelligence": 10,
+        "wisdom": 11,
+        "charisma": 10
+      },
+      "saves": {},
+      "skills": {
+        "perception": 4
+      },
+      "damage_vulnerabilities": "",
+      "damage_resistances": "",
+      "damage_immunities": "bludgeoning, piercing, and slashing from nonmagical weapons that aren't silvered",
+      "condition_immunities": "",
+      "senses": "passive Perception 14",
+      "languages": "Common",
+      "challenge_rating": "3",
+      "cr": 3,
+      "actions": [
+        {
+          "name": "Multiattack",
+          "desc": "The werewolf makes two attacks: two with its spear (humanoid form) or one with its bite and one with its claws (hybrid form)."
+        },
+        {
+          "name": "Spear",
+          "desc": "Melee or Ranged Weapon Attack: +4 to hit, reach 5 ft. or range 20/60 ft., one creature. Hit: 5 (1d6 + 2) piercing damage, or 6 (1d8 + 2) piercing damage if used with two hands to make a melee attack."
+        }
+      ],
+      "bonus_actions": [],
+      "reactions": [],
+      "legendary_desc": "",
+      "legendary_actions": [],
+      "special_abilities": [
+        {
+          "name": "Shapechanger",
+          "desc": "The werewolf can use its action to polymorph into a wolf-humanoid hybrid or into a wolf, or back into its true form, which is humanoid. Its statistics, other than its AC, are the same in each form. Any equipment it is wearing or carrying isn't transformed. It reverts to its true form if it dies."
+        },
+        {
+          "name": "Keen Hearing and Smell",
+          "desc": "The werewolf has advantage on Wisdom (Perception) checks that rely on hearing or smell."
+        }
+      ],
+      "spell_list": [],
+      "environments": [],
+      "page_no": null,
+      "source": "5e SRD (5e-bits/5e-database)"
+    },
+    {
+      "name": "Werewolf, Hybrid Form",
+      "description": "",
+      "size": "Medium",
+      "type": "humanoid",
+      "subtype": "human",
+      "group": null,
+      "alignment": "chaotic evil",
+      "armor_class": 12,
+      "armor_desc": "natural",
+      "hit_points": 58,
+      "hit_dice": "9d8+18",
+      "speed": {
+        "walk": 30
+      },
+      "ability_scores": {
+        "strength": 15,
+        "dexterity": 13,
+        "constitution": 14,
+        "intelligence": 10,
+        "wisdom": 11,
+        "charisma": 10
+      },
+      "saves": {},
+      "skills": {
+        "perception": 4
+      },
+      "damage_vulnerabilities": "",
+      "damage_resistances": "",
+      "damage_immunities": "bludgeoning, piercing, and slashing from nonmagical weapons that aren't silvered",
+      "condition_immunities": "",
+      "senses": "passive Perception 14",
+      "languages": "Common",
+      "challenge_rating": "3",
+      "cr": 3,
+      "actions": [
+        {
+          "name": "Multiattack",
+          "desc": "The werewolf makes two attacks: two with its spear (humanoid form) or one with its bite and one with its claws (hybrid form)."
+        },
+        {
+          "name": "Bite",
+          "desc": "Melee Weapon Attack: +4 to hit, reach 5 ft., one target. Hit: 6 (1d8 + 2) piercing damage. If the target is a humanoid, it must succeed on a DC 12 Constitution saving throw or be cursed with werewolf lycanthropy."
+        },
+        {
+          "name": "Claws",
+          "desc": "Melee Weapon Attack: +4 to hit, reach 5 ft., one creature. Hit: 7 (2d4 + 2) slashing damage."
+        }
+      ],
+      "bonus_actions": [],
+      "reactions": [],
+      "legendary_desc": "",
+      "legendary_actions": [],
+      "special_abilities": [
+        {
+          "name": "Shapechanger",
+          "desc": "The werewolf can use its action to polymorph into a wolf-humanoid hybrid or into a wolf, or back into its true form, which is humanoid. Its statistics, other than its AC, are the same in each form. Any equipment it is wearing or carrying isn't transformed. It reverts to its true form if it dies."
+        },
+        {
+          "name": "Keen Hearing and Smell",
+          "desc": "The werewolf has advantage on Wisdom (Perception) checks that rely on hearing or smell."
+        }
+      ],
+      "spell_list": [],
+      "environments": [],
+      "page_no": null,
+      "source": "5e SRD (5e-bits/5e-database)"
+    },
+    {
+      "name": "Werewolf, Wolf Form",
+      "description": "",
+      "size": "Medium",
+      "type": "humanoid",
+      "subtype": "human",
+      "group": null,
+      "alignment": "chaotic evil",
+      "armor_class": 12,
+      "armor_desc": "natural",
+      "hit_points": 58,
+      "hit_dice": "9d8+18",
+      "speed": {
+        "walk": 40
+      },
+      "ability_scores": {
+        "strength": 15,
+        "dexterity": 13,
+        "constitution": 14,
+        "intelligence": 10,
+        "wisdom": 11,
+        "charisma": 10
+      },
+      "saves": {},
+      "skills": {
+        "perception": 4
+      },
+      "damage_vulnerabilities": "",
+      "damage_resistances": "",
+      "damage_immunities": "bludgeoning, piercing, and slashing from nonmagical weapons that aren't silvered",
+      "condition_immunities": "",
+      "senses": "passive Perception 14",
+      "languages": "",
+      "challenge_rating": "3",
+      "cr": 3,
+      "actions": [
+        {
+          "name": "Bite",
+          "desc": "Melee Weapon Attack: +4 to hit, reach 5 ft., one target. Hit: 6 (1d8 + 2) piercing damage. If the target is a humanoid, it must succeed on a DC 12 Constitution saving throw or be cursed with werewolf lycanthropy."
+        }
+      ],
+      "bonus_actions": [],
+      "reactions": [],
+      "legendary_desc": "",
+      "legendary_actions": [],
+      "special_abilities": [
+        {
+          "name": "Shapechanger",
+          "desc": "The werewolf can use its action to polymorph into a wolf-humanoid hybrid or into a wolf, or back into its true form, which is humanoid. Its statistics, other than its AC, are the same in each form. Any equipment it is wearing or carrying isn't transformed. It reverts to its true form if it dies."
+        },
+        {
+          "name": "Keen Hearing and Smell",
+          "desc": "The werewolf has advantage on Wisdom (Perception) checks that rely on hearing or smell."
+        }
+      ],
+      "spell_list": [],
+      "environments": [],
+      "page_no": null,
+      "source": "5e SRD (5e-bits/5e-database)"
     }
   ]
 }

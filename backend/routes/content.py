@@ -8,6 +8,10 @@ from engine.item_data import get_all_items
 from engine.monster_data import get_all_monsters
 from engine.condition_data import get_all_conditions
 from engine.feat_data import get_all_feats
+from engine.equipment_data import get_all_equipment
+from engine.background_data import get_all_backgrounds
+from engine.race_data import get_all_races as get_all_srd_races, get_all_subraces
+from engine.reference_data import get_reference, get_reference_categories
 
 content_bp = Blueprint("content", __name__)
 
@@ -83,3 +87,26 @@ def list_monsters():
 @content_bp.route("/conditions", methods=["GET"])
 def list_conditions():
     return jsonify(get_all_conditions()), 200
+
+@content_bp.route("/equipment", methods=["GET"])
+def list_equipment():
+    return jsonify(get_all_equipment()), 200
+
+@content_bp.route("/backgrounds", methods=["GET"])
+def list_backgrounds():
+    return jsonify(get_all_backgrounds()), 200
+
+@content_bp.route("/srd-races", methods=["GET"])
+def list_srd_races():
+    return jsonify({"races": get_all_srd_races(), "subraces": get_all_subraces()}), 200
+
+@content_bp.route("/reference", methods=["GET"])
+def list_reference_categories():
+    return jsonify(get_reference_categories()), 200
+
+@content_bp.route("/reference/<string:category>", methods=["GET"])
+def reference_category(category):
+    data = get_reference(category)
+    if data is None:
+        return jsonify({"error": "Unknown reference category"}), 404
+    return jsonify(data), 200
