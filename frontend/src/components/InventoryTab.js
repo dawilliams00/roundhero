@@ -37,6 +37,16 @@ export default function InventoryTab() {
   const updateItem = (idx, item) => save({ ...inv, items: items.map((it,i) => i===idx ? item : it) });
   const removeItem = (idx) => save({ ...inv, items: items.filter((_,i) => i!==idx) });
 
+  // Manual reordering - only meaningful in "Default" sort, since moving an item up/down
+  // while a sort is active would just get overridden by the sort on the next render.
+  const moveItem = (idx, dir) => {
+    const j = idx + dir;
+    if (j < 0 || j >= items.length) return;
+    const newItems = [...items];
+    [newItems[idx], newItems[j]] = [newItems[j], newItems[idx]];
+    save({ ...inv, items: newItems });
+  };
+
   // Items are copied from the master DB at add-time, so a later fix to the reference
   // data (description, charges, buffs) doesn't reach characters who already have the
   // item without this - pulls in the static fields, leaves quantity/equipped/attuned/
@@ -84,7 +94,7 @@ export default function InventoryTab() {
     switch (sortBy) {
       case 'name': return a.it.name.localeCompare(b.it.name);
       case 'weight': return (b.it.weight||0) - (a.it.weight||0);
-      case 'rarity': return RARITY_ORDER.indexOf(a.it.rarity) - RARITY_ORDER.indexOf(b.it.rarity);
+      case 'rarity': return RARITY_ORDER.indexOf(b.it.rarity) - RARITY_ORDER.indexOf(a.it.rarity);
       case 'equipped': return (b.it.equipped?1:0) - (a.it.equipped?1:0);
       default: return 0;
     }
@@ -95,7 +105,7 @@ export default function InventoryTab() {
       <div className="card">
         <div style={{display:'flex',alignItems:'center',marginBottom:10}}>
           <div style={{color:'var(--text-secondary)',fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:1,flex:1}}>
-            Items <span style={{color:'var(--text-dim)',fontWeight:400}}>· {totalWeight.toFixed(1)} lb</span>
+            Inventory <span style={{color:'var(--text-dim)',fontWeight:400}}>· {totalWeight.toFixed(1)} lb</span>
           </div>
           <select value={sortBy} onChange={e => setSortBy(e.target.value)} style={{fontSize:11,padding:'2px 4px',marginRight:8}}>
             {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -110,6 +120,12 @@ export default function InventoryTab() {
         ) : sortedItems.map(({it: item, idx: i}) => (
           <div key={i} style={{padding:'10px 0',borderBottom:'1px solid var(--border)'}}>
             <div style={{display:'flex',alignItems:'center',gap:8}}>
+              {sortBy === 'default' && (
+                <div style={{display:'flex',flexDirection:'column',flexShrink:0}}>
+                  <button onClick={() => moveItem(i,-1)} disabled={i===0} title="Move up" style={{fontSize:9,lineHeight:1,padding:'1px 4px',background:'var(--bg-hover)',color:'var(--text-dim)',borderRadius:2,opacity:i===0?0.3:1}}>▲</button>
+                  <button onClick={() => moveItem(i,1)} disabled={i===items.length-1} title="Move down" style={{fontSize:9,lineHeight:1,padding:'1px 4px',background:'var(--bg-hover)',color:'var(--text-dim)',borderRadius:2,opacity:i===items.length-1?0.3:1}}>▼</button>
+                </div>
+              )}
               <div style={{flex:1,cursor:'pointer'}} onClick={() => setViewing(i)}>
                 <div style={{display:'flex',alignItems:'center',gap:6}}>
                   <span style={{color:'var(--text-primary)',fontWeight:500,fontSize:13}}>{item.name}</span>
@@ -120,6 +136,10 @@ export default function InventoryTab() {
                 </div>
                 <div style={{color:'var(--text-dim)',fontSize:11}}>{item.rarity} {item.weight ? `· ${item.weight} lb` : ''}</div>
               </div>
+              <label onClick={e => e.stopPropagation()} style={{display:'flex',alignItems:'center',gap:4,fontSize:10,color: item.equipped ? 'var(--success)' : 'var(--text-dim)',cursor:'pointer'}}>
+                <input type="checkbox" checked={!!item.equipped} onChange={() => updateItem(i, { ...item, equipped: !item.equipped })} />
+                Equipped
+              </label>
               {item.is_weapon && (
                 <label onClick={e => e.stopPropagation()} style={{display:'flex',alignItems:'center',gap:4,fontSize:10,color:'var(--text-dim)',cursor:'pointer'}} title="Whether you're proficient with this weapon - affects the attack roll">
                   <input type="checkbox" checked={!!item.proficient} onChange={() => updateItem(i, { ...item, proficient: !item.proficient })} />
