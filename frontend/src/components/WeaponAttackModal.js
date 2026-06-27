@@ -11,19 +11,26 @@ const parseDice = (diceStr) => {
   return { count: 0, sides: 0, flat: isNaN(flat) ? 0 : flat };
 };
 
-export default function WeaponAttackModal({ itemIndex, onClose }) {
-  const { character, saveTrackerData, setTurnUsed, useSlot } = useCharacter();
+export default function WeaponAttackModal({ itemIndex, onClose, attacksUsed, maxAttacks, onAttack }) {
+  const { character, saveTrackerData, useSlot } = useCharacter();
   const [attackResult, setAttackResult] = useState(null);
   const [damageResult, setDamageResult] = useState(null);
   const [smiteOn, setSmiteOn] = useState(false);
   const [smiteLevel, setSmiteLevel] = useState(null);
   const [smiteVsUndeadFiend, setSmiteVsUndeadFiend] = useState(false);
+  // Rolling Attack and rolling Damage both represent the SAME swing if done together -
+  // only the first of either should count against Extra Attack, so clicking both for one
+  // hit doesn't burn two attacks. Reroll buttons never count - they're correcting the
+  // same swing, not adding a new one.
+  const [thisAttackCounted, setThisAttackCounted] = useState(false);
+  const [smiteApplied, setSmiteApplied] = useState(false);
 
   if (!character) return null;
   const td = character.tracker_data || {};
   const items = td.inventory?.items || [];
   const weapon = items[itemIndex];
   if (!weapon) return null;
+  const attacksExhausted = td.in_initiative && attacksUsed >= maxAttacks;
 
   // Divine Smite isn't a separate charge pool - it just spends a real spell slot on a
   // melee hit, so any character with the feature (manually-built Paladins always get it
@@ -45,20 +52,29 @@ export default function WeaponAttackModal({ itemIndex, onClose }) {
     ? (modifier(effAb.STR || 10) >= modifier(effAb.DEX || 10) ? 'STR' : 'DEX')
     : (weapon.weapon_range === 'Ranged' ? 'DEX' : 'STR');
 
-  const markBucket = () => {
-    if (!td.in_initiative) return;
-    setTurnUsed(p => ({ ...p, Action: true }));
-  };
-
   const toggleTwoHanded = () => {
     const newItems = items.map((it, i) => i === itemIndex ? { ...it, two_handed: !it.two_handed } : it);
     saveTrackerData({ ...td, inventory: { ...td.inventory, items: newItems } });
   };
 
   const rollAttack = () => {
-    markBucket();
+    if (!thisAttackCounted) { onAttack(); setThisAttackCounted(true); }
     const d20 = rollD20();
     setAttackResult({ d20, mod: attackMod, total: d20 + attackMod });
+  };
+
+  const rerollAttack = () => {
+    const d20 = rollD20();
+    setAttackResult({ d20, mod: attackMod, total: d20 + attackMod });
+  };
+
+  // 2d8 radiant, +1d8 per slot level above 1st (capped at 5d8 total), +1d8 more vs
+  // undead/fiends - shown live as the level/checkbox change, so unchecking "I'll roll
+  // myself" still leaves the player knowing exactly what to roll by hand.
+  const smitePreview = () => {
+    if (!smiteOn || !smiteLevel) return null;
+    const count = Math.min(5, 2 + (smiteLevel - 1)) + (smiteVsUndeadFiend ? 1 : 0);
+    return `${count}d8 radiant (spends a level ${smiteLevel} slot)`;
   };
 
   const buildDamage = () => {
@@ -84,13 +100,13 @@ export default function WeaponAttackModal({ itemIndex, onClose }) {
   // never costs a slot). Rerolling reuses the already-spent smite's dice spec instead of
   // calling this again, so clicking Reroll never spends a second slot.
   const rollDamageNow = async () => {
-    markBucket();
+    if (!thisAttackCounted) { onAttack(); setThisAttackCounted(true); }
     const dmg = rollDamageDetailed(buildDamage());
     const extraSpec = buildBonusDamage();
     const extra = extraSpec ? { ...extraSpec, ...rollDamageDetailed(extraSpec) } : null;
     let smite = null;
     if (smiteOn && smiteLevel) {
-      await useSlot(smiteLevel);
+      if (!smiteApplied) { await useSlot(smiteLevel); setSmiteApplied(true); }
       const count = Math.min(5, 2 + (smiteLevel - 1)) + (smiteVsUndeadFiend ? 1 : 0);
       const smiteSpec = { count, sides: 8, bonus: 0, damage_type: 'Radiant' };
       smite = { ...smiteSpec, ...rollDamageDetailed(smiteSpec) };
@@ -149,7 +165,14 @@ export default function WeaponAttackModal({ itemIndex, onClose }) {
                   </label>
                 </div>
               )}
+              {smitePreview() && (
+                <div style={{color:'var(--accent-light)',fontSize:12,marginTop:8}}>Roll: {smitePreview()}</div>
+              )}
             </div>
+          )}
+
+          {attacksExhausted && (
+            <div style={{color:'var(--warning)',fontSize:12,marginBottom:12}}>No attacks remaining this turn ({attacksUsed}/{maxAttacks} used).</div>
           )}
 
           {attackResult != null && (
@@ -157,7 +180,7 @@ export default function WeaponAttackModal({ itemIndex, onClose }) {
               <div style={{color:'var(--text-dim)',fontSize:11,textTransform:'uppercase',letterSpacing:1,marginBottom:4}}>Attack Roll</div>
               <div style={{color:'var(--accent-light)',fontWeight:700,fontSize:28}}>{attackResult.total}</div>
               <div style={{color:'var(--text-dim)',fontSize:11}}>d20: {attackResult.d20} {attackResult.mod>=0?'+':''}{attackResult.mod}</div>
-              <button className="btn btn-secondary btn-sm" style={{marginTop:8}} onClick={rollAttack}>Reroll</button>
+              <button className="btn btn-secondary btn-sm" style={{marginTop:8}} onClick={rerollAttack}>Reroll</button>
             </div>
           )}
         </div>
@@ -193,12 +216,15 @@ export default function WeaponAttackModal({ itemIndex, onClose }) {
           ) : (
             <>
               <div style={{display:'flex',gap:8,width:'100%'}}>
-                <button className="btn btn-primary" style={{flex:1}} onClick={rollAttack}>Roll Attack</button>
-                <button className="btn btn-primary" style={{flex:1}} onClick={rollDamageNow}>Roll Damage?</button>
+                <button className="btn btn-primary" style={{flex:1}} disabled={attacksExhausted} onClick={rollAttack}>Roll Attack</button>
+                <button className="btn btn-primary" style={{flex:1}} disabled={attacksExhausted} onClick={rollDamageNow}>Roll Damage?</button>
               </div>
               {td.in_initiative && (
-                <button className="btn btn-secondary" style={{width:'100%',marginTop:8}} onClick={() => { markBucket(); onClose(); }}>
-                  ✓ I'll roll in person - just mark Action used
+                <button className="btn btn-secondary" style={{width:'100%',marginTop:8}} disabled={attacksExhausted} onClick={async () => {
+                  if (smiteOn && smiteLevel && !smiteApplied) { await useSlot(smiteLevel); setSmiteApplied(true); }
+                  onAttack();
+                }}>
+                  ✓ I'll roll in person - log an attack{smitePreview() ? ` (+ spend smite slot)` : ''}
                 </button>
               )}
               <button className="btn btn-secondary" style={{width:'100%',marginTop:8}} onClick={onClose}>Close</button>

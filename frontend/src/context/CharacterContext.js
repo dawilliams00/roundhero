@@ -4,7 +4,10 @@ import { HASTED_EFFECT, LETHARGIC_CONDITION } from '../utils/dnd';
 
 const CharacterContext = createContext(null);
 
-const EMPTY_TURN = { Action: false, 'Bonus Action': false, Reaction: false, Haste: false };
+// Attacks is a count, not a boolean - Extra Attack means the Action bucket itself isn't
+// "used" until all granted attacks for the turn are spent, so the AE tab can show
+// "Attack 1/2" progress instead of dimming after the first swing.
+const EMPTY_TURN = { Action: false, 'Bonus Action': false, Reaction: false, Haste: false, Attacks: 0 };
 
 export function CharacterProvider({ children }) {
   const [character, setCharacterState] = useState(null);

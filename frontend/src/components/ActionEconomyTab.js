@@ -54,13 +54,21 @@ export default function ActionEconomyTab() {
   // so it works whether the feature is the engine's exact name or a PDF-imported variant.
   const sorceryFeatureName = Object.keys(features).find(n => n.toLowerCase().includes('font of magic'));
   const knownMetamagic = td.metamagic_known || [];
+  const maxAttacks = Object.keys(features).some(n => n.toLowerCase().includes('extra attack')) ? 2 : 1;
+
+  const recordAttack = () => {
+    setTurnUsed(p => {
+      const used = (p.Attacks || 0) + 1;
+      return { ...p, Attacks: used, ...(used >= maxAttacks ? { Action: true } : {}) };
+    });
+  };
 
   // Lethargic RAW lasts "until the end of your next turn" - this app has no real
   // round/turn counter to time that precisely against, so clicking New Turn (the
   // simplest stand-in for "a turn has passed") clears it. Simplified, but matches the
   // rest of this app's philosophy of tracking state rather than enforcing exact timing.
   const resetTurn = () => {
-    setTurnUsed({ Action: false, 'Bonus Action': false, Reaction: false, Haste: false });
+    setTurnUsed({ Action: false, 'Bonus Action': false, Reaction: false, Haste: false, Attacks: 0 });
     setDismissedReminders({});
     const conditions = td.conditions || [];
     if (conditions.includes(LETHARGIC_CONDITION)) {
@@ -225,17 +233,19 @@ export default function ActionEconomyTab() {
             <div style={{padding:'6px 12px',background:'#37474f',fontSize:11,fontWeight:600,color:'#fff',letterSpacing:1,position:'sticky',top:0,zIndex:1}}>
               WEAPONS
             </div>
-            {/* No Extra Attack counting and no separate Haste-bucket trigger here on
-                purpose - the engine doesn't model class attack counts, so the ATTACK
-                button always stays clickable (never dims/disables on bucketUsed,
-                unlike every other row in this file) to support multiple attacks
-                under one Action. */}
+            {/* Extra Attack (detected by feature name, same substring approach used
+                elsewhere) raises maxAttacks to 2 - the Action bucket itself only marks
+                used once all granted attacks for the turn are spent, so a Fighter/Paladin
+                etc. actually gets two free swings before anything else sharing the Action
+                bucket dims. attacksUsed is a turn-scoped count (turnUsed.Attacks), reset
+                the same places Action/Bonus/Reaction already reset. */}
             {weaponItems.map(({it, idx}) => {
-              const bucketUsed = isBucketUsed('Action');
+              const attacksUsed = turnUsed.Attacks || 0;
+              const attacksExhausted = inInitiative && attacksUsed >= maxAttacks;
               return (
-                <div key={idx} style={{display:'flex',alignItems:'center',padding:'8px 12px',borderBottom:'1px solid var(--border)',gap:8}}>
+                <div key={idx} style={{display:'flex',alignItems:'center',padding:'8px 12px',borderBottom:'1px solid var(--border)',gap:8,opacity: attacksExhausted ? 0.5 : 1}}>
                   <div style={{width:60,flexShrink:0,display:'flex',justifyContent:'center'}}>
-                    <button className="btn btn-sm" onClick={() => setAttackingWeapon(idx)} style={{background:'var(--accent)',color:'#fff',minWidth:56}}>
+                    <button className="btn btn-sm" onClick={() => setAttackingWeapon(idx)} disabled={attacksExhausted} style={{background: attacksExhausted ? 'var(--border)' : 'var(--accent)',color:'#fff',minWidth:56}}>
                       ATTACK
                     </button>
                   </div>
@@ -244,7 +254,7 @@ export default function ActionEconomyTab() {
                     <div style={{color:'var(--text-dim)',fontSize:11}}>
                       {it.weapon_range} · {it.damage_dice} {it.damage_type}{(it.properties||[]).length ? ` · ${it.properties.join(', ')}` : ''}
                     </div>
-                    {bucketUsed && <div style={{color:'var(--text-dim)',fontSize:10}}>Action used this turn</div>}
+                    {inInitiative && <div style={{color: attacksExhausted ? 'var(--text-dim)' : 'var(--text-secondary)',fontSize:10}}>Attack {Math.min(attacksUsed, maxAttacks)}/{maxAttacks} used this turn</div>}
                   </div>
                 </div>
               );
@@ -403,7 +413,13 @@ export default function ActionEconomyTab() {
         />
       )}
       {attackingWeapon !== null && (
-        <WeaponAttackModal itemIndex={attackingWeapon} onClose={() => setAttackingWeapon(null)} />
+        <WeaponAttackModal
+          itemIndex={attackingWeapon}
+          attacksUsed={turnUsed.Attacks || 0}
+          maxAttacks={maxAttacks}
+          onAttack={recordAttack}
+          onClose={() => setAttackingWeapon(null)}
+        />
       )}
       {showConcentration && <ConcentrationModal onClose={() => setShowConcentration(false)} />}
       {viewingItemDetail !== null && (
