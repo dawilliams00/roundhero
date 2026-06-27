@@ -82,13 +82,13 @@ export default function SettingsModal({ onClose }) {
           <label>Content Available in Libraries</label>
           <div style={{display:'flex',flexDirection:'column',gap:6}}>
             <label style={{display:'flex',alignItems:'center',gap:8,cursor:'pointer'}}>
-              <input type="checkbox" checked={contentEditions['2014'] !== false} onChange={() => toggleEdition('2014')} /> 5e (2014 / PHB) content
+              <input type="checkbox" style={{width:'auto',flexShrink:0}} checked={contentEditions['2014'] !== false} onChange={() => toggleEdition('2014')} /> 5e (2014 / PHB) content
             </label>
             <label style={{display:'flex',alignItems:'center',gap:8,cursor:'pointer'}}>
-              <input type="checkbox" checked={contentEditions['2024'] !== false} onChange={() => toggleEdition('2024')} /> 5e (2024 revision) content
+              <input type="checkbox" style={{width:'auto',flexShrink:0}} checked={contentEditions['2024'] !== false} onChange={() => toggleEdition('2024')} /> 5e (2024 revision) content
             </label>
             <label style={{display:'flex',alignItems:'center',gap:8,cursor:'pointer'}}>
-              <input type="checkbox" checked={contentEditions['expanded'] !== false} onChange={() => toggleEdition('expanded')} /> Expanded / Homebrew content
+              <input type="checkbox" style={{width:'auto',flexShrink:0}} checked={contentEditions['expanded'] !== false} onChange={() => toggleEdition('expanded')} /> Expanded / Homebrew content
             </label>
           </div>
           <div style={{color:'var(--text-dim)',fontSize:11,marginTop:6}}>

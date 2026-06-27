@@ -113,10 +113,13 @@ export default function ActionEconomyTab() {
     markBucket(bucketForAbility(ability, section));
   };
 
+  // Marking the bucket consumed happens on a SUCCESSFUL cast (CastSpellPickerModal's
+  // onCast, fired from SpellDetailModal's onCastSuccess) - not on opening the picker.
+  // Clicking CAST and then closing the picker without actually casting anything used to
+  // burn the Action/Bonus/Reaction bucket for nothing.
   const handleCastClick = (section) => {
     setCastingBucket(section);
     setCastingSpell(true);
-    markBucket(bucketForAbility({ cost_type: 'cast_spell' }, section));
   };
 
   const getUses = (ability) => {
@@ -376,7 +379,11 @@ export default function ActionEconomyTab() {
         <SorceryPointsModal featureName={sorceryFeatureName} onClose={() => setShowSorceryPoints(false)} />
       )}
       {castingSpell && (
-        <CastSpellPickerModal bucket={castingBucket} onClose={() => { setCastingSpell(false); setCastingBucket(null); }} />
+        <CastSpellPickerModal
+          bucket={castingBucket}
+          onCast={() => markBucket(bucketForAbility({ cost_type: 'cast_spell' }, castingBucket))}
+          onClose={() => { setCastingSpell(false); setCastingBucket(null); }}
+        />
       )}
       {viewingItemSpells !== null && (
         <ItemSpellsModal

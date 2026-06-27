@@ -1,18 +1,42 @@
 import React, { useState, useEffect } from 'react';
 import api from '../utils/api';
 import { schoolColor, slotBadgeTextColor } from '../utils/dnd';
+import SpellEditModal from './SpellEditModal';
+import ConfirmModal from './ConfirmModal';
 
 export default function SpellBrowserModal({ character, knownSpells, onAdd, onRemove, onClose }) {
   const [allSpells, setAllSpells] = useState([]);
   const [loading, setLoading]     = useState(true);
   const [search, setSearch]       = useState('');
   const [filter, setFilter]       = useState('all');
+  const [editTarget, setEditTarget] = useState(null); // { spell, mode }
+  const [confirmDelete, setConfirmDelete] = useState(null);
+
+  const loadSpells = () => api.get('/content/spells', { params: { class_name: character.class_name } }).then(r => setAllSpells(r.data));
 
   useEffect(() => {
-    api.get('/content/spells', { params: { class_name: character.class_name } })
-      .then(r => setAllSpells(r.data))
-      .finally(() => setLoading(false));
+    loadSpells().finally(() => setLoading(false));
   }, [character.class_name]);
+
+  const saveEdit = async (data) => {
+    const { spell, mode } = editTarget;
+    if (mode === 'canonEdit') {
+      await api.put('/content/spells/override', { ...data, _canon_name: spell.name });
+    } else if (mode === 'duplicate') {
+      await api.post('/content/spells', data);
+    } else if (mode === 'customEdit') {
+      await api.put(`/content/spells/${spell._custom_id}`, data);
+    }
+    setEditTarget(null);
+    await loadSpells();
+  };
+
+  const deleteCustom = async () => {
+    await api.delete(`/content/spells/${confirmDelete._custom_id}`);
+    setConfirmDelete(null);
+    setEditTarget(null);
+    await loadSpells();
+  };
 
   const knownNames = new Set(knownSpells.map(s => s.name));
   const levels = [...new Set(allSpells.map(s => s.level_int))].sort((a, b) => a - b);
@@ -51,6 +75,14 @@ export default function SpellBrowserModal({ character, knownSpells, onAdd, onRem
                   <div style={{color: schoolColor(spell.school),fontWeight:500,fontSize:13}}>{spell.name}</div>
                   <div style={{color:'var(--text-dim)',fontSize:11}}>{spell.school} {spell.ritual?'· Ritual':''} {spell.concentration?'· Concentration':''}</div>
                 </div>
+                {spell._source === 'custom' ? (
+                  <button className="btn btn-secondary" style={{fontSize:11,padding:'4px 8px'}} onClick={() => setEditTarget({ spell, mode: 'customEdit' })}>✏️</button>
+                ) : (
+                  <>
+                    <button className="btn btn-secondary" style={{fontSize:11,padding:'4px 8px'}} title="Admin Edit" onClick={() => setEditTarget({ spell, mode: 'canonEdit' })}>✏️</button>
+                    <button className="btn btn-secondary" style={{fontSize:11,padding:'4px 8px'}} title="Duplicate" onClick={() => setEditTarget({ spell, mode: 'duplicate' })}>📋</button>
+                  </>
+                )}
                 <button
                   className={isKnown ? 'btn btn-danger' : 'btn btn-primary'}
                   onClick={() => isKnown ? onRemove(spell) : onAdd(spell)}
@@ -64,6 +96,26 @@ export default function SpellBrowserModal({ character, knownSpells, onAdd, onRem
         </div>
         <button className="btn btn-secondary" style={{width:'100%',marginTop:16}} onClick={onClose}>Close</button>
       </div>
+
+      {editTarget && (
+        <SpellEditModal
+          spell={editTarget.spell}
+          mode={editTarget.mode}
+          onSave={saveEdit}
+          onDelete={editTarget.mode === 'customEdit' ? () => setConfirmDelete(editTarget.spell) : undefined}
+          onClose={() => setEditTarget(null)}
+        />
+      )}
+      {confirmDelete && (
+        <ConfirmModal
+          title="Delete Homebrew Spell?"
+          message={`Permanently delete "${confirmDelete.name}"? This can't be undone.`}
+          confirmLabel="Delete"
+          danger
+          onConfirm={deleteCustom}
+          onCancel={() => setConfirmDelete(null)}
+        />
+      )}
     </div>
   );
 }

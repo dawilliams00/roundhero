@@ -36,12 +36,19 @@ def list_races():
 def list_spells():
     class_name = request.args.get("class_name")
     base = get_spells_for_class(class_name) if class_name else get_all_spells()
-    # Custom content is shared across everyone, not just the creator - same as a homebrew
-    # rulebook anyone at the table can pull from once one person has written the entry.
+    # Same two-layer pattern items use: "spell_override" corrects a canon entry IN PLACE
+    # (matched by name) so a fix (e.g. missing "At Higher Levels" text) reaches everyone -
+    # the static spells.json on disk never changes. "spell" rows are independent
+    # duplicates/new homebrew, shared across everyone like any other custom content.
+    overrides = {c.name.lower(): c for c in CustomContent.query.filter_by(content_type="spell_override").all()}
+    merged_base = []
+    for spell in base:
+        ov = overrides.get(spell["name"].lower())
+        merged_base.append({**ov.data, "_override_id": ov.id, "_source": "canon_override"} if ov else spell)
     customs = [c.to_dict() for c in CustomContent.query.filter_by(content_type="spell").all()]
     if class_name:
         customs = [c for c in customs if not c.get("classes") or class_name in c.get("classes", [])]
-    return jsonify(base + customs), 200
+    return jsonify(merged_base + customs), 200
 
 @content_bp.route("/spells", methods=["POST"])
 @jwt_required()
@@ -55,6 +62,60 @@ def create_custom_spell():
     db.session.add(entry)
     db.session.commit()
     return jsonify(entry.to_dict()), 201
+
+@content_bp.route("/spells/<int:custom_id>", methods=["PUT"])
+@jwt_required()
+def update_custom_spell(custom_id):
+    entry = CustomContent.query.filter_by(id=custom_id, content_type="spell").first()
+    if not entry:
+        return jsonify({"error": "Custom spell not found"}), 404
+    payload = request.get_json() or {}
+    if not (payload.get("name") or "").strip():
+        return jsonify({"error": "Spell name is required"}), 400
+    entry.name = payload["name"].strip()
+    entry.data = payload
+    db.session.commit()
+    return jsonify(entry.to_dict()), 200
+
+@content_bp.route("/spells/<int:custom_id>", methods=["DELETE"])
+@jwt_required()
+def delete_custom_spell(custom_id):
+    entry = CustomContent.query.filter_by(id=custom_id, content_type="spell").first()
+    if not entry:
+        return jsonify({"error": "Custom spell not found"}), 404
+    db.session.delete(entry)
+    db.session.commit()
+    return jsonify({"ok": True}), 200
+
+@content_bp.route("/spells/override", methods=["PUT"])
+@jwt_required()
+def upsert_spell_override():
+    user_id = int(get_jwt_identity())
+    payload = request.get_json() or {}
+    canon_name = (payload.pop("_canon_name", None) or payload.get("name") or "").strip()
+    if not canon_name:
+        return jsonify({"error": "Spell name is required"}), 400
+    entry = CustomContent.query.filter_by(content_type="spell_override").filter(
+        db.func.lower(CustomContent.name) == canon_name.lower()
+    ).first()
+    if not entry:
+        entry = CustomContent(user_id=user_id, content_type="spell_override", name=canon_name)
+        db.session.add(entry)
+    entry.data = payload
+    db.session.commit()
+    return jsonify({**entry.data, "_override_id": entry.id, "_source": "canon_override"}), 200
+
+@content_bp.route("/spells/override/<string:name>", methods=["DELETE"])
+@jwt_required()
+def delete_spell_override(name):
+    entry = CustomContent.query.filter_by(content_type="spell_override").filter(
+        db.func.lower(CustomContent.name) == name.lower()
+    ).first()
+    if not entry:
+        return jsonify({"error": "Override not found"}), 404
+    db.session.delete(entry)
+    db.session.commit()
+    return jsonify({"ok": True}), 200
 
 @content_bp.route("/feats", methods=["GET"])
 @jwt_required()

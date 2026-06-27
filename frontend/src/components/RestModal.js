@@ -58,7 +58,7 @@ export default function RestModal({ onClose, onRest }) {
           </p>
           {usingFallback && (
             <div style={{color:'var(--warning)',fontSize:11,marginBottom:10,background:'rgba(233,196,106,0.1)',borderRadius:'var(--radius-sm)',padding:8}}>
-              This character's hit dice total wasn't saved (likely an older import) — showing an estimate based on level. Re-sync from PDF on the character list to fix this permanently.
+              This character's hit dice total wasn't saved (likely an older import) — showing an estimate based on level. Go to the Notes tab and click "↻ Re-sync from PDF" to fix this permanently.
             </div>
           )}
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12}}>

@@ -213,6 +213,11 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
             </div>
           )}
           <p style={{color:'var(--text-secondary)',lineHeight:1.7,whiteSpace:'pre-wrap'}}>{spell.description}</p>
+          {spell.higher_level && (
+            <p style={{color:'var(--text-secondary)',lineHeight:1.7,whiteSpace:'pre-wrap'}}>
+              <b>At Higher Levels.</b> {spell.higher_level}
+            </p>
+          )}
         </div>
         <div className="modal-footer" style={{flexDirection:'column'}}>
           {concPrompt ? (
