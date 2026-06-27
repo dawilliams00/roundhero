@@ -9,6 +9,7 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
   const [casting, setCasting] = useState(false);
   const [cast, setCast]       = useState(null);
   const [awaitingTarget, setAwaitingTarget] = useState(false);
+  const [pendingDamage, setPendingDamage] = useState(null);
   const [damageResult, setDamageResult] = useState(null);
 
   if (!character) return null;
@@ -24,11 +25,7 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
 
   const finish = () => { onClose(); if (onCastSuccess) onCastSuccess(); };
 
-  const reroll = () => {
-    const levelUsed = chargeMode ? spell.level_int : (isCantrip ? spell.level_int : castLevel);
-    const dmg = scaleSpellDamage(spell, levelUsed);
-    if (dmg) setDamageResult({ ...dmg, total: rollDamage(dmg) });
-  };
+  const rollNow = () => setDamageResult({ ...pendingDamage, total: rollDamage(pendingDamage) });
 
   const doCast = async () => {
     setCasting(true);
@@ -46,7 +43,7 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
       }
       const dmg = scaleSpellDamage(spell, levelUsed);
       if (dmg) {
-        setDamageResult({ ...dmg, total: rollDamage(dmg) });
+        setPendingDamage(dmg);
       }
       if (selfEffect) {
         setAwaitingTarget(true);
@@ -106,8 +103,20 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
               </div>
               <div style={{color:'var(--accent-light)',fontWeight:700,fontSize:28}}>{damageResult.total}</div>
               <div style={{display:'flex',gap:8,marginTop:10}}>
-                <button className="btn btn-secondary" style={{flex:1}} onClick={reroll}>Reroll</button>
+                <button className="btn btn-secondary" style={{flex:1}} onClick={rollNow}>Reroll</button>
                 <button className="btn btn-primary" style={{flex:1}} onClick={finish}>Done</button>
+              </div>
+            </div>
+          ) : pendingDamage ? (
+            <div style={{width:'100%',background:'var(--bg-primary)',borderRadius:'var(--radius-sm)',padding:12,textAlign:'center'}}>
+              <div style={{color:'var(--text-dim)',fontSize:11,textTransform:'uppercase',letterSpacing:1,marginBottom:10}}>
+                {pendingDamage.label} {spell.damage_type} damage
+                {spell.save_type_abbr ? ` · ${spell.save_type_abbr} DC vs caster · half on success` : ''}
+                {spell.is_attack ? ' · requires a spell attack roll' : ''}
+              </div>
+              <div style={{display:'flex',gap:8}}>
+                <button className="btn btn-secondary" style={{flex:1}} onClick={finish}>Skip</button>
+                <button className="btn btn-primary" style={{flex:1}} onClick={rollNow}>Roll Damage?</button>
               </div>
             </div>
           ) : (

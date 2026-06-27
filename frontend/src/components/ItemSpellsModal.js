@@ -20,7 +20,10 @@ export default function ItemSpellsModal({ item, onCast, onClose }) {
     const master = spellDb[granted.name.toLowerCase()];
     if (master) {
       const lvl = granted.cast_level ?? master.level_int;
-      return { ...master, level_int: lvl, level: String(lvl) };
+      // base_level_int keeps the spell's true base level so damage scaling (which cares
+      // how far above the BASE level this was cast) still works after the display level
+      // gets overridden to the item's fixed cast_level.
+      return { ...master, level_int: lvl, level: String(lvl), base_level_int: master.level_int };
     }
     return {
       name: granted.name, level_int: granted.level_int || 0, level: String(granted.level_int || 0),

@@ -163,7 +163,10 @@ export const scaleSpellDamage = (spell, castLevel) => {
   let count = parseInt(base[1]);
   const sides = parseInt(base[2]);
   const bonus = base[3] ? parseInt(base[3]) : 0;
-  if (spell.higher_level && castLevel > spell.level_int) {
+  // base_level_int (set when a spell is resolved from an item's fixed cast_level) is the
+  // spell's true base level - level_int itself may already be overridden to the cast level.
+  const baseLevel = spell.base_level_int ?? spell.level_int;
+  if (spell.higher_level && castLevel > baseLevel) {
     const scale = spell.higher_level.match(/increases by (\d+)d(\d+) for each slot level above (\d+)/i);
     if (scale && parseInt(scale[2]) === sides) {
       count += (castLevel - parseInt(scale[3])) * parseInt(scale[1]);

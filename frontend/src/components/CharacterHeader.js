@@ -237,6 +237,11 @@ export default function CharacterHeader({ onBack }) {
               )}
 
               <div style={{display:'flex',flexDirection:'column',gap:4}}>
+                <div style={{display:'flex',gap:6}}>
+                  {ABILITY_KEYS.map(k => (
+                    <AbilityBox key={k} abbr={k} score={ab?.[k]||10} />
+                  ))}
+                </div>
                 {slotLevels.length > 0 && (
                   <div style={{display:'flex',gap:4,flexWrap:'wrap',alignItems:'center'}}>
                     {slotLevels.map(([lvl, slot]) => (
@@ -251,11 +256,6 @@ export default function CharacterHeader({ onBack }) {
                     ))}
                   </div>
                 )}
-                <div style={{display:'flex',gap:6}}>
-                  {ABILITY_KEYS.map(k => (
-                    <AbilityBox key={k} abbr={k} score={ab?.[k]||10} />
-                  ))}
-                </div>
               </div>
             </div>
 
