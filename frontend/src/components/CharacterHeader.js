@@ -261,7 +261,11 @@ export default function CharacterHeader({ onBack }) {
             <div style={{display:'flex',gap:8,alignItems:'flex-start',flexWrap:'wrap'}}>
               <div style={{display:'flex',flexDirection:'column',gap:4}}>
                 <PMStat label="HP" value={`${curHp}/${maxHp}`} color={hpCol} onAdjust={adjustHp} onClick={() => setShowHP(true)} />
-                {spellBlocks.map(block => <SpellcastBox key={block.className} block={block} />)}
+                {spellBlocks.length > 0 && (
+                  <div style={{display:'flex',gap:4}}>
+                    {spellBlocks.map(block => <SpellcastBox key={block.className} block={block} />)}
+                  </div>
+                )}
               </div>
               {tempHp > 0 && <PMStat label="Temp HP" value={tempHp} color={hpCol} onAdjust={adjustTempHp} />}
 
@@ -325,30 +329,32 @@ export default function CharacterHeader({ onBack }) {
               title={exhaustionTitle}
             />
             <div style={{display:'flex',flexDirection:'column',gap:4,minWidth:100}}>
-              <div style={{color:'var(--text-dim)',fontSize:10,fontWeight:600,textTransform:'uppercase',letterSpacing:1}}>Effects</div>
-              <div style={{display:'flex',gap:4,flexWrap:'wrap',alignItems:'center'}}>
-                {activeEffects.map(e => (
-                  <div key={e} onClick={() => removeActiveEffect(e)} title="Click to remove" style={{cursor:'pointer',background:'rgba(124,77,255,0.15)',border:'1px solid var(--accent-light)',color:'var(--accent-light)',borderRadius:12,padding:'3px 10px',fontSize:12}}>
-                    {e} ×
-                  </div>
-                ))}
-                <EffectAdder onAdd={addActiveEffect} />
-              </div>
+              <EffectAdder onAdd={addActiveEffect} />
+              {activeEffects.length > 0 && (
+                <div style={{display:'flex',gap:4,flexWrap:'wrap',alignItems:'center'}}>
+                  {activeEffects.map(e => (
+                    <div key={e} onClick={() => removeActiveEffect(e)} title="Click to remove" style={{cursor:'pointer',background:'rgba(124,77,255,0.15)',border:'1px solid var(--accent-light)',color:'var(--accent-light)',borderRadius:12,padding:'3px 10px',fontSize:12}}>
+                      {e} ×
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
             <div style={{display:'flex',flexDirection:'column',gap:4,minWidth:100}}>
-              <div style={{color:'var(--text-dim)',fontSize:10,fontWeight:600,textTransform:'uppercase',letterSpacing:1}}>Conditions</div>
-              <div style={{display:'flex',gap:4,flexWrap:'wrap',alignItems:'center'}}>
-                {conditions.map(c => (
-                  <div key={c} style={{display:'flex',alignItems:'center',background:'rgba(230,57,70,0.15)',border:'1px solid var(--danger)',color:'var(--danger)',borderRadius:12,padding:'3px 4px 3px 10px',fontSize:12}}>
-                    <span onClick={() => setViewingCondition(c)} style={{cursor:'pointer'}}>{c}</span>
-                    <span onClick={() => removeCondition(c)} title="Remove" style={{cursor:'pointer',marginLeft:5,padding:'0 3px'}}>×</span>
-                  </div>
-                ))}
-                <div className="stat-box" onClick={() => setShowConditions(true)} style={{cursor:'pointer'}}>
-                  <div className="stat-value" style={{color: conditions.length > 0 ? 'var(--danger)' : 'var(--accent-light)'}}>{conditions.length}</div>
-                  <div className="stat-label">Conditions</div>
-                </div>
+              <div className="stat-box" onClick={() => setShowConditions(true)} style={{cursor:'pointer'}}>
+                <div className="stat-value" style={{color: conditions.length > 0 ? 'var(--danger)' : 'var(--accent-light)'}}>{conditions.length}</div>
+                <div className="stat-label">Conditions</div>
               </div>
+              {conditions.length > 0 && (
+                <div style={{display:'flex',gap:4,flexWrap:'wrap',alignItems:'center'}}>
+                  {conditions.map(c => (
+                    <div key={c} style={{display:'flex',alignItems:'center',background:'rgba(230,57,70,0.15)',border:'1px solid var(--danger)',color:'var(--danger)',borderRadius:12,padding:'3px 4px 3px 10px',fontSize:12}}>
+                      <span onClick={() => setViewingCondition(c)} style={{cursor:'pointer'}}>{c}</span>
+                      <span onClick={() => removeCondition(c)} title="Remove" style={{cursor:'pointer',marginLeft:5,padding:'0 3px'}}>×</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 

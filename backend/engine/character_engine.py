@@ -89,6 +89,16 @@ def build_tracker_data(class_name, level, ability_scores):
             features["Indomitable"]["max"] = indom_uses
             features["Indomitable"]["current"] = indom_uses
 
+    if class_name == "Sorcerer":
+        # RAW: sorcery points = sorcerer level, starting at 2nd level (Font of Magic).
+        # Tracked as a plain scaling counter, same as Rage/Ki - what each Metamagic
+        # option actually DOES mechanically isn't modeled, same "track the resource,
+        # the player applies RAW" philosophy as conditions/exhaustion.
+        sp_max = level if level >= 2 else 0
+        if "Font of Magic" in features:
+            features["Font of Magic"]["max"] = sp_max
+            features["Font of Magic"]["current"] = sp_max
+
     spell_slots = get_spell_slots(class_name, level)
 
     hit_die = cls.get("hit_die", 8)
@@ -178,14 +188,18 @@ def build_character(data):
     }
 
 def _merge_features_for_level_up(old_features, new_features):
-    # Keeps current usage on features that already existed (so an already-spent Rage use
-    # stays spent), but adopts the freshly-computed max in case it scales with level (e.g.
-    # Barbarian Rage uses). Brand new features at this level get added at full charges.
+    # Keeps whatever was already SPENT on a feature, but adds any gained max as freshly
+    # available - same "preserve spent, grant the gain" rule _merge_spell_slots_for_level_up
+    # uses. A naive min(old_current, new_max) would instead just cap the old current at the
+    # new max without ever granting the new capacity as usable (e.g. Sorcery Points 2/2 used
+    # 1 -> level grants a 3rd point -> should be 2/3 available, not 1/3).
     merged = dict(old_features or {})
     for name, nf in new_features.items():
         of = merged.get(name)
         if of:
-            cur = min(of.get("current", nf["max"]), nf["max"]) if nf["max"] else of.get("current", 0)
+            old_max = of.get("max", nf["max"])
+            spent = max(0, old_max - of.get("current", old_max))
+            cur = max(0, nf["max"] - spent) if nf["max"] else of.get("current", 0)
             merged[name] = {**nf, "current": cur}
         else:
             merged[name] = nf

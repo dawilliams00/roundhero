@@ -4,6 +4,7 @@ import { SECTION_ORDER, SECTION_COLORS, slotBadgeTextColor, concentrationSlotCou
 import AbilityDetailModal from './AbilityDetailModal';
 import CastSpellPickerModal from './CastSpellPickerModal';
 import ItemSpellsModal from './ItemSpellsModal';
+import ItemDetailModal from './ItemDetailModal';
 import SpellTuckModal from './SpellTuckModal';
 import WeaponAttackModal from './WeaponAttackModal';
 import ConcentrationModal from './ConcentrationModal';
@@ -26,6 +27,7 @@ export default function ActionEconomyTab() {
   const [tuckTarget, setTuckTarget] = useState(null);
   const [attackingWeapon, setAttackingWeapon] = useState(null);
   const [showConcentration, setShowConcentration] = useState(false);
+  const [viewingItemDetail, setViewingItemDetail] = useState(null);
 
   if (!character) return null;
 
@@ -196,7 +198,7 @@ export default function ActionEconomyTab() {
               const bucketUsed = isBucketUsed(itemBucket);
               return (
                 <div key={idx} style={{display:'flex',alignItems:'center',padding:'8px 12px',borderBottom:'1px solid var(--border)',gap:8,background: bucketUsed ? 'var(--bg-primary)' : 'transparent',opacity: bucketUsed ? 0.5 : 1}}>
-                  <div style={{flex:1}}>
+                  <div style={{flex:1,cursor:'pointer'}} onClick={() => setViewingItemDetail(idx)}>
                     <div style={{color:'var(--text-primary)',fontWeight:500,fontSize:13}}>{it.name}</div>
                     <div style={{color:'var(--text-dim)',fontSize:11}}>recharges {it.charges.recharge?.replace('_',' ')}</div>
                     {bucketUsed && <div style={{color:'var(--warning)',fontSize:10}}>Already used this turn</div>}
@@ -258,7 +260,7 @@ export default function ActionEconomyTab() {
                 const unavailable = depleted || bucketUsed;
                 return (
                   <div key={i} style={{display:'flex',alignItems:'center',padding:'8px 12px',borderBottom:'1px solid var(--border)',background: unavailable ? 'var(--bg-primary)' : 'var(--bg-card)',opacity: unavailable ? 0.5 : 1,gap:8}}>
-                    <div style={{flex:1,cursor: (ability.description || isTuck) ? 'pointer' : 'default'}} onClick={() => { if (isTuck) setTuckTarget({ ability, section }); else if (ability.description) setDetail(ability); }}>
+                    <div style={{flex:1,cursor:'pointer'}} onClick={() => { if (isTuck) setTuckTarget({ ability, section }); else setDetail(ability); }}>
                       <div style={{color: unavailable ? 'var(--text-dim)' : 'var(--text-primary)',fontWeight:500,fontSize:13,textDecoration: depleted ? 'line-through' : 'none'}}>
                         {isTuck ? '🃏 ' : ''}{ability.name}
                       </div>
@@ -318,6 +320,9 @@ export default function ActionEconomyTab() {
         <WeaponAttackModal itemIndex={attackingWeapon} onClose={() => setAttackingWeapon(null)} />
       )}
       {showConcentration && <ConcentrationModal onClose={() => setShowConcentration(false)} />}
+      {viewingItemDetail !== null && (
+        <ItemDetailModal item={items[viewingItemDetail]} onClose={() => setViewingItemDetail(null)} />
+      )}
     </div>
   );
 }

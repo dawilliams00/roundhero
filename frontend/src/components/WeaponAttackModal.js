@@ -12,15 +12,27 @@ const parseDice = (diceStr) => {
 };
 
 export default function WeaponAttackModal({ itemIndex, onClose }) {
-  const { character, saveTrackerData, setTurnUsed } = useCharacter();
+  const { character, saveTrackerData, setTurnUsed, useSlot } = useCharacter();
   const [attackResult, setAttackResult] = useState(null);
   const [damageResult, setDamageResult] = useState(null);
+  const [smiteOn, setSmiteOn] = useState(false);
+  const [smiteLevel, setSmiteLevel] = useState(null);
+  const [smiteVsUndeadFiend, setSmiteVsUndeadFiend] = useState(false);
 
   if (!character) return null;
   const td = character.tracker_data || {};
   const items = td.inventory?.items || [];
   const weapon = items[itemIndex];
   if (!weapon) return null;
+
+  // Divine Smite isn't a separate charge pool - it just spends a real spell slot on a
+  // melee hit, so any character with the feature (manually-built Paladins always get it
+  // at level 2+; PDF-imported ones if the sheet's Features & Traits printed it by this
+  // exact name) and an available slot can offer it here, in the same flow as rolling
+  // damage, rather than needing its own resource-tracking mechanism.
+  const hasSmite = !!td.features?.['Divine Smite'] && weapon.weapon_range !== 'Ranged';
+  const smiteSlotLevels = Object.entries(td.spell_slots || {})
+    .filter(([,s]) => (s.current||0) > 0).map(([lvl]) => parseInt(lvl)).sort((a,b)=>a-b);
 
   const effAb = effectiveAbilityScores(character.ability_scores, items);
   const abilityMod = weaponAbilityMod(weapon, effAb);
@@ -54,9 +66,29 @@ export default function WeaponAttackModal({ itemIndex, onClose }) {
     return { count, sides, bonus: (flat || 0) + abilityMod + itemBonus.damage, damage_type: dice.damage_type };
   };
 
-  const rollDamageNow = () => {
+  // 2d8 radiant, +1d8 per slot level above 1st (capped at 5d8 total), +1d8 more vs
+  // undead/fiends - RAW Divine Smite. The slot is spent here, when damage is first
+  // rolled, not just when the checkbox is ticked (so unchecking/closing without rolling
+  // never costs a slot). Rerolling reuses the already-spent smite's dice spec instead of
+  // calling this again, so clicking Reroll never spends a second slot.
+  const rollDamageNow = async () => {
     const dmg = buildDamage();
-    setDamageResult({ ...dmg, total: rollDamage(dmg) });
+    const total = rollDamage(dmg);
+    let smite = null;
+    if (smiteOn && smiteLevel) {
+      await useSlot(smiteLevel);
+      const count = Math.min(5, 2 + (smiteLevel - 1)) + (smiteVsUndeadFiend ? 1 : 0);
+      smite = { count, sides: 8, bonus: 0, damage_type: 'Radiant' };
+      smite.total = rollDamage(smite);
+    }
+    setDamageResult({ ...dmg, total, smite });
+  };
+
+  const rerollDamage = () => {
+    const dmg = buildDamage();
+    const total = rollDamage(dmg);
+    const smite = damageResult.smite ? { ...damageResult.smite, total: rollDamage(damageResult.smite) } : null;
+    setDamageResult({ ...dmg, total, smite });
   };
 
   return (
@@ -84,6 +116,27 @@ export default function WeaponAttackModal({ itemIndex, onClose }) {
             </label>
           )}
 
+          {hasSmite && (
+            <div style={{border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',padding:10,marginBottom:12}}>
+              <label style={{display:'flex',alignItems:'center',gap:6,fontSize:13,color:'var(--text-secondary)'}}>
+                <input type="checkbox" checked={smiteOn} onChange={e => { setSmiteOn(e.target.checked); if (e.target.checked && !smiteLevel) setSmiteLevel(smiteSlotLevels[0]); }} disabled={smiteSlotLevels.length===0} />
+                ✨ Divine Smite{smiteSlotLevels.length===0 ? ' (no spell slots available)' : ''}
+              </label>
+              {smiteOn && smiteSlotLevels.length > 0 && (
+                <div style={{display:'flex',gap:8,alignItems:'center',marginTop:8,flexWrap:'wrap'}}>
+                  <span style={{color:'var(--text-dim)',fontSize:12}}>Spend slot level:</span>
+                  <select value={smiteLevel || ''} onChange={e => setSmiteLevel(parseInt(e.target.value))}>
+                    {smiteSlotLevels.map(l => <option key={l} value={l}>{l}</option>)}
+                  </select>
+                  <label style={{display:'flex',alignItems:'center',gap:6,fontSize:12,color:'var(--text-secondary)'}}>
+                    <input type="checkbox" checked={smiteVsUndeadFiend} onChange={e => setSmiteVsUndeadFiend(e.target.checked)} />
+                    vs undead/fiend (+1d8)
+                  </label>
+                </div>
+              )}
+            </div>
+          )}
+
           {attackResult != null && (
             <div style={{background:'var(--bg-primary)',borderRadius:'var(--radius-sm)',padding:12,textAlign:'center',marginBottom:12}}>
               <div style={{color:'var(--text-dim)',fontSize:11,textTransform:'uppercase',letterSpacing:1,marginBottom:4}}>Attack Roll</div>
@@ -95,10 +148,23 @@ export default function WeaponAttackModal({ itemIndex, onClose }) {
         <div className="modal-footer" style={{flexDirection:'column'}}>
           {damageResult ? (
             <div style={{width:'100%',background:'var(--bg-primary)',borderRadius:'var(--radius-sm)',padding:12,textAlign:'center'}}>
-              <div style={{color:'var(--text-dim)',fontSize:11,textTransform:'uppercase',letterSpacing:1,marginBottom:4}}>{damageResult.damage_type} damage</div>
-              <div style={{color:'var(--accent-light)',fontWeight:700,fontSize:28}}>{damageResult.total}</div>
+              <div style={{color:'var(--text-dim)',fontSize:11,textTransform:'uppercase',letterSpacing:1,marginBottom:4}}>
+                {damageResult.damage_type} damage{damageResult.smite ? ` + Divine Smite` : ''}
+              </div>
+              <div style={{display:'flex',gap:20,justifyContent:'center'}}>
+                <div>
+                  <div style={{color:'var(--accent-light)',fontWeight:700,fontSize:28}}>{damageResult.total}</div>
+                  {damageResult.smite && <div style={{color:'var(--text-dim)',fontSize:10}}>{damageResult.damage_type}</div>}
+                </div>
+                {damageResult.smite && (
+                  <div>
+                    <div style={{color:'var(--accent-light)',fontWeight:700,fontSize:28}}>{damageResult.smite.total}</div>
+                    <div style={{color:'var(--text-dim)',fontSize:10}}>Radiant</div>
+                  </div>
+                )}
+              </div>
               <div style={{display:'flex',gap:8,marginTop:10}}>
-                <button className="btn btn-secondary" style={{flex:1}} onClick={rollDamageNow}>Reroll</button>
+                <button className="btn btn-secondary" style={{flex:1}} onClick={rerollDamage}>Reroll</button>
                 <button className="btn btn-primary" style={{flex:1}} onClick={onClose}>Done</button>
               </div>
             </div>

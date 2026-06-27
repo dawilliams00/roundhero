@@ -8,7 +8,7 @@ function Stepper({ label, value, onChange, step = 1 }) {
       <div style={{color:'var(--text-dim)',fontSize:11,marginBottom:6}}>{label}</div>
       <div style={{display:'flex',alignItems:'center',gap:6,justifyContent:'center'}}>
         <button onClick={() => onChange(value - step)} style={{background:'var(--danger)',color:'#fff',borderRadius:4,width:26,height:26,fontWeight:700}}>−</button>
-        <input type="number" value={value} onChange={e => onChange(parseInt(e.target.value) || 0)} style={{width:56,textAlign:'center'}} />
+        <input type="number" value={value} onChange={e => onChange(parseInt(e.target.value) || 0)} style={{width:72,textAlign:'center'}} />
         <button onClick={() => onChange(value + step)} style={{background:'var(--success)',color:'#fff',borderRadius:4,width:26,height:26,fontWeight:700}}>+</button>
       </div>
     </div>
@@ -62,6 +62,7 @@ export default function HPModal({ onClose }) {
             <div onClick={() => setShowHpCalc(true)} style={{cursor:'pointer',fontSize:22,fontWeight:700,color:'var(--accent-light)',padding:'3px 0'}}>
               {current}
             </div>
+            <div style={{color:'var(--text-dim)',fontSize:10}}>Click to modify</div>
             {showHpCalc && (
               <NumberPadPopover
                 label="Current HP" value={current} color="var(--accent-light)"
