@@ -16,8 +16,9 @@ export default function CustomAbilityModal({ onClose, editingFeat, onDelete }) {
     name: editingFeat.name, section: editingFeat.section, source: editingFeat.source || 'Custom',
     tracker_key: '', max_uses: editingFeat.max_uses || 0, rest_type: editingFeat.rest_type || 'long',
     description: editingFeat.description || '', isSpell: !!editingFeat.isSpell, isTuck: !!editingFeat.isTuck,
-    grantsSpell: !!editingFeat.grantsSpell, grantedSpellName: editingFeat.grantedSpellName || '', abilityOverride: editingFeat.abilityOverride || '',
-  } : { name:'', section:'Action', source:'Custom', tracker_key:'', max_uses:1, rest_type:'long', description:'', isSpell:false, isTuck:false, grantsSpell:false, grantedSpellName:'', abilityOverride:'' });
+    grantsSpell: !!editingFeat.grantsSpell, grantedSpellName: editingFeat.grantedSpellName || '', abilityOverride: editingFeat.abilityOverride || '', saveToLibrary: true,
+    edition: editingFeat.edition || 'expanded',
+  } : { name:'', section:'Action', source:'Custom', tracker_key:'', max_uses:1, rest_type:'long', description:'', isSpell:false, isTuck:false, grantsSpell:false, grantedSpellName:'', abilityOverride:'', saveToLibrary:true, edition:'expanded' });
   const [saving, setSaving] = useState(false);
 
   // Search-as-you-type against the real spell library (same pattern as AddItemModal's
@@ -46,6 +47,7 @@ export default function CustomAbilityModal({ onClose, editingFeat, onDelete }) {
       description: form.description, max_uses: parseInt(form.max_uses) || 0,
       rest_type: form.rest_type, isSpell: form.isSpell, isTuck: form.isTuck,
       grantsSpell: form.grantsSpell, grantedSpellName: form.grantedSpellName, abilityOverride: form.abilityOverride,
+      edition: form.edition,
     };
     if (editingFeat) {
       await api.put(`/content/feats/${editingFeat._custom_id}`, payload);
@@ -82,10 +84,12 @@ export default function CustomAbilityModal({ onClose, editingFeat, onDelete }) {
         };
       }
     }
-    try {
-      await api.post('/content/feats', payload);
-    } catch {
-      // Non-fatal - the character still gets the ability even if the library save failed.
+    if (form.saveToLibrary) {
+      try {
+        await api.post('/content/feats', payload);
+      } catch {
+        // Non-fatal - the character still gets the ability even if the library save failed.
+      }
     }
     await updateCharacter(character.id, { ae_data: newAe, tracker_data: newTd, ...(newSd ? { spell_data: newSd } : {}) });
     setSaving(false);
@@ -112,6 +116,14 @@ export default function CustomAbilityModal({ onClose, editingFeat, onDelete }) {
         <div className="form-row">
           <div className="form-group"><label>Uses (0=unlimited)</label><input type="number" min={0} value={form.max_uses} onChange={e => set('max_uses',e.target.value)} /></div>
           <div className="form-group"><label>Resets on</label><select value={form.rest_type} onChange={e => set('rest_type',e.target.value)}>{REST_TYPES.map(r => <option key={r} value={r}>{r}</option>)}</select></div>
+        </div>
+        <div className="form-group">
+          <label>Edition</label>
+          <select value={form.edition} onChange={e => set('edition', e.target.value)}>
+            <option value="2014">5e (2014 / PHB)</option>
+            <option value="2024">5e (2024 revision)</option>
+            <option value="expanded">Expanded / Homebrew</option>
+          </select>
         </div>
         <div className="form-group"><label>Description</label><textarea value={form.description} onChange={e => set('description',e.target.value)} rows={3} style={{width:'100%',resize:'vertical'}} /></div>
 
@@ -159,6 +171,13 @@ export default function CustomAbilityModal({ onClose, editingFeat, onDelete }) {
               "Uses" above is how many free casts (e.g. once per long rest) this grants without a slot. The spell can also always be cast normally with a real spell slot if the character has one.
             </div>
           </div>
+        )}
+
+        {!editingFeat && (
+          <label style={{display:'flex',alignItems:'center',gap:8,marginBottom:8,cursor:'pointer'}}>
+            <input type="checkbox" checked={form.saveToLibrary} onChange={e => set('saveToLibrary', e.target.checked)} />
+            <span style={{fontSize:13,color:'var(--text-secondary)'}}>Save to shared feat library (searchable by anyone) — uncheck to keep this for your character only</span>
+          </label>
         )}
 
         <div style={{display:'flex',gap:8,marginTop:8}}>

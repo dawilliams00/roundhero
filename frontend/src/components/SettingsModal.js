@@ -34,8 +34,10 @@ export default function SettingsModal({ onClose }) {
   if (!character) return null;
 
   const ruleset = settings.ruleset || '2014';
+  const contentEditions = settings.content_editions || { '2014': true, '2024': true, expanded: true };
 
   const setRuleset = (value) => saveTrackerData({ ...td, settings: { ...settings, ruleset: value } });
+  const toggleEdition = (key) => saveTrackerData({ ...td, settings: { ...settings, content_editions: { ...contentEditions, [key]: !contentEditions[key] } } });
   const setExhaustionRules = (patch) => saveTrackerData({ ...td, settings: { ...settings, exhaustion_rules: { ...exhaustionRules, ...patch } } });
 
   // Keeps the shared ruleset library in sync with whatever this character has typed -
@@ -73,6 +75,24 @@ export default function SettingsModal({ onClose }) {
           </select>
           <div style={{color:'var(--text-dim)',fontSize:11,marginTop:6}}>
             Not yet wired into any rules logic — reserved for upcoming options that differ between the 2014 and 2024 rulesets.
+          </div>
+        </div>
+
+        <div className="form-group">
+          <label>Content Available in Libraries</label>
+          <div style={{display:'flex',flexDirection:'column',gap:6}}>
+            <label style={{display:'flex',alignItems:'center',gap:8,cursor:'pointer'}}>
+              <input type="checkbox" checked={contentEditions['2014'] !== false} onChange={() => toggleEdition('2014')} /> 5e (2014 / PHB) content
+            </label>
+            <label style={{display:'flex',alignItems:'center',gap:8,cursor:'pointer'}}>
+              <input type="checkbox" checked={contentEditions['2024'] !== false} onChange={() => toggleEdition('2024')} /> 5e (2024 revision) content
+            </label>
+            <label style={{display:'flex',alignItems:'center',gap:8,cursor:'pointer'}}>
+              <input type="checkbox" checked={contentEditions['expanded'] !== false} onChange={() => toggleEdition('expanded')} /> Expanded / Homebrew content
+            </label>
+          </div>
+          <div style={{color:'var(--text-dim)',fontSize:11,marginTop:6}}>
+            Controls which feats show up when browsing the shared library. Content with no edition tagged is treated as 2014.
           </div>
         </div>
 

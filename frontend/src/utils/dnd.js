@@ -50,8 +50,6 @@ export const metamagicCost = (optionName, spell) => {
 // No slot higher than 5th can be created this way.
 export const SORCERY_POINTS_TO_SLOT_COST = { 1: 2, 2: 3, 3: 5, 4: 6, 5: 7 };
 
-Finishing a long rest reduces a creature's exhaustion level by 1, provided they have also had some food and drink.`;
-
 export const ABILITY_KEYS = ['STR','DEX','CON','INT','WIS','CHA'];
 export const ABILITY_LABELS = { STR:'Strength', DEX:'Dexterity', CON:'Constitution', INT:'Intelligence', WIS:'Wisdom', CHA:'Charisma' };
 export const SKILL_MAP = {

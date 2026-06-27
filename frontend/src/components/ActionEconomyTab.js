@@ -182,6 +182,11 @@ export default function ActionEconomyTab() {
               const bucketUsed = isBucketUsed('Action');
               return (
                 <div key={idx} style={{display:'flex',alignItems:'center',padding:'8px 12px',borderBottom:'1px solid var(--border)',gap:8}}>
+                  <div style={{width:60,flexShrink:0,display:'flex',justifyContent:'center'}}>
+                    <button className="btn btn-sm" onClick={() => setAttackingWeapon(idx)} style={{background:'var(--accent)',color:'#fff',minWidth:56}}>
+                      ATTACK
+                    </button>
+                  </div>
                   <div style={{flex:1,cursor:'pointer'}} onClick={() => setAttackingWeapon(idx)}>
                     <div style={{color:'var(--text-primary)',fontWeight:500,fontSize:13}}>{it.name}</div>
                     <div style={{color:'var(--text-dim)',fontSize:11}}>
@@ -189,9 +194,6 @@ export default function ActionEconomyTab() {
                     </div>
                     {bucketUsed && <div style={{color:'var(--text-dim)',fontSize:10}}>Action used this turn</div>}
                   </div>
-                  <button className="btn btn-sm" onClick={() => setAttackingWeapon(idx)} style={{background:'var(--accent)',color:'#fff',minWidth:56}}>
-                    ATTACK
-                  </button>
                 </div>
               );
             })}
@@ -208,6 +210,13 @@ export default function ActionEconomyTab() {
               const bucketUsed = isBucketUsed(itemBucket);
               return (
                 <div key={idx} style={{display:'flex',alignItems:'center',padding:'8px 12px',borderBottom:'1px solid var(--border)',gap:8,background: bucketUsed ? 'var(--bg-primary)' : 'transparent',opacity: bucketUsed ? 0.5 : 1}}>
+                  <div style={{width:60,flexShrink:0,display:'flex',justifyContent:'center'}}>
+                    {it.granted_spells?.length > 0 ? (
+                      <button className="btn btn-sm" disabled={bucketUsed} style={{background:'var(--accent)',color:'#fff'}} onClick={() => setViewingItemSpells(idx)}>✨</button>
+                    ) : (
+                      <button className="btn btn-sm" disabled={it.charges.current<=0||bucketUsed} style={{background:'var(--danger)',color:'#fff'}} onClick={() => handleItemUse(idx, itemBucket)}>−</button>
+                    )}
+                  </div>
                   <div style={{flex:1,cursor:'pointer'}} onClick={() => setViewingItemDetail(idx)}>
                     <div style={{color:'var(--text-primary)',fontWeight:500,fontSize:13}}>{it.name}</div>
                     <div style={{color:'var(--text-dim)',fontSize:11}}>recharges {it.charges.recharge?.replace('_',' ')}</div>
@@ -217,13 +226,8 @@ export default function ActionEconomyTab() {
                     {ITEM_COST_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                   </select>
                   <div style={{color: it.charges.current > 0 ? 'var(--success)' : 'var(--danger)',fontWeight:600,fontSize:13,minWidth:36,textAlign:'right'}}>{it.charges.current}/{it.charges.max}</div>
-                  {it.granted_spells?.length > 0 ? (
-                    <button className="btn btn-sm" disabled={bucketUsed} style={{background:'var(--accent)',color:'#fff'}} onClick={() => setViewingItemSpells(idx)}>✨</button>
-                  ) : (
-                    <>
-                      <button className="btn btn-sm" disabled={it.charges.current<=0||bucketUsed} style={{background:'var(--danger)',color:'#fff'}} onClick={() => handleItemUse(idx, itemBucket)}>−</button>
-                      <button className="btn btn-sm" disabled={it.charges.current>=it.charges.max} style={{background:'var(--success)',color:'#fff'}} onClick={() => useItemCharge(idx,1)}>+</button>
-                    </>
+                  {!(it.granted_spells?.length > 0) && (
+                    <button className="btn btn-sm" disabled={it.charges.current>=it.charges.max} style={{background:'var(--success)',color:'#fff'}} onClick={() => useItemCharge(idx,1)}>+</button>
                   )}
                 </div>
               );
@@ -249,14 +253,16 @@ export default function ActionEconomyTab() {
                 const bucketUsed = isBucketUsed('Haste');
                 return (
                   <div style={{display:'flex',alignItems:'center',padding:'8px 12px',borderBottom:'1px solid var(--border)',background: bucketUsed ? 'var(--bg-primary)' : 'var(--bg-card)',opacity: bucketUsed ? 0.5 : 1,gap:8}}>
+                    <div style={{width:60,flexShrink:0,display:'flex',justifyContent:'center'}}>
+                      <button className="btn btn-sm" onClick={() => markBucket('Haste')} disabled={bucketUsed} style={{background: bucketUsed ? 'var(--border)' : 'var(--accent)',color:'#fff',minWidth:36}}>
+                        USE
+                      </button>
+                    </div>
                     <div style={{flex:1}}>
                       <div style={{color: bucketUsed ? 'var(--text-dim)' : 'var(--text-primary)',fontWeight:500,fontSize:13}}>Haste Action</div>
                       <div style={{color:'var(--text-dim)',fontSize:11}}>Haste · Attack, Dash, Disengage, Hide, or Use an Object only</div>
                       {bucketUsed && <div style={{color:'var(--warning)',fontSize:10}}>Already used this turn</div>}
                     </div>
-                    <button className="btn btn-sm" onClick={() => markBucket('Haste')} disabled={bucketUsed} style={{background: bucketUsed ? 'var(--border)' : 'var(--accent)',color:'#fff',minWidth:36}}>
-                      USE
-                    </button>
                   </div>
                 );
               })()}
@@ -270,6 +276,24 @@ export default function ActionEconomyTab() {
                 const unavailable = depleted || bucketUsed;
                 return (
                   <div key={i} style={{display:'flex',alignItems:'center',padding:'8px 12px',borderBottom:'1px solid var(--border)',background: unavailable ? 'var(--bg-primary)' : 'var(--bg-card)',opacity: unavailable ? 0.5 : 1,gap:8}}>
+                    <div style={{width:60,flexShrink:0,display:'flex',justifyContent:'center'}}>
+                      {isCastSpell && (
+                        <button className="btn btn-sm" onClick={() => handleCastClick(section)} disabled={bucketUsed} style={{background: bucketUsed ? 'var(--border)' : 'var(--accent)',color:'#fff',minWidth:36}}>
+                          CAST
+                        </button>
+                      )}
+                      {isTuck && (
+                        <button className="btn btn-sm" onClick={() => setTuckTarget({ ability, section })} disabled={bucketUsed} style={{background: bucketUsed ? 'var(--border)' : 'var(--accent)',color:'#fff',minWidth:36}}>
+                          OPEN
+                        </button>
+                      )}
+                      {!isCastSpell && !isTuck && !depleted && (
+                        <button className="btn btn-sm" onClick={() => handleUse(ability, section)} disabled={bucketUsed}
+                          style={{background: bucketUsed ? 'var(--border)' : 'var(--accent)',color:'#fff',minWidth:36}}>
+                          USE
+                        </button>
+                      )}
+                    </div>
                     <div style={{flex:1,cursor:'pointer'}} onClick={() => { if (isTuck) setTuckTarget({ ability, section }); else setDetail(ability); }}>
                       <div style={{color: unavailable ? 'var(--text-dim)' : 'var(--text-primary)',fontWeight:500,fontSize:13,textDecoration: depleted ? 'line-through' : 'none'}}>
                         {isTuck ? '🃏 ' : ''}{ability.name}
@@ -281,22 +305,6 @@ export default function ActionEconomyTab() {
                       {bucketUsed && !depleted && <div style={{color:'var(--warning)',fontSize:10}}>Already used this turn</div>}
                     </div>
                     {uses && <div style={{color: uses.current > 0 ? 'var(--success)' : 'var(--danger)',fontWeight:600,fontSize:13,minWidth:36,textAlign:'right'}}>{uses.current}/{uses.max}</div>}
-                    {isCastSpell && (
-                      <button className="btn btn-sm" onClick={() => handleCastClick(section)} disabled={bucketUsed} style={{background: bucketUsed ? 'var(--border)' : 'var(--accent)',color:'#fff',minWidth:36}}>
-                        CAST
-                      </button>
-                    )}
-                    {isTuck && (
-                      <button className="btn btn-sm" onClick={() => setTuckTarget({ ability, section })} disabled={bucketUsed} style={{background: bucketUsed ? 'var(--border)' : 'var(--accent)',color:'#fff',minWidth:36}}>
-                        OPEN
-                      </button>
-                    )}
-                    {!isCastSpell && !isTuck && !depleted && (
-                      <button className="btn btn-sm" onClick={() => handleUse(ability, section)} disabled={bucketUsed}
-                        style={{background: bucketUsed ? 'var(--border)' : 'var(--accent)',color:'#fff',minWidth:36}}>
-                        USE
-                      </button>
-                    )}
                   </div>
                 );
               })}

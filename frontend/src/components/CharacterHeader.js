@@ -349,7 +349,7 @@ export default function CharacterHeader({ onBack }) {
                 <div className="stat-label">Conditions</div>
               </div>
               {conditions.length > 0 && (
-                <div style={{display:'flex',gap:4,flexWrap:'wrap',alignItems:'center'}}>
+                <div style={{display:'flex',flexDirection:'column',gap:4,alignItems:'flex-start'}}>
                   {conditions.map(c => (
                     <div key={c} style={{display:'flex',alignItems:'center',background:'rgba(230,57,70,0.15)',border:'1px solid var(--danger)',color:'var(--danger)',borderRadius:12,padding:'3px 4px 3px 10px',fontSize:12}}>
                       <span onClick={() => setViewingCondition(c)} style={{cursor:'pointer'}}>{c}</span>

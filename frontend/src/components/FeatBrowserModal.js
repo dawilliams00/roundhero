@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import api from '../utils/api';
+import { useCharacter } from '../context/CharacterContext';
 import CustomAbilityModal from './CustomAbilityModal';
 import ConfirmModal from './ConfirmModal';
 
 export default function FeatBrowserModal({ onAdd, onClose }) {
+  const { character } = useCharacter();
+  const contentEditions = character?.tracker_data?.settings?.content_editions || { '2014': true, '2024': true, expanded: true };
   const [feats, setFeats] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -20,7 +23,11 @@ export default function FeatBrowserModal({ onAdd, onClose }) {
     setConfirmDelete(null);
   };
 
-  const filtered = feats.filter(f => !search || f.name.toLowerCase().includes(search.toLowerCase()));
+  const filtered = feats.filter(f => {
+    if (search && !f.name.toLowerCase().includes(search.toLowerCase())) return false;
+    const edition = f.edition || '2014';
+    return contentEditions[edition] !== false;
+  });
 
   return (
     <div className="modal-overlay" onClick={onClose}>

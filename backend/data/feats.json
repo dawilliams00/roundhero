@@ -6,9 +6,10 @@
       "cost_type": "passive",
       "max_uses": 0,
       "rest_type": "long",
-      "source": "Tome of Heroes (3rd-party)",
+      "source": "SRD",
       "official": false,
-      "description": "You have learned to harness your inner vitality to replenish your ki. You gain the following benefits:\n\nPrerequisite: Wisdom 13 or higher and the Ki class feature\n\n- Increase your Wisdom score by 1, to a maximum of 20.\n- When you start your turn and have no ki points remaining, you can use a reaction to spend one Hit Die. Roll the die and add your Constitution modifier to it. You regain expended ki points equal to up to half the total (minimum of 1). You can never have more ki points than the maximum for your level. Hit Dice spent using this feat can't be used to regain hit points during a short rest. You regain spent Hit Dice as normal."
+      "description": "You have learned to harness your inner vitality to replenish your ki. You gain the following benefits:\n\nPrerequisite: Wisdom 13 or higher and the Ki class feature\n\n- Increase your Wisdom score by 1, to a maximum of 20.\n- When you start your turn and have no ki points remaining, you can use a reaction to spend one Hit Die. Roll the die and add your Constitution modifier to it. You regain expended ki points equal to up to half the total (minimum of 1). You can never have more ki points than the maximum for your level. Hit Dice spent using this feat can't be used to regain hit points during a short rest. You regain spent Hit Dice as normal.",
+      "edition": "2014"
     },
     {
       "name": "Diehard",
@@ -16,9 +17,10 @@
       "cost_type": "passive",
       "max_uses": 0,
       "rest_type": "long",
-      "source": "Tome of Heroes (3rd-party)",
+      "source": "SRD",
       "official": false,
-      "description": "You are difficult to wear down and kill. You gain the following benefits:\n\nPrerequisite: Constitution 13 or higher\n\n- Increase your Constitution score by 1, up to a maximum of 20.\n- You have advantage on saving throws against effects that cause you to suffer a level of exhaustion.\n- You have advantage on death saving throws."
+      "description": "You are difficult to wear down and kill. You gain the following benefits:\n\nPrerequisite: Constitution 13 or higher\n\n- Increase your Constitution score by 1, up to a maximum of 20.\n- You have advantage on saving throws against effects that cause you to suffer a level of exhaustion.\n- You have advantage on death saving throws.",
+      "edition": "2014"
     },
     {
       "name": "Floriographer",
@@ -26,9 +28,10 @@
       "cost_type": "passive",
       "max_uses": 0,
       "rest_type": "long",
-      "source": "Tome of Heroes (3rd-party)",
+      "source": "SRD",
       "official": false,
-      "description": "You have studied the secret language of Floriography. You gain the following benefits:\n\nPrerequisite: Proficiency in one of the following skills: Arcana, History, or Nature\n\n- Increase your Intelligence or Wisdom score by 1, to a maximum of 20.\n- You learn Floriography, the language of flowers. Similar to Druidic and Thieves' Cant, Floriography is a secret language often used to communicate subtle ideas, symbolic meaning, and even basic messages. Floriography is conveyed through the combinations of colors, styles, and even types of flowers in bouquets, floral arrangements, and floral illustrations, often with a gift-giving component.\n- Your fluency with the subtle messages in floral displays gives you a keen eye for discerning subtle or hidden messages elsewhere. You have advantage on Intelligence (Investigation) and Wisdom (Insight) checks to notice and discern hidden messages of a visual nature, such as the runes of a magic trap or the subtle hand signals passing between two individuals."
+      "description": "You have studied the secret language of Floriography. You gain the following benefits:\n\nPrerequisite: Proficiency in one of the following skills: Arcana, History, or Nature\n\n- Increase your Intelligence or Wisdom score by 1, to a maximum of 20.\n- You learn Floriography, the language of flowers. Similar to Druidic and Thieves' Cant, Floriography is a secret language often used to communicate subtle ideas, symbolic meaning, and even basic messages. Floriography is conveyed through the combinations of colors, styles, and even types of flowers in bouquets, floral arrangements, and floral illustrations, often with a gift-giving component.\n- Your fluency with the subtle messages in floral displays gives you a keen eye for discerning subtle or hidden messages elsewhere. You have advantage on Intelligence (Investigation) and Wisdom (Insight) checks to notice and discern hidden messages of a visual nature, such as the runes of a magic trap or the subtle hand signals passing between two individuals.",
+      "edition": "2014"
     },
     {
       "name": "Forest Denizen",
@@ -36,9 +39,10 @@
       "cost_type": "passive",
       "max_uses": 0,
       "rest_type": "long",
-      "source": "Tome of Heroes (3rd-party)",
+      "source": "SRD",
       "official": false,
-      "description": "You are familiar with the ways of the forest. You gain the following benefits:\n\n- Increase your Wisdom score by 1, to a maximum of 20.\n- You can discern if a plant or fungal growth is safe to eat.\n- You learn to speak, read, and write Sylvan.\n- You have advantage on Strength (Athletics) and Dexterity (Acrobatics) checks you make to escape from being grappled or restrained as long as you are being grappled or restrained by nonmagical vegetation or a beast's action such as a giant frog's bite or a spider's web."
+      "description": "You are familiar with the ways of the forest. You gain the following benefits:\n\n- Increase your Wisdom score by 1, to a maximum of 20.\n- You can discern if a plant or fungal growth is safe to eat.\n- You learn to speak, read, and write Sylvan.\n- You have advantage on Strength (Athletics) and Dexterity (Acrobatics) checks you make to escape from being grappled or restrained as long as you are being grappled or restrained by nonmagical vegetation or a beast's action such as a giant frog's bite or a spider's web.",
+      "edition": "2014"
     },
     {
       "name": "Friend of the Forest",
@@ -46,9 +50,10 @@
       "cost_type": "passive",
       "max_uses": 0,
       "rest_type": "long",
-      "source": "Tome of Heroes (3rd-party)",
+      "source": "SRD",
       "official": false,
-      "description": "After spending some time in forests, you have attuned yourself to the ways of the woods and the creatures in it.\n\n- You learn the *treeheal* (see the Magic and Spells chapter) cantrip and two other druid cantrips of your choice.\n- You also learn the *speak with animals* spell and can cast it once without expending a spell slot. Once you cast it, you must finish a short or long rest before you can cast it in this way again. Your spellcasting ability for these spells is Wisdom."
+      "description": "After spending some time in forests, you have attuned yourself to the ways of the woods and the creatures in it.\n\n- You learn the *treeheal* (see the Magic and Spells chapter) cantrip and two other druid cantrips of your choice.\n- You also learn the *speak with animals* spell and can cast it once without expending a spell slot. Once you cast it, you must finish a short or long rest before you can cast it in this way again. Your spellcasting ability for these spells is Wisdom.",
+      "edition": "2014"
     },
     {
       "name": "Giant Foe",
@@ -56,9 +61,10 @@
       "cost_type": "passive",
       "max_uses": 0,
       "rest_type": "long",
-      "source": "Tome of Heroes (3rd-party)",
+      "source": "SRD",
       "official": false,
-      "description": "Your experience fighting giants, such as ogres, trolls, and frost giants, has taught you how to avoid their deadliest blows and how to wield mighty weapons to better combat them. You gain the following benefits:\n\nPrerequisite: A Small or smaller race\n\n- Increase your Strength score by 1, to a maximum of 20.\n- If you normally have disadvantage on attack rolls made with weapons with the Heavy property due to your size, you don't have disadvantage on those attack rolls.\n- When a giant attacks you, any critical hit from it against you becomes a normal hit.\n- Whenever you make an Intelligence (History) check related to the culture or origins of a giant, you are considered proficient in the History skill and add double your proficiency bonus to the check, instead of your normal proficiency bonus."
+      "description": "Your experience fighting giants, such as ogres, trolls, and frost giants, has taught you how to avoid their deadliest blows and how to wield mighty weapons to better combat them. You gain the following benefits:\n\nPrerequisite: A Small or smaller race\n\n- Increase your Strength score by 1, to a maximum of 20.\n- If you normally have disadvantage on attack rolls made with weapons with the Heavy property due to your size, you don't have disadvantage on those attack rolls.\n- When a giant attacks you, any critical hit from it against you becomes a normal hit.\n- Whenever you make an Intelligence (History) check related to the culture or origins of a giant, you are considered proficient in the History skill and add double your proficiency bonus to the check, instead of your normal proficiency bonus.",
+      "edition": "2014"
     },
     {
       "name": "Grappler",
@@ -68,7 +74,8 @@
       "rest_type": "long",
       "source": "SRD",
       "official": true,
-      "description": "You've developed the skills necessary to hold your own in close-quarters grappling. You gain the following benefits:\n\nPrerequisite: Strength 13 or higher\n\n- You have advantage on attack rolls against a creature you are grappling.\n- You can use your action to try to pin a creature grappled by you. The creature makes a Strength or Dexterity saving throw against your maneuver DC. On a failure, you and the creature are both restrained until the grapple ends."
+      "description": "You've developed the skills necessary to hold your own in close-quarters grappling. You gain the following benefits:\n\nPrerequisite: Strength 13 or higher\n\n- You have advantage on attack rolls against a creature you are grappling.\n- You can use your action to try to pin a creature grappled by you. The creature makes a Strength or Dexterity saving throw against your maneuver DC. On a failure, you and the creature are both restrained until the grapple ends.",
+      "edition": "2014"
     },
     {
       "name": "Harrier",
@@ -76,9 +83,10 @@
       "cost_type": "passive",
       "max_uses": 0,
       "rest_type": "long",
-      "source": "Tome of Heroes (3rd-party)",
+      "source": "SRD",
       "official": false,
-      "description": "You have learned to maximize the strategic impact of your misty step. You appear in a flash and, while your foe is disoriented, attack with deadly precision. You gain the following benefits:\n\nPrerequisite: The Shadow Traveler shadow fey trait or the ability to cast the* misty step *spell\n\n- Increase your Strength or Dexterity score by 1, to a maximum of 20.\n- When you use your Shadow Traveler trait or cast misty step, you have advantage on the next attack you make before the end of your turn."
+      "description": "You have learned to maximize the strategic impact of your misty step. You appear in a flash and, while your foe is disoriented, attack with deadly precision. You gain the following benefits:\n\nPrerequisite: The Shadow Traveler shadow fey trait or the ability to cast the* misty step *spell\n\n- Increase your Strength or Dexterity score by 1, to a maximum of 20.\n- When you use your Shadow Traveler trait or cast misty step, you have advantage on the next attack you make before the end of your turn.",
+      "edition": "2014"
     },
     {
       "name": "Inner Resilience",
@@ -86,9 +94,10 @@
       "cost_type": "passive",
       "max_uses": 0,
       "rest_type": "long",
-      "source": "Tome of Heroes (3rd-party)",
+      "source": "SRD",
       "official": false,
-      "description": "Your internal discipline gives you access to a small pool of ki points. You gain the following benefits:\n\nPrerequisite: Wisdom 13 or higher\n\n- Increase your Wisdom score by 1, to a maximum of 20\n- You have 3 ki points, which you can spend to fuel the Patient Defense or Step of the Wind features from the monk class. When you spend a ki point, it is unavailable until you finish a short or long rest, at the end of which you draw all of your expended ki back into yourself. You must spend at least 30 minutes of the rest meditating to regain your ki points\n- If you already have ki points, your ki point maximum increases by 3 instead."
+      "description": "Your internal discipline gives you access to a small pool of ki points. You gain the following benefits:\n\nPrerequisite: Wisdom 13 or higher\n\n- Increase your Wisdom score by 1, to a maximum of 20\n- You have 3 ki points, which you can spend to fuel the Patient Defense or Step of the Wind features from the monk class. When you spend a ki point, it is unavailable until you finish a short or long rest, at the end of which you draw all of your expended ki back into yourself. You must spend at least 30 minutes of the rest meditating to regain your ki points\n- If you already have ki points, your ki point maximum increases by 3 instead.",
+      "edition": "2014"
     },
     {
       "name": "Part of the Pack",
@@ -96,9 +105,10 @@
       "cost_type": "passive",
       "max_uses": 0,
       "rest_type": "long",
-      "source": "Tome of Heroes (3rd-party)",
+      "source": "SRD",
       "official": false,
-      "description": "Wolves are never seen to be far from your side and consider you to be a packmate. You gain the following benefits:\n\nPrerequisite: Proficiency in the Animal Handling skill\n\n- Through growls, barks, and gestures, you can communicate simple ideas with canines. For the purposes of this feat, a \"canine\" is any beast with dog or wolf-like features. You can understand them in return, though this is often limited to knowing the creature's current or most recent state, such as \"hungry\", \"content\", or \"in danger.\"\n- As an action, you can howl to summon a wolf to assist you. The wolf appears in 1d4 rounds and remains within 50 feet of you until 1 hour elapses or until it dies, whichever occurs first. You can't control the wolf, but it doesn't attack you or your companions. It acts on its own initiative, and it attacks creatures attacking you or your companions. If you are 5th level or higher, your howl summons a number of wolves equal to your proficiency bonus. When your howl summons multiple wolves, you have a 50 percent chance that one of the wolves is a dire wolf instead. Your summoned pack can have no more than one dire wolf. While at least one wolf is with you, you have advantage on Wisdom (Survival) checks to hunt for food or to find shelter. At the GM's discretion, you may not be able to summon a wolf or multiple wolves if you are indoors or in a region where wolves aren't native, such as the middle of the sea. Once you have howled to summon a wolf or wolves with this feat, you must finish a long rest before you can do so again."
+      "description": "Wolves are never seen to be far from your side and consider you to be a packmate. You gain the following benefits:\n\nPrerequisite: Proficiency in the Animal Handling skill\n\n- Through growls, barks, and gestures, you can communicate simple ideas with canines. For the purposes of this feat, a \"canine\" is any beast with dog or wolf-like features. You can understand them in return, though this is often limited to knowing the creature's current or most recent state, such as \"hungry\", \"content\", or \"in danger.\"\n- As an action, you can howl to summon a wolf to assist you. The wolf appears in 1d4 rounds and remains within 50 feet of you until 1 hour elapses or until it dies, whichever occurs first. You can't control the wolf, but it doesn't attack you or your companions. It acts on its own initiative, and it attacks creatures attacking you or your companions. If you are 5th level or higher, your howl summons a number of wolves equal to your proficiency bonus. When your howl summons multiple wolves, you have a 50 percent chance that one of the wolves is a dire wolf instead. Your summoned pack can have no more than one dire wolf. While at least one wolf is with you, you have advantage on Wisdom (Survival) checks to hunt for food or to find shelter. At the GM's discretion, you may not be able to summon a wolf or multiple wolves if you are indoors or in a region where wolves aren't native, such as the middle of the sea. Once you have howled to summon a wolf or wolves with this feat, you must finish a long rest before you can do so again.",
+      "edition": "2014"
     },
     {
       "name": "Rapid Drinker",
@@ -106,9 +116,10 @@
       "cost_type": "passive",
       "max_uses": 0,
       "rest_type": "long",
-      "source": "Tal'Dorei (3rd-party)",
+      "source": "SRD",
       "official": false,
-      "description": "Through a lifestyle of hard, competitive drinking, you’ve learned how to quaff drinks at an incredibly accelerated pace. You gain the following benefits:\n\n- You can drink a potion as a Bonus action, instead of as an action.\n- You have advantage on any saving throws triggered by ingesting an alcoholic or dangerous substance."
+      "description": "Through a lifestyle of hard, competitive drinking, you\u2019ve learned how to quaff drinks at an incredibly accelerated pace. You gain the following benefits:\n\n- You can drink a potion as a Bonus action, instead of as an action.\n- You have advantage on any saving throws triggered by ingesting an alcoholic or dangerous substance.",
+      "edition": "2014"
     },
     {
       "name": "Rimecaster",
@@ -116,9 +127,10 @@
       "cost_type": "passive",
       "max_uses": 0,
       "rest_type": "long",
-      "source": "Tome of Heroes (3rd-party)",
+      "source": "SRD",
       "official": false,
-      "description": "You are from an area with a cold climate and have learned to adapt your magic to reflect your heritage. You gain the following benefits:\n\nPrerequisite: A race or background from a cold climate and the ability to cast at least one spell\n\n- When you cast a spell that deals damage, you can use a reaction to change the type of damage the spell deals to cold damage.\n- When you cast a spell that deals cold damage, you gain resistance to cold damage until the start of your next turn. If you already have resistance to cold damage, you are immune to cold damage until the start of your next turn instead."
+      "description": "You are from an area with a cold climate and have learned to adapt your magic to reflect your heritage. You gain the following benefits:\n\nPrerequisite: A race or background from a cold climate and the ability to cast at least one spell\n\n- When you cast a spell that deals damage, you can use a reaction to change the type of damage the spell deals to cold damage.\n- When you cast a spell that deals cold damage, you gain resistance to cold damage until the start of your next turn. If you already have resistance to cold damage, you are immune to cold damage until the start of your next turn instead.",
+      "edition": "2014"
     },
     {
       "name": "Sorcerous Vigor",
@@ -126,9 +138,10 @@
       "cost_type": "passive",
       "max_uses": 0,
       "rest_type": "long",
-      "source": "Tome of Heroes (3rd-party)",
+      "source": "SRD",
       "official": false,
-      "description": "When your magical reserves are low, you can call on your lifeforce to fuel your magic.\n\nPrerequisite: Charisma 13 or higher and the Sorcery Points class feature\n\n- Increase your Charisma score by 1, to a maximum of 20.\n- When you start your turn and have no sorcery points remaining, you can use a reaction to spend one Hit Die. Roll the die and add your Constitution modifier to it. You regain expended sorcery points equal to up to half the total (minimum of 1). You can never have more sorcery points than the maximum for your level. Hit Dice spent using this feat can't be used to regain hit points during a short rest. You regain spent Hit Dice as normal."
+      "description": "When your magical reserves are low, you can call on your lifeforce to fuel your magic.\n\nPrerequisite: Charisma 13 or higher and the Sorcery Points class feature\n\n- Increase your Charisma score by 1, to a maximum of 20.\n- When you start your turn and have no sorcery points remaining, you can use a reaction to spend one Hit Die. Roll the die and add your Constitution modifier to it. You regain expended sorcery points equal to up to half the total (minimum of 1). You can never have more sorcery points than the maximum for your level. Hit Dice spent using this feat can't be used to regain hit points during a short rest. You regain spent Hit Dice as normal.",
+      "edition": "2014"
     },
     {
       "name": "Stalker",
@@ -136,9 +149,10 @@
       "cost_type": "passive",
       "max_uses": 0,
       "rest_type": "long",
-      "source": "Tome of Heroes (3rd-party)",
+      "source": "SRD",
       "official": false,
-      "description": "You are an expert at hunting prey. You are never more at home than when on a hunt, and your quarry rarely escapes you. You gain the following benefits:\n\n- You gain proficiency in the Stealth and Survival skills.\n- You have advantage on Wisdom (Survival) checks made to track a creature you have seen in the past 24 hours."
+      "description": "You are an expert at hunting prey. You are never more at home than when on a hunt, and your quarry rarely escapes you. You gain the following benefits:\n\n- You gain proficiency in the Stealth and Survival skills.\n- You have advantage on Wisdom (Survival) checks made to track a creature you have seen in the past 24 hours.",
+      "edition": "2014"
     },
     {
       "name": "Stunning Sniper",
@@ -146,9 +160,10 @@
       "cost_type": "passive",
       "max_uses": 0,
       "rest_type": "long",
-      "source": "Tome of Heroes (3rd-party)",
+      "source": "SRD",
       "official": false,
-      "description": "You have mastered the use of ranged weapons to cripple your target from a distance.\n\nPrerequisite: Proficiency with a ranged weapon\n\n- When you score a critical hit on a ranged attack roll, you can stun the target until the start of your next turn instead of doubling the damage."
+      "description": "You have mastered the use of ranged weapons to cripple your target from a distance.\n\nPrerequisite: Proficiency with a ranged weapon\n\n- When you score a critical hit on a ranged attack roll, you can stun the target until the start of your next turn instead of doubling the damage.",
+      "edition": "2014"
     },
     {
       "name": "Ability Score Improvement",
@@ -156,9 +171,10 @@
       "cost_type": "passive",
       "max_uses": 0,
       "rest_type": "long",
-      "source": "SRD 2024 · General Feat",
+      "source": "SRD",
       "official": true,
-      "description": "Increase one ability score of your choice by 2, or increase two ability scores of your choice by 1. This feat can't increase an ability score above 20.\n\nPrerequisite: 4th level\n\nYou can take this feat more than once."
+      "description": "Increase one ability score of your choice by 2, or increase two ability scores of your choice by 1. This feat can't increase an ability score above 20.\n\nPrerequisite: 4th level\n\nYou can take this feat more than once.",
+      "edition": "2014"
     },
     {
       "name": "Alert",
@@ -166,9 +182,10 @@
       "cost_type": "passive",
       "max_uses": 0,
       "rest_type": "long",
-      "source": "SRD 2024 · Origin Feat",
+      "source": "SRD",
       "official": true,
-      "description": "You gain the following benefits.\nInitiative Proficiency. When you roll Initiative, you can add your Proficiency Bonus to the roll.\nInitiative Swap. Immediately after you roll Initiative, you can swap your Initiative with the Initiative of one willing ally in the same combat. You can't make this swap if you or the ally has the Incapacitated condition."
+      "description": "You gain the following benefits.\nInitiative Proficiency. When you roll Initiative, you can add your Proficiency Bonus to the roll.\nInitiative Swap. Immediately after you roll Initiative, you can swap your Initiative with the Initiative of one willing ally in the same combat. You can't make this swap if you or the ally has the Incapacitated condition.",
+      "edition": "2014"
     },
     {
       "name": "Archery",
@@ -176,9 +193,10 @@
       "cost_type": "passive",
       "max_uses": 0,
       "rest_type": "long",
-      "source": "SRD 2024 · Fighting Style",
+      "source": "SRD",
       "official": true,
-      "description": "You gain a +2 bonus to attack rolls you make with Ranged weapons."
+      "description": "You gain a +2 bonus to attack rolls you make with Ranged weapons.",
+      "edition": "2014"
     },
     {
       "name": "Boon of Combat Prowess",
@@ -186,9 +204,10 @@
       "cost_type": "passive",
       "max_uses": 0,
       "rest_type": "long",
-      "source": "SRD 2024 · Epic Boon",
+      "source": "SRD",
       "official": true,
-      "description": "You gain the following benefits.\nAbility Score Increase. Increase one ability score of your choice by 1, to a maximum of 30.\nPeerless Aim. When you miss with an attack roll, you can hit instead. Once you use this benefit, you can't use it again until the start of your next turn.\n\nPrerequisite: 19th level"
+      "description": "You gain the following benefits.\nAbility Score Increase. Increase one ability score of your choice by 1, to a maximum of 30.\nPeerless Aim. When you miss with an attack roll, you can hit instead. Once you use this benefit, you can't use it again until the start of your next turn.\n\nPrerequisite: 19th level",
+      "edition": "2014"
     },
     {
       "name": "Boon of Dimensional Travel",
@@ -196,9 +215,10 @@
       "cost_type": "passive",
       "max_uses": 0,
       "rest_type": "long",
-      "source": "SRD 2024 · Epic Boon",
+      "source": "SRD",
       "official": true,
-      "description": "You gain the following benefits.\nAbility Score Increase. Increase one ability score of your choice by 1, to a maximum of 30.\nBlink Steps. Immediately after you take the Attack action or the Magic action, you can teleport up to 30 feet to an unoccupied space you can see.\n\nPrerequisite: 19th level"
+      "description": "You gain the following benefits.\nAbility Score Increase. Increase one ability score of your choice by 1, to a maximum of 30.\nBlink Steps. Immediately after you take the Attack action or the Magic action, you can teleport up to 30 feet to an unoccupied space you can see.\n\nPrerequisite: 19th level",
+      "edition": "2014"
     },
     {
       "name": "Boon of Fate",
@@ -206,9 +226,10 @@
       "cost_type": "passive",
       "max_uses": 0,
       "rest_type": "long",
-      "source": "SRD 2024 · Epic Boon",
+      "source": "SRD",
       "official": true,
-      "description": "You gain the following benefits.\nAbility Score Increase. Increase one ability score of your choice by 1, to a maximum of 30.\nImprove Fate. When you or another creature within 60 feet of you succeeds on or fails a D20 Test, you can roll 2d4 and apply the total rolled as a bonus or penalty to the d20 roll. Once you use this benefit, you can't use it again until you roll Initiative or finish a Short or Long Rest.\n\nPrerequisite: 19th level"
+      "description": "You gain the following benefits.\nAbility Score Increase. Increase one ability score of your choice by 1, to a maximum of 30.\nImprove Fate. When you or another creature within 60 feet of you succeeds on or fails a D20 Test, you can roll 2d4 and apply the total rolled as a bonus or penalty to the d20 roll. Once you use this benefit, you can't use it again until you roll Initiative or finish a Short or Long Rest.\n\nPrerequisite: 19th level",
+      "edition": "2014"
     },
     {
       "name": "Boon of Irresistible Offense",
@@ -216,9 +237,10 @@
       "cost_type": "passive",
       "max_uses": 0,
       "rest_type": "long",
-      "source": "SRD 2024 · Epic Boon",
+      "source": "SRD",
       "official": true,
-      "description": "You gain the following benefits.\nAbility Score Increase. Increase one ability score of your choice by 1, to a maximum of 30.\nOvercome Defenses. The Bludgeoning, Piercing, and Slashing damage you deal always ignores Resistance.\nOverwhelming Strike. When you roll a 20 on the d20 for an attack roll, you can deal extra damage to the target equal to the ability score increased by this feat. The extra damage's type is the same as the attack's type.\n\nPrerequisite: 19th level"
+      "description": "You gain the following benefits.\nAbility Score Increase. Increase one ability score of your choice by 1, to a maximum of 30.\nOvercome Defenses. The Bludgeoning, Piercing, and Slashing damage you deal always ignores Resistance.\nOverwhelming Strike. When you roll a 20 on the d20 for an attack roll, you can deal extra damage to the target equal to the ability score increased by this feat. The extra damage's type is the same as the attack's type.\n\nPrerequisite: 19th level",
+      "edition": "2014"
     },
     {
       "name": "Boon of Spell Recall",
@@ -226,9 +248,10 @@
       "cost_type": "passive",
       "max_uses": 0,
       "rest_type": "long",
-      "source": "SRD 2024 · Epic Boon",
+      "source": "SRD",
       "official": true,
-      "description": "You gain the following benefits.\nAbility Score Increase. Increase one ability score of your choice by 1, to a maximum of 30.\nFree Casting. Whenever you cast a spell with a level 1–4 spell slot, roll 1d4. If the number you roll is the same as the slot's level, the slot isn't expended.\n\nPrerequisite: 19th level"
+      "description": "You gain the following benefits.\nAbility Score Increase. Increase one ability score of your choice by 1, to a maximum of 30.\nFree Casting. Whenever you cast a spell with a level 1\u20134 spell slot, roll 1d4. If the number you roll is the same as the slot's level, the slot isn't expended.\n\nPrerequisite: 19th level",
+      "edition": "2014"
     },
     {
       "name": "Boon of Truesight",
@@ -236,9 +259,10 @@
       "cost_type": "passive",
       "max_uses": 0,
       "rest_type": "long",
-      "source": "SRD 2024 · Epic Boon",
+      "source": "SRD",
       "official": true,
-      "description": "You gain the following benefits.\nAbility Score Increase. Increase one ability score of your choice by 1, to a maximum of 30.\nTruesight. You have Truesight with a range of 60 feet.\n\nPrerequisite: 19th level"
+      "description": "You gain the following benefits.\nAbility Score Increase. Increase one ability score of your choice by 1, to a maximum of 30.\nTruesight. You have Truesight with a range of 60 feet.\n\nPrerequisite: 19th level",
+      "edition": "2014"
     },
     {
       "name": "Boon of the Night Spirit",
@@ -246,9 +270,10 @@
       "cost_type": "passive",
       "max_uses": 0,
       "rest_type": "long",
-      "source": "SRD 2024 · Epic Boon",
+      "source": "SRD",
       "official": true,
-      "description": "You gain the following benefits.\nAbility Score Increase. Increase one ability score of your choice by 1, to a maximum of 30.\nMerge with Shadows. While within Dim Light or Darkness, you can give yourself the Invisible condition as a Bonus Action. The condition ends on you immediately after you take an action, a Bonus Action, or a Reaction.\nShadowy form. While within Dim Light or Darkness, you have Resistance to all damage except Psychic and Radiant.\n\nPrerequisite: 19th level"
+      "description": "You gain the following benefits.\nAbility Score Increase. Increase one ability score of your choice by 1, to a maximum of 30.\nMerge with Shadows. While within Dim Light or Darkness, you can give yourself the Invisible condition as a Bonus Action. The condition ends on you immediately after you take an action, a Bonus Action, or a Reaction.\nShadowy form. While within Dim Light or Darkness, you have Resistance to all damage except Psychic and Radiant.\n\nPrerequisite: 19th level",
+      "edition": "2014"
     },
     {
       "name": "Defense",
@@ -256,9 +281,10 @@
       "cost_type": "passive",
       "max_uses": 0,
       "rest_type": "long",
-      "source": "SRD 2024 · Fighting Style",
+      "source": "SRD",
       "official": true,
-      "description": "While you're wearing Light, Medium, or Heavy armor, you gain a +1 bonus to Armor Class."
+      "description": "While you're wearing Light, Medium, or Heavy armor, you gain a +1 bonus to Armor Class.",
+      "edition": "2014"
     },
     {
       "name": "Great Weapon Fighting",
@@ -266,9 +292,10 @@
       "cost_type": "passive",
       "max_uses": 0,
       "rest_type": "long",
-      "source": "SRD 2024 · Fighting Style",
+      "source": "SRD",
       "official": true,
-      "description": "When you roll damage for an attack you make with a Melee weapon that you are holding with two hands, you can treat any 1 or 2 on a damage die as a 3. The weapon must have the Two-Handed or Versatile property to gain this benefit."
+      "description": "When you roll damage for an attack you make with a Melee weapon that you are holding with two hands, you can treat any 1 or 2 on a damage die as a 3. The weapon must have the Two-Handed or Versatile property to gain this benefit.",
+      "edition": "2014"
     },
     {
       "name": "Magic Initiate",
@@ -276,9 +303,10 @@
       "cost_type": "passive",
       "max_uses": 0,
       "rest_type": "long",
-      "source": "SRD 2024 · Origin Feat",
+      "source": "SRD",
       "official": true,
-      "description": "You gain the following benefits.\nTwo Cantrips. You learn two cantrips of your choice from the Cleric, Druid, or Wizard spell list. Intelligence, Wisdom, or Charisma is your spellcasting ability for this feat's spells (choose when you select this feat).\nLevel 1 Spell. Choose a level 1 spell from the same list you selected for this feat's cantrips. You always have that spell prepared. You can cast it once without a spell slot, and you regain the ability to cast it in that way when you finish a Long Rest. You can also cast the spell using any spell slots you have.\nSpell Change. Whenever you gain a new level, you can replace one of the spells you chose for this feat with a different spell of the same level from the chosen spell list.\n\nYou can take this feat more than once, but you must choose a different spell list each time."
+      "description": "You gain the following benefits.\nTwo Cantrips. You learn two cantrips of your choice from the Cleric, Druid, or Wizard spell list. Intelligence, Wisdom, or Charisma is your spellcasting ability for this feat's spells (choose when you select this feat).\nLevel 1 Spell. Choose a level 1 spell from the same list you selected for this feat's cantrips. You always have that spell prepared. You can cast it once without a spell slot, and you regain the ability to cast it in that way when you finish a Long Rest. You can also cast the spell using any spell slots you have.\nSpell Change. Whenever you gain a new level, you can replace one of the spells you chose for this feat with a different spell of the same level from the chosen spell list.\n\nYou can take this feat more than once, but you must choose a different spell list each time.",
+      "edition": "2014"
     },
     {
       "name": "Savage Attacker",
@@ -286,9 +314,10 @@
       "cost_type": "passive",
       "max_uses": 0,
       "rest_type": "long",
-      "source": "SRD 2024 · Origin Feat",
+      "source": "SRD",
       "official": true,
-      "description": "You've trained to deal particularly damaging strikes. Once per turn when you hit a target with a weapon, you can roll the weapon's damage dice twice and use either roll against the target."
+      "description": "You've trained to deal particularly damaging strikes. Once per turn when you hit a target with a weapon, you can roll the weapon's damage dice twice and use either roll against the target.",
+      "edition": "2014"
     },
     {
       "name": "Skilled",
@@ -296,9 +325,10 @@
       "cost_type": "passive",
       "max_uses": 0,
       "rest_type": "long",
-      "source": "SRD 2024 · Origin Feat",
+      "source": "SRD",
       "official": true,
-      "description": "You gain proficiency in any combination of three skills or tools of your choice.\n\nYou can take this feat more than once."
+      "description": "You gain proficiency in any combination of three skills or tools of your choice.\n\nYou can take this feat more than once.",
+      "edition": "2014"
     },
     {
       "name": "Two Weapon Fighting",
@@ -306,9 +336,10 @@
       "cost_type": "passive",
       "max_uses": 0,
       "rest_type": "long",
-      "source": "SRD 2024 · Fighting Style",
+      "source": "SRD",
       "official": true,
-      "description": "When you make an extra attack as a result of using a weapon that has the Light property, you can add your ability modifier to the damage of that attack if you aren't already adding it to the damage."
+      "description": "When you make an extra attack as a result of using a weapon that has the Light property, you can add your ability modifier to the damage of that attack if you aren't already adding it to the damage.",
+      "edition": "2014"
     }
   ]
 }
