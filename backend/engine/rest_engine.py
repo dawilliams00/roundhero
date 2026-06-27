@@ -1,16 +1,7 @@
 import copy
-import random
-import re
 
 LONG_REST_RECHARGES = {"dawn", "dusk", "long_rest"}
 SHORT_REST_RECHARGES = {"short_rest"}
-
-def roll_dice(formula):
-    m = re.match(r"^\s*(\d+)\s*d\s*(\d+)\s*(?:\+\s*(\d+))?\s*$", formula or "", re.I)
-    if not m:
-        return None
-    count, sides, bonus = int(m.group(1)), int(m.group(2)), int(m.group(3) or 0)
-    return sum(random.randint(1, sides) for _ in range(count)) + bonus
 
 def _recharge_item(ch, recharge_set, summary, item_name):
     if not ch or str(ch.get("recharge", "")).lower() not in recharge_set:
@@ -21,12 +12,10 @@ def _recharge_item(ch, recharge_set, summary, item_name):
         return
     formula = ch.get("recharge_amount")
     if formula:
-        rolled = roll_dice(formula)
-        if rolled is None:
-            return
-        ch["current"] = min(mx, cur + rolled)
-        if ch["current"] > cur:
-            summary["items_recharged"].append(f"{item_name} (+{ch['current']-cur})")
+        # Items with a rolled (not flat-full) recharge are never auto-rolled - the player
+        # rolls it themselves via the item's Recharge button, so this rest doesn't silently
+        # decide the result for them. Just remind them it's eligible.
+        summary["items_need_recharge"].append(item_name)
     else:
         ch["current"] = mx
         summary["items_recharged"].append(item_name)
@@ -37,7 +26,7 @@ def apply_rest(tracker_data, spell_data, rest_type="long"):
     slots    = td.get("spell_slots", {})
     items    = td.get("inventory", {}).get("items", [])
 
-    summary = {"features_reset": [], "items_recharged": [], "slots_restored": False}
+    summary = {"features_reset": [], "items_recharged": [], "items_need_recharge": [], "slots_restored": False}
 
     if rest_type == "long":
         for name, feat in features.items():

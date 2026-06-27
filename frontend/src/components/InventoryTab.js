@@ -6,6 +6,7 @@ import ItemSpellsModal from './ItemSpellsModal';
 import ItemBrowserModal from './ItemBrowserModal';
 import WeaponBrowserModal from './WeaponBrowserModal';
 import ItemDetailModal from './ItemDetailModal';
+import RechargeItemModal from './RechargeItemModal';
 
 const RARITY_ORDER = ['Common','Uncommon','Rare','Very Rare','Legendary','Artifact'];
 const SORT_OPTIONS = [
@@ -24,6 +25,7 @@ export default function InventoryTab() {
   const [editing, setEditing] = useState(null);
   const [viewing, setViewing] = useState(null);
   const [viewingSpells, setViewingSpells] = useState(null);
+  const [recharging, setRecharging] = useState(null);
   const [sortBy, setSortBy] = useState('default');
 
   if (!character) return null;
@@ -129,6 +131,9 @@ export default function InventoryTab() {
               <div style={{flex:1,cursor:'pointer'}} onClick={() => setViewing(i)}>
                 <div style={{display:'flex',alignItems:'center',gap:6}}>
                   <span style={{color:'var(--text-primary)',fontWeight:500,fontSize:13}}>{item.name}</span>
+                  {item.granted_spells?.length > 0 && (
+                    <button className="btn btn-secondary btn-sm" onClick={e => { e.stopPropagation(); setViewingSpells(i); }}>✨ Spells</button>
+                  )}
                   {item.quantity > 1 && <span style={{color:'var(--text-dim)',fontSize:11}}>×{item.quantity}</span>}
                   {item.equipped && <span style={{fontSize:10,color:'var(--success)',border:'1px solid var(--success)',borderRadius:8,padding:'0 6px'}}>Equipped</span>}
                   {item.attunement && <span style={{fontSize:10,color: item.attuned ? 'var(--accent-light)':'var(--text-dim)',border:`1px solid ${item.attuned?'var(--accent-light)':'var(--border-light)'}`,borderRadius:8,padding:'0 6px'}}>{item.attuned?'Attuned':'Attunement'}</span>}
@@ -146,9 +151,6 @@ export default function InventoryTab() {
                   Proficient
                 </label>
               )}
-              {item.granted_spells?.length > 0 && (
-                <button className="btn btn-secondary btn-sm" onClick={() => setViewingSpells(i)}>✨ Spells</button>
-              )}
               <button className="btn btn-secondary btn-sm" onClick={() => removeItem(i)}>×</button>
             </div>
             {item.charges && (
@@ -157,6 +159,9 @@ export default function InventoryTab() {
                 <span style={{color:'var(--warning)',fontWeight:700,fontSize:14,minWidth:36,textAlign:'center'}}>{item.charges.current}/{item.charges.max}</span>
                 <button onClick={() => useCharge(i,1)} style={{background:'var(--success)',color:'#fff',borderRadius:4,width:22,height:22,fontWeight:700,fontSize:14}}>+</button>
                 <span style={{color:'var(--text-dim)',fontSize:10}}>charges · recharges {item.charges.recharge.replace('_',' ')}</span>
+                {item.charges.recharge_amount && (
+                  <button className="btn btn-secondary btn-sm" onClick={() => setRecharging(i)} title={`Roll ${item.charges.recharge_amount} to recharge`}>⚡ Recharge</button>
+                )}
               </div>
             )}
           </div>
@@ -182,6 +187,13 @@ export default function InventoryTab() {
           item={items[viewingSpells]}
           onCast={(chargeCost) => castItemSpell(viewingSpells, chargeCost)}
           onClose={() => setViewingSpells(null)}
+        />
+      )}
+      {recharging !== null && (
+        <RechargeItemModal
+          item={items[recharging]}
+          onApply={(newCurrent) => updateItem(recharging, { ...items[recharging], charges: { ...items[recharging].charges, current: newCurrent } })}
+          onClose={() => setRecharging(null)}
         />
       )}
     </div>

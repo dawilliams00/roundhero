@@ -1,8 +1,8 @@
 import React from 'react';
 
 export default function RestSummaryModal({ summary, restType, onClose }) {
-  const { features_reset = [], items_recharged = [], slots_restored, hit_dice_regained } = summary || {};
-  const nothingChanged = features_reset.length === 0 && items_recharged.length === 0 && !slots_restored && !hit_dice_regained;
+  const { features_reset = [], items_recharged = [], items_need_recharge = [], slots_restored, hit_dice_regained } = summary || {};
+  const nothingChanged = features_reset.length === 0 && items_recharged.length === 0 && items_need_recharge.length === 0 && !slots_restored && !hit_dice_regained;
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -34,6 +34,12 @@ export default function RestSummaryModal({ summary, restType, onClose }) {
               <div style={{marginBottom:10}}>
                 <div style={{color:'var(--accent-light)',fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:1,marginBottom:4}}>Items Recharged</div>
                 {items_recharged.map(it => <div key={it} style={{color:'var(--text-secondary)',fontSize:13}}>✨ {it}</div>)}
+              </div>
+            )}
+            {items_need_recharge.length > 0 && (
+              <div style={{marginBottom:10}}>
+                <div style={{color:'var(--warning)',fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:1,marginBottom:4}}>Don't Forget to Recharge</div>
+                {items_need_recharge.map(it => <div key={it} style={{color:'var(--text-secondary)',fontSize:13}}>⚡ {it} — use its Recharge button in Inventory</div>)}
               </div>
             )}
           </>

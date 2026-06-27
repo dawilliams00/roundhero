@@ -302,27 +302,6 @@ export default function CharacterHeader({ onBack }) {
               </div>
             </div>
 
-            <div style={{display:'flex',gap:8,alignItems:'flex-start',flexWrap:'wrap',marginTop:8}}>
-              <PMStat
-                label="Exhaustion"
-                value={exhaustion}
-                color={exhaustion >= 5 ? 'var(--danger)' : exhaustion >= 3 ? 'var(--warning)' : undefined}
-                onAdjust={d => saveTrackerData({ ...td, exhaustion: Math.max(0, Math.min(6, exhaustion + d)) })}
-              />
-
-              {activeEffects.map(e => (
-                <div key={e} onClick={() => removeActiveEffect(e)} title="Click to remove" style={{cursor:'pointer',background:'rgba(124,77,255,0.15)',border:'1px solid var(--accent-light)',color:'var(--accent-light)',borderRadius:12,padding:'3px 10px',fontSize:12,alignSelf:'center'}}>
-                  {e} ×
-                </div>
-              ))}
-              <EffectAdder onAdd={addActiveEffect} />
-
-              <div className="stat-box" onClick={() => setShowConditions(true)} style={{cursor:'pointer'}}>
-                <div className="stat-value" style={{color: conditions.length > 0 ? 'var(--danger)' : 'var(--accent-light)'}}>{conditions.length}</div>
-                <div className="stat-label">Conditions</div>
-              </div>
-            </div>
-
             {traitChips.length > 0 && (
               <div style={{display:'flex',gap:5,flexWrap:'wrap',marginTop:8}}>
                 {traitChips.map(({t,d,c}, i) => (
@@ -345,6 +324,26 @@ export default function CharacterHeader({ onBack }) {
                   <div className="stat-label">d{hd.die_size} HD</div>
                 </div>
               )}
+            </div>
+            <div style={{display:'flex',flexDirection:'column',gap:6,alignItems:'flex-start'}}>
+              <PMStat
+                label="Exhaustion"
+                value={exhaustion}
+                color={exhaustion >= 5 ? 'var(--danger)' : exhaustion >= 3 ? 'var(--warning)' : undefined}
+                onAdjust={d => saveTrackerData({ ...td, exhaustion: Math.max(0, Math.min(6, exhaustion + d)) })}
+              />
+              <div style={{display:'flex',gap:4,flexWrap:'wrap',maxWidth:150}}>
+                {activeEffects.map(e => (
+                  <div key={e} onClick={() => removeActiveEffect(e)} title="Click to remove" style={{cursor:'pointer',background:'rgba(124,77,255,0.15)',border:'1px solid var(--accent-light)',color:'var(--accent-light)',borderRadius:12,padding:'3px 10px',fontSize:12}}>
+                    {e} ×
+                  </div>
+                ))}
+                <EffectAdder onAdd={addActiveEffect} />
+              </div>
+              <div className="stat-box" onClick={() => setShowConditions(true)} style={{cursor:'pointer'}}>
+                <div className="stat-value" style={{color: conditions.length > 0 ? 'var(--danger)' : 'var(--accent-light)'}}>{conditions.length}</div>
+                <div className="stat-label">Conditions</div>
+              </div>
             </div>
           </div>
         </div>

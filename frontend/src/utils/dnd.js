@@ -283,3 +283,12 @@ export const rollDamage = ({ count, sides, bonus }) => {
   for (let i = 0; i < count; i++) total += rollDie(sides);
   return total;
 };
+
+// Parses a recharge formula like "4d6 + 2" into {count, sides, bonus} for rollDamage.
+// Mirrors the backend's old roll_dice regex (now removed server-side - recharge rolls
+// are player-initiated from the item's Recharge button, not auto-rolled on rest).
+export const parseDiceFormula = (formula) => {
+  const m = String(formula || '').match(/^\s*(\d+)\s*d\s*(\d+)\s*(?:\+\s*(\d+))?\s*$/i);
+  if (!m) return null;
+  return { count: parseInt(m[1]), sides: parseInt(m[2]), bonus: parseInt(m[3] || 0) };
+};
