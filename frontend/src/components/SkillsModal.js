@@ -9,7 +9,8 @@ export default function SkillsModal({ onClose }) {
   const [lastRoll, setLastRoll] = useState(null);
   if (!character) return null;
   const skillProfs = character.tracker_data?.skill_proficiencies || [];
-  const skills = calcSkills(character.ability_scores, skillProfs, [], character.level)
+  const items = character.tracker_data?.inventory?.items;
+  const skills = calcSkills(character.ability_scores, skillProfs, [], character.level, items)
     .filter(s => s.skill.toLowerCase().includes(search.toLowerCase()))
     .sort((a,b) => b.bonus - a.bonus);
 

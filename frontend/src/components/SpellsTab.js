@@ -21,7 +21,7 @@ export default function SpellsTab() {
   const knownSpells = sd.known_spells || [];
   const spellLists  = sd.spell_lists || {};
   const activeList  = sd.active_list || null;
-  const maxPrepared = maxPreparedSpells(character.class_name, character.ability_scores);
+  const maxPrepared = maxPreparedSpells(character.class_name, character.ability_scores, character.tracker_data?.inventory?.items);
   const isAlwaysAvailable = s => s.ritual || !!s.granted_by || s.level_int === 0;
   const visibleSpells = activeList && spellLists[activeList]
     ? knownSpells.filter(s => spellLists[activeList].includes(s.name) || isAlwaysAvailable(s))

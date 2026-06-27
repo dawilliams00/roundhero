@@ -39,6 +39,7 @@ export default function AddItemModal({ item, onSave, onClose }) {
       description: form.description,
       charges: form.has_charges ? { current: parseInt(form.charges_current)||0, max: parseInt(form.charges_max)||0, recharge: form.recharge } : null,
       granted_spells: form.granted_spells.filter(s => s.name.trim()).map(s => ({ name: s.name.trim(), level_int: parseInt(s.level_int)||0, charge_cost: parseInt(s.charge_cost)||1 })),
+      buffs: form.buffs || [],
     };
     onSave(out);
     onClose();

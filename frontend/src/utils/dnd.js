@@ -20,22 +20,25 @@ export const modifier = score => Math.floor((score - 10) / 2);
 export const modStr   = score => { const m = modifier(score); return m >= 0 ? `+${m}` : `${m}`; };
 export const profBonus = level => PROF_BONUS[level] || 2;
 
-export const calcSaves = (abilityScores, className, level, explicitProfs) => {
+export const calcSaves = (abilityScores, className, level, explicitProfs, items) => {
   const prof = profBonus(level);
   const profs = explicitProfs && explicitProfs.length ? explicitProfs : (SAVE_PROFS[className] || []);
+  const effAb = items ? effectiveAbilityScores(abilityScores, items) : abilityScores;
+  const itemBonus = items ? computeItemBonuses(items).saving_throw_modifier : 0;
   return Object.fromEntries(
     ABILITY_KEYS.map(ab => {
-      const base = modifier(abilityScores[ab] || 10);
-      const bonus = profs.includes(ab) ? base + prof : base;
+      const base = modifier(effAb[ab] || 10);
+      const bonus = (profs.includes(ab) ? base + prof : base) + itemBonus;
       return [ab, { bonus, proficient: profs.includes(ab) }];
     })
   );
 };
 
-export const calcSkills = (abilityScores, proficiencies = [], expertises = [], level) => {
+export const calcSkills = (abilityScores, proficiencies = [], expertises = [], level, items) => {
   const prof = profBonus(level);
+  const effAb = items ? effectiveAbilityScores(abilityScores, items) : abilityScores;
   return Object.entries(SKILL_MAP).map(([skill, ab]) => {
-    const base = modifier(abilityScores[ab] || 10);
+    const base = modifier(effAb[ab] || 10);
     const isExpertise = expertises.includes(skill);
     const isProf = proficiencies.includes(skill);
     const bonus = isExpertise ? base + prof*2 : isProf ? base + prof : base;
@@ -56,7 +59,7 @@ export const PREPARED_CASTER_ABILITY = { Wizard:'INT', Cleric:'WIS', Druid:'WIS'
 export const HALF_LEVEL_PREP_CLASSES = ['Paladin','Ranger','Artificer'];
 
 // Returns null if the class doesn't use daily spell preparation (e.g. Sorcerer/Bard/Warlock know fixed spells)
-export const maxPreparedSpells = (classNameRaw, abilityScores) => {
+export const maxPreparedSpells = (classNameRaw, abilityScores, items) => {
   if (!classNameRaw) return null;
   const parts = String(classNameRaw).split('/').map(p => p.trim());
   const m = parts[0].match(/^(.+?)\s+(\d+)\s*$/);
@@ -65,7 +68,8 @@ export const maxPreparedSpells = (classNameRaw, abilityScores) => {
   const classLevel = parseInt(m[2]);
   const ability = PREPARED_CASTER_ABILITY[className];
   if (!ability) return null;
-  const mod = modifier(abilityScores?.[ability] ?? 10);
+  const effAb = items ? effectiveAbilityScores(abilityScores, items) : abilityScores;
+  const mod = modifier(effAb?.[ability] ?? 10);
   const effLevel = HALF_LEVEL_PREP_CLASSES.includes(className) ? Math.floor(classLevel / 2) : classLevel;
   return Math.max(1, effLevel + mod);
 };
@@ -119,19 +123,66 @@ export const parseClassLevels = (classNameRaw) => {
   }).filter(Boolean);
 };
 
-// Sum of any equipped (and, where required, attuned) items' spell attack/DC buffs
-// (e.g. Staff of the Magi, Robe of the Archmagi).
-export const itemSpellBonuses = (items) => {
-  let atk = 0, dc = 0;
+// Aggregates "while equipped (and attuned, if required)" stat buffs across inventory
+// items - the same gating rule for all of them (Staff of the Magi/Robe of the Archmagi
+// only grant their bonus while held/attuned per RAW). ADD-mode buffs on recognized stats
+// sum together; SET-mode buffs on an ability score (e.g. Headband of Intellect) track the
+// highest value offered, since RAW ability-score-setting items don't stack and have no
+// effect if your score is already higher.
+const ADDITIVE_BUFF_STATS = ['ac_base', 'saving_throw_modifier', 'spell_attack_modifier', 'spell_dc_modifier'];
+export const computeItemBonuses = (items) => {
+  const bonuses = { ac_base: 0, saving_throw_modifier: 0, spell_attack_modifier: 0, spell_dc_modifier: 0 };
+  const abilityOverrides = {};
   (items || []).forEach(it => {
     if (!it.equipped) return;
     if (it.attunement && !it.attuned) return;
     (it.buffs || []).forEach(b => {
-      if (b.stat === 'spell_attack_modifier') atk += b.value || 0;
-      if (b.stat === 'spell_dc_modifier') dc += b.value || 0;
+      if (!b || !b.stat) return;
+      if (b.mode === 'set' && ABILITY_KEYS.includes(b.stat)) {
+        abilityOverrides[b.stat] = Math.max(abilityOverrides[b.stat] ?? -Infinity, b.value || 0);
+      } else if (ADDITIVE_BUFF_STATS.includes(b.stat)) {
+        bonuses[b.stat] += b.value || 0;
+      }
     });
   });
-  return { atk, dc };
+  return { ...bonuses, abilityOverrides };
+};
+
+const BUFF_STAT_LABELS = {
+  ac_base: 'AC',
+  saving_throw_modifier: 'All saving throws',
+  spell_attack_modifier: 'Spell attack rolls',
+  spell_dc_modifier: 'Spell save DC',
+  weapon_attack_modifier: 'Weapon attack rolls',
+  weapon_damage_modifier: 'Weapon damage',
+};
+
+// Human-readable line for a single item buff entry, for read-only display in item modals.
+export const formatItemBuff = (b) => {
+  if (!b || !b.stat) return '';
+  if (b.mode === 'set' && ABILITY_KEYS.includes(b.stat)) {
+    return `${ABILITY_LABELS[b.stat]} becomes ${b.value}`;
+  }
+  const label = BUFF_STAT_LABELS[b.stat] || b.stat.replace(/_/g, ' ');
+  return `${label}: +${b.value}`;
+};
+
+// Ability scores after applying any "set if higher" item overrides (Headband of
+// Intellect, Belt of Giant Strength, etc.) - a floor, not an add, and never lowers a score.
+export const effectiveAbilityScores = (abilityScores, items) => {
+  const { abilityOverrides } = computeItemBonuses(items);
+  const out = { ...abilityScores };
+  ABILITY_KEYS.forEach(k => {
+    if (abilityOverrides[k] != null) out[k] = Math.max(out[k] ?? 10, abilityOverrides[k]);
+  });
+  return out;
+};
+
+// Sum of any equipped (and, where required, attuned) items' spell attack/DC buffs
+// (e.g. Staff of the Magi, Robe of the Archmagi).
+export const itemSpellBonuses = (items) => {
+  const { spell_attack_modifier, spell_dc_modifier } = computeItemBonuses(items);
+  return { atk: spell_attack_modifier, dc: spell_dc_modifier };
 };
 
 // One block per spellcasting class (multiclass characters get one each).
@@ -139,12 +190,13 @@ export const getSpellcastingBlocks = (classNameRaw, abilityScores, totalLevel, i
   const parts = parseClassLevels(classNameRaw);
   const list = parts.length ? parts : [{ className: classNameRaw, level: totalLevel }];
   const prof = profBonus(totalLevel);
-  const { atk: itemAtk, dc: itemDc } = itemSpellBonuses(items);
+  const { spell_attack_modifier: itemAtk, spell_dc_modifier: itemDc } = computeItemBonuses(items);
+  const effAb = effectiveAbilityScores(abilityScores, items);
   return list
     .filter(p => SPELLCASTING_ABILITY[p.className])
     .map(p => {
       const ability = SPELLCASTING_ABILITY[p.className];
-      const mod = modifier(abilityScores?.[ability] ?? 10);
+      const mod = modifier(effAb?.[ability] ?? 10);
       return {
         className: p.className, ability,
         attackMod: mod + prof + itemAtk,

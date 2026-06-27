@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
-import { modifier, modStr, hpColor, profBonus, ABILITY_KEYS, getSpellcastingBlocks } from '../utils/dnd';
+import { modifier, modStr, hpColor, profBonus, ABILITY_KEYS, getSpellcastingBlocks, computeItemBonuses, effectiveAbilityScores } from '../utils/dnd';
 import SavesModal from './SavesModal';
 import SkillsModal from './SkillsModal';
 import TraitsModal from './TraitsModal';
@@ -9,7 +9,7 @@ import RestModal from './RestModal';
 import RestSummaryModal from './RestSummaryModal';
 import SettingsModal from './SettingsModal';
 
-function EditableStat({ label, value, onSave, color }) {
+function EditableStat({ label, value, onSave, color, title }) {
   const [editing, setEditing] = useState(false);
   const [val, setVal] = useState(value);
 
@@ -21,7 +21,7 @@ function EditableStat({ label, value, onSave, color }) {
   };
 
   return (
-    <div className="stat-box">
+    <div className="stat-box" title={title}>
       {editing ? (
         <input
           autoFocus
@@ -63,11 +63,12 @@ function SpellcastBox({ block }) {
   );
 }
 
-function AbilityBox({ abbr, score }) {
+function AbilityBox({ abbr, score, baseScore }) {
+  const boosted = baseScore != null && score !== baseScore;
   return (
-    <div className="stat-box" style={{minWidth:38}}>
+    <div className="stat-box" style={{minWidth:38}} title={boosted ? `${baseScore} base, raised to ${score} by an equipped item` : undefined}>
       <div className="stat-label" style={{marginTop:0,marginBottom:2}}>{abbr}</div>
-      <div className="stat-value">{score}</div>
+      <div className="stat-value" style={{color: boosted ? 'var(--accent-light)' : undefined}}>{score}</div>
       <div className="stat-sub">{modStr(score)}</div>
     </div>
   );
@@ -150,12 +151,14 @@ export default function CharacterHeader({ onBack }) {
   if (!character) return null;
 
   const { name, class_name, race, level, ability_scores: ab, tracker_data: td } = character;
-  const dexMod = modifier(ab?.DEX || 10);
   const hp     = td?.hp || { current: null, max: null, temp: 0 };
   const slots  = td?.spell_slots || {};
   const inventory = td?.inventory || { currency: {}, items: [] };
   const currency  = inventory.currency || {};
   const invItems  = inventory.items || [];
+  const itemBonuses = computeItemBonuses(invItems);
+  const effAb  = effectiveAbilityScores(ab, invItems);
+  const dexMod = modifier(effAb.DEX || 10);
   const attunedCount = invItems.filter(it => it.attunement && it.attuned).length;
   const attunableCount = invItems.filter(it => it.attunement).length;
   const hasUnattunedEligible = invItems.some(it => it.attunement && !it.attuned);
@@ -168,7 +171,8 @@ export default function CharacterHeader({ onBack }) {
   const maxHp  = (hp.max_override > 0) ? hp.max_override : calcMaxHp;
   const curHp  = hp.current ?? maxHp;
   const tempHp = hp.temp || 0;
-  const ac     = td?.ac ?? (10 + dexMod);
+  const baseAc = td?.ac ?? (10 + dexMod);
+  const ac     = baseAc + itemBonuses.ac_base;
   const init   = td?.initiative ?? dexMod;
   const insp   = !!td?.inspiration;
   const traits = td?.traits || { resistances: [], immunities: [], vulnerabilities: [], advantages: [], disadvantages: [] };
@@ -191,7 +195,9 @@ export default function CharacterHeader({ onBack }) {
     await saveTrackerData({ ...td, hp: { ...hp, temp: newTemp } });
   };
 
-  const setAc     = (v) => saveTrackerData({ ...td, ac: v });
+  // The AC stat box shows/edits the full total; back out the item bonus so the stored
+  // base (armor + dex) doesn't end up double-counting it on the next render.
+  const setAc     = (v) => saveTrackerData({ ...td, ac: v - itemBonuses.ac_base });
   const setInit   = (v) => saveTrackerData({ ...td, initiative: v });
   const toggleInspiration = () => saveTrackerData({ ...td, inspiration: !insp });
   const setCurrencyCoin = (k, v) => saveTrackerData({ ...td, inventory: { ...inventory, currency: { ...currency, [k]: v } } });
@@ -221,7 +227,7 @@ export default function CharacterHeader({ onBack }) {
               </div>
               {tempHp > 0 && <PMStat label="Temp HP" value={tempHp} color={hpCol} onAdjust={adjustTempHp} />}
 
-              <EditableStat label="AC" value={ac} onSave={setAc} />
+              <EditableStat label="AC" value={ac} onSave={setAc} title={itemBonuses.ac_base ? `${baseAc} base + ${itemBonuses.ac_base} from equipped items` : undefined} />
               <EditableStat label="INIT" value={init} onSave={setInit} />
               <div className="stat-box">
                 <div className="stat-value">+{prof}</div>
@@ -242,7 +248,7 @@ export default function CharacterHeader({ onBack }) {
               <div style={{display:'flex',flexDirection:'column',gap:4}}>
                 <div style={{display:'flex',gap:6}}>
                   {ABILITY_KEYS.map(k => (
-                    <AbilityBox key={k} abbr={k} score={ab?.[k]||10} />
+                    <AbilityBox key={k} abbr={k} score={effAb[k]||10} baseScore={ab?.[k]||10} />
                   ))}
                 </div>
                 {slotLevels.length > 0 && (

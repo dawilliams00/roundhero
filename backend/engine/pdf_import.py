@@ -210,7 +210,7 @@ def parse_character_pdf(file_bytes, spell_db_by_name=None):
         items.append({
             "name": n, "quantity": qty, "weight": weight, "rarity": "Common",
             "equipped": False, "attunement": n in attuned_names, "attuned": n in attuned_names,
-            "description": "", "charges": None, "granted_spells": [], "_source": "pdf",
+            "description": "", "charges": None, "granted_spells": [], "buffs": [], "_source": "pdf",
         })
 
     item_by_name = {it["name"]: it for it in items}
@@ -235,6 +235,7 @@ def parse_character_pdf(file_bytes, spell_db_by_name=None):
         if canonical:
             it["charges"] = dict(canonical["charges"]) if canonical.get("charges") else None
             it["granted_spells"] = [dict(s) for s in canonical.get("granted_spells", [])]
+            it["buffs"] = [dict(b) for b in canonical.get("buffs", [])]
             it["description"] = canonical.get("description", it["description"])
             it["rarity"] = canonical.get("rarity", it["rarity"])
             it["weight"] = canonical.get("weight", it["weight"])

@@ -8,7 +8,8 @@ export default function SavesModal({ onClose }) {
   const [lastRoll, setLastRoll] = useState(null);
   if (!character) return null;
   const savedProfs = character.tracker_data?.save_proficiencies;
-  const saves = calcSaves(character.ability_scores, character.class_name, character.level, savedProfs);
+  const items = character.tracker_data?.inventory?.items;
+  const saves = calcSaves(character.ability_scores, character.class_name, character.level, savedProfs, items);
 
   const roll = (label, bonus) => {
     const d = rollD20();

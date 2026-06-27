@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatItemBuff } from '../utils/dnd';
 
 export default function ItemDetailModal({ item, onEdit, onRefresh, onClose }) {
   return (
@@ -46,7 +47,7 @@ export default function ItemDetailModal({ item, onEdit, onRefresh, onClose }) {
             <div style={{marginBottom:12}}>
               <div style={{color:'var(--text-dim)',fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:1,marginBottom:6}}>Bonuses</div>
               {item.buffs.map((b,i) => (
-                <div key={i} style={{fontSize:12,color:'var(--text-secondary)'}}>{b.stat?.replace(/_/g,' ')}: +{b.value}</div>
+                <div key={i} style={{fontSize:12,color:'var(--text-secondary)'}}>{formatItemBuff(b)}</div>
               ))}
             </div>
           )}
