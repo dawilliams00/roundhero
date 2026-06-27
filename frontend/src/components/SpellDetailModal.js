@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
-import { schoolColor, getSpellcastingBlocks, scaleSpellDamage, rollDamage, concentrationSlotCount } from '../utils/dnd';
+import { schoolColor, getSpellcastingBlocks, scaleSpellDamage, rollDamage, concentrationSlotCount, HASTED_EFFECT } from '../utils/dnd';
 
-const SELF_TARGET_EFFECTS = { haste: 'Hasted' };
+const SELF_TARGET_EFFECTS = { haste: HASTED_EFFECT };
 
 export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuccess }) {
   const { character, useSlot, addActiveEffect, setConcentration } = useCharacter();

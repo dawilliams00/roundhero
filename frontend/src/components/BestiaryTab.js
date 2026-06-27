@@ -2,6 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import api from '../utils/api';
 import { useCharacter } from '../context/CharacterContext';
 import MonsterDetailModal from './MonsterDetailModal';
+import InfoModal from './InfoModal';
+import ConfirmModal from './ConfirmModal';
 
 const CR_ORDER = ['0','1/8','1/4','1/2','1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16','17','18','19','20','21','22','23','24','25','26','27','28','29','30'];
 
@@ -14,6 +16,8 @@ export default function BestiaryTab() {
   const [crFilter, setCrFilter] = useState('all');
   const [viewing, setViewing]   = useState(null);
   const [viewingActive, setViewingActive] = useState(null);
+  const [infoMessage, setInfoMessage] = useState(null);
+  const [confirmDismiss, setConfirmDismiss] = useState(null);
 
   useEffect(() => {
     api.get('/content/monsters').then(r => setMonsters(r.data)).finally(() => setLoading(false));
@@ -54,7 +58,6 @@ export default function BestiaryTab() {
   };
 
   const dismissCreature = (id) => {
-    if (!window.confirm('Dismiss this creature?')) return;
     saveActive(activeCreatures.filter(c => c.id !== id));
   };
 
@@ -69,14 +72,14 @@ export default function BestiaryTab() {
                 <div style={{flex:1,cursor:'pointer'}} onClick={() => {
                   const base = monsters.find(m => m.name === c.creature_name);
                   if (base) setViewingActive(base);
-                  else window.alert(`"${c.creature_name}" isn't in the loaded monster list (still loading, or it's been removed/renamed).`);
+                  else setInfoMessage(`"${c.creature_name}" isn't in the loaded monster list (still loading, or it's been removed/renamed).`);
                 }}>
                   <div style={{color:'var(--text-primary)',fontWeight:500,fontSize:13}}>{c.instance_name}</div>
                 </div>
                 <button onClick={() => adjustCreatureHp(c.id,-1)} style={{background:'var(--danger)',color:'#fff',borderRadius:4,width:22,height:22,fontWeight:700,fontSize:14}}>−</button>
                 <span style={{color:'var(--success)',fontWeight:700,fontSize:13,minWidth:50,textAlign:'center'}}>{c.hp.current}/{c.hp.max}</span>
                 <button onClick={() => adjustCreatureHp(c.id,1)} style={{background:'var(--success)',color:'#fff',borderRadius:4,width:22,height:22,fontWeight:700,fontSize:14}}>+</button>
-                <button className="btn btn-secondary btn-sm" onClick={() => dismissCreature(c.id)}>⚰️ Dismiss</button>
+                <button className="btn btn-secondary btn-sm" onClick={() => setConfirmDismiss(c)}>⚰️ Dismiss</button>
               </div>
             ))}
           </div>
@@ -118,6 +121,17 @@ export default function BestiaryTab() {
 
       {viewing && <MonsterDetailModal monster={viewing} onClose={() => setViewing(null)} onSummon={summonCreature} />}
       {viewingActive && <MonsterDetailModal monster={viewingActive} onClose={() => setViewingActive(null)} />}
+      {infoMessage && <InfoModal message={infoMessage} onClose={() => setInfoMessage(null)} />}
+      {confirmDismiss && (
+        <ConfirmModal
+          title="Dismiss Creature?"
+          message={`Dismiss ${confirmDismiss.instance_name}? This can't be undone.`}
+          confirmLabel="Dismiss"
+          danger
+          onConfirm={() => { dismissCreature(confirmDismiss.id); setConfirmDismiss(null); }}
+          onCancel={() => setConfirmDismiss(null)}
+        />
+      )}
     </div>
   );
 }

@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
-import { concentrationSlotCount } from '../utils/dnd';
+import { concentrationSlotCount, HASTED_EFFECT, LETHARGIC_CONDITION, HARDCODED_CONDITION_INFO } from '../utils/dnd';
+import InfoModal from './InfoModal';
 
 export default function ConcentrationModal({ onClose }) {
-  const { character, dropConcentration } = useCharacter();
+  const { character, dropConcentration, removeActiveEffect, addCondition } = useCharacter();
+  const [infoMessage, setInfoMessage] = useState(null);
   if (!character) return null;
   const td = character.tracker_data || {};
   const items = td.inventory?.items || [];
@@ -13,7 +15,9 @@ export default function ConcentrationModal({ onClose }) {
   const drop = async (idx) => {
     const dropped = await dropConcentration(idx);
     if (dropped && dropped.toLowerCase() === 'haste') {
-      window.alert('Haste ended. Remember the lethargy rule: the target can\'t move or take actions until after its next turn.');
+      await removeActiveEffect(HASTED_EFFECT);
+      await addCondition(LETHARGIC_CONDITION);
+      setInfoMessage(`Haste ended - ${LETHARGIC_CONDITION} applied.\n\n${HARDCODED_CONDITION_INFO[LETHARGIC_CONDITION]}`);
     }
   };
 
@@ -42,6 +46,7 @@ export default function ConcentrationModal({ onClose }) {
         </div>
         <button className="btn btn-primary" style={{width:'100%'}} onClick={onClose}>Close</button>
       </div>
+      {infoMessage && <InfoModal title="Haste Ended" message={infoMessage} onClose={() => setInfoMessage(null)} />}
     </div>
   );
 }

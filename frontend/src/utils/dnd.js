@@ -1,3 +1,13 @@
+// Haste grants +2 AC and advantage on Dex saves while active, and inflicts "lethargy"
+// (can't move/act/react until the end of your next turn) the instant it ends. Lethargy
+// isn't an SRD condition (won't be in conditions.json), so it gets a hardcoded
+// description here instead of coming from the API.
+export const HASTED_EFFECT = 'Hasted';
+export const LETHARGIC_CONDITION = 'Lethargic';
+export const HARDCODED_CONDITION_INFO = {
+  Lethargic: "When Haste ends, you can't move or take actions or reactions until the end of your next turn.",
+};
+
 export const ABILITY_KEYS = ['STR','DEX','CON','INT','WIS','CHA'];
 export const ABILITY_LABELS = { STR:'Strength', DEX:'Dexterity', CON:'Constitution', INT:'Intelligence', WIS:'Wisdom', CHA:'Charisma' };
 export const SKILL_MAP = {

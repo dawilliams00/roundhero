@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
 import AbilityDetailModal from './AbilityDetailModal';
+import ConfirmModal from './ConfirmModal';
 
 export default function TrackerTab() {
   const { character, saveTrackerData, updateCharacter, addActiveEffect, removeActiveEffect } = useCharacter();
   const [newEffect, setNewEffect] = useState('');
   const [detail, setDetail] = useState(null);
+  const [confirmRemove, setConfirmRemove] = useState(null);
 
   if (!character) return null;
   const td       = character.tracker_data || {};
@@ -20,7 +22,6 @@ export default function TrackerTab() {
   // features come back on the next Re-sync if deleted by mistake, custom ones don't need to.
   const isDeletable = (name) => Object.values(ae).some(arr => (arr||[]).some(a => a.tracker_key === name && a.source_type !== 'class'));
   const removeFeature = async (name) => {
-    if (!window.confirm(`Remove "${name}"? This can't be undone.`)) return;
     const newFeatures = { ...features };
     delete newFeatures[name];
     const newAe = {};
@@ -102,7 +103,7 @@ export default function TrackerTab() {
                 <span style={{color: feat.current>0 ? 'var(--success)' : 'var(--danger)',fontWeight:700,fontSize:15,minWidth:36,textAlign:'center'}}>{feat.current}/{feat.max}</span>
                 <button onClick={() => adjustFeature(name,1)} style={{background:'var(--success)',color:'#fff',borderRadius:4,width:22,height:22,fontWeight:700,fontSize:14}}>+</button>
                 {isDeletable(name) && (
-                  <button onClick={() => removeFeature(name)} title="Remove this ability" style={{background:'var(--bg-hover)',color:'var(--text-dim)',borderRadius:4,width:22,height:22,fontWeight:700,fontSize:14,marginLeft:4}}>×</button>
+                  <button onClick={() => setConfirmRemove(name)} title="Remove this ability" style={{background:'var(--bg-hover)',color:'var(--text-dim)',borderRadius:4,width:22,height:22,fontWeight:700,fontSize:14,marginLeft:4}}>×</button>
                 )}
               </div>
             </div>
@@ -139,7 +140,7 @@ export default function TrackerTab() {
                 {feat.description && <div style={{color:'var(--text-dim)',fontSize:11,marginTop:2,lineHeight:1.5}}>{feat.description.substring(0,120)}{feat.description.length>120?'…':''}</div>}
               </div>
               {isDeletable(name) && (
-                <button onClick={(e) => { e.stopPropagation(); removeFeature(name); }} title="Remove this ability" style={{background:'var(--bg-hover)',color:'var(--text-dim)',borderRadius:4,width:22,height:22,fontWeight:700,fontSize:14,flexShrink:0}}>×</button>
+                <button onClick={(e) => { e.stopPropagation(); setConfirmRemove(name); }} title="Remove this ability" style={{background:'var(--bg-hover)',color:'var(--text-dim)',borderRadius:4,width:22,height:22,fontWeight:700,fontSize:14,flexShrink:0}}>×</button>
               )}
             </div>
           ))}
@@ -173,6 +174,16 @@ export default function TrackerTab() {
       )}
 
       {detail && <AbilityDetailModal ability={detail} onClose={() => setDetail(null)} />}
+      {confirmRemove && (
+        <ConfirmModal
+          title="Remove Ability?"
+          message={`Remove "${confirmRemove}"? This can't be undone.`}
+          confirmLabel="Remove"
+          danger
+          onConfirm={() => { removeFeature(confirmRemove); setConfirmRemove(null); }}
+          onCancel={() => setConfirmRemove(null)}
+        />
+      )}
     </div>
   );
 }

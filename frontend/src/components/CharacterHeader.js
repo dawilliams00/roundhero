@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useCharacter } from '../context/CharacterContext';
-import { modifier, modStr, hpColor, profBonus, ABILITY_KEYS, getSpellcastingBlocks, computeItemBonuses, effectiveAbilityScores } from '../utils/dnd';
+import api from '../utils/api';
+import { modifier, modStr, hpColor, profBonus, ABILITY_KEYS, getSpellcastingBlocks, computeItemBonuses, effectiveAbilityScores, HASTED_EFFECT, HARDCODED_CONDITION_INFO } from '../utils/dnd';
 import SavesModal from './SavesModal';
 import SkillsModal from './SkillsModal';
 import TraitsModal from './TraitsModal';
@@ -9,6 +10,7 @@ import RestModal from './RestModal';
 import RestSummaryModal from './RestSummaryModal';
 import SettingsModal from './SettingsModal';
 import ConditionsModal from './ConditionsModal';
+import InfoModal from './InfoModal';
 
 function EditableStat({ label, value, onSave, color, title }) {
   const [editing, setEditing] = useState(false);
@@ -167,7 +169,7 @@ function CurrencyBox({ currency, onCommit }) {
 }
 
 export default function CharacterHeader({ onBack }) {
-  const { character, saveTrackerData, doRest, addActiveEffect, removeActiveEffect } = useCharacter();
+  const { character, saveTrackerData, doRest, addActiveEffect, removeActiveEffect, removeCondition } = useCharacter();
   const [showSaves, setShowSaves]   = useState(false);
   const [showSkills, setShowSkills] = useState(false);
   const [showTraits, setShowTraits] = useState(false);
@@ -176,6 +178,16 @@ export default function CharacterHeader({ onBack }) {
   const [restSummary, setRestSummary] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showConditions, setShowConditions] = useState(false);
+  const [viewingCondition, setViewingCondition] = useState(null);
+  const [conditionInfo, setConditionInfo] = useState({});
+
+  useEffect(() => {
+    api.get('/content/conditions').then(r => {
+      const map = { ...HARDCODED_CONDITION_INFO };
+      (r.data || []).forEach(c => { map[c.name] = c.description; });
+      setConditionInfo(map);
+    }).catch(() => {});
+  }, []);
 
   if (!character) return null;
 
@@ -200,12 +212,14 @@ export default function CharacterHeader({ onBack }) {
   const maxHp  = (hp.max_override > 0) ? hp.max_override : calcMaxHp;
   const curHp  = hp.current ?? maxHp;
   const tempHp = hp.temp || 0;
+  const activeEffects = td?.active_effects || [];
+  const isHasted = activeEffects.includes(HASTED_EFFECT);
+  const hasteAcBonus = isHasted ? 2 : 0;
   const baseAc = td?.ac ?? (10 + dexMod);
-  const ac     = baseAc + itemBonuses.ac_base;
+  const ac     = baseAc + itemBonuses.ac_base + hasteAcBonus;
   const init   = td?.initiative ?? dexMod;
   const insp   = !!td?.inspiration;
   const exhaustion = td?.exhaustion || 0;
-  const activeEffects = td?.active_effects || [];
   // Exhaustion has its own stepper below, so don't double-count it if it's ever
   // also present as a legacy free-text condition string.
   const conditions = (td?.conditions || []).filter(c => c !== 'Exhaustion');
@@ -229,9 +243,9 @@ export default function CharacterHeader({ onBack }) {
     await saveTrackerData({ ...td, hp: { ...hp, temp: newTemp } });
   };
 
-  // The AC stat box shows/edits the full total; back out the item bonus so the stored
-  // base (armor + dex) doesn't end up double-counting it on the next render.
-  const setAc     = (v) => saveTrackerData({ ...td, ac: v - itemBonuses.ac_base });
+  // The AC stat box shows/edits the full total; back out the item and Haste bonuses so
+  // the stored base (armor + dex) doesn't end up double-counting them on the next render.
+  const setAc     = (v) => saveTrackerData({ ...td, ac: v - itemBonuses.ac_base - hasteAcBonus });
   const setInit   = (v) => saveTrackerData({ ...td, initiative: v });
   const toggleInspiration = () => saveTrackerData({ ...td, inspiration: !insp });
   const setCurrencyCoin = (k, v) => saveTrackerData({ ...td, inventory: { ...inventory, currency: { ...currency, [k]: v } } });
@@ -261,7 +275,7 @@ export default function CharacterHeader({ onBack }) {
               </div>
               {tempHp > 0 && <PMStat label="Temp HP" value={tempHp} color={hpCol} onAdjust={adjustTempHp} />}
 
-              <EditableStat label="AC" value={ac} onSave={setAc} title={itemBonuses.ac_base ? `${baseAc} base + ${itemBonuses.ac_base} from equipped items` : undefined} />
+              <EditableStat label="AC" value={ac} onSave={setAc} title={(itemBonuses.ac_base || hasteAcBonus) ? `${baseAc} base${itemBonuses.ac_base ? ` + ${itemBonuses.ac_base} items` : ''}${hasteAcBonus ? ` + ${hasteAcBonus} Hasted` : ''}` : undefined} />
               <EditableStat label="INIT" value={init} onSave={setInit} />
               <div className="stat-box">
                 <div className="stat-value">+{prof}</div>
@@ -311,6 +325,35 @@ export default function CharacterHeader({ onBack }) {
             )}
           </div>
 
+          <div style={{width:230,flexShrink:0,display:'flex',flexDirection:'column',gap:6,paddingTop:2}}>
+            <PMStat
+              label="Exhaustion"
+              value={exhaustion}
+              color={exhaustion >= 5 ? 'var(--danger)' : exhaustion >= 3 ? 'var(--warning)' : undefined}
+              onAdjust={d => saveTrackerData({ ...td, exhaustion: Math.max(0, Math.min(6, exhaustion + d)) })}
+            />
+            <div style={{display:'flex',gap:4,flexWrap:'wrap',alignItems:'center'}}>
+              {activeEffects.map(e => (
+                <div key={e} onClick={() => removeActiveEffect(e)} title="Click to remove" style={{cursor:'pointer',background:'rgba(124,77,255,0.15)',border:'1px solid var(--accent-light)',color:'var(--accent-light)',borderRadius:12,padding:'3px 10px',fontSize:12}}>
+                  {e} ×
+                </div>
+              ))}
+              <EffectAdder onAdd={addActiveEffect} />
+            </div>
+            <div style={{display:'flex',gap:4,flexWrap:'wrap',alignItems:'center'}}>
+              {conditions.map(c => (
+                <div key={c} style={{display:'flex',alignItems:'center',background:'rgba(230,57,70,0.15)',border:'1px solid var(--danger)',color:'var(--danger)',borderRadius:12,padding:'3px 4px 3px 10px',fontSize:12}}>
+                  <span onClick={() => setViewingCondition(c)} style={{cursor:'pointer'}}>{c}</span>
+                  <span onClick={() => removeCondition(c)} title="Remove" style={{cursor:'pointer',marginLeft:5,padding:'0 3px'}}>×</span>
+                </div>
+              ))}
+              <div className="stat-box" onClick={() => setShowConditions(true)} style={{cursor:'pointer'}}>
+                <div className="stat-value" style={{color: conditions.length > 0 ? 'var(--danger)' : 'var(--accent-light)'}}>{conditions.length}</div>
+                <div className="stat-label">Conditions</div>
+              </div>
+            </div>
+          </div>
+
           <div style={{display:'flex',gap:10,flexShrink:0}}>
             <CurrencyBox currency={currency} onCommit={setCurrencyCoin} />
             <div style={{display:'flex',flexDirection:'column',gap:4}}>
@@ -324,26 +367,6 @@ export default function CharacterHeader({ onBack }) {
                   <div className="stat-label">d{hd.die_size} HD</div>
                 </div>
               )}
-            </div>
-            <div style={{display:'flex',flexDirection:'column',gap:6,alignItems:'flex-start'}}>
-              <PMStat
-                label="Exhaustion"
-                value={exhaustion}
-                color={exhaustion >= 5 ? 'var(--danger)' : exhaustion >= 3 ? 'var(--warning)' : undefined}
-                onAdjust={d => saveTrackerData({ ...td, exhaustion: Math.max(0, Math.min(6, exhaustion + d)) })}
-              />
-              <div style={{display:'flex',gap:4,flexWrap:'wrap',maxWidth:150}}>
-                {activeEffects.map(e => (
-                  <div key={e} onClick={() => removeActiveEffect(e)} title="Click to remove" style={{cursor:'pointer',background:'rgba(124,77,255,0.15)',border:'1px solid var(--accent-light)',color:'var(--accent-light)',borderRadius:12,padding:'3px 10px',fontSize:12}}>
-                    {e} ×
-                  </div>
-                ))}
-                <EffectAdder onAdd={addActiveEffect} />
-              </div>
-              <div className="stat-box" onClick={() => setShowConditions(true)} style={{cursor:'pointer'}}>
-                <div className="stat-value" style={{color: conditions.length > 0 ? 'var(--danger)' : 'var(--accent-light)'}}>{conditions.length}</div>
-                <div className="stat-label">Conditions</div>
-              </div>
             </div>
           </div>
         </div>
@@ -365,6 +388,13 @@ export default function CharacterHeader({ onBack }) {
       )}
       {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
       {showConditions && <ConditionsModal onClose={() => setShowConditions(false)} />}
+      {viewingCondition && (
+        <InfoModal
+          title={viewingCondition}
+          message={conditionInfo[viewingCondition] || 'No description available.'}
+          onClose={() => setViewingCondition(null)}
+        />
+      )}
     </>
   );
 }

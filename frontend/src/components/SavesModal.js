@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
-import { calcSaves, ABILITY_KEYS, ABILITY_LABELS, rollD20 } from '../utils/dnd';
+import { calcSaves, ABILITY_KEYS, ABILITY_LABELS, rollD20, HASTED_EFFECT } from '../utils/dnd';
 import D20Icon from './D20Icon';
 
 export default function SavesModal({ onClose }) {
@@ -10,6 +10,7 @@ export default function SavesModal({ onClose }) {
   const savedProfs = character.tracker_data?.save_proficiencies;
   const items = character.tracker_data?.inventory?.items;
   const saves = calcSaves(character.ability_scores, character.class_name, character.level, savedProfs, items);
+  const isHasted = (character.tracker_data?.active_effects || []).includes(HASTED_EFFECT);
 
   const roll = (label, bonus) => {
     const d = rollD20();
@@ -40,6 +41,7 @@ export default function SavesModal({ onClose }) {
                   {proficient && <div style={{width:8,height:8,borderRadius:'50%',background:'var(--accent)'}}/>}
                   {!proficient && <div style={{width:8,height:8,borderRadius:'50%',border:'1px solid var(--border)'}}/>}
                   <span style={{color:'var(--text-primary)',fontWeight:500}}>{ABILITY_LABELS[ab]}</span>
+                  {ab === 'DEX' && isHasted && <span style={{color:'var(--success)',fontSize:10,fontWeight:700,border:'1px solid var(--success)',borderRadius:8,padding:'0 5px'}} title="Hasted grants advantage on Dexterity saving throws">ADV</span>}
                 </div>
                 <span style={{color: proficient ? 'var(--accent-light)' : 'var(--text-primary)',fontWeight:700,fontSize:16}}>
                   {bonus >= 0 ? `+${bonus}` : bonus}

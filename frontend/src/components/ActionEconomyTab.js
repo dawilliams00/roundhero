@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
-import { SECTION_ORDER, SECTION_COLORS, slotBadgeTextColor, concentrationSlotCount } from '../utils/dnd';
+import { SECTION_ORDER, SECTION_COLORS, slotBadgeTextColor, concentrationSlotCount, HASTED_EFFECT } from '../utils/dnd';
 import AbilityDetailModal from './AbilityDetailModal';
 import CustomAbilityModal from './CustomAbilityModal';
 import CastSpellPickerModal from './CastSpellPickerModal';
@@ -41,7 +41,7 @@ export default function ActionEconomyTab() {
   const chargeItems = items.map((it,i) => ({ it, idx: i })).filter(({it}) => it.charges);
   const weaponItems = items.map((it,i) => ({ it, idx: i })).filter(({it}) => it.is_weapon);
   const inInitiative = !!td.in_initiative;
-  const isHasted = (td.active_effects || []).includes('Hasted');
+  const isHasted = (td.active_effects || []).includes(HASTED_EFFECT);
   const concSlots = td.concentration?.slots || [];
   const concMaxSlots = concentrationSlotCount(items);
 

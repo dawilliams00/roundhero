@@ -7,6 +7,7 @@ import ItemBrowserModal from './ItemBrowserModal';
 import WeaponBrowserModal from './WeaponBrowserModal';
 import ItemDetailModal from './ItemDetailModal';
 import RechargeItemModal from './RechargeItemModal';
+import InfoModal from './InfoModal';
 
 const RARITY_ORDER = ['Common','Uncommon','Rare','Very Rare','Legendary','Artifact'];
 const SORT_OPTIONS = [
@@ -27,6 +28,7 @@ export default function InventoryTab() {
   const [viewingSpells, setViewingSpells] = useState(null);
   const [recharging, setRecharging] = useState(null);
   const [sortBy, setSortBy] = useState('default');
+  const [infoMessage, setInfoMessage] = useState(null);
 
   if (!character) return null;
   const td  = character.tracker_data || {};
@@ -58,7 +60,7 @@ export default function InventoryTab() {
     const r = await api.get('/content/items');
     const master = r.data.find(it => it.name.toLowerCase() === item.name.toLowerCase());
     if (!master) {
-      window.alert(`No matching item named "${item.name}" found in the database.`);
+      setInfoMessage(`No matching item named "${item.name}" found in the database.`);
       return;
     }
     updateItem(idx, {
@@ -70,7 +72,7 @@ export default function InventoryTab() {
       granted_spells: (master.granted_spells || []).map(s => ({...s})),
       charges: master.charges ? { ...master.charges, current: Math.min(item.charges?.current ?? master.charges.max, master.charges.max) } : item.charges,
     });
-    window.alert(`${item.name} refreshed from the database.`);
+    setInfoMessage(`${item.name} refreshed from the database.`);
   };
 
   const castItemSpell = (idx, chargeCost) => {
@@ -196,6 +198,7 @@ export default function InventoryTab() {
           onClose={() => setRecharging(null)}
         />
       )}
+      {infoMessage && <InfoModal message={infoMessage} onClose={() => setInfoMessage(null)} />}
     </div>
   );
 }
