@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
 
-const REST_TYPES = ['long','short','none'];
+const REST_TYPES = ['long','short','dawn','midnight','dusk','none'];
 
 // Lets a player directly fix up an existing tracker_data.features entry - mainly for
 // PDF-imported characters whose sheet printed a feature name (e.g. "Font of Magic") with
@@ -11,6 +11,7 @@ export default function FeatureEditModal({ name, feature, onClose }) {
   const { character, updateCharacter } = useCharacter();
   const [form, setForm] = useState({
     name, max: feature.max || 0, rest_type: feature.rest_type || 'long', description: feature.description || '',
+    reminder: !!feature.reminder, refillOnCombat: !!feature.refill_on_combat,
   });
   const set = (k,v) => setForm(f => ({...f,[k]:v}));
 
@@ -26,6 +27,8 @@ export default function FeatureEditModal({ name, feature, onClose }) {
     const spent = Math.max(0, oldMax - (feature.current ?? oldMax));
     const newCurrent = Math.max(0, newMax - spent);
     const updatedFeature = { ...feature, max: newMax, current: newCurrent, rest_type: form.rest_type, description: form.description };
+    if (form.reminder) updatedFeature.reminder = true; else delete updatedFeature.reminder;
+    if (form.refillOnCombat) updatedFeature.refill_on_combat = true; else delete updatedFeature.refill_on_combat;
 
     const newFeatures = { ...td.features };
     let newAe = character.ae_data;
@@ -53,6 +56,14 @@ export default function FeatureEditModal({ name, feature, onClose }) {
           <div className="form-group"><label>Resets on</label><select value={form.rest_type} onChange={e=>set('rest_type',e.target.value)}>{REST_TYPES.map(r=><option key={r} value={r}>{r}</option>)}</select></div>
         </div>
         <div className="form-group"><label>Description</label><textarea value={form.description} onChange={e=>set('description',e.target.value)} rows={4} style={{width:'100%',resize:'vertical'}} /></div>
+        <label style={{display:'flex',alignItems:'center',gap:8,marginBottom:8,cursor:'pointer'}}>
+          <input type="checkbox" checked={form.reminder} onChange={e=>set('reminder',e.target.checked)} />
+          <span style={{fontSize:13,color:'var(--text-secondary)'}}>📌 Remind me about this every turn in combat (Reminders banner on Action Economy tab)</span>
+        </label>
+        <label style={{display:'flex',alignItems:'center',gap:8,marginBottom:8,cursor:'pointer'}}>
+          <input type="checkbox" checked={form.refillOnCombat} onChange={e=>set('refillOnCombat',e.target.checked)} />
+          <span style={{fontSize:13,color:'var(--text-secondary)'}}>🛡️ Refills automatically on entering combat if it's at 0</span>
+        </label>
         <div style={{display:'flex',gap:8,marginTop:8}}>
           <button className="btn btn-secondary" style={{flex:1}} onClick={onClose}>Cancel</button>
           <button className="btn btn-primary" style={{flex:2}} disabled={!form.name.trim()} onClick={submit}>Save Changes</button>

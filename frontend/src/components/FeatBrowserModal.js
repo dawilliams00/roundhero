@@ -27,7 +27,7 @@ export default function FeatBrowserModal({ onAdd, onClose }) {
     if (search && !f.name.toLowerCase().includes(search.toLowerCase())) return false;
     const edition = f.edition || '2014';
     return contentEditions[edition] !== false;
-  });
+  }).sort((a, b) => a.name.localeCompare(b.name));
 
   return (
     <div className="modal-overlay" onClick={onClose}>

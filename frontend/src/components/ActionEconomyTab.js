@@ -28,6 +28,10 @@ export default function ActionEconomyTab() {
   const [attackingWeapon, setAttackingWeapon] = useState(null);
   const [showConcentration, setShowConcentration] = useState(false);
   const [viewingItemDetail, setViewingItemDetail] = useState(null);
+  // Reminders (e.g. "don't forget Divine Smite", later Syric's Codex Surge Dice) are
+  // dismissed per-turn only - they don't consume anything, just a "got it" ack that
+  // resets on New Turn / re-entering combat, same lifecycle as the turn-bucket state.
+  const [dismissedReminders, setDismissedReminders] = useState({});
 
   if (!character) return null;
 
@@ -49,14 +53,34 @@ export default function ActionEconomyTab() {
   // rest of this app's philosophy of tracking state rather than enforcing exact timing.
   const resetTurn = () => {
     setTurnUsed({ Action: false, 'Bonus Action': false, Reaction: false, Haste: false });
+    setDismissedReminders({});
     const conditions = td.conditions || [];
     if (conditions.includes(LETHARGIC_CONDITION)) {
       saveTrackerData({ ...td, conditions: conditions.filter(c => c !== LETHARGIC_CONDITION) });
     }
   };
 
+  // High-level resources that grant themselves the moment initiative is rolled if you're
+  // sitting at 0 (Barbarian's Primal Champion, Monk's Perfect Self, etc. - and later
+  // Syric's Codex Surge Dice) are flagged with refill_on_combat on the feature, set via
+  // CustomAbilityModal/FeatureEditModal. Checked on entering combat, same trigger point
+  // the rules describe ("when you roll initiative and have none left").
   const toggleInitiative = () => {
-    saveTrackerData({ ...td, in_initiative: !inInitiative });
+    const entering = !inInitiative;
+    let newTd = { ...td, in_initiative: entering };
+    if (entering) {
+      setDismissedReminders({});
+      const refreshed = {};
+      let changed = false;
+      for (const [name, f] of Object.entries(features)) {
+        if (f.refill_on_combat && (f.max || 0) > 0 && (f.current || 0) <= 0) {
+          refreshed[name] = { ...f, current: f.max };
+          changed = true;
+        }
+      }
+      if (changed) newTd = { ...newTd, features: { ...features, ...refreshed } };
+    }
+    saveTrackerData(newTd);
     if (inInitiative) resetTurn();
   };
 
@@ -168,6 +192,23 @@ export default function ActionEconomyTab() {
       )}
 
       <div style={{flex:1,overflowY:'auto',padding:'0 0 16px'}}>
+        {inInitiative && Object.entries(features).filter(([name,f]) => f.reminder && !dismissedReminders[name]).length > 0 && (
+          <div>
+            <div style={{padding:'6px 12px',background:'var(--warning)',fontSize:11,fontWeight:600,color:'#000',letterSpacing:1,position:'sticky',top:0,zIndex:1}}>
+              REMINDERS
+            </div>
+            {Object.entries(features).filter(([name,f]) => f.reminder && !dismissedReminders[name]).map(([name]) => (
+              <div key={name} style={{display:'flex',alignItems:'center',padding:'8px 12px',borderBottom:'1px solid var(--border)',gap:8,background:'rgba(255,152,0,0.1)'}}>
+                <div style={{flex:1}}>
+                  <div style={{color:'var(--text-primary)',fontWeight:500,fontSize:13}}>📌 Don't forget: {name}</div>
+                </div>
+                <button className="btn btn-sm" onClick={() => setDismissedReminders(p => ({ ...p, [name]: true }))} style={{background:'var(--bg-hover)',color:'var(--text-dim)'}}>
+                  Got it
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
         {weaponItems.length > 0 && (
           <div>
             <div style={{padding:'6px 12px',background:'#37474f',fontSize:11,fontWeight:600,color:'#fff',letterSpacing:1,position:'sticky',top:0,zIndex:1}}>

@@ -3,7 +3,7 @@ import { useCharacter } from '../context/CharacterContext';
 import api from '../utils/api';
 import { SECTION_ORDER, ABILITY_KEYS } from '../utils/dnd';
 
-const REST_TYPES = ['long','short','none'];
+const REST_TYPES = ['long','short','dawn','midnight','dusk','none'];
 const SECTION_COST_TYPE = { 'Action':'action', 'Bonus Action':'bonus_action', 'Reaction':'reaction', 'Free Action':'free_action', 'Passive':'passive' };
 
 // editingFeat (optional): when set, this edits an existing shared library entry instead
@@ -18,7 +18,8 @@ export default function CustomAbilityModal({ onClose, editingFeat, onDelete }) {
     description: editingFeat.description || '', isSpell: !!editingFeat.isSpell, isTuck: !!editingFeat.isTuck,
     grantsSpell: !!editingFeat.grantsSpell, grantedSpellName: editingFeat.grantedSpellName || '', abilityOverride: editingFeat.abilityOverride || '', saveToLibrary: true,
     edition: editingFeat.edition || 'expanded',
-  } : { name:'', section:'Action', source:'Custom', tracker_key:'', max_uses:1, rest_type:'long', description:'', isSpell:false, isTuck:false, grantsSpell:false, grantedSpellName:'', abilityOverride:'', saveToLibrary:true, edition:'expanded' });
+    reminder: !!editingFeat.reminder, refillOnCombat: !!editingFeat.refillOnCombat,
+  } : { name:'', section:'Action', source:'Custom', tracker_key:'', max_uses:1, rest_type:'long', description:'', isSpell:false, isTuck:false, grantsSpell:false, grantedSpellName:'', abilityOverride:'', saveToLibrary:true, edition:'expanded', reminder:false, refillOnCombat:false });
   const [saving, setSaving] = useState(false);
 
   // Search-as-you-type against the real spell library (same pattern as AddItemModal's
@@ -47,7 +48,7 @@ export default function CustomAbilityModal({ onClose, editingFeat, onDelete }) {
       description: form.description, max_uses: parseInt(form.max_uses) || 0,
       rest_type: form.rest_type, isSpell: form.isSpell, isTuck: form.isTuck,
       grantsSpell: form.grantsSpell, grantedSpellName: form.grantedSpellName, abilityOverride: form.abilityOverride,
-      edition: form.edition,
+      edition: form.edition, reminder: form.reminder, refillOnCombat: form.refillOnCombat,
     };
     if (editingFeat) {
       await api.put(`/content/feats/${editingFeat._custom_id}`, payload);
@@ -61,7 +62,7 @@ export default function CustomAbilityModal({ onClose, editingFeat, onDelete }) {
     if (!newAe[form.section]) newAe[form.section] = [];
     newAe[form.section] = [...newAe[form.section], newAbility];
     const newTd = { ...character.tracker_data };
-    if (form.max_uses > 0 || form.isTuck || form.grantsSpell) {
+    if (form.max_uses > 0 || form.isTuck || form.grantsSpell || form.reminder || form.refillOnCombat) {
       newTd.features = {
         ...newTd.features,
         [key]: {
@@ -69,6 +70,8 @@ export default function CustomAbilityModal({ onClose, editingFeat, onDelete }) {
           rest_type: form.rest_type, action: form.section, description: form.description,
           ...(form.isTuck ? { spell_picker: true, tucked_spell: '', tucked_level: '' } : {}),
           ...(form.grantsSpell ? { granted_spell: form.grantedSpellName, ability_override: form.abilityOverride || null } : {}),
+          ...(form.reminder ? { reminder: true } : {}),
+          ...(form.refillOnCombat ? { refill_on_combat: true } : {}),
         },
       };
     }
@@ -117,6 +120,11 @@ export default function CustomAbilityModal({ onClose, editingFeat, onDelete }) {
           <div className="form-group"><label>Uses (0=unlimited)</label><input type="number" min={0} value={form.max_uses} onChange={e => set('max_uses',e.target.value)} /></div>
           <div className="form-group"><label>Resets on</label><select value={form.rest_type} onChange={e => set('rest_type',e.target.value)}>{REST_TYPES.map(r => <option key={r} value={r}>{r}</option>)}</select></div>
         </div>
+        {['dawn','midnight','dusk'].includes(form.rest_type) && (
+          <div style={{color:'var(--text-dim)',fontSize:11,marginBottom:8}}>
+            Informational label only for now — refreshes on any Long Rest like everything else, same as the rest of this app's "track it, you apply RAW" philosophy.
+          </div>
+        )}
         <div className="form-group">
           <label>Edition</label>
           <select value={form.edition} onChange={e => set('edition', e.target.value)}>
@@ -172,6 +180,15 @@ export default function CustomAbilityModal({ onClose, editingFeat, onDelete }) {
             </div>
           </div>
         )}
+
+        <label style={{display:'flex',alignItems:'center',gap:8,marginBottom:8,cursor:'pointer'}}>
+          <input type="checkbox" checked={form.reminder} onChange={e => set('reminder', e.target.checked)} />
+          <span style={{fontSize:13,color:'var(--text-secondary)'}}>📌 Remind me about this every turn in combat (e.g. "don't forget Divine Smite") — shows in a Reminders banner on the Action Economy tab until dismissed for the turn</span>
+        </label>
+        <label style={{display:'flex',alignItems:'center',gap:8,marginBottom:8,cursor:'pointer'}}>
+          <input type="checkbox" checked={form.refillOnCombat} onChange={e => set('refillOnCombat', e.target.checked)} />
+          <span style={{fontSize:13,color:'var(--text-secondary)'}}>🛡️ Refills automatically on entering combat if it's at 0 (e.g. Primal Champion, Perfect Self)</span>
+        </label>
 
         {!editingFeat && (
           <label style={{display:'flex',alignItems:'center',gap:8,marginBottom:8,cursor:'pointer'}}>
