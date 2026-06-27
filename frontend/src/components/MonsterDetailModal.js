@@ -41,7 +41,7 @@ function ActionBlock({ title, items }) {
   );
 }
 
-export default function MonsterDetailModal({ monster: m, onClose }) {
+export default function MonsterDetailModal({ monster: m, onClose, onSummon }) {
   if (!m) return null;
   const speed = Object.entries(m.speed || {}).map(([k, v]) => k === 'walk' ? `${v} ft.` : `${k} ${v} ft.`).join(', ');
   const skills = Object.entries(m.skills || {}).map(([k, v]) => `${k} ${v>=0?'+':''}${v}`).join(', ');
@@ -98,7 +98,8 @@ export default function MonsterDetailModal({ monster: m, onClose }) {
           )}
         </div>
         <div className="modal-footer">
-          <button className="btn btn-secondary" style={{width:'100%'}} onClick={onClose}>Close</button>
+          <button className="btn btn-secondary" onClick={onClose}>Close</button>
+          {onSummon && <button className="btn btn-primary" onClick={() => onSummon(m)}>🐉 Summon</button>}
         </div>
       </div>
     </div>
