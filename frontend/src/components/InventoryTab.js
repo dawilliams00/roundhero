@@ -4,12 +4,14 @@ import api from '../utils/api';
 import AddItemModal from './AddItemModal';
 import ItemSpellsModal from './ItemSpellsModal';
 import ItemBrowserModal from './ItemBrowserModal';
+import WeaponBrowserModal from './WeaponBrowserModal';
 import ItemDetailModal from './ItemDetailModal';
 
 export default function InventoryTab() {
   const { character, saveTrackerData } = useCharacter();
   const [adding, setAdding]   = useState(false);
   const [browsing, setBrowsing] = useState(false);
+  const [browsingWeapons, setBrowsingWeapons] = useState(false);
   const [editing, setEditing] = useState(null);
   const [viewing, setViewing] = useState(null);
   const [viewingSpells, setViewingSpells] = useState(null);
@@ -73,6 +75,7 @@ export default function InventoryTab() {
             Items <span style={{color:'var(--text-dim)',fontWeight:400}}>· {totalWeight.toFixed(1)} lb</span>
           </div>
           <button className="btn btn-secondary btn-sm" onClick={() => setBrowsing(true)}>Add from DB</button>
+          <button className="btn btn-secondary btn-sm" onClick={() => setBrowsingWeapons(true)}>Add Weapon</button>
           <button className="btn btn-primary btn-sm" onClick={() => setAdding(true)}>+ Add Custom</button>
         </div>
 
@@ -87,9 +90,16 @@ export default function InventoryTab() {
                   {item.quantity > 1 && <span style={{color:'var(--text-dim)',fontSize:11}}>×{item.quantity}</span>}
                   {item.equipped && <span style={{fontSize:10,color:'var(--success)',border:'1px solid var(--success)',borderRadius:8,padding:'0 6px'}}>Equipped</span>}
                   {item.attunement && <span style={{fontSize:10,color: item.attuned ? 'var(--accent-light)':'var(--text-dim)',border:`1px solid ${item.attuned?'var(--accent-light)':'var(--border-light)'}`,borderRadius:8,padding:'0 6px'}}>{item.attuned?'Attuned':'Attunement'}</span>}
+                  {item.is_weapon && <span style={{fontSize:10,color:'var(--warning)',border:'1px solid var(--warning)',borderRadius:8,padding:'0 6px'}}>{item.damage_dice} {item.damage_type}</span>}
                 </div>
                 <div style={{color:'var(--text-dim)',fontSize:11}}>{item.rarity} {item.weight ? `· ${item.weight} lb` : ''}</div>
               </div>
+              {item.is_weapon && (
+                <label onClick={e => e.stopPropagation()} style={{display:'flex',alignItems:'center',gap:4,fontSize:10,color:'var(--text-dim)',cursor:'pointer'}} title="Whether you're proficient with this weapon - affects the attack roll">
+                  <input type="checkbox" checked={!!item.proficient} onChange={() => updateItem(i, { ...item, proficient: !item.proficient })} />
+                  Proficient
+                </label>
+              )}
               {item.granted_spells?.length > 0 && (
                 <button className="btn btn-secondary btn-sm" onClick={() => setViewingSpells(i)}>✨ Spells</button>
               )}
@@ -109,6 +119,7 @@ export default function InventoryTab() {
 
       {adding && <AddItemModal onSave={addItem} onClose={() => setAdding(false)} />}
       {browsing && <ItemBrowserModal existingItems={items} onAdd={addItem} onClose={() => setBrowsing(false)} />}
+      {browsingWeapons && <WeaponBrowserModal onAdd={addItem} onClose={() => setBrowsingWeapons(false)} />}
       {editing !== null && (
         <AddItemModal item={items[editing]} onSave={(it) => updateItem(editing, it)} onClose={() => setEditing(null)} />
       )}

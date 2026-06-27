@@ -7,6 +7,7 @@ import CastSpellPickerModal from './CastSpellPickerModal';
 import ItemSpellsModal from './ItemSpellsModal';
 import SpellTuckModal from './SpellTuckModal';
 import FeatBrowserModal from './FeatBrowserModal';
+import WeaponAttackModal from './WeaponAttackModal';
 
 const ITEM_BUCKET = { action: 'Action', bonus_action: 'Bonus Action', reaction: 'Reaction' };
 const ITEM_COST_OPTIONS = [
@@ -26,6 +27,7 @@ export default function ActionEconomyTab() {
   const [castingBucket, setCastingBucket] = useState(null);
   const [viewingItemSpells, setViewingItemSpells] = useState(null);
   const [tuckTarget, setTuckTarget] = useState(null);
+  const [attackingWeapon, setAttackingWeapon] = useState(null);
 
   if (!character) return null;
 
@@ -35,6 +37,7 @@ export default function ActionEconomyTab() {
   const slots    = td.spell_slots || {};
   const items    = td.inventory?.items || [];
   const chargeItems = items.map((it,i) => ({ it, idx: i })).filter(({it}) => it.charges);
+  const weaponItems = items.map((it,i) => ({ it, idx: i })).filter(({it}) => it.is_weapon);
   const inInitiative = !!td.in_initiative;
   const isHasted = (td.active_effects || []).includes('Hasted');
 
@@ -161,6 +164,36 @@ export default function ActionEconomyTab() {
       )}
 
       <div style={{flex:1,overflowY:'auto',padding:'0 0 16px'}}>
+        {weaponItems.length > 0 && (
+          <div>
+            <div style={{padding:'6px 12px',background:'#37474f',fontSize:11,fontWeight:600,color:'#fff',letterSpacing:1,position:'sticky',top:0,zIndex:1}}>
+              WEAPONS
+            </div>
+            {/* No Extra Attack counting and no separate Haste-bucket trigger here on
+                purpose - the engine doesn't model class attack counts, so the ATTACK
+                button always stays clickable (never dims/disables on bucketUsed,
+                unlike every other row in this file) to support multiple attacks
+                under one Action. */}
+            {weaponItems.map(({it, idx}) => {
+              const bucketUsed = isBucketUsed('Action');
+              return (
+                <div key={idx} style={{display:'flex',alignItems:'center',padding:'8px 12px',borderBottom:'1px solid var(--border)',gap:8}}>
+                  <div style={{flex:1,cursor:'pointer'}} onClick={() => setAttackingWeapon(idx)}>
+                    <div style={{color:'var(--text-primary)',fontWeight:500,fontSize:13}}>{it.name}</div>
+                    <div style={{color:'var(--text-dim)',fontSize:11}}>
+                      {it.weapon_range} · {it.damage_dice} {it.damage_type}{(it.properties||[]).length ? ` · ${it.properties.join(', ')}` : ''}
+                    </div>
+                    {bucketUsed && <div style={{color:'var(--text-dim)',fontSize:10}}>Action used this turn</div>}
+                  </div>
+                  <button className="btn btn-sm" onClick={() => setAttackingWeapon(idx)} style={{background:'var(--accent)',color:'#fff',minWidth:56}}>
+                    ATTACK
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
         {chargeItems.length > 0 && (
           <div>
             <div style={{padding:'6px 12px',background:'#5d4037',fontSize:11,fontWeight:600,color:'#fff',letterSpacing:1,position:'sticky',top:0,zIndex:1}}>
@@ -284,6 +317,9 @@ export default function ActionEconomyTab() {
           onUse={() => markBucket(bucketForAbility(tuckTarget.ability, tuckTarget.section))}
           onClose={() => setTuckTarget(null)}
         />
+      )}
+      {attackingWeapon !== null && (
+        <WeaponAttackModal itemIndex={attackingWeapon} onClose={() => setAttackingWeapon(null)} />
       )}
     </div>
   );

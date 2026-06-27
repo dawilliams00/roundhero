@@ -16,6 +16,27 @@ export default function ItemDetailModal({ item, onEdit, onRefresh, onClose }) {
           </div>
         </div>
         <div className="modal-body">
+          {item.is_weapon && (
+            <div style={{marginBottom:12,padding:'8px 10px',background:'var(--bg-primary)',borderRadius:'var(--radius-sm)'}}>
+              <div style={{color:'var(--text-dim)',fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:1,marginBottom:2}}>{item.weapon_category} · {item.weapon_range}</div>
+              <div style={{color:'var(--warning)',fontWeight:700,fontSize:16}}>{item.damage_dice} {item.damage_type}</div>
+              {item.two_handed_damage && (
+                <div style={{color:'var(--text-dim)',fontSize:12,marginTop:2}}>Two-handed: {item.two_handed_damage.damage_dice} {item.two_handed_damage.damage_type}</div>
+              )}
+              {item.range && (
+                <div style={{color:'var(--text-dim)',fontSize:12,marginTop:2}}>Range: {item.range.normal}{item.range.long ? `/${item.range.long}` : ''} ft</div>
+              )}
+              {item.properties?.length > 0 && (
+                <div style={{display:'flex',gap:6,flexWrap:'wrap',marginTop:6}}>
+                  {item.properties.map(p => (
+                    <span key={p} style={{fontSize:11,color:'var(--accent-light)',border:'1px solid var(--accent-light)',borderRadius:8,padding:'2px 8px'}}>{p}</span>
+                  ))}
+                </div>
+              )}
+              <div style={{color: item.proficient ? 'var(--success)' : 'var(--text-dim)',fontSize:11,marginTop:6}}>{item.proficient ? 'Proficient' : 'Not proficient'}{item.two_handed ? ' · wielded two-handed' : ''}</div>
+            </div>
+          )}
+
           {item.charges && (
             <div style={{marginBottom:12,padding:'8px 10px',background:'var(--bg-primary)',borderRadius:'var(--radius-sm)'}}>
               <div style={{color:'var(--text-dim)',fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:1,marginBottom:2}}>Charges</div>

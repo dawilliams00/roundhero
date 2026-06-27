@@ -142,11 +142,24 @@ export function CharacterProvider({ children }) {
     await saveTrackerData({ ...character.tracker_data, active_effects: effects.filter(e => e !== name) });
   }, [character, saveTrackerData]);
 
+  const addCondition = useCallback(async (name) => {
+    if (!character) return;
+    const conditions = character.tracker_data.conditions || [];
+    if (conditions.includes(name)) return;
+    await saveTrackerData({ ...character.tracker_data, conditions: [...conditions, name] });
+  }, [character, saveTrackerData]);
+
+  const removeCondition = useCallback(async (name) => {
+    if (!character) return;
+    const conditions = character.tracker_data.conditions || [];
+    await saveTrackerData({ ...character.tracker_data, conditions: conditions.filter(c => c !== name) });
+  }, [character, saveTrackerData]);
+
   return (
     <CharacterContext.Provider value={{
       character, characters, loading, turnUsed, setTurnUsed, resetTurn,
       fetchCharacters, loadCharacter, updateCharacter,
-      useFeature, useSlot, restoreSlot, doRest, saveTrackerData, saveSpellData, importCharacter, resyncCharacter, deleteCharacter, useItemCharge, addActiveEffect, removeActiveEffect, setCharacter,
+      useFeature, useSlot, restoreSlot, doRest, saveTrackerData, saveSpellData, importCharacter, resyncCharacter, deleteCharacter, useItemCharge, addActiveEffect, removeActiveEffect, addCondition, removeCondition, setCharacter,
     }}>
       {children}
     </CharacterContext.Provider>

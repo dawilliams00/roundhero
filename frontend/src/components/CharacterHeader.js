@@ -8,6 +8,7 @@ import HPModal from './HPModal';
 import RestModal from './RestModal';
 import RestSummaryModal from './RestSummaryModal';
 import SettingsModal from './SettingsModal';
+import ConditionsModal from './ConditionsModal';
 
 function EditableStat({ label, value, onSave, color, title }) {
   const [editing, setEditing] = useState(false);
@@ -70,6 +71,33 @@ function AbilityBox({ abbr, score, baseScore }) {
       <div className="stat-label" style={{marginTop:0,marginBottom:2}}>{abbr}</div>
       <div className="stat-value" style={{color: boosted ? 'var(--accent-light)' : undefined}}>{score}</div>
       <div className="stat-sub">{modStr(score)}</div>
+    </div>
+  );
+}
+
+function EffectAdder({ onAdd }) {
+  const [open, setOpen] = useState(false);
+  const [val, setVal]   = useState('');
+  const submit = () => {
+    if (val.trim()) onAdd(val.trim());
+    setVal('');
+    setOpen(false);
+  };
+  return (
+    <div style={{position:'relative'}}>
+      <div className="stat-box" onClick={() => setOpen(o => !o)} style={{cursor:'pointer'}}>
+        <div className="stat-value" style={{color:'var(--accent-light)'}}>+</div>
+        <div className="stat-label">Effect</div>
+      </div>
+      {open && (
+        <div style={{position:'absolute',left:0,top:'100%',marginTop:6,background:'var(--bg-card)',border:'1px solid var(--accent-light)',borderRadius:'var(--radius-md)',padding:10,zIndex:30,width:200,boxShadow:'var(--shadow)'}} onClick={e=>e.stopPropagation()}>
+          <input autoFocus value={val} onChange={e=>setVal(e.target.value)} onKeyDown={e=>e.key==='Enter'&&submit()} placeholder="e.g. Hasted" style={{width:'100%',marginBottom:6}} />
+          <div style={{display:'flex',gap:6}}>
+            <button className="btn btn-secondary btn-sm" style={{flex:1}} onClick={() => setOpen(false)}>Cancel</button>
+            <button className="btn btn-primary btn-sm" style={{flex:1}} onClick={submit}>Add</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -139,7 +167,7 @@ function CurrencyBox({ currency, onCommit }) {
 }
 
 export default function CharacterHeader({ onBack }) {
-  const { character, saveTrackerData, doRest } = useCharacter();
+  const { character, saveTrackerData, doRest, addActiveEffect, removeActiveEffect } = useCharacter();
   const [showSaves, setShowSaves]   = useState(false);
   const [showSkills, setShowSkills] = useState(false);
   const [showTraits, setShowTraits] = useState(false);
@@ -147,6 +175,7 @@ export default function CharacterHeader({ onBack }) {
   const [showRest, setShowRest]     = useState(false);
   const [restSummary, setRestSummary] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [showConditions, setShowConditions] = useState(false);
 
   if (!character) return null;
 
@@ -175,6 +204,11 @@ export default function CharacterHeader({ onBack }) {
   const ac     = baseAc + itemBonuses.ac_base;
   const init   = td?.initiative ?? dexMod;
   const insp   = !!td?.inspiration;
+  const exhaustion = td?.exhaustion || 0;
+  const activeEffects = td?.active_effects || [];
+  // Exhaustion has its own stepper below, so don't double-count it if it's ever
+  // also present as a legacy free-text condition string.
+  const conditions = (td?.conditions || []).filter(c => c !== 'Exhaustion');
   const traits = td?.traits || { resistances: [], immunities: [], vulnerabilities: [], advantages: [], disadvantages: [] };
   const traitName = t => (typeof t === 'string' ? t : t?.name) || '';
   const traitChips = [
@@ -268,6 +302,27 @@ export default function CharacterHeader({ onBack }) {
               </div>
             </div>
 
+            <div style={{display:'flex',gap:8,alignItems:'flex-start',flexWrap:'wrap',marginTop:8}}>
+              <PMStat
+                label="Exhaustion"
+                value={exhaustion}
+                color={exhaustion >= 5 ? 'var(--danger)' : exhaustion >= 3 ? 'var(--warning)' : undefined}
+                onAdjust={d => saveTrackerData({ ...td, exhaustion: Math.max(0, Math.min(6, exhaustion + d)) })}
+              />
+
+              {activeEffects.map(e => (
+                <div key={e} onClick={() => removeActiveEffect(e)} title="Click to remove" style={{cursor:'pointer',background:'rgba(124,77,255,0.15)',border:'1px solid var(--accent-light)',color:'var(--accent-light)',borderRadius:12,padding:'3px 10px',fontSize:12,alignSelf:'center'}}>
+                  {e} ×
+                </div>
+              ))}
+              <EffectAdder onAdd={addActiveEffect} />
+
+              <div className="stat-box" onClick={() => setShowConditions(true)} style={{cursor:'pointer'}}>
+                <div className="stat-value" style={{color: conditions.length > 0 ? 'var(--danger)' : 'var(--accent-light)'}}>{conditions.length}</div>
+                <div className="stat-label">Conditions</div>
+              </div>
+            </div>
+
             {traitChips.length > 0 && (
               <div style={{display:'flex',gap:5,flexWrap:'wrap',marginTop:8}}>
                 {traitChips.map(({t,d,c}, i) => (
@@ -310,6 +365,7 @@ export default function CharacterHeader({ onBack }) {
         <RestSummaryModal summary={restSummary.summary} restType={restSummary.restType} onClose={() => setRestSummary(null)} />
       )}
       {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
+      {showConditions && <ConditionsModal onClose={() => setShowConditions(false)} />}
     </>
   );
 }

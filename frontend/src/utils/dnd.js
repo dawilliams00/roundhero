@@ -123,19 +123,27 @@ export const parseClassLevels = (classNameRaw) => {
   }).filter(Boolean);
 };
 
+// Whether an item's buffs are currently "live" - worn/wielded, and attuned if
+// attunement is required. Shared by every buff consumer so the gating rule can't
+// drift between them (Staff of the Magi/Robe of the Archmagi being gated wrong
+// was a real bug here once).
+export const isItemActive = (item) => {
+  if (!item?.equipped) return false;
+  if (item.attunement && !item.attuned) return false;
+  return true;
+};
+
 // Aggregates "while equipped (and attuned, if required)" stat buffs across inventory
-// items - the same gating rule for all of them (Staff of the Magi/Robe of the Archmagi
-// only grant their bonus while held/attuned per RAW). ADD-mode buffs on recognized stats
-// sum together; SET-mode buffs on an ability score (e.g. Headband of Intellect) track the
-// highest value offered, since RAW ability-score-setting items don't stack and have no
-// effect if your score is already higher.
+// items. ADD-mode buffs on recognized stats sum together; SET-mode buffs on an ability
+// score (e.g. Headband of Intellect) track the highest value offered, since RAW
+// ability-score-setting items don't stack and have no effect if your score is already
+// higher.
 const ADDITIVE_BUFF_STATS = ['ac_base', 'saving_throw_modifier', 'spell_attack_modifier', 'spell_dc_modifier'];
 export const computeItemBonuses = (items) => {
   const bonuses = { ac_base: 0, saving_throw_modifier: 0, spell_attack_modifier: 0, spell_dc_modifier: 0 };
   const abilityOverrides = {};
   (items || []).forEach(it => {
-    if (!it.equipped) return;
-    if (it.attunement && !it.attuned) return;
+    if (!isItemActive(it)) return;
     (it.buffs || []).forEach(b => {
       if (!b || !b.stat) return;
       if (b.mode === 'set' && ABILITY_KEYS.includes(b.stat)) {
@@ -146,6 +154,35 @@ export const computeItemBonuses = (items) => {
     });
   });
   return { ...bonuses, abilityOverrides };
+};
+
+// Weapon attack/damage buffs (e.g. a +1 longsword) are intrinsically tied to that
+// one weapon - they must NOT pool across a character's other weapons the way
+// computeItemBonuses pools AC/saves/spell bonuses character-wide.
+export const weaponItemBonus = (weapon) => {
+  const bonus = { attack: 0, damage: 0 };
+  if (!isItemActive(weapon)) return bonus;
+  (weapon.buffs || []).forEach(b => {
+    if (b?.stat === 'weapon_attack_modifier') bonus.attack += b.value || 0;
+    if (b?.stat === 'weapon_damage_modifier') bonus.damage += b.value || 0;
+  });
+  return bonus;
+};
+
+// Finesse picks the better of STR/DEX; ranged weapons use DEX; everything else
+// (including melee weapons with Thrown) uses STR, per RAW.
+export const weaponAbilityMod = (weapon, effAb) => {
+  const props = weapon?.properties || [];
+  if (props.includes('Finesse')) return Math.max(modifier(effAb?.STR ?? 10), modifier(effAb?.DEX ?? 10));
+  if (weapon?.weapon_range === 'Ranged') return modifier(effAb?.DEX ?? 10);
+  return modifier(effAb?.STR ?? 10);
+};
+
+// Which damage dice apply right now - the Versatile two-handed die if the player
+// has it gripped two-handed, otherwise the weapon's base damage.
+export const weaponDamageDice = (weapon) => {
+  if (weapon?.two_handed && weapon?.two_handed_damage) return weapon.two_handed_damage;
+  return { damage_dice: weapon?.damage_dice, damage_type: weapon?.damage_type };
 };
 
 const BUFF_STAT_LABELS = {
