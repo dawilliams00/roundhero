@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function ItemDetailModal({ item, onEdit, onClose }) {
+export default function ItemDetailModal({ item, onEdit, onRefresh, onClose }) {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal modal-flex modal-lg" onClick={e => e.stopPropagation()}>
@@ -53,6 +53,7 @@ export default function ItemDetailModal({ item, onEdit, onClose }) {
         </div>
         <div className="modal-footer">
           <button className="btn btn-secondary" onClick={onEdit}>Edit</button>
+          {onRefresh && <button className="btn btn-secondary" onClick={onRefresh} title="Pull latest description/charges/buffs from the database">🔄 Refresh</button>}
           <button className="btn btn-primary" onClick={onClose}>Close</button>
         </div>
       </div>

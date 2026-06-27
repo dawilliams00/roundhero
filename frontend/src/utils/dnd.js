@@ -119,11 +119,13 @@ export const parseClassLevels = (classNameRaw) => {
   }).filter(Boolean);
 };
 
-// Sum of any equipped items' spell attack/DC buffs (e.g. a +1 staff/grimoire).
+// Sum of any equipped (and, where required, attuned) items' spell attack/DC buffs
+// (e.g. Staff of the Magi, Robe of the Archmagi).
 export const itemSpellBonuses = (items) => {
   let atk = 0, dc = 0;
   (items || []).forEach(it => {
     if (!it.equipped) return;
+    if (it.attunement && !it.attuned) return;
     (it.buffs || []).forEach(b => {
       if (b.stat === 'spell_attack_modifier') atk += b.value || 0;
       if (b.stat === 'spell_dc_modifier') dc += b.value || 0;

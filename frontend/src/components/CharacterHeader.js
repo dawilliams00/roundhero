@@ -80,19 +80,48 @@ const COIN_TYPES = [
   { key: 'cp', abbr: 'CP', color: '#C58444' },
 ];
 
-function CoinInput({ coin, value, onCommit }) {
-  const [val, setVal] = useState(value);
+function CoinCalculator({ coin, value, onApply, onClose }) {
+  const [digits, setDigits] = useState('');
+  const [mode, setMode] = useState('add');
+  const press = (d) => setDigits(prev => (prev + d).slice(0, 7));
+  const n = parseInt(digits) || 0;
+  const apply = () => {
+    onApply(Math.max(0, value + (mode === 'add' ? n : -n)));
+    onClose();
+  };
   return (
-    <div style={{display:'flex',alignItems:'center',gap:6}}>
+    <div style={{position:'absolute',right:'100%',top:0,marginRight:8,background:'var(--bg-card)',border:`1px solid ${coin.color}`,borderRadius:'var(--radius-md)',padding:10,zIndex:30,width:150,boxShadow:'var(--shadow)'}} onClick={e=>e.stopPropagation()}>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:6}}>
+        <span style={{color:coin.color,fontWeight:700,fontSize:12}}>{coin.abbr}: {value}</span>
+        <span onClick={onClose} style={{cursor:'pointer',color:'var(--text-dim)',fontSize:14}}>✕</span>
+      </div>
+      <div style={{textAlign:'center',fontSize:18,fontWeight:700,color: mode==='add' ? 'var(--success)' : 'var(--danger)',marginBottom:6}}>{mode==='add'?'+':'−'}{digits || 0}</div>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:4,marginBottom:6}}>
+        {['1','2','3','4','5','6','7','8','9'].map(d => (
+          <button key={d} onClick={() => press(d)} style={{padding:'8px 0',background:'var(--bg-hover)',color:'var(--text-primary)',borderRadius:4}}>{d}</button>
+        ))}
+        <button onClick={() => setDigits('')} style={{padding:'8px 0',background:'var(--bg-hover)',color:'var(--text-dim)',borderRadius:4}}>C</button>
+        <button onClick={() => press('0')} style={{padding:'8px 0',background:'var(--bg-hover)',color:'var(--text-primary)',borderRadius:4}}>0</button>
+        <button onClick={() => setDigits(d => d.slice(0,-1))} style={{padding:'8px 0',background:'var(--bg-hover)',color:'var(--text-dim)',borderRadius:4}}>⌫</button>
+      </div>
+      <div style={{display:'flex',gap:4,marginBottom:6}}>
+        <button onClick={() => setMode('add')} style={{flex:1,padding:'6px 0',background: mode==='add' ? 'var(--success)' : 'var(--bg-hover)',color:'#fff',borderRadius:4,fontWeight:700}}>+</button>
+        <button onClick={() => setMode('subtract')} style={{flex:1,padding:'6px 0',background: mode==='subtract' ? 'var(--danger)' : 'var(--bg-hover)',color:'#fff',borderRadius:4,fontWeight:700}}>−</button>
+      </div>
+      <button className="btn btn-primary btn-sm" style={{width:'100%'}} onClick={apply}>Apply</button>
+    </div>
+  );
+}
+
+function CoinInput({ coin, value, onCommit }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div style={{position:'relative',display:'flex',alignItems:'center',gap:6}}>
       <span style={{color: coin.color, fontWeight:700, fontSize:11, minWidth:20}}>{coin.abbr}</span>
-      <input
-        value={val}
-        onChange={e => setVal(e.target.value)}
-        onFocus={() => setVal(value)}
-        onBlur={() => { const n = parseInt(val)||0; setVal(n); if (n !== value) onCommit(n); }}
-        onKeyDown={e => e.key === 'Enter' && e.target.blur()}
-        style={{width:80,textAlign:'right',padding:'2px 8px',fontSize:13,fontWeight:600,border:`1px solid ${coin.color}`,borderRadius:'var(--radius-sm)',background:'var(--bg-card)',color: coin.color}}
-      />
+      <div onClick={() => setOpen(true)} style={{width:80,textAlign:'right',padding:'2px 8px',fontSize:13,fontWeight:600,border:`1px solid ${coin.color}`,borderRadius:'var(--radius-sm)',background:'var(--bg-card)',color: coin.color,cursor:'pointer'}}>
+        {value}
+      </div>
+      {open && <CoinCalculator coin={coin} value={value} onApply={onCommit} onClose={() => setOpen(false)} />}
     </div>
   );
 }
@@ -127,6 +156,8 @@ export default function CharacterHeader({ onBack }) {
   const invItems  = inventory.items || [];
   const attunedCount = invItems.filter(it => it.attunement && it.attuned).length;
   const attunableCount = invItems.filter(it => it.attunement).length;
+  const hasUnattunedEligible = invItems.some(it => it.attunement && !it.attuned);
+  const attuneWarn = attunedCount > 3 || (attunedCount < 3 && hasUnattunedEligible);
   const hd = td?.hit_dice;
   const spellBlocks = getSpellcastingBlocks(class_name, ab, level, invItems);
   const prof   = profBonus(level);
@@ -170,85 +201,89 @@ export default function CharacterHeader({ onBack }) {
   return (
     <>
       <div style={{background:'var(--bg-secondary)',borderBottom:'1px solid var(--border)',padding:'8px 12px',flexShrink:0}}>
-        <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:8}}>
-          <button onClick={onBack} style={{background:'none',color:'var(--text-dim)',fontSize:18,padding:'0 4px'}}>←</button>
-          <div style={{flex:1}}>
-            <div style={{fontFamily:"'Cinzel',serif",color:'var(--accent-light)',fontSize:16,lineHeight:1.2}}>{name}</div>
-            <div style={{color:'var(--text-dim)',fontSize:11}}>L{level} {race} {class_name}</div>
-          </div>
-        </div>
-
-        <div style={{display:'flex',gap:8,alignItems:'flex-start',flexWrap:'wrap'}}>
-          <div style={{display:'flex',flexDirection:'column',gap:4}}>
-            <PMStat label="HP" value={`${curHp}/${maxHp}`} color={hpCol} onAdjust={adjustHp} onClick={() => setShowHP(true)} />
-            {spellBlocks.map(block => <SpellcastBox key={block.className} block={block} />)}
-          </div>
-          {tempHp > 0 && <PMStat label="Temp HP" value={tempHp} color={hpCol} onAdjust={adjustTempHp} />}
-
-          <EditableStat label="AC" value={ac} onSave={setAc} />
-          <EditableStat label="INIT" value={init} onSave={setInit} />
-          <div className="stat-box">
-            <div className="stat-value">+{prof}</div>
-            <div className="stat-label">Prof</div>
-          </div>
-          <div onClick={toggleInspiration} className="stat-box" style={{cursor:'pointer'}}>
-            <div style={{fontSize:18,lineHeight:1,filter: insp ? 'none' : 'grayscale(1) opacity(0.4)'}}>⭐</div>
-            <div className="stat-label">Insp</div>
-          </div>
-
-          {hd && hd.total > 0 && (
-            <div className="stat-box">
-              <div className="stat-value" style={{fontSize:14}}>{hd.current}/{hd.total}</div>
-              <div className="stat-label">d{hd.die_size} HD</div>
+        <div style={{display:'flex',gap:12,alignItems:'flex-start'}}>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:8}}>
+              <button onClick={onBack} style={{background:'none',color:'var(--text-dim)',fontSize:18,padding:'0 4px'}}>←</button>
+              <div>
+                <div style={{fontFamily:"'Cinzel',serif",color:'var(--accent-light)',fontSize:16,lineHeight:1.2}}>{name}</div>
+                <div style={{color:'var(--text-dim)',fontSize:11}}>L{level} {race} {class_name}</div>
+              </div>
             </div>
-          )}
 
-          {attunableCount > 0 && (
-            <div className="stat-box">
-              <div className="stat-value" style={{color: attunedCount > 3 ? 'var(--danger)' : 'var(--accent-light)'}}>{attunedCount}/3</div>
-              <div className="stat-label">Attune</div>
-            </div>
-          )}
+            <div style={{display:'flex',gap:8,alignItems:'flex-start',flexWrap:'wrap'}}>
+              <div style={{display:'flex',flexDirection:'column',gap:4}}>
+                <PMStat label="HP" value={`${curHp}/${maxHp}`} color={hpCol} onAdjust={adjustHp} onClick={() => setShowHP(true)} />
+                {spellBlocks.map(block => <SpellcastBox key={block.className} block={block} />)}
+              </div>
+              {tempHp > 0 && <PMStat label="Temp HP" value={tempHp} color={hpCol} onAdjust={adjustTempHp} />}
 
-          {slotLevels.length > 0 && (
-            <div style={{display:'flex',gap:4,flexWrap:'wrap',alignItems:'center'}}>
-              {slotLevels.map(([lvl, slot]) => (
-                <div key={lvl} style={{display:'flex',gap:2,alignItems:'center'}}>
-                  <span style={{color:'var(--text-dim)',fontSize:9}}>L{lvl}</span>
-                  {Array.from({length: slot.max}).map((_, i) => (
-                    <div key={i} style={{width:8,height:8,borderRadius:'50%',
-                      background: i < slot.current ? `var(--slot-${lvl})` : 'var(--border)',
-                      border: `1px solid var(--slot-${lvl})`}}/>
+              <EditableStat label="AC" value={ac} onSave={setAc} />
+              <EditableStat label="INIT" value={init} onSave={setInit} />
+              <div className="stat-box">
+                <div className="stat-value">+{prof}</div>
+                <div className="stat-label">Prof</div>
+              </div>
+              <div onClick={toggleInspiration} className="stat-box" style={{cursor:'pointer'}}>
+                <div style={{fontSize:18,lineHeight:1,filter: insp ? 'none' : 'grayscale(1) opacity(0.4)'}}>⭐</div>
+                <div className="stat-label">Insp</div>
+              </div>
+
+              {attunableCount > 0 && (
+                <div className="stat-box">
+                  <div className="stat-value" style={{color: attuneWarn ? 'var(--danger)' : 'var(--accent-light)'}}>{attunedCount}/3</div>
+                  <div className="stat-label">Attune</div>
+                </div>
+              )}
+
+              <div style={{display:'flex',flexDirection:'column',gap:4}}>
+                {slotLevels.length > 0 && (
+                  <div style={{display:'flex',gap:4,flexWrap:'wrap',alignItems:'center'}}>
+                    {slotLevels.map(([lvl, slot]) => (
+                      <div key={lvl} style={{display:'flex',gap:2,alignItems:'center'}}>
+                        <span style={{color:'var(--text-dim)',fontSize:9}}>L{lvl}</span>
+                        {Array.from({length: slot.max}).map((_, i) => (
+                          <div key={i} style={{width:8,height:8,borderRadius:'50%',
+                            background: i < slot.current ? `var(--slot-${lvl})` : 'var(--border)',
+                            border: `1px solid var(--slot-${lvl})`}}/>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div style={{display:'flex',gap:6}}>
+                  {ABILITY_KEYS.map(k => (
+                    <AbilityBox key={k} abbr={k} score={ab?.[k]||10} />
                   ))}
                 </div>
-              ))}
+              </div>
             </div>
-          )}
 
-          <div style={{display:'flex',gap:6}}>
-            {ABILITY_KEYS.map(k => (
-              <AbilityBox key={k} abbr={k} score={ab?.[k]||10} />
-            ))}
+            {traitChips.length > 0 && (
+              <div style={{display:'flex',gap:5,flexWrap:'wrap',marginTop:8}}>
+                {traitChips.map(({t,d,c}, i) => (
+                  <div key={t+i} title={d || undefined} style={{border:`1px solid ${c}`,color:c,borderRadius:10,padding:'1px 7px',fontSize:10}}>{t}</div>
+                ))}
+              </div>
+            )}
           </div>
 
-          <div style={{display:'flex',gap:10,marginLeft:'auto'}}>
+          <div style={{display:'flex',gap:10,flexShrink:0}}>
             <CurrencyBox currency={currency} onCommit={setCurrencyCoin} />
             <div style={{display:'flex',flexDirection:'column',gap:4}}>
               <button className="btn btn-secondary btn-sm" onClick={() => setShowSaves(true)}>SAVES</button>
               <button className="btn btn-secondary btn-sm" onClick={() => setShowSkills(true)}>SKILLS</button>
               <button className="btn btn-secondary btn-sm" onClick={() => setShowTraits(true)}>TRAITS</button>
               <button className="btn btn-secondary btn-sm" onClick={() => setShowRest(true)}>🌙 REST</button>
+              {hd && hd.total > 0 && (
+                <div className="stat-box">
+                  <div className="stat-value" style={{fontSize:14}}>{hd.current}/{hd.total}</div>
+                  <div className="stat-label">d{hd.die_size} HD</div>
+                </div>
+              )}
             </div>
           </div>
         </div>
-
-        {traitChips.length > 0 && (
-          <div style={{display:'flex',gap:5,flexWrap:'wrap',marginTop:8}}>
-            {traitChips.map(({t,d,c}, i) => (
-              <div key={t+i} title={d || undefined} style={{border:`1px solid ${c}`,color:c,borderRadius:10,padding:'1px 7px',fontSize:10}}>{t}</div>
-            ))}
-          </div>
-        )}
       </div>
 
       {showSaves  && <SavesModal  onClose={() => setShowSaves(false)}  />}

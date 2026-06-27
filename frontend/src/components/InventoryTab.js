@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
+import api from '../utils/api';
 import AddItemModal from './AddItemModal';
 import ItemSpellsModal from './ItemSpellsModal';
 import ItemBrowserModal from './ItemBrowserModal';
@@ -23,6 +24,30 @@ export default function InventoryTab() {
   const addItem = (item) => save({ ...inv, items: [...items, item] });
   const updateItem = (idx, item) => save({ ...inv, items: items.map((it,i) => i===idx ? item : it) });
   const removeItem = (idx) => save({ ...inv, items: items.filter((_,i) => i!==idx) });
+
+  // Items are copied from the master DB at add-time, so a later fix to the reference
+  // data (description, charges, buffs) doesn't reach characters who already have the
+  // item without this - pulls in the static fields, leaves quantity/equipped/attuned/
+  // current-charges alone.
+  const refreshItem = async (idx) => {
+    const item = items[idx];
+    const r = await api.get('/content/items');
+    const master = r.data.find(it => it.name.toLowerCase() === item.name.toLowerCase());
+    if (!master) {
+      window.alert(`No matching item named "${item.name}" found in the database.`);
+      return;
+    }
+    updateItem(idx, {
+      ...item,
+      description: master.description || item.description,
+      weight: master.weight ?? item.weight,
+      rarity: master.rarity || item.rarity,
+      buffs: master.buffs ? master.buffs.map(b => ({...b})) : item.buffs,
+      granted_spells: (master.granted_spells || []).map(s => ({...s})),
+      charges: master.charges ? { ...master.charges, current: Math.min(item.charges?.current ?? master.charges.max, master.charges.max) } : item.charges,
+    });
+    window.alert(`${item.name} refreshed from the database.`);
+  };
 
   const castItemSpell = (idx, chargeCost) => {
     const item = items[idx];
@@ -91,6 +116,7 @@ export default function InventoryTab() {
         <ItemDetailModal
           item={items[viewing]}
           onEdit={() => { setEditing(viewing); setViewing(null); }}
+          onRefresh={() => refreshItem(viewing)}
           onClose={() => setViewing(null)}
         />
       )}
