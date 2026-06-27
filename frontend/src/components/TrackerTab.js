@@ -4,6 +4,7 @@ import AbilityDetailModal from './AbilityDetailModal';
 import ConfirmModal from './ConfirmModal';
 import CustomAbilityModal from './CustomAbilityModal';
 import FeatBrowserModal from './FeatBrowserModal';
+import InfoModal from './InfoModal';
 
 export default function TrackerTab() {
   const { character, saveTrackerData, updateCharacter, addActiveEffect, removeActiveEffect } = useCharacter();
@@ -12,6 +13,7 @@ export default function TrackerTab() {
   const [confirmRemove, setConfirmRemove] = useState(null);
   const [showCustom, setCustom] = useState(false);
   const [showFeatBrowser, setShowFeatBrowser] = useState(false);
+  const [infoMessage, setInfoMessage] = useState(null);
 
   if (!character) return null;
   const td       = character.tracker_data || {};
@@ -50,6 +52,14 @@ export default function TrackerTab() {
 
   const addFeatFromLibrary = async (feat) => {
     const key = feat.name;
+    // Guards against the exact "doubled Cartomancer" bug - adding a feat that's already
+    // on this character (by tracker_key) used to just push a second ae_data entry with
+    // nothing to stop it, since features is keyed by name but ae_data's sections are arrays.
+    const alreadyHas = Object.values(ae).some(arr => (arr||[]).some(a => a.tracker_key === key));
+    if (alreadyHas) {
+      setInfoMessage(`"${feat.name}" is already on this character.`);
+      return;
+    }
     const newAbility = { name: feat.name, source: feat.source, source_type: 'custom', cost_type: feat.cost_type, tracker_key: key, description: feat.description };
     const newAe = { ...ae };
     if (!newAe[feat.section]) newAe[feat.section] = [];
@@ -85,7 +95,6 @@ export default function TrackerTab() {
   const featList  = Object.entries(features).filter(([,v]) => v.max > 0);
   const infoList  = Object.entries(features).filter(([,v]) => v.max === 0);
   const chargeList = Object.entries(charges);
-  const hd = td.hit_dice;
 
   return (
     <div style={{flex:1,overflowY:'auto',padding:12}}>
@@ -93,12 +102,6 @@ export default function TrackerTab() {
         <button className="btn btn-secondary btn-sm" onClick={() => setShowFeatBrowser(true)}>Browse Feats</button>
         <button className="btn btn-primary btn-sm" onClick={() => setCustom(true)}>+ Custom</button>
       </div>
-      {hd && hd.total > 0 && (
-        <div className="card" style={{marginBottom:12,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-          <div style={{color:'var(--text-secondary)',fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:1}}>Hit Dice</div>
-          <div style={{color:'var(--accent-light)',fontWeight:700,fontSize:15}}>{hd.current}/{hd.total} <span style={{color:'var(--text-dim)',fontWeight:400,fontSize:12}}>(d{hd.die_size})</span></div>
-        </div>
-      )}
 
       {attunableItems.length > 0 && (
         <div className="card" style={{marginBottom:12}}>
@@ -204,6 +207,7 @@ export default function TrackerTab() {
       {detail && <AbilityDetailModal ability={detail} onClose={() => setDetail(null)} />}
       {showCustom && <CustomAbilityModal onClose={() => setCustom(false)} />}
       {showFeatBrowser && <FeatBrowserModal onAdd={addFeatFromLibrary} onClose={() => setShowFeatBrowser(false)} />}
+      {infoMessage && <InfoModal title="Feats" message={infoMessage} onClose={() => setInfoMessage(null)} />}
       {confirmRemove && (
         <ConfirmModal
           title="Remove Ability?"

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
+import NumberPadPopover from './NumberPadPopover';
 
 function Stepper({ label, value, onChange, step = 1 }) {
   return (
@@ -22,24 +23,24 @@ export default function HPModal({ onClose }) {
   const [current, setCurrent]   = useState(hp.current ?? 0);
   const [maxOverride, setMaxOverride] = useState(hp.max_override || 0);
   const [temp, setTemp]         = useState(hp.temp || 0);
-  const [dmgAmt, setDmgAmt]     = useState(1);
-  const [healAmt, setHealAmt]   = useState(1);
+  const [showHpCalc, setShowHpCalc] = useState(false);
 
   const calculatedMax = hp.max ?? 0;
   const effectiveMax = maxOverride > 0 ? maxOverride : calculatedMax;
 
-  const applyDamage = () => {
-    let dmg = dmgAmt;
-    const absorbed = Math.min(temp, dmg);
-    const newTemp = temp - absorbed;
-    dmg -= absorbed;
-    const newCurrent = Math.max(0, current - dmg);
-    setTemp(newTemp);
-    setCurrent(newCurrent);
-  };
-
-  const applyHeal = () => {
-    setCurrent(Math.min(effectiveMax, current + healAmt));
+  // A negative delta (damage) drains Temp HP first, same rule the old separate "Take
+  // Damage" button used - folding it into the calculator's subtract mode means that
+  // button isn't needed anymore. A positive delta (heal) just caps at the effective max.
+  const applyHpDelta = (delta) => {
+    if (delta < 0) {
+      let dmg = -delta;
+      const absorbed = Math.min(temp, dmg);
+      setTemp(t => t - absorbed);
+      dmg -= absorbed;
+      setCurrent(c => Math.max(0, c - dmg));
+    } else {
+      setCurrent(c => Math.min(effectiveMax, c + delta));
+    }
   };
 
   const save = async () => {
@@ -56,7 +57,19 @@ export default function HPModal({ onClose }) {
         <h2>D&D 5e HP Management</h2>
 
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,marginBottom:16}}>
-          <Stepper label="Current HP" value={current} onChange={setCurrent} />
+          <div style={{textAlign:'center',position:'relative'}}>
+            <div style={{color:'var(--text-dim)',fontSize:11,marginBottom:6}}>Current HP</div>
+            <div onClick={() => setShowHpCalc(true)} style={{cursor:'pointer',fontSize:22,fontWeight:700,color:'var(--accent-light)',padding:'3px 0'}}>
+              {current}
+            </div>
+            {showHpCalc && (
+              <NumberPadPopover
+                label="Current HP" value={current} color="var(--accent-light)"
+                onApply={applyHpDelta}
+                onClose={() => setShowHpCalc(false)}
+              />
+            )}
+          </div>
           <div style={{textAlign:'center'}}>
             <div style={{color:'var(--text-dim)',fontSize:11,marginBottom:6}}>Max HP (Calculated)</div>
             <div style={{fontSize:18,fontWeight:700,color:'var(--text-secondary)',padding:'3px 0'}}>{calculatedMax}</div>
@@ -65,31 +78,11 @@ export default function HPModal({ onClose }) {
           <Stepper label="Temp HP (Buffer)" value={temp} onChange={v => setTemp(Math.max(0, v))} />
         </div>
 
-        <div style={{color:'var(--accent-light)',fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:1,marginBottom:8}}>
-          Damage &amp; Healing (Temp HP absorbed first)
-        </div>
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,marginBottom:16}}>
-          <div>
-            <div style={{color:'var(--text-dim)',fontSize:11,marginBottom:6}}>Take Damage</div>
-            <div style={{display:'flex',gap:6}}>
-              <input type="number" min={0} value={dmgAmt} onChange={e=>setDmgAmt(parseInt(e.target.value)||0)} style={{width:64}} />
-              <button className="btn btn-danger btn-sm" onClick={applyDamage}>Apply</button>
-            </div>
-          </div>
-          <div>
-            <div style={{color:'var(--text-dim)',fontSize:11,marginBottom:6}}>Heal HP</div>
-            <div style={{display:'flex',gap:6}}>
-              <input type="number" min={0} value={healAmt} onChange={e=>setHealAmt(parseInt(e.target.value)||0)} style={{width:64}} />
-              <button className="btn btn-success btn-sm" onClick={applyHeal}>Apply</button>
-            </div>
-          </div>
-        </div>
-
         <div style={{background:'var(--bg-primary)',borderRadius:'var(--radius-sm)',padding:10,marginBottom:16}}>
           <div style={{color:'var(--text-dim)',fontSize:11,fontWeight:600,marginBottom:4}}>D&amp;D 5e HP Rules</div>
           <div style={{color:'var(--text-dim)',fontSize:11,lineHeight:1.6}}>
             • Max Override replaces calculated Max HP when set (spells like Aid)<br/>
-            • Temp HP absorbs damage first, doesn't increase your max<br/>
+            • Click Current HP to apply damage/healing - Temp HP absorbs damage first, doesn't increase your max<br/>
             • Healing restores Current HP up to effective maximum<br/>
             • Long rest clears Temp HP and restores Current to max
           </div>

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useCharacter } from '../context/CharacterContext';
+import api from '../utils/api';
+import RulesetBrowserModal from './RulesetBrowserModal';
 
 const RULESETS = [
   { value: '2014', label: "5e (2014 / PHB)" },
@@ -20,6 +22,7 @@ export default function SettingsModal({ onClose }) {
   // "worked". Buffering locally and saving once on blur avoids the race entirely.
   const [localName, setLocalName] = useState(exhaustionRules.name || '');
   const [localDesc, setLocalDesc] = useState(exhaustionRules.description || '');
+  const [showBrowser, setShowBrowser] = useState(false);
 
   useEffect(() => {
     setLocalName(exhaustionRules.name || '');
@@ -32,8 +35,27 @@ export default function SettingsModal({ onClose }) {
 
   const setRuleset = (value) => saveTrackerData({ ...td, settings: { ...settings, ruleset: value } });
   const setExhaustionRules = (patch) => saveTrackerData({ ...td, settings: { ...settings, exhaustion_rules: { ...exhaustionRules, ...patch } } });
-  const commitName = () => { if (localName !== (exhaustionRules.name || '')) setExhaustionRules({ name: localName }); };
-  const commitDesc = () => { if (localDesc !== (exhaustionRules.description || '')) setExhaustionRules({ description: localDesc }); };
+
+  // Keeps the shared ruleset library in sync with whatever this character has typed -
+  // upserted by name on the backend, so one player filling this in is automatically
+  // visible to everyone else searching the library, with no separate "publish" step.
+  const syncToLibrary = (name, description) => {
+    if (!name.trim()) return;
+    api.put('/content/rulesets', { name: name.trim(), description, ruleset_type: 'exhaustion' }).catch(() => {});
+  };
+  const commitName = () => {
+    if (localName !== (exhaustionRules.name || '')) setExhaustionRules({ name: localName });
+    syncToLibrary(localName, localDesc);
+  };
+  const commitDesc = () => {
+    if (localDesc !== (exhaustionRules.description || '')) setExhaustionRules({ description: localDesc });
+    syncToLibrary(localName, localDesc);
+  };
+  const importRuleset = (r) => {
+    setLocalName(r.name || '');
+    setLocalDesc(r.description || '');
+    setExhaustionRules({ mode: 'homebrew', name: r.name || '', description: r.description || '' });
+  };
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -61,6 +83,7 @@ export default function SettingsModal({ onClose }) {
           </div>
           {exhaustionRules.mode === 'homebrew' && (
             <>
+              <button className="btn btn-secondary btn-sm" style={{marginTop:8}} onClick={() => setShowBrowser(true)}>🔍 Browse Homebrew Rulesets</button>
               <input
                 value={localName}
                 onChange={e => setLocalName(e.target.value)}
@@ -76,6 +99,9 @@ export default function SettingsModal({ onClose }) {
                 rows={3}
                 style={{width:'100%',resize:'vertical',marginTop:6}}
               />
+              <div style={{color:'var(--text-dim)',fontSize:11,marginTop:4}}>
+                Typing a name + description here saves it to the shared library too — anyone else in your group can find and import it instead of retyping it.
+              </div>
             </>
           )}
           <div style={{color:'var(--text-dim)',fontSize:11,marginTop:6}}>
@@ -85,6 +111,9 @@ export default function SettingsModal({ onClose }) {
 
         <button className="btn btn-secondary" style={{width:'100%',marginTop:8}} onClick={onClose}>Close</button>
       </div>
+      {showBrowser && (
+        <RulesetBrowserModal rulesetType="exhaustion" onImport={importRuleset} onClose={() => setShowBrowser(false)} />
+      )}
     </div>
   );
 }

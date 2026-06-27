@@ -59,9 +59,9 @@ export default function SpellsTab() {
             <button className="btn btn-secondary btn-sm" onClick={() => setBrowsing(true)}>+ Add Spells</button>
             <button className="btn btn-primary btn-sm" onClick={() => setAddingCustom(true)}>+ Custom Spell</button>
           </div>
-          {slotLevels.length > 0 ? (
-            <div style={{display:'flex',flexWrap:'wrap',gap:12}}>
-              {slotLevels.map(([lvl,slot]) => (
+          <div style={{display:'flex',flexWrap:'wrap',gap:12,alignItems:'center'}}>
+            {slotLevels.length > 0 ? (
+              slotLevels.map(([lvl,slot]) => (
                 <div key={lvl} style={{textAlign:'center'}}>
                   <div style={{fontSize:10,color:'var(--text-dim)',marginBottom:4}}>L{lvl}</div>
                   <div style={{display:'flex',gap:3,alignItems:'center'}}>
@@ -72,16 +72,26 @@ export default function SpellsTab() {
                       style={{marginLeft:4,padding:'1px 5px',borderRadius:8,background:'var(--bg-hover)',color:'var(--text-dim)',border:'none',fontSize:11,opacity: slot.current>=slot.max ? 0.4 : 1}}>↺</button>
                   </div>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div style={{color:'var(--text-dim)',fontSize:12}}>No spell slots for this character.</div>
-          )}
+              ))
+            ) : (
+              <div style={{color:'var(--text-dim)',fontSize:12}}>No spell slots for this character.</div>
+            )}
+            {knownSpells.length > 0 && (
+              <div style={{display:'flex',gap:8,marginLeft:'auto',flexWrap:'wrap'}}>
+                <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search spells..." style={{minWidth:140}} />
+                <select value={filter} onChange={e=>setFilter(e.target.value)} style={{minWidth:80}}>
+                  <option value="all">All</option>
+                  <option value="cantrip">Cantrips</option>
+                  {levels.filter(l=>l>0).map(l=><option key={l} value={l}>Level {l}</option>)}
+                </select>
+              </div>
+            )}
+          </div>
         </div>
 
         {knownSpells.length > 0 && (
           <div className="card">
-            <div style={{display:'flex',gap:8,marginBottom:10,alignItems:'center',flexWrap:'wrap'}}>
+            <div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}>
               <span style={{color:'var(--text-dim)',fontSize:11}}>Loaded list:</span>
               <select
                 value={activeList || ''}
@@ -92,14 +102,6 @@ export default function SpellsTab() {
                 {Object.keys(spellLists).map(name => <option key={name} value={name}>{name}</option>)}
               </select>
               {maxPrepared != null && <span style={{color:'var(--text-dim)',fontSize:11}}>prepares up to {maxPrepared} (cantrips don't count)</span>}
-            </div>
-            <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
-              <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search spells..." style={{flex:1,minWidth:120}} />
-              <select value={filter} onChange={e=>setFilter(e.target.value)} style={{minWidth:80}}>
-                <option value="all">All</option>
-                <option value="cantrip">Cantrips</option>
-                {levels.filter(l=>l>0).map(l=><option key={l} value={l}>Level {l}</option>)}
-              </select>
             </div>
           </div>
         )}

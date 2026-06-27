@@ -76,6 +76,63 @@ def create_custom_feat():
     db.session.commit()
     return jsonify(entry.to_dict()), 201
 
+@content_bp.route("/feats/<int:custom_id>", methods=["PUT"])
+@jwt_required()
+def update_custom_feat(custom_id):
+    entry = CustomContent.query.filter_by(id=custom_id, content_type="feat").first()
+    if not entry:
+        return jsonify({"error": "Custom feat not found"}), 404
+    payload = request.get_json() or {}
+    if not (payload.get("name") or "").strip():
+        return jsonify({"error": "Feat name is required"}), 400
+    entry.name = payload["name"].strip()
+    entry.data = payload
+    db.session.commit()
+    return jsonify(entry.to_dict()), 200
+
+@content_bp.route("/feats/<int:custom_id>", methods=["DELETE"])
+@jwt_required()
+def delete_custom_feat(custom_id):
+    entry = CustomContent.query.filter_by(id=custom_id, content_type="feat").first()
+    if not entry:
+        return jsonify({"error": "Custom feat not found"}), 404
+    db.session.delete(entry)
+    db.session.commit()
+    return jsonify({"ok": True}), 200
+
+# Homebrew "rulesets" (currently just homebrew exhaustion-rules name+description, more
+# ruleset_types later) - shared the same way feats/spells are, so one player typing out a
+# homebrew exhaustion table doesn't mean everyone else at the table has to retype it.
+# Upserted by name rather than created fresh each time, since a player iterating on their
+# own ruleset's wording across sessions would otherwise spam near-duplicate library entries.
+@content_bp.route("/rulesets", methods=["GET"])
+@jwt_required()
+def list_rulesets():
+    ruleset_type = request.args.get("ruleset_type")
+    customs = [c.to_dict() for c in CustomContent.query.filter_by(content_type="ruleset").all()]
+    if ruleset_type:
+        customs = [c for c in customs if c.get("ruleset_type") == ruleset_type]
+    return jsonify(customs), 200
+
+@content_bp.route("/rulesets", methods=["PUT"])
+@jwt_required()
+def upsert_ruleset():
+    user_id = int(get_jwt_identity())
+    payload = request.get_json() or {}
+    name = (payload.get("name") or "").strip()
+    if not name:
+        return jsonify({"error": "Ruleset name is required"}), 400
+    entry = CustomContent.query.filter_by(content_type="ruleset").filter(
+        db.func.lower(CustomContent.name) == name.lower()
+    ).first()
+    if not entry:
+        entry = CustomContent(user_id=user_id, content_type="ruleset", name=name)
+        db.session.add(entry)
+    entry.name = name
+    entry.data = payload
+    db.session.commit()
+    return jsonify(entry.to_dict()), 200
+
 @content_bp.route("/items", methods=["GET"])
 def list_items():
     base = get_all_items()

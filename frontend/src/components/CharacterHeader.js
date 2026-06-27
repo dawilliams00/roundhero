@@ -11,6 +11,7 @@ import RestSummaryModal from './RestSummaryModal';
 import SettingsModal from './SettingsModal';
 import ConditionsModal from './ConditionsModal';
 import InfoModal from './InfoModal';
+import NumberPadPopover from './NumberPadPopover';
 
 function EditableStat({ label, value, onSave, color, title }) {
   const [editing, setEditing] = useState(false);
@@ -112,39 +113,6 @@ const COIN_TYPES = [
   { key: 'cp', abbr: 'CP', color: '#C58444' },
 ];
 
-function CoinCalculator({ coin, value, onApply, onClose }) {
-  const [digits, setDigits] = useState('');
-  const [mode, setMode] = useState('add');
-  const press = (d) => setDigits(prev => (prev + d).slice(0, 7));
-  const n = parseInt(digits) || 0;
-  const apply = () => {
-    onApply(Math.max(0, value + (mode === 'add' ? n : -n)));
-    onClose();
-  };
-  return (
-    <div style={{position:'absolute',right:'100%',top:0,marginRight:8,background:'var(--bg-card)',border:`1px solid ${coin.color}`,borderRadius:'var(--radius-md)',padding:10,zIndex:30,width:150,boxShadow:'var(--shadow)'}} onClick={e=>e.stopPropagation()}>
-      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:6}}>
-        <span style={{color:coin.color,fontWeight:700,fontSize:12}}>{coin.abbr}: {value}</span>
-        <span onClick={onClose} style={{cursor:'pointer',color:'var(--text-dim)',fontSize:14}}>✕</span>
-      </div>
-      <div style={{textAlign:'center',fontSize:18,fontWeight:700,color: mode==='add' ? 'var(--success)' : 'var(--danger)',marginBottom:6}}>{mode==='add'?'+':'−'}{digits || 0}</div>
-      <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:4,marginBottom:6}}>
-        {['1','2','3','4','5','6','7','8','9'].map(d => (
-          <button key={d} onClick={() => press(d)} style={{padding:'8px 0',background:'var(--bg-hover)',color:'var(--text-primary)',borderRadius:4}}>{d}</button>
-        ))}
-        <button onClick={() => setDigits('')} style={{padding:'8px 0',background:'var(--bg-hover)',color:'var(--text-dim)',borderRadius:4}}>C</button>
-        <button onClick={() => press('0')} style={{padding:'8px 0',background:'var(--bg-hover)',color:'var(--text-primary)',borderRadius:4}}>0</button>
-        <button onClick={() => setDigits(d => d.slice(0,-1))} style={{padding:'8px 0',background:'var(--bg-hover)',color:'var(--text-dim)',borderRadius:4}}>⌫</button>
-      </div>
-      <div style={{display:'flex',gap:4,marginBottom:6}}>
-        <button onClick={() => setMode('add')} style={{flex:1,padding:'6px 0',background: mode==='add' ? 'var(--success)' : 'var(--bg-hover)',color:'#fff',borderRadius:4,fontWeight:700}}>+</button>
-        <button onClick={() => setMode('subtract')} style={{flex:1,padding:'6px 0',background: mode==='subtract' ? 'var(--danger)' : 'var(--bg-hover)',color:'#fff',borderRadius:4,fontWeight:700}}>−</button>
-      </div>
-      <button className="btn btn-primary btn-sm" style={{width:'100%'}} onClick={apply}>Apply</button>
-    </div>
-  );
-}
-
 function CoinInput({ coin, value, onCommit }) {
   const [open, setOpen] = useState(false);
   return (
@@ -153,7 +121,13 @@ function CoinInput({ coin, value, onCommit }) {
       <div onClick={() => setOpen(true)} style={{width:80,textAlign:'right',padding:'2px 8px',fontSize:13,fontWeight:600,border:`1px solid ${coin.color}`,borderRadius:'var(--radius-sm)',background:'var(--bg-card)',color: coin.color,cursor:'pointer'}}>
         {value}
       </div>
-      {open && <CoinCalculator coin={coin} value={value} onApply={onCommit} onClose={() => setOpen(false)} />}
+      {open && (
+        <NumberPadPopover
+          label={coin.abbr} value={value} color={coin.color} position="left"
+          onApply={(delta) => onCommit(Math.max(0, value + delta))}
+          onClose={() => setOpen(false)}
+        />
+      )}
     </div>
   );
 }
@@ -330,7 +304,7 @@ export default function CharacterHeader({ onBack }) {
             )}
           </div>
 
-          <div style={{width:230,flexShrink:0,display:'flex',flexDirection:'column',gap:6,paddingTop:2}}>
+          <div style={{width:340,flexShrink:0,display:'flex',gap:14,flexWrap:'wrap',alignItems:'flex-start',paddingTop:2}}>
             <PMStat
               label="Exhaustion"
               value={exhaustion}
@@ -339,24 +313,30 @@ export default function CharacterHeader({ onBack }) {
               onClick={() => setShowExhaustionInfo(true)}
               title={exhaustionTitle}
             />
-            <div style={{display:'flex',gap:4,flexWrap:'wrap',alignItems:'center'}}>
-              {activeEffects.map(e => (
-                <div key={e} onClick={() => removeActiveEffect(e)} title="Click to remove" style={{cursor:'pointer',background:'rgba(124,77,255,0.15)',border:'1px solid var(--accent-light)',color:'var(--accent-light)',borderRadius:12,padding:'3px 10px',fontSize:12}}>
-                  {e} ×
-                </div>
-              ))}
-              <EffectAdder onAdd={addActiveEffect} />
+            <div style={{display:'flex',flexDirection:'column',gap:4,minWidth:100}}>
+              <div style={{color:'var(--text-dim)',fontSize:10,fontWeight:600,textTransform:'uppercase',letterSpacing:1}}>Effects</div>
+              <div style={{display:'flex',gap:4,flexWrap:'wrap',alignItems:'center'}}>
+                {activeEffects.map(e => (
+                  <div key={e} onClick={() => removeActiveEffect(e)} title="Click to remove" style={{cursor:'pointer',background:'rgba(124,77,255,0.15)',border:'1px solid var(--accent-light)',color:'var(--accent-light)',borderRadius:12,padding:'3px 10px',fontSize:12}}>
+                    {e} ×
+                  </div>
+                ))}
+                <EffectAdder onAdd={addActiveEffect} />
+              </div>
             </div>
-            <div style={{display:'flex',gap:4,flexWrap:'wrap',alignItems:'center'}}>
-              {conditions.map(c => (
-                <div key={c} style={{display:'flex',alignItems:'center',background:'rgba(230,57,70,0.15)',border:'1px solid var(--danger)',color:'var(--danger)',borderRadius:12,padding:'3px 4px 3px 10px',fontSize:12}}>
-                  <span onClick={() => setViewingCondition(c)} style={{cursor:'pointer'}}>{c}</span>
-                  <span onClick={() => removeCondition(c)} title="Remove" style={{cursor:'pointer',marginLeft:5,padding:'0 3px'}}>×</span>
+            <div style={{display:'flex',flexDirection:'column',gap:4,minWidth:100}}>
+              <div style={{color:'var(--text-dim)',fontSize:10,fontWeight:600,textTransform:'uppercase',letterSpacing:1}}>Conditions</div>
+              <div style={{display:'flex',gap:4,flexWrap:'wrap',alignItems:'center'}}>
+                {conditions.map(c => (
+                  <div key={c} style={{display:'flex',alignItems:'center',background:'rgba(230,57,70,0.15)',border:'1px solid var(--danger)',color:'var(--danger)',borderRadius:12,padding:'3px 4px 3px 10px',fontSize:12}}>
+                    <span onClick={() => setViewingCondition(c)} style={{cursor:'pointer'}}>{c}</span>
+                    <span onClick={() => removeCondition(c)} title="Remove" style={{cursor:'pointer',marginLeft:5,padding:'0 3px'}}>×</span>
+                  </div>
+                ))}
+                <div className="stat-box" onClick={() => setShowConditions(true)} style={{cursor:'pointer'}}>
+                  <div className="stat-value" style={{color: conditions.length > 0 ? 'var(--danger)' : 'var(--accent-light)'}}>{conditions.length}</div>
+                  <div className="stat-label">Conditions</div>
                 </div>
-              ))}
-              <div className="stat-box" onClick={() => setShowConditions(true)} style={{cursor:'pointer'}}>
-                <div className="stat-value" style={{color: conditions.length > 0 ? 'var(--danger)' : 'var(--accent-light)'}}>{conditions.length}</div>
-                <div className="stat-label">Conditions</div>
               </div>
             </div>
           </div>

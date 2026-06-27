@@ -220,7 +220,13 @@ export default function ActionEconomyTab() {
         )}
 
         {SECTION_ORDER.map(section => {
-          const abilities = ae[section];
+          // Defends against duplicate entries that can land in ae_data[section] (e.g. a
+          // feat added twice via Browse Feats, or a PDF-imported descriptive feature and
+          // a separately-added custom functional version sharing a name) - only the first
+          // occurrence of a given tracker_key/name renders, so the player only ever sees one.
+          const abilities = (ae[section] || []).filter((a, i, arr) =>
+            arr.findIndex(b => (b.tracker_key || b.name) === (a.tracker_key || a.name)) === i
+          );
           if (!abilities || abilities.length === 0) return null;
           return (
             <div key={section}>

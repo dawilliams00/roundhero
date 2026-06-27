@@ -23,6 +23,15 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
   const [castLevel, setCastLevel] = useState(availableLevels[0] || spell.level_int);
   const selfEffect = SELF_TARGET_EFFECTS[spell.name?.toLowerCase()];
   const spellBlocks = getSpellcastingBlocks(character.class_name, character.ability_scores, character.level, character.tracker_data?.inventory?.items);
+  // For a charge-cast spell (e.g. Lightning Bolt via Staff of the Magi), spell.level_int is
+  // already overridden to the item's fixed cast_level - that's the level this preview and
+  // the eventual cast both need, not the cast-level dropdown (which doesn't apply here).
+  const previewLevel = chargeMode ? spell.level_int : (castLevel || spell.level_int);
+  const previewDamage = scaleSpellDamage(spell, previewLevel);
+  // Upcasting only matters for spells whose text actually does something different at a
+  // higher level - Haste, Silvery Barbs, etc. have no higher_level text at all, so picking
+  // a level for them is a pointless choice that just wastes a bigger slot for nothing.
+  const canMeaningfullyUpcast = !!spell.higher_level;
 
   const finish = () => { onClose(); if (onCastSuccess) onCastSuccess(); };
 
@@ -121,9 +130,9 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
             <div><b>Components:</b> {spell.components}</div>
             <div><b>Duration:</b> {spell.duration}</div>
           </div>
-          {spell.damage_dice && (
+          {previewDamage && (
             <div style={{display:'flex',gap:12,flexWrap:'wrap',fontSize:12,color:'var(--text-secondary)',marginBottom:12}}>
-              <div><b>Damage:</b> {spell.damage_dice} {spell.damage_type}{spell.secondary_damage_dice ? ` + ${spell.secondary_damage_dice} ${spell.secondary_damage_type}` : ''}</div>
+              <div><b>Damage:</b> {previewDamage.label} {spell.damage_type}{previewDamage.secondary ? ` + ${previewDamage.secondary.label} ${previewDamage.secondary.type}` : ''}</div>
               {spell.is_attack && <div><b>Attack:</b> {spell.attack_type}</div>}
               {spell.save_type_abbr && <div><b>Save:</b> {spell.save_type_abbr} (half on success)</div>}
             </div>
@@ -204,7 +213,7 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
                   </>
                 ) : (
                   <>
-                    {!isCantrip && availableLevels.length > 1 && (
+                    {!isCantrip && canMeaningfullyUpcast && availableLevels.length > 1 && (
                       <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:8}}>
                         <span style={{color:'var(--text-dim)',fontSize:12}}>Cast at level:</span>
                         <select value={castLevel} onChange={e => setCastLevel(parseInt(e.target.value))}>

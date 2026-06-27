@@ -6,9 +6,17 @@ import { SECTION_ORDER } from '../utils/dnd';
 const REST_TYPES = ['long','short','none'];
 const SECTION_COST_TYPE = { 'Action':'action', 'Bonus Action':'bonus_action', 'Reaction':'reaction', 'Free Action':'free_action', 'Passive':'passive' };
 
-export default function CustomAbilityModal({ onClose }) {
+// editingFeat (optional): when set, this edits an existing shared library entry instead
+// of creating a new one - submit only PUTs the library row, it does NOT touch the current
+// character's ae_data/features (editing the library shouldn't silently re-attach/change
+// this character's own copy, same separation MonsterEditModal.js already uses for monsters).
+export default function CustomAbilityModal({ onClose, editingFeat, onDelete }) {
   const { character, updateCharacter } = useCharacter();
-  const [form, setForm] = useState({ name:'', section:'Action', source:'Custom', tracker_key:'', max_uses:1, rest_type:'long', description:'', isSpell:false, isTuck:false });
+  const [form, setForm] = useState(editingFeat ? {
+    name: editingFeat.name, section: editingFeat.section, source: editingFeat.source || 'Custom',
+    tracker_key: '', max_uses: editingFeat.max_uses || 0, rest_type: editingFeat.rest_type || 'long',
+    description: editingFeat.description || '', isSpell: !!editingFeat.isSpell, isTuck: !!editingFeat.isTuck,
+  } : { name:'', section:'Action', source:'Custom', tracker_key:'', max_uses:1, rest_type:'long', description:'', isSpell:false, isTuck:false });
   const [saving, setSaving] = useState(false);
 
   const set = (k,v) => setForm(f => ({...f,[k]:v}));
@@ -16,8 +24,19 @@ export default function CustomAbilityModal({ onClose }) {
   const submit = async () => {
     if (!form.name) return;
     setSaving(true);
-    const key = form.tracker_key || form.name;
     const costType = form.isSpell ? 'cast_spell' : SECTION_COST_TYPE[form.section];
+    const payload = {
+      name: form.name, section: form.section, cost_type: costType, source: form.source,
+      description: form.description, max_uses: parseInt(form.max_uses) || 0,
+      rest_type: form.rest_type, isSpell: form.isSpell, isTuck: form.isTuck,
+    };
+    if (editingFeat) {
+      await api.put(`/content/feats/${editingFeat._custom_id}`, payload);
+      setSaving(false);
+      onClose();
+      return;
+    }
+    const key = form.tracker_key || form.name;
     const newAbility = { name:form.name, source:form.source, source_type:'custom', cost_type:costType, tracker_key:key, description:form.description };
     const newAe = { ...character.ae_data };
     if (!newAe[form.section]) newAe[form.section] = [];
@@ -34,13 +53,7 @@ export default function CustomAbilityModal({ onClose }) {
       };
     }
     try {
-      // Saved to the shared feat library too, so anyone can search for and add this
-      // exact feat to a future character instead of re-typing it from scratch.
-      await api.post('/content/feats', {
-        name: form.name, section: form.section, cost_type: costType, source: form.source,
-        description: form.description, max_uses: parseInt(form.max_uses) || 0,
-        rest_type: form.rest_type, isSpell: form.isSpell, isTuck: form.isTuck,
-      });
+      await api.post('/content/feats', payload);
     } catch {
       // Non-fatal - the character still gets the ability even if the library save failed.
     }
@@ -52,8 +65,10 @@ export default function CustomAbilityModal({ onClose }) {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={e => e.stopPropagation()}>
-        <h2>Add Custom Ability</h2>
-        <div style={{color:'var(--text-dim)',fontSize:11,marginBottom:12}}>Saved to your feat library too — searchable to add to any future character.</div>
+        <h2>{editingFeat ? 'Edit Custom Feat' : 'Add Custom Ability'}</h2>
+        <div style={{color:'var(--text-dim)',fontSize:11,marginBottom:12}}>
+          {editingFeat ? 'Updates the shared library entry - anyone searching for this feat will see your changes. Characters who already added it keep their own copy as-is.' : 'Saved to your feat library too — searchable to add to any future character.'}
+        </div>
         <div className="form-group"><label>Name</label><input value={form.name} onChange={e => set('name',e.target.value)} placeholder="Ability name" autoFocus /></div>
         <div className="form-row">
           <div className="form-group"><label>Section</label><select value={form.section} onChange={e => set('section',e.target.value)}>{SECTION_ORDER.map(s => <option key={s}>{s}</option>)}</select></div>
@@ -76,7 +91,10 @@ export default function CustomAbilityModal({ onClose }) {
 
         <div style={{display:'flex',gap:8,marginTop:8}}>
           <button className="btn btn-secondary" style={{flex:1}} onClick={onClose}>Cancel</button>
-          <button className="btn btn-primary" style={{flex:2}} disabled={!form.name||saving} onClick={submit}>{saving?'Saving...':'Add Ability'}</button>
+          {editingFeat && onDelete && (
+            <button className="btn btn-secondary" style={{flex:1,color:'var(--danger)'}} onClick={onDelete}>Delete</button>
+          )}
+          <button className="btn btn-primary" style={{flex:2}} disabled={!form.name||saving} onClick={submit}>{saving?'Saving...':editingFeat?'Save Changes':'Add Ability'}</button>
         </div>
       </div>
     </div>

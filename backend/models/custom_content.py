@@ -8,7 +8,7 @@ class CustomContent(db.Model):
     __tablename__   = "custom_content"
     id              = db.Column(db.Integer, primary_key=True)
     user_id         = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
-    content_type    = db.Column(db.String(20), nullable=False)  # "spell" | "feat" | "item"
+    content_type    = db.Column(db.String(20), nullable=False)  # "spell" | "feat" | "item" | "item_override" | "monster" | "ruleset"
     name            = db.Column(db.String(120), nullable=False)
     _data           = db.Column("data", db.Text, default="{}")
     created_at      = db.Column(db.DateTime, default=datetime.utcnow)
