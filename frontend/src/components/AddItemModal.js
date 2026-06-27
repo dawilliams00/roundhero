@@ -29,6 +29,8 @@ export default function AddItemModal({ item, onSave, onClose }) {
     two_handed_damage_type: item.two_handed_damage?.damage_type || '',
     proficient: item.proficient ?? true,
     two_handed: !!item.two_handed,
+    bonus_damage_dice: item.bonus_damage_dice || '',
+    bonus_damage_type: item.bonus_damage_type || '',
   } : {
     name: '', quantity: 1, weight: 0, rarity: 'Common',
     equipped: false, attunement: false, attuned: false,
@@ -37,7 +39,7 @@ export default function AddItemModal({ item, onSave, onClose }) {
     is_weapon: false, weapon_category: 'Simple', weapon_range: 'Melee',
     damage_dice: '', damage_type: 'Slashing', properties: [],
     range_normal: '', range_long: '', two_handed_damage_dice: '', two_handed_damage_type: '',
-    proficient: true, two_handed: false,
+    proficient: true, two_handed: false, bonus_damage_dice: '', bonus_damage_type: '',
   });
   const set = (k,v) => setForm(f => ({...f,[k]:v}));
   const toggleProperty = (p) => setForm(f => ({...f, properties: f.properties.includes(p) ? f.properties.filter(x=>x!==p) : [...f.properties, p]}));
@@ -98,6 +100,12 @@ export default function AddItemModal({ item, onSave, onClose }) {
           : null,
         proficient: !!form.proficient,
         two_handed: !!form.two_handed,
+        // A second, independent damage component (e.g. Vicious's extra 2d6, or a
+        // Flame Tongue-style different-typed die) rolled and shown alongside the base
+        // weapon damage in WeaponAttackModal, not folded into it - blank type means
+        // "same type as the weapon's own damage."
+        bonus_damage_dice: form.bonus_damage_dice.trim(),
+        bonus_damage_type: form.bonus_damage_type,
       } : {}),
     };
     onSave(out);
@@ -159,6 +167,11 @@ export default function AddItemModal({ item, onSave, onClose }) {
               </div>
             )}
             <label style={{display:'flex',alignItems:'center',gap:6}}><input type="checkbox" checked={form.proficient} onChange={e=>set('proficient',e.target.checked)} /> Proficient</label>
+            <div className="form-row" style={{marginTop:8}}>
+              <div className="form-group"><label>Bonus Damage Dice (optional)</label><input value={form.bonus_damage_dice} onChange={e=>set('bonus_damage_dice',e.target.value)} placeholder="e.g. 2d6 (Vicious)" /></div>
+              <div className="form-group"><label>Bonus Damage Type</label><select value={form.bonus_damage_type} onChange={e=>set('bonus_damage_type',e.target.value)}><option value="">(same as weapon)</option>{DAMAGE_TYPES.concat(['Acid','Cold','Fire','Force','Lightning','Necrotic','Poison','Psychic','Radiant','Thunder']).map(t=><option key={t}>{t}</option>)}</select></div>
+            </div>
+            <div style={{color:'var(--text-dim)',fontSize:11,marginTop:2}}>An extra damage component rolled alongside the base damage - e.g. Vicious's +2d6, or a different-typed bonus die like Flame Tongue's fire damage.</div>
           </div>
         )}
         <div className="form-group"><label>Description</label><textarea value={form.description} onChange={e=>set('description',e.target.value)} rows={3} style={{width:'100%',resize:'vertical'}} /></div>

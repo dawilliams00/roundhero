@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
-import { schoolColor, getSpellcastingBlocks, getAbilityOverrideBlock, scaleSpellDamage, rollDamage, concentrationSlotCount, HASTED_EFFECT, METAMAGIC_OPTIONS, metamagicCost } from '../utils/dnd';
+import { schoolColor, getSpellcastingBlocks, getAbilityOverrideBlock, scaleSpellDamage, rollDamageDetailed, concentrationSlotCount, HASTED_EFFECT, METAMAGIC_OPTIONS, metamagicCost } from '../utils/dnd';
 import InfoModal from './InfoModal';
 
 const SELF_TARGET_EFFECTS = { haste: HASTED_EFFECT };
@@ -62,8 +62,8 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
 
   const rollNow = () => setDamageResult({
     ...pendingDamage,
-    total: rollDamage(pendingDamage),
-    secondaryTotal: pendingDamage.secondary ? rollDamage(pendingDamage.secondary) : undefined,
+    ...rollDamageDetailed(pendingDamage),
+    secondaryResult: pendingDamage.secondary ? rollDamageDetailed(pendingDamage.secondary) : undefined,
   });
 
   const continueAfterCast = (levelUsed) => {
@@ -238,15 +238,15 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
                 {spell.save_type_abbr ? ` · ${spell.save_type_abbr} DC vs caster · half on success` : ''}
                 {spell.is_attack ? ' · requires a spell attack roll' : ''}
               </div>
-              <div style={{display:'flex',gap:20,justifyContent:'center'}}>
+              <div style={{display:'flex',gap:20,justifyContent:'center',flexWrap:'wrap'}}>
                 <div>
                   <div style={{color:'var(--accent-light)',fontWeight:700,fontSize:28}}>{damageResult.total}</div>
-                  {damageResult.secondary && <div style={{color:'var(--text-dim)',fontSize:10}}>{spell.damage_type}</div>}
+                  <div style={{color:'var(--text-dim)',fontSize:10}}>{spell.damage_type} · [{damageResult.rolls.join(', ')}]{damageResult.bonus ? ` ${damageResult.bonus>=0?'+':''}${damageResult.bonus}` : ''}</div>
                 </div>
-                {damageResult.secondary && (
+                {damageResult.secondaryResult && (
                   <div>
-                    <div style={{color:'var(--accent-light)',fontWeight:700,fontSize:28}}>{damageResult.secondaryTotal}</div>
-                    <div style={{color:'var(--text-dim)',fontSize:10}}>{damageResult.secondary.type}</div>
+                    <div style={{color:'var(--accent-light)',fontWeight:700,fontSize:28}}>{damageResult.secondaryResult.total}</div>
+                    <div style={{color:'var(--text-dim)',fontSize:10}}>{damageResult.secondary.type} · [{damageResult.secondaryResult.rolls.join(', ')}]</div>
                   </div>
                 )}
               </div>

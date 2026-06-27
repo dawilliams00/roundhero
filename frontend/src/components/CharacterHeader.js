@@ -78,12 +78,42 @@ function SpellcastBox({ block }) {
   );
 }
 
-function AbilityBox({ abbr, score, baseScore }) {
+// Clicking the box edits the RAW base score (e.g. fixing a PDF import that baked an
+// equipped item's bonus directly into the imported value, like a Belt of Storm Giant
+// Strength's +29 STR showing as the character's base score with no way to back it out -
+// effectiveAbilityScores only ever takes the max of raw vs. equipped set-buffs, so it
+// can't un-apply a buff that's already sitting in the raw number). Shows the effective
+// (post-item) score normally; editing always edits the underlying base, never the
+// boosted display value.
+function AbilityBox({ abbr, score, baseScore, onSaveBase }) {
   const boosted = baseScore != null && score !== baseScore;
+  const [editing, setEditing] = useState(false);
+  const [val, setVal] = useState(baseScore);
+
+  const commit = () => {
+    setEditing(false);
+    const n = parseInt(val);
+    if (!isNaN(n) && n !== baseScore && onSaveBase) onSaveBase(n);
+    else setVal(baseScore);
+  };
+
   return (
-    <div className="stat-box" style={{minWidth:38}} title={boosted ? `${baseScore} base, raised to ${score} by an equipped item` : undefined}>
+    <div className="stat-box" style={{minWidth:38}} title={boosted ? `${baseScore} base, raised to ${score} by an equipped item - click to edit the base score` : 'Click to edit'}>
       <div className="stat-label" style={{marginTop:0,marginBottom:2}}>{abbr}</div>
-      <div className="stat-value" style={{color: boosted ? 'var(--accent-light)' : undefined}}>{score}</div>
+      {editing ? (
+        <input
+          autoFocus
+          value={val}
+          onChange={e => setVal(e.target.value)}
+          onBlur={commit}
+          onKeyDown={e => e.key === 'Enter' && commit()}
+          style={{width:30,textAlign:'center',fontWeight:700,fontSize:14,padding:'1px 2px'}}
+        />
+      ) : (
+        <div onClick={() => { setVal(baseScore); setEditing(true); }} className="stat-value" style={{cursor: onSaveBase ? 'pointer' : undefined, color: boosted ? 'var(--accent-light)' : undefined}}>
+          {score}
+        </div>
+      )}
       <div className="stat-sub">{modStr(score)}</div>
     </div>
   );
@@ -154,7 +184,7 @@ function CurrencyBox({ currency, onCommit }) {
 }
 
 export default function CharacterHeader({ onBack }) {
-  const { character, saveTrackerData, doRest, addActiveEffect, removeActiveEffect, removeCondition } = useCharacter();
+  const { character, saveTrackerData, updateCharacter, doRest, addActiveEffect, removeActiveEffect, removeCondition } = useCharacter();
   const [showSaves, setShowSaves]   = useState(false);
   const [showSkills, setShowSkills] = useState(false);
   const [showTraits, setShowTraits] = useState(false);
@@ -205,6 +235,13 @@ export default function CharacterHeader({ onBack }) {
   const baseAc = td?.ac ?? (10 + dexMod);
   const ac     = baseAc + itemBonuses.ac_base + hasteAcBonus;
   const init   = td?.initiative ?? dexMod;
+  // Speed is stored as a free-form string from PDF import ("30 ft.") or a plain number
+  // once edited here - parseInt handles either. Haste doubles it (RAW) the same way it
+  // already adds +2 AC, so the box reflects the doubled value rather than needing the
+  // player to do the math themselves mid-combat.
+  const baseSpeed = parseInt(td?.speed) || 30;
+  const speed = isHasted ? baseSpeed * 2 : baseSpeed;
+  const setSpeed = (v) => saveTrackerData({ ...td, speed: isHasted ? Math.round(v / 2) : v });
   const insp   = !!td?.inspiration;
   const exhaustion = td?.exhaustion || 0;
   const exhaustionRules = td?.settings?.exhaustion_rules || { mode: 'raw' };
@@ -274,6 +311,7 @@ export default function CharacterHeader({ onBack }) {
 
               <EditableStat label="AC" value={ac} onSave={setAc} title={(itemBonuses.ac_base || hasteAcBonus) ? `${baseAc} base${itemBonuses.ac_base ? ` + ${itemBonuses.ac_base} items` : ''}${hasteAcBonus ? ` + ${hasteAcBonus} Hasted` : ''}` : undefined} />
               <EditableStat label="INIT" value={init} onSave={setInit} />
+              <EditableStat label="SPEED" value={speed} onSave={setSpeed} title={isHasted ? `${baseSpeed} ft. base, doubled while Hasted` : undefined} />
               <div className="stat-box">
                 <div className="stat-value">+{prof}</div>
                 <div className="stat-label">Prof</div>
@@ -293,7 +331,8 @@ export default function CharacterHeader({ onBack }) {
               <div style={{display:'flex',flexDirection:'column',gap:4}}>
                 <div style={{display:'flex',gap:6}}>
                   {ABILITY_KEYS.map(k => (
-                    <AbilityBox key={k} abbr={k} score={effAb[k]||10} baseScore={ab?.[k]||10} />
+                    <AbilityBox key={k} abbr={k} score={effAb[k]||10} baseScore={ab?.[k]||10}
+                      onSaveBase={(n) => updateCharacter(character.id, { ability_scores: { ...ab, [k]: n } })} />
                   ))}
                 </div>
                 {slotLevels.length > 0 && (

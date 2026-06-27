@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
-import { effectiveAbilityScores, weaponAbilityMod, weaponItemBonus, weaponDamageDice, profBonus, rollD20, rollDamage, modifier } from '../utils/dnd';
+import { effectiveAbilityScores, weaponAbilityMod, weaponItemBonus, weaponDamageDice, profBonus, rollD20, rollDamageDetailed, modifier } from '../utils/dnd';
 
 // Equipment.json weapon damage strings are always plain "NdM" (or, for things like
 // the Blowgun, a flat "1") - no inline "+N" the way some spell damage_dice has.
@@ -57,7 +57,8 @@ export default function WeaponAttackModal({ itemIndex, onClose }) {
 
   const rollAttack = () => {
     markBucket();
-    setAttackResult(rollD20() + attackMod);
+    const d20 = rollD20();
+    setAttackResult({ d20, mod: attackMod, total: d20 + attackMod });
   };
 
   const buildDamage = () => {
@@ -66,29 +67,42 @@ export default function WeaponAttackModal({ itemIndex, onClose }) {
     return { count, sides, bonus: (flat || 0) + abilityMod + itemBonus.damage, damage_type: dice.damage_type };
   };
 
+  // A bonus damage component (Vicious's extra 2d6, or a different-typed bonus die like
+  // Flame Tongue's fire damage) rolls and displays separately from the base damage rather
+  // than folding into one combined number - lets a weapon with a different-typed bonus
+  // die actually show both types instead of collapsing them into the base type.
+  const buildBonusDamage = () => {
+    if (!weapon.bonus_damage_dice) return null;
+    const { count, sides, flat } = parseDice(weapon.bonus_damage_dice);
+    if (!count && !flat) return null;
+    return { count, sides, bonus: flat || 0, damage_type: weapon.bonus_damage_type || weaponDamageDice(weapon).damage_type };
+  };
+
   // 2d8 radiant, +1d8 per slot level above 1st (capped at 5d8 total), +1d8 more vs
   // undead/fiends - RAW Divine Smite. The slot is spent here, when damage is first
   // rolled, not just when the checkbox is ticked (so unchecking/closing without rolling
   // never costs a slot). Rerolling reuses the already-spent smite's dice spec instead of
   // calling this again, so clicking Reroll never spends a second slot.
   const rollDamageNow = async () => {
-    const dmg = buildDamage();
-    const total = rollDamage(dmg);
+    const dmg = rollDamageDetailed(buildDamage());
+    const extraSpec = buildBonusDamage();
+    const extra = extraSpec ? { ...extraSpec, ...rollDamageDetailed(extraSpec) } : null;
     let smite = null;
     if (smiteOn && smiteLevel) {
       await useSlot(smiteLevel);
       const count = Math.min(5, 2 + (smiteLevel - 1)) + (smiteVsUndeadFiend ? 1 : 0);
-      smite = { count, sides: 8, bonus: 0, damage_type: 'Radiant' };
-      smite.total = rollDamage(smite);
+      const smiteSpec = { count, sides: 8, bonus: 0, damage_type: 'Radiant' };
+      smite = { ...smiteSpec, ...rollDamageDetailed(smiteSpec) };
     }
-    setDamageResult({ ...dmg, total, smite });
+    setDamageResult({ ...buildDamage(), ...dmg, extra, smite });
   };
 
   const rerollDamage = () => {
-    const dmg = buildDamage();
-    const total = rollDamage(dmg);
-    const smite = damageResult.smite ? { ...damageResult.smite, total: rollDamage(damageResult.smite) } : null;
-    setDamageResult({ ...dmg, total, smite });
+    const dmg = rollDamageDetailed(buildDamage());
+    const extraSpec = buildBonusDamage();
+    const extra = extraSpec ? { ...extraSpec, ...rollDamageDetailed(extraSpec) } : null;
+    const smite = damageResult.smite ? { ...damageResult.smite, ...rollDamageDetailed(damageResult.smite) } : null;
+    setDamageResult({ ...buildDamage(), ...dmg, extra, smite });
   };
 
   return (
@@ -106,7 +120,7 @@ export default function WeaponAttackModal({ itemIndex, onClose }) {
         <div className="modal-body">
           <div style={{display:'flex',gap:12,flexWrap:'wrap',fontSize:12,color:'var(--text-secondary)',marginBottom:12}}>
             <div><b>Attack:</b> {attackMod>=0?'+':''}{attackMod} ({abilityLabel} {abilityMod>=0?'+':''}{abilityMod}{weapon.proficient ? `, +${prof} prof` : ', not proficient'}{itemBonus.attack ? `, +${itemBonus.attack} item` : ''})</div>
-            <div><b>Damage:</b> {weaponDamageDice(weapon).damage_dice} {weaponDamageDice(weapon).damage_type}{itemBonus.damage ? ` +${itemBonus.damage}` : ''}</div>
+            <div><b>Damage:</b> {weaponDamageDice(weapon).damage_dice} {weaponDamageDice(weapon).damage_type}{itemBonus.damage ? ` +${itemBonus.damage}` : ''}{weapon.bonus_damage_dice ? ` + ${weapon.bonus_damage_dice} ${weapon.bonus_damage_type || weaponDamageDice(weapon).damage_type}` : ''}</div>
           </div>
 
           {isVersatile && (
@@ -140,7 +154,8 @@ export default function WeaponAttackModal({ itemIndex, onClose }) {
           {attackResult != null && (
             <div style={{background:'var(--bg-primary)',borderRadius:'var(--radius-sm)',padding:12,textAlign:'center',marginBottom:12}}>
               <div style={{color:'var(--text-dim)',fontSize:11,textTransform:'uppercase',letterSpacing:1,marginBottom:4}}>Attack Roll</div>
-              <div style={{color:'var(--accent-light)',fontWeight:700,fontSize:28}}>{attackResult}</div>
+              <div style={{color:'var(--accent-light)',fontWeight:700,fontSize:28}}>{attackResult.total}</div>
+              <div style={{color:'var(--text-dim)',fontSize:11}}>d20: {attackResult.d20} {attackResult.mod>=0?'+':''}{attackResult.mod}</div>
               <button className="btn btn-secondary btn-sm" style={{marginTop:8}} onClick={rollAttack}>Reroll</button>
             </div>
           )}
@@ -149,17 +164,23 @@ export default function WeaponAttackModal({ itemIndex, onClose }) {
           {damageResult ? (
             <div style={{width:'100%',background:'var(--bg-primary)',borderRadius:'var(--radius-sm)',padding:12,textAlign:'center'}}>
               <div style={{color:'var(--text-dim)',fontSize:11,textTransform:'uppercase',letterSpacing:1,marginBottom:4}}>
-                {damageResult.damage_type} damage{damageResult.smite ? ` + Divine Smite` : ''}
+                {damageResult.damage_type} damage{damageResult.extra ? ` + ${damageResult.extra.damage_type}` : ''}{damageResult.smite ? ` + Divine Smite` : ''}
               </div>
-              <div style={{display:'flex',gap:20,justifyContent:'center'}}>
+              <div style={{display:'flex',gap:20,justifyContent:'center',flexWrap:'wrap'}}>
                 <div>
                   <div style={{color:'var(--accent-light)',fontWeight:700,fontSize:28}}>{damageResult.total}</div>
-                  {damageResult.smite && <div style={{color:'var(--text-dim)',fontSize:10}}>{damageResult.damage_type}</div>}
+                  <div style={{color:'var(--text-dim)',fontSize:10}}>{damageResult.damage_type} · [{damageResult.rolls.join(', ')}] {damageResult.bonus>=0?'+':''}{damageResult.bonus}</div>
                 </div>
+                {damageResult.extra && (
+                  <div>
+                    <div style={{color:'var(--accent-light)',fontWeight:700,fontSize:28}}>{damageResult.extra.total}</div>
+                    <div style={{color:'var(--text-dim)',fontSize:10}}>{damageResult.extra.damage_type} · [{damageResult.extra.rolls.join(', ')}]</div>
+                  </div>
+                )}
                 {damageResult.smite && (
                   <div>
                     <div style={{color:'var(--accent-light)',fontWeight:700,fontSize:28}}>{damageResult.smite.total}</div>
-                    <div style={{color:'var(--text-dim)',fontSize:10}}>Radiant</div>
+                    <div style={{color:'var(--text-dim)',fontSize:10}}>Radiant · [{damageResult.smite.rolls.join(', ')}]</div>
                   </div>
                 )}
               </div>

@@ -357,11 +357,16 @@ export const scaleSpellDamage = (spell, castLevel) => {
   return result;
 };
 
-export const rollDamage = ({ count, sides, bonus }) => {
-  let total = bonus || 0;
-  for (let i = 0; i < count; i++) total += rollDie(sides);
-  return total;
+// Returns the individual die results alongside the total, so the UI can show "3, 6 (+9)
+// = 18" instead of just a final number - the player asked to actually see what was rolled
+// rather than trust an opaque sum.
+export const rollDamageDetailed = ({ count, sides, bonus }) => {
+  const rolls = [];
+  for (let i = 0; i < count; i++) rolls.push(rollDie(sides));
+  return { rolls, bonus: bonus || 0, total: rolls.reduce((a,b) => a+b, 0) + (bonus || 0) };
 };
+
+export const rollDamage = (spec) => rollDamageDetailed(spec).total;
 
 // Parses a recharge formula like "4d6 + 2" into {count, sides, bonus} for rollDamage.
 // Mirrors the backend's old roll_dice regex (now removed server-side - recharge rolls
