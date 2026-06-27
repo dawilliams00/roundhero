@@ -155,7 +155,7 @@ CLASSES = {
         "features": {
             1:  [{"name": "Spellcasting", "max": 0, "rest_type": "long", "action": "Passive", "description": "Cast sorcerer spells using CHA as your spellcasting ability."},
                  {"name": "Sorcerous Origin", "max": 0, "rest_type": "long", "action": "Passive", "description": "Choose your Sorcerous Origin subclass."}],
-            2:  [{"name": "Font of Magic (Sorcerer Points)", "max": 0, "rest_type": "long", "action": "Passive", "description": "Sorcery Points = sorcerer level. Spend on Metamagic, or use Flexible Casting to convert points to a spell slot or a slot to points."},
+            2:  [{"name": "Font of Magic (Sorcery Points)", "max": 0, "rest_type": "long", "action": "Passive", "description": "Sorcery Points = sorcerer level. Spend on Metamagic, or use Flexible Casting to convert points to a spell slot or a slot to points."},
                  {"name": "Flexible Casting", "max": 0, "rest_type": "long", "action": "Passive", "description": "As a bonus action, convert sorcery points into a spell slot (no higher than 5th level) or convert a spell slot into sorcery points equal to its level. Slots created this way vanish on a long rest if unused."}],
             3:  [{"name": "Metamagic", "max": 0, "rest_type": "long", "action": "Passive", "description": "Choose 2 Metamagic options to modify your spells."}],
             20: [{"name": "Sorcerous Restoration", "max": 0, "rest_type": "long", "action": "Passive", "description": "Regain 4 sorcery points on short rest."}],

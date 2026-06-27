@@ -92,9 +92,9 @@ def build_tracker_data(class_name, level, ability_scores):
     if class_name == "Sorcerer":
         # RAW: sorcery points = sorcerer level, starting at 2nd level (Font of Magic).
         sp_max = level if level >= 2 else 0
-        if "Font of Magic (Sorcerer Points)" in features:
-            features["Font of Magic (Sorcerer Points)"]["max"] = sp_max
-            features["Font of Magic (Sorcerer Points)"]["current"] = sp_max
+        if "Font of Magic (Sorcery Points)" in features:
+            features["Font of Magic (Sorcery Points)"]["max"] = sp_max
+            features["Font of Magic (Sorcery Points)"]["current"] = sp_max
 
     spell_slots = get_spell_slots(class_name, level)
 

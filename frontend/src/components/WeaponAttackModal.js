@@ -84,6 +84,7 @@ export default function WeaponAttackModal({ itemIndex, onClose }) {
   // never costs a slot). Rerolling reuses the already-spent smite's dice spec instead of
   // calling this again, so clicking Reroll never spends a second slot.
   const rollDamageNow = async () => {
+    markBucket();
     const dmg = rollDamageDetailed(buildDamage());
     const extraSpec = buildBonusDamage();
     const extra = extraSpec ? { ...extraSpec, ...rollDamageDetailed(extraSpec) } : null;
@@ -120,7 +121,7 @@ export default function WeaponAttackModal({ itemIndex, onClose }) {
         <div className="modal-body">
           <div style={{display:'flex',gap:12,flexWrap:'wrap',fontSize:12,color:'var(--text-secondary)',marginBottom:12}}>
             <div><b>Attack:</b> {attackMod>=0?'+':''}{attackMod} ({abilityLabel} {abilityMod>=0?'+':''}{abilityMod}{weapon.proficient ? `, +${prof} prof` : ', not proficient'}{itemBonus.attack ? `, +${itemBonus.attack} item` : ''})</div>
-            <div><b>Damage:</b> {weaponDamageDice(weapon).damage_dice} {weaponDamageDice(weapon).damage_type}{itemBonus.damage ? ` +${itemBonus.damage}` : ''}{weapon.bonus_damage_dice ? ` + ${weapon.bonus_damage_dice} ${weapon.bonus_damage_type || weaponDamageDice(weapon).damage_type}` : ''}</div>
+            <div><b>Damage:</b> {weaponDamageDice(weapon).damage_dice} {(abilityMod + itemBonus.damage) !== 0 ? `${(abilityMod + itemBonus.damage) >= 0 ? '+' : ''}${abilityMod + itemBonus.damage} ` : ''}{weaponDamageDice(weapon).damage_type}{weapon.bonus_damage_dice ? ` + ${weapon.bonus_damage_dice} ${weapon.bonus_damage_type || weaponDamageDice(weapon).damage_type}` : ''}</div>
           </div>
 
           {isVersatile && (
@@ -195,6 +196,11 @@ export default function WeaponAttackModal({ itemIndex, onClose }) {
                 <button className="btn btn-primary" style={{flex:1}} onClick={rollAttack}>Roll Attack</button>
                 <button className="btn btn-primary" style={{flex:1}} onClick={rollDamageNow}>Roll Damage?</button>
               </div>
+              {td.in_initiative && (
+                <button className="btn btn-secondary" style={{width:'100%',marginTop:8}} onClick={() => { markBucket(); onClose(); }}>
+                  ✓ I'll roll in person - just mark Action used
+                </button>
+              )}
               <button className="btn btn-secondary" style={{width:'100%',marginTop:8}} onClick={onClose}>Close</button>
             </>
           )}
