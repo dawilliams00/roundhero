@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
-import { maxPreparedSpells, schoolColor, slotBadgeTextColor } from '../utils/dnd';
+import { maxPreparedSpells, schoolColor, slotBadgeTextColor, getSpellcastingBlocks } from '../utils/dnd';
 import SpellBrowserModal from './SpellBrowserModal';
 import SpellDetailModal from './SpellDetailModal';
 import CustomSpellModal from './CustomSpellModal';
@@ -34,6 +34,7 @@ export default function SpellsTab() {
   const levels = [...new Set(knownSpells.map(s=>s.level_int))].sort((a,b)=>a-b);
   const slotLevels = Object.entries(slots).filter(([,s])=>(s.max||0)>0);
   const hasAvailableSlot = (spell) => slotLevels.some(([lvl,s]) => parseInt(lvl) >= spell.level_int && (s.current||0) > 0);
+  const spellBlocks = getSpellcastingBlocks(character.class_name, character.ability_scores, character.level, character.tracker_data?.inventory?.items);
 
   const addSpell = (spell) => {
     saveSpellData({ ...sd, known_spells: [...knownSpells, spell] });
@@ -51,6 +52,9 @@ export default function SpellsTab() {
         <div className="card" style={{marginBottom:12}}>
           <div style={{display:'flex',alignItems:'center',marginBottom:10,gap:8,flexWrap:'wrap'}}>
             <div style={{color:'var(--text-secondary)',fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:1,flex:1}}>Spell Slots</div>
+            {spellBlocks.map(b => (
+              <span key={b.className} style={{color:'var(--accent-light)',fontSize:11,fontWeight:600}}>{b.className}: {b.attackMod>=0?'+':''}{b.attackMod} atk · DC {b.saveDC}</span>
+            ))}
             <button className="btn btn-secondary btn-sm" onClick={() => setManagingLists(true)}>Manage Lists</button>
             <button className="btn btn-secondary btn-sm" onClick={() => setBrowsing(true)}>+ Add Spells</button>
             <button className="btn btn-primary btn-sm" onClick={() => setAddingCustom(true)}>+ Custom Spell</button>

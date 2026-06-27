@@ -107,3 +107,71 @@ export const schoolColor = school => SCHOOL_COLORS[school] || 'var(--text-primar
 // fails contrast - use dark text on those, white on the darker levels 4-9.
 const LIGHT_SLOT_LEVELS = new Set([1, 2, 3]);
 export const slotBadgeTextColor = level => LIGHT_SLOT_LEVELS.has(level) ? '#16213e' : '#fff';
+
+export const SPELLCASTING_ABILITY = { Bard:'CHA', Cleric:'WIS', Druid:'WIS', Paladin:'CHA', Ranger:'WIS', Sorcerer:'CHA', Warlock:'CHA', Wizard:'INT', Artificer:'INT' };
+
+// "Wizard 13" -> [{className:"Wizard",level:13}]; "Wizard 10 / Fighter 3" -> both parts.
+export const parseClassLevels = (classNameRaw) => {
+  if (!classNameRaw) return [];
+  return String(classNameRaw).split('/').map(part => {
+    const m = part.trim().match(/^(.+?)\s+(\d+)\s*$/);
+    return m ? { className: m[1].trim(), level: parseInt(m[2]) } : null;
+  }).filter(Boolean);
+};
+
+// Sum of any equipped items' spell attack/DC buffs (e.g. a +1 staff/grimoire).
+export const itemSpellBonuses = (items) => {
+  let atk = 0, dc = 0;
+  (items || []).forEach(it => {
+    if (!it.equipped) return;
+    (it.buffs || []).forEach(b => {
+      if (b.stat === 'spell_attack_modifier') atk += b.value || 0;
+      if (b.stat === 'spell_dc_modifier') dc += b.value || 0;
+    });
+  });
+  return { atk, dc };
+};
+
+// One block per spellcasting class (multiclass characters get one each).
+export const getSpellcastingBlocks = (classNameRaw, abilityScores, totalLevel, items) => {
+  const parts = parseClassLevels(classNameRaw);
+  const list = parts.length ? parts : [{ className: classNameRaw, level: totalLevel }];
+  const prof = profBonus(totalLevel);
+  const { atk: itemAtk, dc: itemDc } = itemSpellBonuses(items);
+  return list
+    .filter(p => SPELLCASTING_ABILITY[p.className])
+    .map(p => {
+      const ability = SPELLCASTING_ABILITY[p.className];
+      const mod = modifier(abilityScores?.[ability] ?? 10);
+      return {
+        className: p.className, ability,
+        attackMod: mod + prof + itemAtk,
+        saveDC: 8 + mod + prof + itemDc,
+      };
+    });
+};
+
+// Scales a spell's printed damage_dice up using its higher_level scaling text, if the
+// spell was cast above its base level. Only handles the common "+NdM per slot level
+// above Xth" phrasing; spells that scale differently (e.g. extra missiles) aren't scaled.
+export const scaleSpellDamage = (spell, castLevel) => {
+  if (!spell?.damage_dice) return null;
+  const base = spell.damage_dice.match(/(\d+)d(\d+)\s*(?:\+\s*(\d+))?/i);
+  if (!base) return null;
+  let count = parseInt(base[1]);
+  const sides = parseInt(base[2]);
+  const bonus = base[3] ? parseInt(base[3]) : 0;
+  if (spell.higher_level && castLevel > spell.level_int) {
+    const scale = spell.higher_level.match(/increases by (\d+)d(\d+) for each slot level above (\d+)/i);
+    if (scale && parseInt(scale[2]) === sides) {
+      count += (castLevel - parseInt(scale[3])) * parseInt(scale[1]);
+    }
+  }
+  return { count, sides, bonus, label: `${count}d${sides}${bonus ? `+${bonus}` : ''}` };
+};
+
+export const rollDamage = ({ count, sides, bonus }) => {
+  let total = bonus || 0;
+  for (let i = 0; i < count; i++) total += rollDie(sides);
+  return total;
+};

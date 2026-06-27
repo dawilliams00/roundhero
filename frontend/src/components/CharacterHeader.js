@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
-import { modifier, modStr, hpColor, profBonus, ABILITY_KEYS } from '../utils/dnd';
+import { modifier, modStr, hpColor, profBonus, ABILITY_KEYS, getSpellcastingBlocks } from '../utils/dnd';
 import SavesModal from './SavesModal';
 import SkillsModal from './SkillsModal';
 import TraitsModal from './TraitsModal';
@@ -49,6 +49,15 @@ function PMStat({ label, value, color, onAdjust, onClick }) {
         <div className="stat-label">{label}</div>
       </div>
       <button onClick={() => onAdjust(1)} style={{background:'var(--success)',color:'#fff',borderRadius:4,width:22,height:22,fontWeight:700,fontSize:13,flexShrink:0}}>+</button>
+    </div>
+  );
+}
+
+function SpellcastBox({ block }) {
+  return (
+    <div className="stat-box">
+      <div className="stat-value" style={{fontSize:13}}>{block.attackMod>=0?'+':''}{block.attackMod} / DC{block.saveDC}</div>
+      <div className="stat-label">{block.className}</div>
     </div>
   );
 }
@@ -119,6 +128,7 @@ export default function CharacterHeader({ onBack }) {
   const attunedCount = invItems.filter(it => it.attunement && it.attuned).length;
   const attunableCount = invItems.filter(it => it.attunement).length;
   const hd = td?.hit_dice;
+  const spellBlocks = getSpellcastingBlocks(class_name, ab, level, invItems);
   const prof   = profBonus(level);
   const con    = modifier(ab?.CON || 10);
   const calcMaxHp = hp.max || (level * (({ Barbarian:12,Fighter:10,Paladin:10,Ranger:10,Monk:8,Rogue:8,Bard:8,Cleric:8,Druid:8,Warlock:8,Sorcerer:6,Wizard:6 }[class_name] || 8) / 2 + 1 + con));
@@ -171,6 +181,7 @@ export default function CharacterHeader({ onBack }) {
         <div style={{display:'flex',gap:8,alignItems:'flex-start',flexWrap:'wrap'}}>
           <PMStat label="HP" value={`${curHp}/${maxHp}`} color={hpCol} onAdjust={adjustHp} onClick={() => setShowHP(true)} />
           {tempHp > 0 && <PMStat label="Temp HP" value={tempHp} color={hpCol} onAdjust={adjustTempHp} />}
+          {spellBlocks.map(block => <SpellcastBox key={block.className} block={block} />)}
 
           <EditableStat label="AC" value={ac} onSave={setAc} />
           <EditableStat label="INIT" value={init} onSave={setInit} />
