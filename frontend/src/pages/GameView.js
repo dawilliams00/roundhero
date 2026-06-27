@@ -7,8 +7,9 @@ import TrackerTab from '../components/TrackerTab';
 import SpellsTab from '../components/SpellsTab';
 import InventoryTab from '../components/InventoryTab';
 import NotesTab from '../components/NotesTab';
+import BestiaryTab from '../components/BestiaryTab';
 
-const TABS = ['⚔️ Actions','📋 Tracker','✨ Spells','🎒 Items','📝 Notes'];
+const TABS = ['⚔️ Actions','📋 Tracker','✨ Spells','🎒 Items','📝 Notes','🐉 Bestiary'];
 
 export default function GameView() {
   const { id }                    = useParams();
@@ -41,6 +42,7 @@ export default function GameView() {
         {activeTab === 2 && <SpellsTab />}
         {activeTab === 3 && <InventoryTab />}
         {activeTab === 4 && <NotesTab />}
+        {activeTab === 5 && <BestiaryTab />}
       </div>
     </div>
   );

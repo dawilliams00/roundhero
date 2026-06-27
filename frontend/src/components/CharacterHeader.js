@@ -7,6 +7,7 @@ import TraitsModal from './TraitsModal';
 import HPModal from './HPModal';
 import RestModal from './RestModal';
 import RestSummaryModal from './RestSummaryModal';
+import SettingsModal from './SettingsModal';
 
 function EditableStat({ label, value, onSave, color }) {
   const [editing, setEditing] = useState(false);
@@ -144,6 +145,7 @@ export default function CharacterHeader({ onBack }) {
   const [showHP, setShowHP]         = useState(false);
   const [showRest, setShowRest]     = useState(false);
   const [restSummary, setRestSummary] = useState(null);
+  const [showSettings, setShowSettings] = useState(false);
 
   if (!character) return null;
 
@@ -209,6 +211,7 @@ export default function CharacterHeader({ onBack }) {
                 <div style={{fontFamily:"'Cinzel',serif",color:'var(--accent-light)',fontSize:16,lineHeight:1.2}}>{name}</div>
                 <div style={{color:'var(--text-dim)',fontSize:11}}>L{level} {race} {class_name}</div>
               </div>
+              <button className="btn-icon" title="Settings" onClick={() => setShowSettings(true)} style={{fontSize:14,padding:'4px 7px'}}>⚙️</button>
             </div>
 
             <div style={{display:'flex',gap:8,alignItems:'flex-start',flexWrap:'wrap'}}>
@@ -300,6 +303,7 @@ export default function CharacterHeader({ onBack }) {
       {restSummary && (
         <RestSummaryModal summary={restSummary.summary} restType={restSummary.restType} onClose={() => setRestSummary(null)} />
       )}
+      {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
     </>
   );
 }

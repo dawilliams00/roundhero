@@ -5,6 +5,9 @@ from models.custom_content import CustomContent
 from engine.content_packs import get_classes, get_races, get_class_features, get_subclasses
 from engine.spell_data import get_all_spells, get_spells_for_class
 from engine.item_data import get_all_items
+from engine.monster_data import get_all_monsters
+from engine.condition_data import get_all_conditions
+from engine.feat_data import get_all_feats
 
 content_bp = Blueprint("content", __name__)
 
@@ -52,8 +55,9 @@ def create_custom_spell():
 @content_bp.route("/feats", methods=["GET"])
 @jwt_required()
 def list_feats():
-    feats = [c.to_dict() for c in CustomContent.query.filter_by(content_type="feat").all()]
-    return jsonify(feats), 200
+    base = get_all_feats()
+    customs = [c.to_dict() for c in CustomContent.query.filter_by(content_type="feat").all()]
+    return jsonify(base + customs), 200
 
 @content_bp.route("/feats", methods=["POST"])
 @jwt_required()
@@ -71,3 +75,11 @@ def create_custom_feat():
 @content_bp.route("/items", methods=["GET"])
 def list_items():
     return jsonify(get_all_items()), 200
+
+@content_bp.route("/monsters", methods=["GET"])
+def list_monsters():
+    return jsonify(get_all_monsters()), 200
+
+@content_bp.route("/conditions", methods=["GET"])
+def list_conditions():
+    return jsonify(get_all_conditions()), 200
