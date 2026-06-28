@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
-import { SECTION_ORDER, SECTION_COLORS, slotBadgeTextColor, concentrationSlotCount, HASTED_EFFECT, LETHARGIC_CONDITION, maxAttacksForCharacter, isItemActive } from '../utils/dnd';
+import { SECTION_ORDER, SECTION_COLORS, slotBadgeTextColor, concentrationSlotCount, HASTED_EFFECT, LETHARGIC_CONDITION, maxAttacksForCharacter, isItemActive, formatItemBuff, spellCastBucket } from '../utils/dnd';
 import AbilityDetailModal from './AbilityDetailModal';
 import CastSpellPickerModal from './CastSpellPickerModal';
 import ItemSpellsModal from './ItemSpellsModal';
@@ -44,6 +44,14 @@ export default function ActionEconomyTab() {
   const items    = td.inventory?.items || [];
   const chargeItems = items.map((it,i) => ({ it, idx: i })).filter(({it}) => it.charges);
   const weaponItems = items.map((it,i) => ({ it, idx: i })).filter(({it}) => it.is_weapon);
+  // Items with no charges to track but a real passive effect while equipped (stat
+  // modifiers, or an unarmed-strike boost) had no AE presence at all before this - the
+  // ITEMS section only ever looked for it.charges. A Ring of Twilight Mind or a Staff of
+  // the Magi sitting un-attuned has nothing to show here either - isItemActive already
+  // gates equipped+attuned the same way every other buff consumer does.
+  const passiveItems = items.map((it,i) => ({ it, idx: i }))
+    .filter(({it}) => !it.charges && isItemActive(it) && ((it.buffs||[]).length > 0 || it.grants_unarmed_bonus));
+  const knownSpells = character.spell_data?.known_spells || [];
   // Unarmed Strike is always a valid RAW attack option, with or without a magic item
   // boosting it - the row always shows; an equipped+attuned item with
   // grants_unarmed_bonus (gauntlets, etc.) folds its bonus dice in via the same
@@ -275,7 +283,7 @@ export default function ActionEconomyTab() {
           })}
         </div>
 
-        {chargeItems.length > 0 && (
+        {(chargeItems.length > 0 || passiveItems.length > 0) && (
           <div>
             <div style={{padding:'6px 12px',background:'#5d4037',fontSize:11,fontWeight:600,color:'#fff',letterSpacing:1,position:'sticky',top:0,zIndex:1}}>
               ITEMS
@@ -307,6 +315,24 @@ export default function ActionEconomyTab() {
                 </div>
               );
             })}
+            {passiveItems.map(({it, idx}) => (
+              <div key={`passive-${idx}`} style={{display:'flex',alignItems:'center',padding:'8px 12px',borderBottom:'1px solid var(--border)',gap:8}}>
+                <div style={{width:60,flexShrink:0,display:'flex',justifyContent:'center'}}>
+                  {it.grants_unarmed_bonus ? (
+                    <button className="btn btn-sm" onClick={() => setAttackingWeapon('unarmed')} style={{background:'var(--accent)',color:'#fff',minWidth:56}}>👊</button>
+                  ) : (
+                    <span style={{fontSize:11,color:'var(--success)',border:'1px solid var(--success)',borderRadius:8,padding:'1px 6px'}}>Active</span>
+                  )}
+                </div>
+                <div style={{flex:1,cursor:'pointer'}} onClick={() => setViewingItemDetail(idx)}>
+                  <div style={{color:'var(--text-primary)',fontWeight:500,fontSize:13}}>{it.name}</div>
+                  <div style={{color:'var(--text-dim)',fontSize:11}}>
+                    {(it.buffs||[]).map(b => formatItemBuff(b)).join(', ')}
+                    {it.grants_unarmed_bonus ? `${(it.buffs||[]).length ? ' · ' : ''}boosts Unarmed Strike${it.unarmed_bonus_damage_dice ? ` (+${it.unarmed_bonus_damage_dice} ${it.unarmed_bonus_damage_type || 'Bludgeoning'})` : ''}` : ''}
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         )}
 
@@ -315,9 +341,21 @@ export default function ActionEconomyTab() {
           // feat added twice via Browse Feats, or a PDF-imported descriptive feature and
           // a separately-added custom functional version sharing a name) - only the first
           // occurrence of a given tracker_key/name renders, so the player only ever sees one.
+          // The stock "Cast a Spell" entry exists in every section's ae_data regardless of
+          // what the character actually knows - hide it for Bonus Action/Reaction
+          // specifically when nothing known is actually castable in that bucket, so a
+          // character with zero bonus-action or reaction spells doesn't see a dead CAST
+          // button sitting there. Action keeps it unconditionally (everyone effectively
+          // has some 1-action spell option via cantrips/rituals/etc. often enough that
+          // hiding it there risked more confusion than it solved).
+          const hasSpellForBucket = (bucket) => knownSpells.some(s => spellCastBucket(s.casting_time) === bucket);
           const abilities = (ae[section] || []).filter((a, i, arr) =>
             arr.findIndex(b => (b.tracker_key || b.name) === (a.tracker_key || a.name)) === i
-          );
+          ).filter(a => {
+            if (a.cost_type !== 'cast_spell') return true;
+            if (section !== 'Bonus Action' && section !== 'Reaction') return true;
+            return hasSpellForBucket(section);
+          });
           if (!abilities || abilities.length === 0) return null;
           return (
             <div key={section}>
