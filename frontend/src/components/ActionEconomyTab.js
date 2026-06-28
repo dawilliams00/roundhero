@@ -143,8 +143,18 @@ export default function ActionEconomyTab() {
 
   const isBucketUsed = (bucket) => inInitiative && bucket && turnUsed[bucket];
 
+  // Only spend a charge through the API if the feature actually has one to spend - a
+  // passive/no-charge feature (max: 0, e.g. Evasion, Stillness of Mind, Deflect Missiles
+  // on a PDF-imported sheet with no numeric "Uses" printed) still gets a USE button so
+  // it marks the turn-bucket consumed (same as Disengage/Dodge having no tracker_key at
+  // all), but calling useFeature() on one always 400s "No uses remaining" since current
+  // is permanently 0 - the local try/catch here swallowed that, but the global axios
+  // error interceptor in utils/api.js pops its alert BEFORE the catch ever sees it, so
+  // the player got a scary "Something didn't save" dialog for a perfectly normal click.
+  // Skipping the API call entirely when there's no real max avoids triggering it at all.
   const handleUse = async (ability, section) => {
-    if (ability.tracker_key) {
+    const feat = ability.tracker_key ? features[ability.tracker_key] : null;
+    if (feat && (feat.max || 0) > 0) {
       try { await useFeature(ability.tracker_key); } catch {}
     }
     markBucket(bucketForAbility(ability, section));
