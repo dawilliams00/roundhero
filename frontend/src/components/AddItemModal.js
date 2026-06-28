@@ -58,6 +58,10 @@ export default function AddItemModal({ item, onSave, onClose }) {
     bonus_damage_type: item.bonus_damage_type || '',
     buffs: item.buffs || [],
     item_type: item.item_type || (item.is_weapon ? 'Weapon' : 'Other'),
+    grants_unarmed_bonus: !!item.grants_unarmed_bonus,
+    unarmed_bonus_damage_dice: item.unarmed_bonus_damage_dice || '',
+    unarmed_bonus_damage_type: item.unarmed_bonus_damage_type || '',
+    unarmed_heal_or_advantage: !!item.unarmed_heal_or_advantage,
   } : {
     name: '', quantity: 1, weight: 0, rarity: 'Common',
     equipped: false, attunement: false, attuned: false,
@@ -69,6 +73,7 @@ export default function AddItemModal({ item, onSave, onClose }) {
     proficient: true, two_handed: false, bonus_damage_dice: '', bonus_damage_type: '',
     buffs: [],
     item_type: 'Other',
+    grants_unarmed_bonus: false, unarmed_bonus_damage_dice: '', unarmed_bonus_damage_type: '', unarmed_heal_or_advantage: false,
   });
   const set = (k,v) => setForm(f => ({...f,[k]:v}));
   const toggleProperty = (p) => setForm(f => ({...f, properties: f.properties.includes(p) ? f.properties.filter(x=>x!==p) : [...f.properties, p]}));
@@ -142,6 +147,17 @@ export default function AddItemModal({ item, onSave, onClose }) {
       granted_spells: form.granted_spells.filter(s => s.name.trim()).map(s => ({ name: s.name.trim(), level_int: parseInt(s.level_int)||0, charge_cost: parseInt(s.charge_cost)||1 })),
       buffs: form.buffs || [],
       item_type: form.item_type,
+      // Gloves/gauntlets-style items that boost unarmed strikes specifically (e.g.
+      // Gloves of the Galeb Duhr's 2d10 force + heal-or-advantage) - consumed by
+      // ActionEconomyTab to build the Unarmed Strike row's bonus damage, same
+      // bonus_damage_dice/type shape weapons use, plus the heal-or-advantage follow-up
+      // choice WeaponAttackModal offers after the bonus damage is rolled.
+      grants_unarmed_bonus: !!form.grants_unarmed_bonus,
+      ...(form.grants_unarmed_bonus ? {
+        unarmed_bonus_damage_dice: form.unarmed_bonus_damage_dice.trim(),
+        unarmed_bonus_damage_type: form.unarmed_bonus_damage_type,
+        unarmed_heal_or_advantage: !!form.unarmed_heal_or_advantage,
+      } : {}),
       // Weapon fields - always include is_weapon explicitly (even false) so
       // changing item_type away from Weapon on an edit actually clears weapon-ness
       // rather than leaving stale fields from before.
@@ -271,6 +287,20 @@ export default function AddItemModal({ item, onSave, onClose }) {
               <div className="form-group"><label>Bonus Damage Type</label><select value={form.bonus_damage_type} onChange={e=>set('bonus_damage_type',e.target.value)}><option value="">(same as weapon)</option>{DAMAGE_TYPES.concat(['Acid','Cold','Fire','Force','Lightning','Necrotic','Poison','Psychic','Radiant','Thunder']).map(t=><option key={t}>{t}</option>)}</select></div>
             </div>
             <div style={{color:'var(--text-dim)',fontSize:11,marginTop:2}}>An extra damage component rolled alongside the base damage - e.g. Vicious's +2d6, or a different-typed bonus die like Flame Tongue's fire damage.</div>
+          </div>
+        )}
+        <label style={{display:'flex',alignItems:'center',gap:6,marginBottom:8}}><input type="checkbox" checked={form.grants_unarmed_bonus} onChange={e=>set('grants_unarmed_bonus',e.target.checked)} /> Boosts Unarmed Strikes (e.g. magic gauntlets)</label>
+        {form.grants_unarmed_bonus && (
+          <div style={{border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',padding:10,marginBottom:8}}>
+            <div className="form-row">
+              <div className="form-group"><label>Bonus Damage Dice</label><input value={form.unarmed_bonus_damage_dice} onChange={e=>set('unarmed_bonus_damage_dice',e.target.value)} placeholder="e.g. 2d10" /></div>
+              <div className="form-group"><label>Bonus Damage Type</label><select value={form.unarmed_bonus_damage_type} onChange={e=>set('unarmed_bonus_damage_type',e.target.value)}><option value="">(Bludgeoning)</option>{FULL_DAMAGE_TYPES.map(t=><option key={t}>{t}</option>)}</select></div>
+            </div>
+            <label style={{display:'flex',alignItems:'center',gap:6}}>
+              <input type="checkbox" checked={form.unarmed_heal_or_advantage} onChange={e=>set('unarmed_heal_or_advantage',e.target.checked)} />
+              After dealing this bonus damage, offer Heal (equal to the damage) OR Advantage on next roll
+            </label>
+            <div style={{color:'var(--text-dim)',fontSize:11,marginTop:2}}>Adds a bonus damage component to the Unarmed Strike row in Action Economy, only while this item is equipped (and attuned, if required) - same as Vicious's weapon bonus dice, just for fists instead of a weapon.</div>
           </div>
         )}
         <div style={{color:'var(--text-dim)',fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:1,margin:'12px 0 6px'}}>Modifiers</div>

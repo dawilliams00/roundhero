@@ -11,7 +11,7 @@ const parseDice = (diceStr) => {
   return { count: 0, sides: 0, flat: isNaN(flat) ? 0 : flat };
 };
 
-export default function WeaponAttackModal({ itemIndex, onClose, attacksUsed, maxAttacks, onAttack, cantripSpell }) {
+export default function WeaponAttackModal({ itemIndex, weaponOverride, onClose, attacksUsed, maxAttacks, onAttack, cantripSpell }) {
   const { character, saveTrackerData, useSlot } = useCharacter();
   const [attackResult, setAttackResult] = useState(null);
   const [damageResult, setDamageResult] = useState(null);
@@ -24,11 +24,15 @@ export default function WeaponAttackModal({ itemIndex, onClose, attacksUsed, max
   // same swing, not adding a new one.
   const [thisAttackCounted, setThisAttackCounted] = useState(false);
   const [smiteApplied, setSmiteApplied] = useState(false);
+  const [unarmedChoice, setUnarmedChoice] = useState(null);
 
   if (!character) return null;
   const td = character.tracker_data || {};
   const items = td.inventory?.items || [];
-  const weapon = items[itemIndex];
+  // weaponOverride is a virtual, non-inventory "weapon" (currently just Unarmed Strike) -
+  // itemIndex stays meaningless for it, which is fine since the only itemIndex-dependent
+  // feature (Versatile two-handed toggle) never applies to something with no inventory row.
+  const weapon = weaponOverride || items[itemIndex];
   if (!weapon) return null;
   const attacksExhausted = td.in_initiative && attacksUsed >= maxAttacks;
 
@@ -163,6 +167,7 @@ export default function WeaponAttackModal({ itemIndex, onClose, attacksUsed, max
     const cantripSpec = buildCantripDamage();
     const cantrip = cantripSpec ? { ...cantripSpec, ...rollDamageDetailed(cantripSpec) } : null;
     const smite = damageResult.smite ? { ...damageResult.smite, ...rollDamageDetailed(damageResult.smite) } : null;
+    setUnarmedChoice(null);
     setDamageResult({ ...buildDamage(), ...dmg, extra, cantrip, smite });
   };
 
@@ -278,6 +283,32 @@ export default function WeaponAttackModal({ itemIndex, onClose, attacksUsed, max
                     {damageResult.total + (damageResult.extra?.total||0) + (damageResult.cantrip?.total||0) + (damageResult.smite?.total||0)}
                   </div>
                 </div>
+              )}
+              {weapon.unarmed_heal_or_advantage && damageResult.extra && (
+                unarmedChoice ? (
+                  <div style={{color:'var(--success)',fontSize:12,marginTop:10}}>
+                    {unarmedChoice === 'healed' ? `Healed ${damageResult.extra.total} HP.` : 'Advantage on your next roll - remove the chip from the header once used.'}
+                  </div>
+                ) : (
+                  <div style={{borderTop:'1px solid var(--border)',marginTop:10,paddingTop:8}}>
+                    <div style={{color:'var(--text-dim)',fontSize:11,marginBottom:6}}>Use the {damageResult.extra.total} {damageResult.extra.damage_type} damage to:</div>
+                    <div style={{display:'flex',gap:8}}>
+                      <button className="btn btn-secondary" style={{flex:1}} onClick={async () => {
+                        const hp = td.hp || {};
+                        const cap = hp.max_override || hp.max || 0;
+                        await saveTrackerData({ ...td, hp: { ...hp, current: Math.min(cap, (hp.current||0) + damageResult.extra.total) } });
+                        setUnarmedChoice('healed');
+                      }}>Heal {damageResult.extra.total} HP</button>
+                      <button className="btn btn-secondary" style={{flex:1}} onClick={async () => {
+                        const effects = td.active_effects || [];
+                        if (!effects.includes('Advantage (next roll)')) {
+                          await saveTrackerData({ ...td, active_effects: [...effects, 'Advantage (next roll)'] });
+                        }
+                        setUnarmedChoice('advantage');
+                      }}>Gain Advantage (next roll)</button>
+                    </div>
+                  </div>
+                )
               )}
               <div style={{display:'flex',gap:8,marginTop:10}}>
                 <button className="btn btn-secondary" style={{flex:1}} onClick={rerollDamage}>Reroll</button>

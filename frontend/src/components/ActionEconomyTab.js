@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
-import { SECTION_ORDER, SECTION_COLORS, slotBadgeTextColor, concentrationSlotCount, HASTED_EFFECT, LETHARGIC_CONDITION, maxAttacksForCharacter } from '../utils/dnd';
+import { SECTION_ORDER, SECTION_COLORS, slotBadgeTextColor, concentrationSlotCount, HASTED_EFFECT, LETHARGIC_CONDITION, maxAttacksForCharacter, isItemActive } from '../utils/dnd';
 import AbilityDetailModal from './AbilityDetailModal';
 import CastSpellPickerModal from './CastSpellPickerModal';
 import ItemSpellsModal from './ItemSpellsModal';
@@ -44,6 +44,19 @@ export default function ActionEconomyTab() {
   const items    = td.inventory?.items || [];
   const chargeItems = items.map((it,i) => ({ it, idx: i })).filter(({it}) => it.charges);
   const weaponItems = items.map((it,i) => ({ it, idx: i })).filter(({it}) => it.is_weapon);
+  // Unarmed Strike is always a valid RAW attack option, with or without a magic item
+  // boosting it - the row always shows; an equipped+attuned item with
+  // grants_unarmed_bonus (gauntlets, etc.) folds its bonus dice in via the same
+  // bonus_damage_dice mechanism weapons already use. itemIndex doesn't apply to this
+  // virtual "weapon" (no inventory row), so WeaponAttackModal takes it as weaponOverride.
+  const unarmedBonusItem = items.find(it => it.grants_unarmed_bonus && isItemActive(it));
+  const unarmedStrike = {
+    name: 'Unarmed Strike', weapon_category: 'Simple', weapon_range: 'Melee',
+    damage_dice: '1', damage_type: 'Bludgeoning', proficient: true, is_weapon: true,
+    bonus_damage_dice: unarmedBonusItem?.unarmed_bonus_damage_dice || '',
+    bonus_damage_type: unarmedBonusItem?.unarmed_bonus_damage_type || '',
+    unarmed_heal_or_advantage: !!unarmedBonusItem?.unarmed_heal_or_advantage,
+  };
   const inInitiative = !!td.in_initiative;
   const isHasted = (td.active_effects || []).includes(HASTED_EFFECT);
   const concSlots = td.concentration?.slots || [];
@@ -228,39 +241,38 @@ export default function ActionEconomyTab() {
             ))}
           </div>
         )}
-        {weaponItems.length > 0 && (
-          <div>
-            <div style={{padding:'6px 12px',background:'#37474f',fontSize:11,fontWeight:600,color:'#fff',letterSpacing:1,position:'sticky',top:0,zIndex:1}}>
-              WEAPONS
-            </div>
-            {/* Extra Attack (detected by feature name, same substring approach used
-                elsewhere) raises maxAttacks to 2 - the Action bucket itself only marks
-                used once all granted attacks for the turn are spent, so a Fighter/Paladin
-                etc. actually gets two free swings before anything else sharing the Action
-                bucket dims. attacksUsed is a turn-scoped count (turnUsed.Attacks), reset
-                the same places Action/Bonus/Reaction already reset. */}
-            {weaponItems.map(({it, idx}) => {
-              const attacksUsed = turnUsed.Attacks || 0;
-              const attacksExhausted = inInitiative && attacksUsed >= maxAttacks;
-              return (
-                <div key={idx} style={{display:'flex',alignItems:'center',padding:'8px 12px',borderBottom:'1px solid var(--border)',gap:8,opacity: attacksExhausted ? 0.5 : 1}}>
-                  <div style={{width:60,flexShrink:0,display:'flex',justifyContent:'center'}}>
-                    <button className="btn btn-sm" onClick={() => setAttackingWeapon(idx)} disabled={attacksExhausted} style={{background: attacksExhausted ? 'var(--border)' : 'var(--accent)',color:'#fff',minWidth:56}}>
-                      ATTACK
-                    </button>
-                  </div>
-                  <div style={{flex:1,cursor:'pointer'}} onClick={() => setAttackingWeapon(idx)}>
-                    <div style={{color:'var(--text-primary)',fontWeight:500,fontSize:13}}>{it.name}</div>
-                    <div style={{color:'var(--text-dim)',fontSize:11}}>
-                      {it.weapon_range} · {it.damage_dice} {it.damage_type}{(it.properties||[]).length ? ` · ${it.properties.join(', ')}` : ''}
-                    </div>
-                    {inInitiative && <div style={{color: attacksExhausted ? 'var(--text-dim)' : 'var(--text-secondary)',fontSize:10}}>Attack {Math.min(attacksUsed, maxAttacks)}/{maxAttacks} used this turn</div>}
-                  </div>
-                </div>
-              );
-            })}
+        <div>
+          <div style={{padding:'6px 12px',background:'#37474f',fontSize:11,fontWeight:600,color:'#fff',letterSpacing:1,position:'sticky',top:0,zIndex:1}}>
+            WEAPONS
           </div>
-        )}
+          {/* Extra Attack (detected by feature name, same substring approach used
+              elsewhere) raises maxAttacks to 2 - the Action bucket itself only marks
+              used once all granted attacks for the turn are spent, so a Fighter/Paladin
+              etc. actually gets two free swings before anything else sharing the Action
+              bucket dims. attacksUsed is a turn-scoped count (turnUsed.Attacks), reset
+              the same places Action/Bonus/Reaction already reset. Unarmed Strike always
+              shows (RAW always lets you do this), even with no weapons in inventory. */}
+          {[...weaponItems.map(({it, idx}) => ({ it, idx, key: idx })), { it: unarmedStrike, idx: 'unarmed', key: 'unarmed' }].map(({it, idx, key}) => {
+            const attacksUsed = turnUsed.Attacks || 0;
+            const attacksExhausted = inInitiative && attacksUsed >= maxAttacks;
+            return (
+              <div key={key} style={{display:'flex',alignItems:'center',padding:'8px 12px',borderBottom:'1px solid var(--border)',gap:8,opacity: attacksExhausted ? 0.5 : 1}}>
+                <div style={{width:60,flexShrink:0,display:'flex',justifyContent:'center'}}>
+                  <button className="btn btn-sm" onClick={() => setAttackingWeapon(idx)} disabled={attacksExhausted} style={{background: attacksExhausted ? 'var(--border)' : 'var(--accent)',color:'#fff',minWidth:56}}>
+                    ATTACK
+                  </button>
+                </div>
+                <div style={{flex:1,cursor:'pointer'}} onClick={() => setAttackingWeapon(idx)}>
+                  <div style={{color:'var(--text-primary)',fontWeight:500,fontSize:13}}>{it.name}</div>
+                  <div style={{color:'var(--text-dim)',fontSize:11}}>
+                    {it.weapon_range} · {it.damage_dice} {it.damage_type}{(it.properties||[]).length ? ` · ${it.properties.join(', ')}` : ''}{it.bonus_damage_dice ? ` + ${it.bonus_damage_dice} ${it.bonus_damage_type || it.damage_type}` : ''}
+                  </div>
+                  {inInitiative && <div style={{color: attacksExhausted ? 'var(--text-dim)' : 'var(--text-secondary)',fontSize:10}}>Attack {Math.min(attacksUsed, maxAttacks)}/{maxAttacks} used this turn</div>}
+                </div>
+              </div>
+            );
+          })}
+        </div>
 
         {chargeItems.length > 0 && (
           <div>
@@ -414,7 +426,8 @@ export default function ActionEconomyTab() {
       )}
       {attackingWeapon !== null && (
         <WeaponAttackModal
-          itemIndex={attackingWeapon}
+          itemIndex={attackingWeapon === 'unarmed' ? null : attackingWeapon}
+          weaponOverride={attackingWeapon === 'unarmed' ? unarmedStrike : undefined}
           attacksUsed={turnUsed.Attacks || 0}
           maxAttacks={maxAttacks}
           onAttack={recordAttack}
