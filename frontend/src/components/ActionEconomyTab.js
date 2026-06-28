@@ -56,6 +56,7 @@ export default function ActionEconomyTab() {
     bonus_damage_dice: unarmedBonusItem?.unarmed_bonus_damage_dice || '',
     bonus_damage_type: unarmedBonusItem?.unarmed_bonus_damage_type || '',
     unarmed_heal_or_advantage: !!unarmedBonusItem?.unarmed_heal_or_advantage,
+    boostedBy: unarmedBonusItem?.name,
   };
   const inInitiative = !!td.in_initiative;
   const isHasted = (td.active_effects || []).includes(HASTED_EFFECT);
@@ -265,7 +266,7 @@ export default function ActionEconomyTab() {
                 <div style={{flex:1,cursor:'pointer'}} onClick={() => setAttackingWeapon(idx)}>
                   <div style={{color:'var(--text-primary)',fontWeight:500,fontSize:13}}>{it.name}</div>
                   <div style={{color:'var(--text-dim)',fontSize:11}}>
-                    {it.weapon_range} · {it.damage_dice} {it.damage_type}{(it.properties||[]).length ? ` · ${it.properties.join(', ')}` : ''}{it.bonus_damage_dice ? ` + ${it.bonus_damage_dice} ${it.bonus_damage_type || it.damage_type}` : ''}
+                    {it.weapon_range} · {it.damage_dice} {it.damage_type}{(it.properties||[]).length ? ` · ${it.properties.join(', ')}` : ''}{it.bonus_damage_dice ? ` + ${it.bonus_damage_dice} ${it.bonus_damage_type || it.damage_type}${it.boostedBy ? ` (${it.boostedBy})` : ''}` : ''}
                   </div>
                   {inInitiative && <div style={{color: attacksExhausted ? 'var(--text-dim)' : 'var(--text-secondary)',fontSize:10}}>Attack {Math.min(attacksUsed, maxAttacks)}/{maxAttacks} used this turn</div>}
                 </div>
