@@ -417,6 +417,29 @@ export const cantripHitBonusForLevel = (tiers, level) => {
   return chosen;
 };
 
+// Monk's Martial Arts die scales with MONK level specifically (not total character
+// level for a multiclass like Monk 11 / Barbarian 2), and lets you use DEX instead of
+// STR for unarmed strikes - reuses parseClassLevels (same multiclass-string parsing
+// already used for spell-list filtering) rather than assuming class_name is a clean
+// single class name, so this works for PDF-imported/multiclass characters the same way
+// it does for a manually-built single-class Monk. Returns the die's side count (4/6/8/10)
+// or null if the character has no Monk levels at all.
+export const martialArtsDie = (classNameRaw, totalLevel) => {
+  const parts = parseClassLevels(classNameRaw);
+  let monkLevel = null;
+  if (parts.length) {
+    const monk = parts.find(p => p.className.toLowerCase().includes('monk'));
+    if (monk) monkLevel = monk.level;
+  } else if ((classNameRaw || '').toLowerCase().includes('monk')) {
+    monkLevel = totalLevel;
+  }
+  if (monkLevel == null) return null;
+  if (monkLevel >= 17) return 10;
+  if (monkLevel >= 11) return 8;
+  if (monkLevel >= 5) return 6;
+  return 4;
+};
+
 // Extra Attack (Fighter/Paladin/etc.) grants a second attack - detected by feature name
 // substring, same approach as the Sorcery Points/Divine Smite name-based detection
 // elsewhere, so it works for both engine-built and PDF-imported characters regardless of

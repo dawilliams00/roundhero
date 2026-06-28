@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
-import { SECTION_ORDER, SECTION_COLORS, slotBadgeTextColor, concentrationSlotCount, HASTED_EFFECT, LETHARGIC_CONDITION, maxAttacksForCharacter, isItemActive, formatItemBuff, spellCastBucket } from '../utils/dnd';
+import { SECTION_ORDER, SECTION_COLORS, slotBadgeTextColor, concentrationSlotCount, HASTED_EFFECT, LETHARGIC_CONDITION, maxAttacksForCharacter, isItemActive, formatItemBuff, spellCastBucket, martialArtsDie } from '../utils/dnd';
 import AbilityDetailModal from './AbilityDetailModal';
 import CastSpellPickerModal from './CastSpellPickerModal';
 import ItemSpellsModal from './ItemSpellsModal';
@@ -58,9 +58,16 @@ export default function ActionEconomyTab() {
   // bonus_damage_dice mechanism weapons already use. itemIndex doesn't apply to this
   // virtual "weapon" (no inventory row), so WeaponAttackModal takes it as weaponOverride.
   const unarmedBonusItem = items.find(it => it.grants_unarmed_bonus && isItemActive(it));
+  // Martial Arts (Monk) replaces the flat "1 + STR mod" RAW baseline with a scaling die
+  // (1d4 -> 1d10 by MONK level, computed dynamically - not hardcoded to any one
+  // character) and lets the attack use DEX instead of STR, same as a Finesse weapon -
+  // reusing Finesse's existing "better of STR/DEX" logic in weaponAbilityMod rather than
+  // adding a parallel ability-choice path.
+  const monkDie = martialArtsDie(character.class_name, character.level);
   const unarmedStrike = {
     name: 'Unarmed Strike', weapon_category: 'Simple', weapon_range: 'Melee',
-    damage_dice: '1', damage_type: 'Bludgeoning', proficient: true, is_weapon: true,
+    damage_dice: monkDie ? `1d${monkDie}` : '1', damage_type: 'Bludgeoning', proficient: true, is_weapon: true,
+    properties: monkDie ? ['Finesse'] : [],
     bonus_damage_dice: unarmedBonusItem?.unarmed_bonus_damage_dice || '',
     bonus_damage_type: unarmedBonusItem?.unarmed_bonus_damage_type || '',
     unarmed_heal_or_advantage: !!unarmedBonusItem?.unarmed_heal_or_advantage,
