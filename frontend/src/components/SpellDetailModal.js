@@ -373,7 +373,18 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
             const max = maxAttacksForCharacter(character.tracker_data?.features);
             return { ...p, Attacks: used, ...(used >= max ? { Action: true } : {}) };
           })}
-          onClose={() => { setPickedWeaponIdx(null); setAwaitingWeapon(false); finish(); }}
+          onClose={() => {
+            // Plain onClose(), not finish() - the weapon modal's own onAttack already
+            // marks whatever action-economy bucket needs marking, gated on the player
+            // actually rolling/logging an attack. Calling finish() here (which fires
+            // onCastSuccess) would mark the cast_spell bucket unconditionally just for
+            // opening the weapon picker and backing out, even with nothing rolled - the
+            // exact "looked at my damage then backed out" case that shouldn't cost
+            // anything.
+            setPickedWeaponIdx(null);
+            setAwaitingWeapon(false);
+            onClose();
+          }}
         />
       )}
     </div>

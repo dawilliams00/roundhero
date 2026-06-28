@@ -3,6 +3,12 @@ import api from '../utils/api';
 import { ABILITY_KEYS } from '../utils/dnd';
 
 const RARITIES = ['Common','Uncommon','Rare','Very Rare','Legendary','Artifact'];
+// Mundane + magic item categories (5e SRD-ish grouping) - what TYPE of item this is
+// gates which modifiers make sense for it (a sword shouldn't offer to buff AC, armor
+// shouldn't offer weapon attack/damage), and the weapon-specific fields below this
+// selector only show for "Weapon". is_weapon stays derived from this (item_type ===
+// 'Weapon') for backward compatibility with every existing engine check on it.is_weapon.
+const ITEM_TYPES = ['Weapon','Armor','Shield','Potion','Ring','Rod','Scroll','Staff','Wand','Wondrous Item','Tool','Adventuring Gear','Other'];
 const RECHARGES = ['none','dawn','dusk','short_rest','long_rest'];
 const WEAPON_CATEGORIES = ['Simple','Martial'];
 const WEAPON_RANGES = ['Melee','Ranged'];
@@ -48,6 +54,7 @@ export default function AddItemModal({ item, onSave, onClose }) {
     bonus_damage_dice: item.bonus_damage_dice || '',
     bonus_damage_type: item.bonus_damage_type || '',
     buffs: item.buffs || [],
+    item_type: item.item_type || (item.is_weapon ? 'Weapon' : 'Other'),
   } : {
     name: '', quantity: 1, weight: 0, rarity: 'Common',
     equipped: false, attunement: false, attuned: false,
@@ -58,6 +65,7 @@ export default function AddItemModal({ item, onSave, onClose }) {
     range_normal: '', range_long: '', two_handed_damage_dice: '', two_handed_damage_type: '',
     proficient: true, two_handed: false, bonus_damage_dice: '', bonus_damage_type: '',
     buffs: [],
+    item_type: 'Other',
   });
   const set = (k,v) => setForm(f => ({...f,[k]:v}));
   const toggleProperty = (p) => setForm(f => ({...f, properties: f.properties.includes(p) ? f.properties.filter(x=>x!==p) : [...f.properties, p]}));
@@ -68,14 +76,19 @@ export default function AddItemModal({ item, onSave, onClose }) {
   const updateModifier = (i, patch) => set('buffs', form.buffs.map((b, idx) => idx === i ? { ...b, ...patch } : b));
   const removeModifier = (i) => set('buffs', form.buffs.filter((_, idx) => idx !== i));
   const setModifierType = (i, value) => {
-    // "set:STR" etc. selects the ability-score-override shape; anything else is a plain
-    // ADD_MODIFIERS stat key. One update, not two sequential ones reading the same stale
-    // form.buffs - that's the exact bug class this file's submit() footgun note warns
-    // about, just on the read side instead of the save side.
+    // "set:STR" (ability override), "add:STR" (flat ability bonus), "advsave:STR"/
+    // "advsave:all" (advantage on saves) all select a different buff shape; anything
+    // else is a plain ADD_MODIFIERS stat key. One update, not several sequential ones
+    // reading the same stale form.buffs - that's the exact bug class this file's
+    // submit() footgun note warns about, just on the read side instead of the save side.
     if (value.startsWith('set:')) {
-      updateModifier(i, { stat: value.slice(4), mode: 'set', value: 19 });
+      updateModifier(i, { stat: value.slice(4), mode: 'set', ability: undefined, value: 19 });
+    } else if (value.startsWith('add:')) {
+      updateModifier(i, { stat: value.slice(4), mode: 'add', ability: undefined, value: 1 });
+    } else if (value.startsWith('advsave:')) {
+      updateModifier(i, { stat: 'advantage_save', mode: undefined, ability: value.slice(8), value: undefined });
     } else {
-      updateModifier(i, { stat: value, mode: undefined, value: 1 });
+      updateModifier(i, { stat: value, mode: undefined, ability: undefined, value: 1 });
     }
   };
 
@@ -119,11 +132,12 @@ export default function AddItemModal({ item, onSave, onClose }) {
       charges: form.has_charges ? { current: parseInt(form.charges_current)||0, max: parseInt(form.charges_max)||0, recharge: form.recharge, ...(form.recharge_amount.trim() ? { recharge_amount: form.recharge_amount.trim() } : {}) } : null,
       granted_spells: form.granted_spells.filter(s => s.name.trim()).map(s => ({ name: s.name.trim(), level_int: parseInt(s.level_int)||0, charge_cost: parseInt(s.charge_cost)||1 })),
       buffs: form.buffs || [],
+      item_type: form.item_type,
       // Weapon fields - always include is_weapon explicitly (even false) so
-      // un-checking it on an edit actually clears weapon-ness rather than
-      // leaving stale fields from before.
-      is_weapon: !!form.is_weapon,
-      ...(form.is_weapon ? {
+      // changing item_type away from Weapon on an edit actually clears weapon-ness
+      // rather than leaving stale fields from before.
+      is_weapon: form.item_type === 'Weapon',
+      ...(form.item_type === 'Weapon' ? {
         weapon_category: form.weapon_category,
         weapon_range: form.weapon_range,
         damage_dice: form.damage_dice,
@@ -172,8 +186,8 @@ export default function AddItemModal({ item, onSave, onClose }) {
             <div className="form-group"><label>Recharge Amount</label><input value={form.recharge_amount} onChange={e=>set('recharge_amount',e.target.value)} placeholder="e.g. 2d4+2 (blank = full)" /></div>
           </div>
         )}
-        <label style={{display:'flex',alignItems:'center',gap:6,marginBottom:8}}><input type="checkbox" checked={form.is_weapon} onChange={e=>set('is_weapon',e.target.checked)} /> Is this a weapon?</label>
-        {form.is_weapon && (
+        <div className="form-group"><label>Item Type</label><select value={form.item_type} onChange={e=>set('item_type',e.target.value)}>{ITEM_TYPES.map(t=><option key={t}>{t}</option>)}</select></div>
+        {form.item_type === 'Weapon' && (
           <div style={{border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',padding:10,marginBottom:8}}>
             <div className="form-row">
               <div className="form-group"><label>Category</label><select value={form.weapon_category} onChange={e=>set('weapon_category',e.target.value)}>{WEAPON_CATEGORIES.map(c=><option key={c}>{c}</option>)}</select></div>
@@ -212,24 +226,38 @@ export default function AddItemModal({ item, onSave, onClose }) {
         <div style={{color:'var(--text-dim)',fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:1,margin:'12px 0 6px'}}>Modifiers</div>
         {form.buffs.map((b, i) => {
           const isSetMode = b.mode === 'set';
-          const selectValue = isSetMode ? `set:${b.stat}` : b.stat;
+          const isAddMode = b.mode === 'add';
+          const isAdvSave = b.stat === 'advantage_save';
+          const selectValue = isSetMode ? `set:${b.stat}` : isAddMode ? `add:${b.stat}` : isAdvSave ? `advsave:${b.ability || 'all'}` : b.stat;
           return (
             <div key={i} style={{display:'flex',gap:6,alignItems:'center',marginBottom:6}}>
               <select value={selectValue} onChange={e => setModifierType(i, e.target.value)} style={{flex:2}}>
-                {ADD_MODIFIERS.filter(m => form.is_weapon || !m.stat.startsWith('weapon_')).map(m => (
+                {/* weapon_attack_modifier/weapon_damage_modifier are gated to Weapon - they're
+                    explicitly "(this weapon)" buffs with no meaning on anything else. AC is
+                    NOT excluded for weapons - a JSON search turned up real existing items
+                    (a parrying dagger, a couple of archfiend artifact weapons) that
+                    legitimately grant AC while wielded, so that assumption didn't hold. */}
+                {ADD_MODIFIERS.filter(m => !m.stat.startsWith('weapon_') || form.item_type === 'Weapon').map(m => (
                   <option key={m.stat} value={m.stat}>{m.label}</option>
                 ))}
-                {ABILITY_KEYS.map(k => <option key={k} value={`set:${k}`}>Set {k} Score To...</option>)}
+                {ABILITY_KEYS.map(k => <option key={`set-${k}`} value={`set:${k}`}>Set {k} Score To...</option>)}
+                {ABILITY_KEYS.map(k => <option key={`add-${k}`} value={`add:${k}`}>Add to {k} Score</option>)}
+                <option value="advsave:all">Advantage on All Saving Throws</option>
+                {ABILITY_KEYS.map(k => <option key={`advsave-${k}`} value={`advsave:${k}`}>Advantage on {k} Saves</option>)}
               </select>
-              <span style={{fontSize:12,color:'var(--text-dim)'}}>{isSetMode ? 'becomes' : '+'}</span>
-              <input type="number" value={b.value} onChange={e => updateModifier(i, { value: parseInt(e.target.value) || 0 })} style={{width:60}} />
+              {!isAdvSave && (
+                <>
+                  <span style={{fontSize:12,color:'var(--text-dim)'}}>{isSetMode ? 'becomes' : '+'}</span>
+                  <input type="number" value={b.value} onChange={e => updateModifier(i, { value: parseInt(e.target.value) || 0 })} style={{width:60}} />
+                </>
+              )}
               <button className="btn btn-secondary btn-sm" onClick={() => removeModifier(i)}>✕</button>
             </div>
           );
         })}
         <button className="btn btn-secondary btn-sm" style={{marginBottom:8}} onClick={addModifier}>+ Add Modifier</button>
         <div style={{color:'var(--text-dim)',fontSize:11,marginBottom:10}}>
-          Only applies while the item is Equipped (and Attuned, if attunement is required). "Set X Score To" never lowers the character's score - it only raises it up to the value entered, and stops applying the moment the item is unequipped.
+          Only applies while the item is Equipped (and Attuned, if attunement is required). "Set X Score To" never lowers the character's score - it only raises it up to the value entered. "Add to X Score" is a flat bonus regardless of current score. "Advantage on Saves" shows as a header chip (RAW advantage isn't auto-rolled anywhere in this app - same as conditions/exhaustion, you apply it yourself).
         </div>
         <div className="form-group"><label>Description</label><textarea value={form.description} onChange={e=>set('description',e.target.value)} rows={3} style={{width:'100%',resize:'vertical'}} /></div>
 

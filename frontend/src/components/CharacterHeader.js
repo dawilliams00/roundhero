@@ -260,6 +260,12 @@ export default function CharacterHeader({ onBack }) {
     ...(traits.vulnerabilities||[]).map(t => ({t: traitName(t), d: t?.description, c:'var(--danger)'})),
     ...(traits.advantages||[]).map(t => ({t: traitName(t), d: t?.description, c:'var(--accent-light)'})),
     ...(traits.disadvantages||[]).map(t => ({t: traitName(t), d: t?.description, c:'var(--warning)'})),
+    // Item-granted advantage on saves (an advantage_save buff, e.g. a Cloak of
+    // Protection-style homebrew) shows the same way Haste's hardcoded "ADV on DEX
+    // saves" chip already does - just sourced from equipped items instead.
+    ...itemBonuses.advantageSaves.map(a => ({
+      t: `ADV on ${a.ability !== 'all' ? `${a.ability} ` : ''}saves`, d: a.source, c: 'var(--accent-light)',
+    })),
   ];
 
   const adjustHp = async delta => {

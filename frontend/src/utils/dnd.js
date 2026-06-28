@@ -208,18 +208,24 @@ const ADDITIVE_BUFF_STATS = ['ac_base', 'saving_throw_modifier', 'spell_attack_m
 export const computeItemBonuses = (items) => {
   const bonuses = { ac_base: 0, saving_throw_modifier: 0, spell_attack_modifier: 0, spell_dc_modifier: 0 };
   const abilityOverrides = {};
+  const abilityAdds = {};
+  const advantageSaves = [];
   (items || []).forEach(it => {
     if (!isItemActive(it)) return;
     (it.buffs || []).forEach(b => {
       if (!b || !b.stat) return;
       if (b.mode === 'set' && ABILITY_KEYS.includes(b.stat)) {
         abilityOverrides[b.stat] = Math.max(abilityOverrides[b.stat] ?? -Infinity, b.value || 0);
+      } else if (b.mode === 'add' && ABILITY_KEYS.includes(b.stat)) {
+        abilityAdds[b.stat] = (abilityAdds[b.stat] || 0) + (b.value || 0);
+      } else if (b.stat === 'advantage_save') {
+        advantageSaves.push({ ability: b.ability || 'all', source: it.name });
       } else if (ADDITIVE_BUFF_STATS.includes(b.stat)) {
         bonuses[b.stat] += b.value || 0;
       }
     });
   });
-  return { ...bonuses, abilityOverrides };
+  return { ...bonuses, abilityOverrides, abilityAdds, advantageSaves };
 };
 
 // Weapon attack/damage buffs (e.g. a +1 longsword) are intrinsically tied to that
@@ -266,17 +272,29 @@ export const formatItemBuff = (b) => {
   if (b.mode === 'set' && ABILITY_KEYS.includes(b.stat)) {
     return `${ABILITY_LABELS[b.stat]} becomes ${b.value}`;
   }
+  if (b.mode === 'add' && ABILITY_KEYS.includes(b.stat)) {
+    return `${ABILITY_LABELS[b.stat]}: +${b.value}`;
+  }
+  if (b.stat === 'advantage_save') {
+    return `Advantage on ${b.ability && b.ability !== 'all' ? `${ABILITY_LABELS[b.ability] || b.ability} ` : 'all '}saving throws`;
+  }
   const label = BUFF_STAT_LABELS[b.stat] || b.stat.replace(/_/g, ' ');
   return `${label}: +${b.value}`;
 };
 
-// Ability scores after applying any "set if higher" item overrides (Headband of
-// Intellect, Belt of Giant Strength, etc.) - a floor, not an add, and never lowers a score.
+// Ability scores after applying any item overrides - "set" buffs (Headband of
+// Intellect, Belt of Giant Strength, etc.) are a floor, never lowering a score, taken
+// BEFORE "add" buffs (a flat +N regardless of current score) are summed on top - this
+// ordering matches how a player would naturally read two stacked effects on the same
+// score, even though RAW rarely has both on one character at once.
 export const effectiveAbilityScores = (abilityScores, items) => {
-  const { abilityOverrides } = computeItemBonuses(items);
+  const { abilityOverrides, abilityAdds } = computeItemBonuses(items);
   const out = { ...abilityScores };
   ABILITY_KEYS.forEach(k => {
-    if (abilityOverrides[k] != null) out[k] = Math.max(out[k] ?? 10, abilityOverrides[k]);
+    let v = out[k] ?? 10;
+    if (abilityOverrides[k] != null) v = Math.max(v, abilityOverrides[k]);
+    if (abilityAdds[k]) v += abilityAdds[k];
+    out[k] = v;
   });
   return out;
 };

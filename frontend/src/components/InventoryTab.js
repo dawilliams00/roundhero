@@ -25,13 +25,17 @@ export default function InventoryTab() {
   const [viewing, setViewing] = useState(null);
   const [viewingSpells, setViewingSpells] = useState(null);
   const [recharging, setRecharging] = useState(null);
-  const [sortBy, setSortBy] = useState('default');
   const [infoMessage, setInfoMessage] = useState(null);
 
   if (!character) return null;
   const td  = character.tracker_data || {};
   const inv = td.inventory || { currency: { cp:0,sp:0,ep:0,gp:0,pp:0 }, items: [] };
   const items = inv.items || [];
+  // Persisted on the character (not local component state) - a plain useState reset to
+  // 'default' every time the player left and came back to this tab, since switching tabs
+  // unmounts it. Saved the same way every other per-character UI preference here is.
+  const sortBy = td.settings?.inventory_sort || 'default';
+  const setSortBy = (v) => saveTrackerData({ ...td, settings: { ...td.settings, inventory_sort: v } });
 
   const save = (newInv) => saveTrackerData({ ...td, inventory: newInv });
 
