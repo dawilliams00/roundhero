@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../utils/api';
+import { ABILITY_KEYS } from '../utils/dnd';
 
 const RARITIES = ['Common','Uncommon','Rare','Very Rare','Legendary','Artifact'];
 const RECHARGES = ['none','dawn','dusk','short_rest','long_rest'];
@@ -7,6 +8,21 @@ const WEAPON_CATEGORIES = ['Simple','Martial'];
 const WEAPON_RANGES = ['Melee','Ranged'];
 const DAMAGE_TYPES = ['Slashing','Piercing','Bludgeoning'];
 const WEAPON_PROPERTIES = ['Ammunition','Finesse','Heavy','Light','Loading','Monk','Reach','Special','Thrown','Two-Handed','Versatile'];
+
+// Every buff stat the engine actually consumes (computeItemBonuses/weaponItemBonus in
+// dnd.js) - the modifier editor below is just a friendly form over this same set, so a
+// "+3 weapon" (weapon_attack_modifier + weapon_damage_modifier) or a +1 AC ring (ac_base)
+// can be entered without hand-writing JSON via the admin editor. ADD-mode stats sum a
+// flat value; SET-mode (an ability key) overrides that ability's score while equipped
+// (computeItemBonuses takes the max against the character's raw score, never lowers it).
+const ADD_MODIFIERS = [
+  { stat: 'ac_base', label: 'AC' },
+  { stat: 'saving_throw_modifier', label: 'All Saving Throws' },
+  { stat: 'spell_attack_modifier', label: 'Spell Attack Rolls' },
+  { stat: 'spell_dc_modifier', label: 'Spell Save DC' },
+  { stat: 'weapon_attack_modifier', label: 'Weapon Attack Rolls (this weapon)' },
+  { stat: 'weapon_damage_modifier', label: 'Weapon Damage (this weapon)' },
+];
 
 export default function AddItemModal({ item, onSave, onClose }) {
   const [form, setForm] = useState(() => item ? {
@@ -31,6 +47,7 @@ export default function AddItemModal({ item, onSave, onClose }) {
     two_handed: !!item.two_handed,
     bonus_damage_dice: item.bonus_damage_dice || '',
     bonus_damage_type: item.bonus_damage_type || '',
+    buffs: item.buffs || [],
   } : {
     name: '', quantity: 1, weight: 0, rarity: 'Common',
     equipped: false, attunement: false, attuned: false,
@@ -40,9 +57,27 @@ export default function AddItemModal({ item, onSave, onClose }) {
     damage_dice: '', damage_type: 'Slashing', properties: [],
     range_normal: '', range_long: '', two_handed_damage_dice: '', two_handed_damage_type: '',
     proficient: true, two_handed: false, bonus_damage_dice: '', bonus_damage_type: '',
+    buffs: [],
   });
   const set = (k,v) => setForm(f => ({...f,[k]:v}));
   const toggleProperty = (p) => setForm(f => ({...f, properties: f.properties.includes(p) ? f.properties.filter(x=>x!==p) : [...f.properties, p]}));
+
+  // Modifier rows mirror the buff shapes dnd.js actually reads - an ADD-mode stat from
+  // ADD_MODIFIERS, or an ability key with mode:'set' for "this item sets your score to X."
+  const addModifier = () => set('buffs', [...form.buffs, { stat: 'ac_base', value: 1 }]);
+  const updateModifier = (i, patch) => set('buffs', form.buffs.map((b, idx) => idx === i ? { ...b, ...patch } : b));
+  const removeModifier = (i) => set('buffs', form.buffs.filter((_, idx) => idx !== i));
+  const setModifierType = (i, value) => {
+    // "set:STR" etc. selects the ability-score-override shape; anything else is a plain
+    // ADD_MODIFIERS stat key. One update, not two sequential ones reading the same stale
+    // form.buffs - that's the exact bug class this file's submit() footgun note warns
+    // about, just on the read side instead of the save side.
+    if (value.startsWith('set:')) {
+      updateModifier(i, { stat: value.slice(4), mode: 'set', value: 19 });
+    } else {
+      updateModifier(i, { stat: value, mode: undefined, value: 1 });
+    }
+  };
 
   // Lets "Granted Spells" rows search the real spell library (canon + homebrew, same data
   // SpellBrowserModal uses) instead of free-typing a name - guarantees an exact match so
@@ -174,6 +209,28 @@ export default function AddItemModal({ item, onSave, onClose }) {
             <div style={{color:'var(--text-dim)',fontSize:11,marginTop:2}}>An extra damage component rolled alongside the base damage - e.g. Vicious's +2d6, or a different-typed bonus die like Flame Tongue's fire damage.</div>
           </div>
         )}
+        <div style={{color:'var(--text-dim)',fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:1,margin:'12px 0 6px'}}>Modifiers</div>
+        {form.buffs.map((b, i) => {
+          const isSetMode = b.mode === 'set';
+          const selectValue = isSetMode ? `set:${b.stat}` : b.stat;
+          return (
+            <div key={i} style={{display:'flex',gap:6,alignItems:'center',marginBottom:6}}>
+              <select value={selectValue} onChange={e => setModifierType(i, e.target.value)} style={{flex:2}}>
+                {ADD_MODIFIERS.filter(m => form.is_weapon || !m.stat.startsWith('weapon_')).map(m => (
+                  <option key={m.stat} value={m.stat}>{m.label}</option>
+                ))}
+                {ABILITY_KEYS.map(k => <option key={k} value={`set:${k}`}>Set {k} Score To...</option>)}
+              </select>
+              <span style={{fontSize:12,color:'var(--text-dim)'}}>{isSetMode ? 'becomes' : '+'}</span>
+              <input type="number" value={b.value} onChange={e => updateModifier(i, { value: parseInt(e.target.value) || 0 })} style={{width:60}} />
+              <button className="btn btn-secondary btn-sm" onClick={() => removeModifier(i)}>✕</button>
+            </div>
+          );
+        })}
+        <button className="btn btn-secondary btn-sm" style={{marginBottom:8}} onClick={addModifier}>+ Add Modifier</button>
+        <div style={{color:'var(--text-dim)',fontSize:11,marginBottom:10}}>
+          Only applies while the item is Equipped (and Attuned, if attunement is required). "Set X Score To" never lowers the character's score - it only raises it up to the value entered, and stops applying the moment the item is unequipped.
+        </div>
         <div className="form-group"><label>Description</label><textarea value={form.description} onChange={e=>set('description',e.target.value)} rows={3} style={{width:'100%',resize:'vertical'}} /></div>
 
         <div style={{color:'var(--text-dim)',fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:1,margin:'12px 0 6px'}}>Granted Spells</div>
