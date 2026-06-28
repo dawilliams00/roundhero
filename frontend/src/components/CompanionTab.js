@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useCharacter } from '../context/CharacterContext';
-import { SECTION_ORDER, SECTION_COLORS } from '../utils/dnd';
+import { SECTION_ORDER, SECTION_COLORS, ABILITY_KEYS, modStr } from '../utils/dnd';
 import AbilityDetailModal from './AbilityDetailModal';
 import CompanionAbilityModal from './CompanionAbilityModal';
 import ConfirmModal from './ConfirmModal';
@@ -38,9 +38,11 @@ export default function CompanionTab() {
   const companion = td.companion || {};
   const hp = companion.hp || { current: 0, max: 0, temp: 0 };
   const abilities = companion.abilities || [];
+  const abilityScores = companion.ability_scores || {};
 
   const saveCompanion = (patch) => saveTrackerData({ ...td, companion: { ...companion, ...patch } });
   const saveHp = (patch) => saveCompanion({ hp: { ...hp, ...patch } });
+  const saveAbilityScore = (key, value) => saveCompanion({ ability_scores: { ...abilityScores, [key]: Math.max(1, parseInt(value) || 10) } });
 
   const adjustHp = (delta) => {
     let temp = hp.temp || 0;
@@ -102,6 +104,20 @@ export default function CompanionTab() {
             <label style={{ fontSize: 11, color: 'var(--text-dim)' }}>Movement</label>
             <EditableField value={companion.movement} onCommit={v => saveCompanion({ movement: v })} placeholder="30 ft." width="100%" />
           </div>
+        </div>
+        <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+          {ABILITY_KEYS.map(key => {
+            const score = abilityScores[key] ?? 10;
+            return (
+              <div className="stat-box" key={key}>
+                <div className="stat-value">
+                  <EditableField type="number" value={score} onCommit={v => saveAbilityScore(key, v)} width={36} textAlign="center" />
+                </div>
+                <div className="stat-sub">{modStr(score)}</div>
+                <div className="stat-label">{key}</div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
