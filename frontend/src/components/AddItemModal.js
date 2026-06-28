@@ -125,9 +125,8 @@ export default function AddItemModal({ item, onSave, onClose }) {
     setActiveSpellRow(null);
   };
 
-  const submit = () => {
-    if (!form.name) return;
-    const out = {
+  const buildOutput = () => {
+    return {
       name: form.name,
       quantity: parseInt(form.quantity) || 1,
       weight: parseFloat(form.weight) || 0,
@@ -167,8 +166,49 @@ export default function AddItemModal({ item, onSave, onClose }) {
         bonus_damage_type: form.bonus_damage_type,
       } : {}),
     };
-    onSave(out);
+  };
+
+  const submit = () => {
+    if (!form.name) return;
+    onSave(buildOutput());
     onClose();
+  };
+
+  // Pushes this item's current data to the shared library so every player can pull the
+  // fix/addition instead of it only ever living in one person's inventory - same
+  // collective-editing model ItemBrowserModal already gives canon/homebrew items, just
+  // reachable from the player's own item edit screen instead of a separate browser. If
+  // the name matches a canon entry, this corrects it in place (item_override); if it
+  // matches an already-published custom entry, this updates that; otherwise it's a brand
+  // new homebrew library entry. Doesn't touch this character's own copy at all - publish
+  // and Save/Cancel are independent actions.
+  const [publishMsg, setPublishMsg] = useState(null);
+  const [publishing, setPublishing] = useState(false);
+  const publishToLibrary = async () => {
+    if (!form.name.trim()) return;
+    setPublishing(true);
+    setPublishMsg(null);
+    try {
+      const out = buildOutput();
+      const library = (await api.get('/content/items')).data;
+      const nameLower = out.name.trim().toLowerCase();
+      const canonMatch = library.find(it => it.name.toLowerCase() === nameLower && it._source !== 'custom');
+      const customMatch = library.find(it => it.name.toLowerCase() === nameLower && it._source === 'custom');
+      if (canonMatch) {
+        await api.put('/content/items/override', { ...out, _canon_name: canonMatch.name });
+        setPublishMsg(`Updated the canon "${out.name}" entry for everyone.`);
+      } else if (customMatch) {
+        await api.put(`/content/items/${customMatch._custom_id}`, out);
+        setPublishMsg(`Updated the shared "${out.name}" entry for everyone.`);
+      } else {
+        await api.post('/content/items', out);
+        setPublishMsg(`Added "${out.name}" to the shared item library - searchable by anyone now.`);
+      }
+    } catch {
+      setPublishMsg('Could not publish to the database - try again.');
+    } finally {
+      setPublishing(false);
+    }
   };
 
   return (
@@ -322,6 +362,14 @@ export default function AddItemModal({ item, onSave, onClose }) {
           );
         })}
         <button className="btn btn-secondary btn-sm" onClick={addSpellRow}>+ Add Granted Spell</button>
+
+        <button className="btn btn-secondary" style={{width:'100%',marginTop:12}} disabled={!form.name.trim() || publishing} onClick={publishToLibrary}>
+          {publishing ? 'Publishing...' : '📤 Add to Database (share with everyone)'}
+        </button>
+        {publishMsg && <div style={{color:'var(--success)',fontSize:11,marginTop:6}}>{publishMsg}</div>}
+        <div style={{color:'var(--text-dim)',fontSize:11,marginTop:4}}>
+          Pushes this item's current data (including any edits above) to the shared library, correcting the canon entry in place if the name matches one. Doesn't change what's saved on this character - use Save below for that.
+        </div>
 
         <div style={{display:'flex',gap:8,marginTop:16}}>
           <button className="btn btn-secondary" style={{flex:1}} onClick={onClose}>Cancel</button>

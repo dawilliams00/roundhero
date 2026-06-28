@@ -36,7 +36,7 @@ function EditableStat({ label, value, onSave, color, title }) {
   };
 
   return (
-    <div className="stat-box" title={title}>
+    <div className="stat-box" title={title} style={color ? {borderColor: color} : undefined}>
       {editing ? (
         <input
           autoFocus
@@ -51,7 +51,7 @@ function EditableStat({ label, value, onSave, color, title }) {
           {value >= 0 && label==='INIT' ? `+${value}` : value}
         </div>
       )}
-      <div className="stat-label">{label}</div>
+      <div className="stat-label" style={color ? {color} : undefined}>{label}</div>
     </div>
   );
 }
@@ -98,8 +98,8 @@ function AbilityBox({ abbr, score, baseScore, onSaveBase, color }) {
   };
 
   return (
-    <div className="stat-box" style={{minWidth:38}} title={boosted ? `${baseScore} base, raised to ${score} by an equipped item - click to edit the base score` : 'Click to edit'}>
-      <div className="stat-label" style={{marginTop:0,marginBottom:2}}>{abbr}</div>
+    <div className="stat-box" style={{minWidth:38, borderColor: color}} title={boosted ? `${baseScore} base, raised to ${score} by an equipped item - click to edit the base score` : 'Click to edit'}>
+      <div className="stat-label" style={{marginTop:0,marginBottom:2,color}}>{abbr}</div>
       {editing ? (
         <input
           autoFocus
@@ -119,12 +119,11 @@ function AbilityBox({ abbr, score, baseScore, onSaveBase, color }) {
   );
 }
 
-// Each stat box gets its own color so AC/INIT/PROF/SPEED/ability scores don't all blend
-// into the same accent-light purple at a glance - purely cosmetic, no mechanical meaning.
-const STAT_COLORS = {
-  AC: '#4FC3F7', INIT: '#FFD54F', PROF: '#CE93D8', SPEED: '#81C784',
-  STR: '#EF5350', DEX: '#4DD0E1', CON: '#FF8A65', INT: '#7986CB', WIS: '#AED581', CHA: '#F06292',
-};
+// One color per CATEGORY (not per individual ability - all six ability boxes share one
+// color as a single category) so AC/INIT/PROF/SPEED/Abilities are each visually distinct
+// at a glance, applied to the box outline and label text too, not just the number -
+// purely cosmetic, no mechanical meaning.
+const STAT_COLORS = { AC: '#4FC3F7', INIT: '#FFD54F', PROF: '#CE93D8', SPEED: '#81C784', ABILITY: '#FF8A65' };
 
 function EffectAdder({ onAdd }) {
   const [open, setOpen] = useState(false);
@@ -332,9 +331,9 @@ export default function CharacterHeader({ onBack }) {
               <EditableStat label="AC" value={ac} onSave={setAc} color={STAT_COLORS.AC} title={(itemBonuses.ac_base || hasteAcBonus) ? `${baseAc} base${itemBonuses.ac_base ? ` + ${itemBonuses.ac_base} items` : ''}${hasteAcBonus ? ` + ${hasteAcBonus} Hasted` : ''}` : undefined} />
               <EditableStat label="INIT" value={init} onSave={setInit} color={STAT_COLORS.INIT} />
               <EditableStat label="SPEED" value={speed} onSave={setSpeed} color={STAT_COLORS.SPEED} title={isHasted ? `${baseSpeed} ft. base, doubled while Hasted` : undefined} />
-              <div className="stat-box">
+              <div className="stat-box" style={{borderColor: STAT_COLORS.PROF}}>
                 <div className="stat-value" style={{color: STAT_COLORS.PROF}}>+{prof}</div>
-                <div className="stat-label">Prof</div>
+                <div className="stat-label" style={{color: STAT_COLORS.PROF}}>Prof</div>
               </div>
               <div onClick={toggleInspiration} className="stat-box" style={{cursor:'pointer'}}>
                 <div style={{fontSize:18,lineHeight:1,filter: insp ? 'none' : 'grayscale(1) opacity(0.4)'}}>⭐</div>
@@ -351,7 +350,7 @@ export default function CharacterHeader({ onBack }) {
               <div style={{display:'flex',flexDirection:'column',gap:4}}>
                 <div style={{display:'flex',gap:6}}>
                   {ABILITY_KEYS.map(k => (
-                    <AbilityBox key={k} abbr={k} score={effAb[k]||10} baseScore={ab?.[k]||10} color={STAT_COLORS[k]}
+                    <AbilityBox key={k} abbr={k} score={effAb[k]||10} baseScore={ab?.[k]||10} color={STAT_COLORS.ABILITY}
                       onSaveBase={(n) => updateCharacter(character.id, { ability_scores: { ...ab, [k]: n } })} />
                   ))}
                 </div>
