@@ -3,6 +3,7 @@ import { useCharacter } from '../context/CharacterContext';
 import { SECTION_ORDER, SECTION_COLORS, ABILITY_KEYS, modStr } from '../utils/dnd';
 import AbilityDetailModal from './AbilityDetailModal';
 import CompanionAbilityModal from './CompanionAbilityModal';
+import CompanionHPModal from './CompanionHPModal';
 import ConfirmModal from './ConfirmModal';
 
 // A companion's whole sheet is hand-entered by the player (no class engine behind it,
@@ -33,6 +34,7 @@ export default function CompanionTab() {
   const [detail, setDetail] = useState(null);
   const [editingIndex, setEditingIndex] = useState(undefined);
   const [confirmRemove, setConfirmRemove] = useState(null);
+  const [showHP, setShowHP] = useState(false);
 
   if (!character) return null;
   const td = character.tracker_data || {};
@@ -57,6 +59,8 @@ export default function CompanionTab() {
     }
     saveHp({ current, temp });
   };
+
+  const adjustTempHp = (delta) => saveHp({ temp: Math.max(0, (hp.temp || 0) + delta) });
 
   const adjustAbility = (idx, delta) => {
     const ab = abilities[idx];
@@ -83,19 +87,19 @@ export default function CompanionTab() {
         <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'flex-end' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <button onClick={() => adjustHp(-1)} style={{ background: 'var(--danger)', color: '#fff', borderRadius: 4, width: 22, height: 22, fontWeight: 700, fontSize: 13 }}>−</button>
-            <div className="stat-box">
-              <div className="stat-value" style={{ color: 'var(--success)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                <EditableField type="number" value={hp.current} onCommit={v => saveHp({ current: Math.max(0, Math.min(hp.max || 0, parseInt(v) || 0)) })} width={48} textAlign="center" />
-                /
-                <EditableField type="number" value={hp.max} onCommit={v => { const mx = Math.max(0, parseInt(v) || 0); saveHp({ max: mx, current: Math.min(hp.current || 0, mx) }); }} width={48} textAlign="center" />
-              </div>
+            <div className="stat-box" onClick={() => setShowHP(true)} style={{ cursor: 'pointer' }}>
+              <div className="stat-value" style={{ color: 'var(--success)' }}>{hp.current ?? 0}/{hp.max ?? 0}</div>
               <div className="stat-label">HP</div>
             </div>
             <button onClick={() => adjustHp(1)} style={{ background: 'var(--success)', color: '#fff', borderRadius: 4, width: 22, height: 22, fontWeight: 700, fontSize: 13 }}>+</button>
           </div>
-          <div className="stat-box">
-            <EditableField type="number" value={hp.temp} onCommit={v => saveHp({ temp: Math.max(0, parseInt(v) || 0) })} width={48} textAlign="center" />
-            <div className="stat-label">Temp HP</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <button onClick={() => adjustTempHp(-1)} style={{ background: 'var(--danger)', color: '#fff', borderRadius: 4, width: 22, height: 22, fontWeight: 700, fontSize: 13 }}>−</button>
+            <div className="stat-box" onClick={() => setShowHP(true)} style={{ cursor: 'pointer' }}>
+              <div className="stat-value">{hp.temp || 0}</div>
+              <div className="stat-label">Temp HP</div>
+            </div>
+            <button onClick={() => adjustTempHp(1)} style={{ background: 'var(--success)', color: '#fff', borderRadius: 4, width: 22, height: 22, fontWeight: 700, fontSize: 13 }}>+</button>
           </div>
           <div className="stat-box">
             <EditableField type="number" value={companion.ac} onCommit={v => saveCompanion({ ac: parseInt(v) || 0 })} width={48} textAlign="center" />
@@ -161,6 +165,7 @@ export default function CompanionTab() {
         );
       })}
 
+      {showHP && <CompanionHPModal onClose={() => setShowHP(false)} />}
       {detail && <AbilityDetailModal ability={detail} onClose={() => setDetail(null)} />}
       {editingIndex !== undefined && <CompanionAbilityModal editingIndex={editingIndex} onClose={() => setEditingIndex(undefined)} />}
       {confirmRemove !== null && (
