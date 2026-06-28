@@ -288,7 +288,7 @@ export default function WeaponAttackModal({ itemIndex, weaponOverride, onClose, 
                   </div>
                 </div>
               )}
-              {weapon.unarmed_heal_or_advantage && damageResult.extra && (
+              {(weapon.bonus_heal_or_advantage || weapon.unarmed_heal_or_advantage) && damageResult.extra && (
                 unarmedChoice ? (
                   <div style={{color:'var(--success)',fontSize:12,marginTop:10}}>
                     {unarmedChoice === 'healed' ? `Healed ${damageResult.extra.total} HP.` : 'Advantage on your next roll - remove the chip from the header once used.'}

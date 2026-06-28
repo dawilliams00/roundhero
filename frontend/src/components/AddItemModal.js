@@ -56,6 +56,7 @@ export default function AddItemModal({ item, onSave, onClose }) {
     two_handed: !!item.two_handed,
     bonus_damage_dice: item.bonus_damage_dice || '',
     bonus_damage_type: item.bonus_damage_type || '',
+    bonus_heal_or_advantage: !!item.bonus_heal_or_advantage,
     buffs: item.buffs || [],
     item_type: item.item_type || (item.is_weapon ? 'Weapon' : 'Other'),
     grants_unarmed_bonus: !!item.grants_unarmed_bonus,
@@ -70,7 +71,7 @@ export default function AddItemModal({ item, onSave, onClose }) {
     is_weapon: false, weapon_category: 'Simple', weapon_range: 'Melee',
     damage_dice: '', damage_type: 'Slashing', properties: [],
     range_normal: '', range_long: '', two_handed_damage_dice: '', two_handed_damage_type: '',
-    proficient: true, two_handed: false, bonus_damage_dice: '', bonus_damage_type: '',
+    proficient: true, two_handed: false, bonus_damage_dice: '', bonus_damage_type: '', bonus_heal_or_advantage: false,
     buffs: [],
     item_type: 'Other',
     grants_unarmed_bonus: false, unarmed_bonus_damage_dice: '', unarmed_bonus_damage_type: '', unarmed_heal_or_advantage: false,
@@ -180,6 +181,7 @@ export default function AddItemModal({ item, onSave, onClose }) {
         // "same type as the weapon's own damage."
         bonus_damage_dice: form.bonus_damage_dice.trim(),
         bonus_damage_type: form.bonus_damage_type,
+        bonus_heal_or_advantage: !!form.bonus_heal_or_advantage,
       } : {}),
     };
   };
@@ -286,7 +288,13 @@ export default function AddItemModal({ item, onSave, onClose }) {
               <div className="form-group"><label>Bonus Damage Dice (optional)</label><input value={form.bonus_damage_dice} onChange={e=>set('bonus_damage_dice',e.target.value)} placeholder="e.g. 2d6 (Vicious)" /></div>
               <div className="form-group"><label>Bonus Damage Type</label><select value={form.bonus_damage_type} onChange={e=>set('bonus_damage_type',e.target.value)}><option value="">(same as weapon)</option>{DAMAGE_TYPES.concat(['Acid','Cold','Fire','Force','Lightning','Necrotic','Poison','Psychic','Radiant','Thunder']).map(t=><option key={t}>{t}</option>)}</select></div>
             </div>
-            <div style={{color:'var(--text-dim)',fontSize:11,marginTop:2}}>An extra damage component rolled alongside the base damage - e.g. Vicious's +2d6, or a different-typed bonus die like Flame Tongue's fire damage.</div>
+            <div style={{color:'var(--text-dim)',fontSize:11,marginBottom:8}}>An extra damage component rolled alongside the base damage - e.g. Vicious's +2d6, or a different-typed bonus die like Flame Tongue's fire damage.</div>
+            {form.bonus_damage_dice.trim() && (
+              <label style={{display:'flex',alignItems:'center',gap:6}}>
+                <input type="checkbox" checked={form.bonus_heal_or_advantage} onChange={e=>set('bonus_heal_or_advantage',e.target.checked)} />
+                After dealing this bonus damage, offer Heal (equal to the damage) OR Advantage on next roll
+              </label>
+            )}
           </div>
         )}
         <label style={{display:'flex',alignItems:'center',gap:6,marginBottom:8}}><input type="checkbox" checked={form.grants_unarmed_bonus} onChange={e=>set('grants_unarmed_bonus',e.target.checked)} /> Boosts Unarmed Strikes (e.g. magic gauntlets)</label>
