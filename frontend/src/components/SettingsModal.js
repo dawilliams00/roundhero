@@ -14,6 +14,7 @@ export default function SettingsModal({ onClose }) {
   const td = character?.tracker_data || {};
   const settings = td.settings || {};
   const exhaustionRules = settings.exhaustion_rules || { mode: 'raw', name: '', description: '' };
+  const companion = td.companion || {};
 
   // Local buffer for the two free-text fields - saveTrackerData round-trips to the server
   // on every call, and binding the inputs directly to the remote value meant every
@@ -23,12 +24,14 @@ export default function SettingsModal({ onClose }) {
   // "worked". Buffering locally and saving once on blur avoids the race entirely.
   const [localName, setLocalName] = useState(exhaustionRules.name || '');
   const [localDesc, setLocalDesc] = useState(exhaustionRules.description || '');
+  const [localCompanionName, setLocalCompanionName] = useState(companion.tab_name || 'Companion');
   const [showBrowser, setShowBrowser] = useState(false);
   const [showEditor, setShowEditor] = useState(false);
 
   useEffect(() => {
     setLocalName(exhaustionRules.name || '');
     setLocalDesc(exhaustionRules.description || '');
+    setLocalCompanionName(companion.tab_name || 'Companion');
   }, [character?.id]);
 
   if (!character) return null;
@@ -39,6 +42,13 @@ export default function SettingsModal({ onClose }) {
   const setRuleset = (value) => saveTrackerData({ ...td, settings: { ...settings, ruleset: value } });
   const toggleEdition = (key) => saveTrackerData({ ...td, settings: { ...settings, content_editions: { ...contentEditions, [key]: !contentEditions[key] } } });
   const setExhaustionRules = (patch) => saveTrackerData({ ...td, settings: { ...settings, exhaustion_rules: { ...exhaustionRules, ...patch } } });
+  const setCompanion = (patch) => saveTrackerData({ ...td, companion: { ...companion, ...patch } });
+  const toggleCompanionEnabled = () => setCompanion({ enabled: !companion.enabled });
+  const commitCompanionName = () => {
+    const name = localCompanionName.trim() || 'Companion';
+    setLocalCompanionName(name);
+    if (name !== (companion.tab_name || 'Companion')) setCompanion({ tab_name: name });
+  };
 
   // Keeps the shared ruleset library in sync with whatever this character has typed -
   // upserted by name on the backend, so one player filling this in is automatically
@@ -94,6 +104,26 @@ export default function SettingsModal({ onClose }) {
           <div style={{color:'var(--text-dim)',fontSize:11,marginTop:6}}>
             Controls which feats show up when browsing the shared library. Content with no edition tagged is treated as 2014.
           </div>
+        </div>
+
+        <div className="form-group">
+          <label style={{display:'flex',alignItems:'center',gap:8,cursor:'pointer'}}>
+            <input type="checkbox" style={{width:'auto',flexShrink:0}} checked={!!companion.enabled} onChange={toggleCompanionEnabled} /> Track a Companion
+          </label>
+          {companion.enabled && (
+            <>
+              <input
+                value={localCompanionName}
+                onChange={e => setLocalCompanionName(e.target.value)}
+                onBlur={commitCompanionName}
+                placeholder="Companion"
+                style={{marginTop:8}}
+              />
+              <div style={{color:'var(--text-dim)',fontSize:11,marginTop:6}}>
+                Adds a tab (named above) for tracking a companion/familiar's own HP, AC, movement, and abilities — and splits the Action Economy tab so you can track both turns side by side.
+              </div>
+            </>
+          )}
         </div>
 
         <div className="form-group">

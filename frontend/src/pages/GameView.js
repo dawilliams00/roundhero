@@ -8,8 +8,7 @@ import SpellsTab from '../components/SpellsTab';
 import InventoryTab from '../components/InventoryTab';
 import NotesTab from '../components/NotesTab';
 import BestiaryTab from '../components/BestiaryTab';
-
-const TABS = ['⚔️ Actions','📋 Feats/Attunement','✨ Spells','🎒 Inventory','📝 Notes','🐉 Bestiary'];
+import CompanionTab from '../components/CompanionTab';
 
 export default function GameView() {
   const { id }                    = useParams();
@@ -23,26 +22,39 @@ export default function GameView() {
     return <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'100vh',color:'var(--text-secondary)'}}>Loading character...</div>;
   }
 
+  const companion = character.tracker_data?.companion || {};
+  // The Companion tab only exists when the player has opted in via Settings - its label
+  // is whatever they typed there (default "Companion"), since this is meant to cover any
+  // future player's pet/familiar/sidekick, not just Shadow specifically.
+  const tabs = [
+    { label: '⚔️ Actions', Component: ActionEconomyTab },
+    { label: '📋 Feats/Attunement', Component: TrackerTab },
+    { label: '✨ Spells', Component: SpellsTab },
+    { label: '🎒 Inventory', Component: InventoryTab },
+    { label: '📝 Notes', Component: NotesTab },
+    { label: '🐉 Bestiary', Component: BestiaryTab },
+    ...(companion.enabled ? [{ label: `🐾 ${companion.tab_name || 'Companion'}`, Component: CompanionTab }] : []),
+  ];
+  // If a companion was just disabled in Settings while it was the active tab, fall back
+  // to the first tab rather than rendering past the end of the now-shorter array.
+  const safeTab = activeTab < tabs.length ? activeTab : 0;
+  const ActiveComponent = tabs[safeTab].Component;
+
   return (
     <div style={{display:'flex',flexDirection:'column',height:'100vh',background:'var(--bg-primary)',overflow:'hidden'}}>
       <CharacterHeader onBack={() => nav('/characters')} />
       <div style={{display:'flex',borderBottom:'1px solid var(--border)',background:'var(--bg-secondary)',flexShrink:0}}>
-        {TABS.map((t,i) => (
-          <button key={t} onClick={() => setActiveTab(i)} style={{
+        {tabs.map((t,i) => (
+          <button key={t.label} onClick={() => setActiveTab(i)} style={{
             flex:1, padding:'10px 4px', fontSize:12, fontWeight:500,
-            background:'none', border:'none', borderBottom: i===activeTab ? '2px solid var(--accent)' : '2px solid transparent',
-            color: i===activeTab ? 'var(--accent-light)' : 'var(--text-secondary)',
+            background:'none', border:'none', borderBottom: i===safeTab ? '2px solid var(--accent)' : '2px solid transparent',
+            color: i===safeTab ? 'var(--accent-light)' : 'var(--text-secondary)',
             transition:'color 0.15s',
-          }}>{t}</button>
+          }}>{t.label}</button>
         ))}
       </div>
       <div style={{flex:1,overflow:'hidden',display:'flex',flexDirection:'column'}}>
-        {activeTab === 0 && <ActionEconomyTab />}
-        {activeTab === 1 && <TrackerTab />}
-        {activeTab === 2 && <SpellsTab />}
-        {activeTab === 3 && <InventoryTab />}
-        {activeTab === 4 && <NotesTab />}
-        {activeTab === 5 && <BestiaryTab />}
+        <ActiveComponent />
       </div>
     </div>
   );

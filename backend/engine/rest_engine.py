@@ -25,6 +25,7 @@ def apply_rest(tracker_data, spell_data, rest_type="long"):
     features = td.get("features", {})
     slots    = td.get("spell_slots", {})
     items    = td.get("inventory", {}).get("items", [])
+    companion_abilities = td.get("companion", {}).get("abilities", [])
 
     summary = {"features_reset": [], "items_recharged": [], "items_need_recharge": [], "slots_restored": False}
 
@@ -34,6 +35,11 @@ def apply_rest(tracker_data, spell_data, rest_type="long"):
             if mx > 0 and feat.get("current", 0) < mx:
                 feat["current"] = mx
                 summary["features_reset"].append(name)
+        for ability in companion_abilities:
+            mx = int(ability.get("max", 0))
+            if mx > 0 and ability.get("current", 0) < mx:
+                ability["current"] = mx
+                summary["features_reset"].append(ability.get("name", "Companion ability"))
         for level, slot in slots.items():
             mx = int(slot.get("max", 0))
             if slot.get("current", 0) < mx:
@@ -62,6 +68,12 @@ def apply_rest(tracker_data, spell_data, rest_type="long"):
                 if mx > 0 and feat.get("current", 0) < mx:
                     feat["current"] = mx
                     summary["features_reset"].append(name)
+        for ability in companion_abilities:
+            if ability.get("rest_type") == "short":
+                mx = int(ability.get("max", 0))
+                if mx > 0 and ability.get("current", 0) < mx:
+                    ability["current"] = mx
+                    summary["features_reset"].append(ability.get("name", "Companion ability"))
         for item in items:
             _recharge_item(item.get("charges"), SHORT_REST_RECHARGES, summary, item["name"])
         caster_type = spell_data.get("caster_type", "none")

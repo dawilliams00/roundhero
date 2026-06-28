@@ -8,12 +8,17 @@ const CharacterContext = createContext(null);
 // "used" until all granted attacks for the turn are spent, so the AE tab can show
 // "Attack 1/2" progress instead of dimming after the first swing.
 const EMPTY_TURN = { Action: false, 'Bonus Action': false, Reaction: false, Haste: false, Attacks: 0 };
+// Companion's own bucket state, tracked separately from the main character's turnUsed -
+// the two columns in the split AE tab act independently (Shadow using its Reaction
+// doesn't touch Syric's), but New Turn/a rest resets both at once.
+const EMPTY_COMPANION_TURN = { Action: false, 'Bonus Action': false, Reaction: false };
 
 export function CharacterProvider({ children }) {
   const [character, setCharacterState] = useState(null);
   const [characters, setCharacters] = useState([]);
   const [loading, setLoading]       = useState(false);
   const [turnUsed, setTurnUsed]     = useState(EMPTY_TURN);
+  const [companionTurnUsed, setCompanionTurnUsed] = useState(EMPTY_COMPANION_TURN);
 
   // characterRef always holds the LATEST character, updated synchronously in the same
   // tick as setCharacterState (not via a useEffect, which only runs after React commits
@@ -37,7 +42,7 @@ export function CharacterProvider({ children }) {
     });
   }, []);
 
-  const resetTurn = useCallback(() => setTurnUsed(EMPTY_TURN), []);
+  const resetTurn = useCallback(() => { setTurnUsed(EMPTY_TURN); setCompanionTurnUsed(EMPTY_COMPANION_TURN); }, []);
 
   const fetchCharacters = useCallback(async () => {
     setLoading(true);
@@ -256,7 +261,7 @@ export function CharacterProvider({ children }) {
 
   return (
     <CharacterContext.Provider value={{
-      character, characters, loading, turnUsed, setTurnUsed, resetTurn,
+      character, characters, loading, turnUsed, setTurnUsed, companionTurnUsed, setCompanionTurnUsed, resetTurn,
       fetchCharacters, loadCharacter, updateCharacter,
       useFeature, useSlot, restoreSlot, doRest, saveTrackerData, saveSpellData, importCharacter, resyncCharacter, deleteCharacter, useItemCharge, addActiveEffect, removeActiveEffect, addCondition, removeCondition, setConcentration, setConcentrationTarget, replaceConcentration, spendFeatureCharges, setCharacter,
     }}>

@@ -20,8 +20,9 @@ const ITEM_COST_OPTIONS = [
 ];
 
 export default function ActionEconomyTab() {
-  const { character, useFeature, useSlot, restoreSlot, saveTrackerData, useItemCharge, turnUsed, setTurnUsed } = useCharacter();
+  const { character, useFeature, useSlot, restoreSlot, saveTrackerData, useItemCharge, turnUsed, setTurnUsed, companionTurnUsed, setCompanionTurnUsed } = useCharacter();
   const [detail, setDetail]     = useState(null);
+  const [companionDetail, setCompanionDetail] = useState(null);
   const [castingSpell, setCastingSpell] = useState(false);
   const [castingBucket, setCastingBucket] = useState(null);
   const [viewingItemSpells, setViewingItemSpells] = useState(null);
@@ -73,6 +74,14 @@ export default function ActionEconomyTab() {
     unarmed_heal_or_advantage: !!unarmedBonusItem?.unarmed_heal_or_advantage,
     boostedBy: unarmedBonusItem?.name,
   };
+  // Companion's own hardcoded ability list (Settings > "Track a Companion") - split into
+  // a second column below, with its own turn-bucket state (companionTurnUsed) so e.g.
+  // Shadow using its Reaction doesn't dim Syric's. No weapons/items/spellcasting on this
+  // side by design - everything here is a plain ability the player typed in themselves.
+  const companion = td.companion || {};
+  const companionEnabled = !!companion.enabled;
+  const companionAbilities = companion.abilities || [];
+
   const inInitiative = !!td.in_initiative;
   const isHasted = (td.active_effects || []).includes(HASTED_EFFECT);
   const concSlots = td.concentration?.slots || [];
@@ -98,6 +107,7 @@ export default function ActionEconomyTab() {
   // rest of this app's philosophy of tracking state rather than enforcing exact timing.
   const resetTurn = () => {
     setTurnUsed({ Action: false, 'Bonus Action': false, Reaction: false, Haste: false, Attacks: 0 });
+    setCompanionTurnUsed({ Action: false, 'Bonus Action': false, Reaction: false });
     setDismissedReminders({});
     const conditions = td.conditions || [];
     if (conditions.includes(LETHARGIC_CONDITION)) {
@@ -142,6 +152,25 @@ export default function ActionEconomyTab() {
   };
 
   const isBucketUsed = (bucket) => inInitiative && bucket && turnUsed[bucket];
+
+  // Companion abilities only ever live in Action/Bonus Action/Reaction/Free Action/Passive
+  // (same SECTION_ORDER the main column uses) - Free Action/Passive aren't turn-limited,
+  // same convention as bucketForAbility above. Shares the same inInitiative toggle as the
+  // main character (one combat, two columns), but its own companionTurnUsed state.
+  const companionBucket = (section) => ['Action', 'Bonus Action', 'Reaction'].includes(section) ? section : null;
+  const markCompanionBucket = (bucket) => {
+    if (!inInitiative || !bucket) return;
+    setCompanionTurnUsed(p => ({ ...p, [bucket]: true }));
+  };
+  const isCompanionBucketUsed = (bucket) => inInitiative && bucket && companionTurnUsed[bucket];
+  const useCompanionAbility = (idx, section) => {
+    const ab = companionAbilities[idx];
+    if (ab && (ab.max || 0) > 0) {
+      const newCurrent = Math.max(0, (ab.current || 0) - 1);
+      saveTrackerData({ ...td, companion: { ...companion, abilities: companionAbilities.map((a, i) => i === idx ? { ...a, current: newCurrent } : a) } });
+    }
+    markCompanionBucket(companionBucket(section));
+  };
 
   // Only spend a charge through the API if the feature actually has one to spend - a
   // passive/no-charge feature (max: 0, e.g. Evasion, Stillness of Mind, Deflect Missiles
@@ -191,6 +220,7 @@ export default function ActionEconomyTab() {
   const slotLevels = Object.entries(slots).filter(([,s]) => (s.max||0) > 0);
 
   return (
+    <div style={{flex:1,overflow:'hidden',display:'flex',flexDirection: companionEnabled ? 'row' : 'column'}}>
     <div style={{flex:1,overflow:'hidden',display:'flex',flexDirection:'column'}}>
       <div style={{display:'flex',gap:8,padding:'8px 12px',borderBottom:'1px solid var(--border)',alignItems:'center',flexShrink:0,flexWrap:'wrap'}}>
         <button className="btn btn-sm" onClick={toggleInitiative} style={{background: inInitiative ? 'var(--danger)' : 'var(--success)',color: '#fff',fontWeight:600}}>
@@ -451,8 +481,78 @@ export default function ActionEconomyTab() {
           );
         })}
       </div>
+    </div>
+
+    {companionEnabled && (
+      <>
+        <div style={{width:2,background:'var(--border)',flexShrink:0}}/>
+        <div style={{flex:1,overflow:'hidden',display:'flex',flexDirection:'column'}}>
+          <div style={{display:'flex',gap:8,padding:'8px 12px',borderBottom:'1px solid var(--border)',alignItems:'center',flexShrink:0,flexWrap:'wrap'}}>
+            <div style={{fontWeight:600,fontSize:13,color:'var(--accent-light)'}}>🐾 {companion.tab_name || 'Companion'}</div>
+            <div style={{flex:1}}/>
+            {inInitiative && (
+              <div style={{display:'flex',gap:4}}>
+                {['Action','Bonus Action','Reaction'].map(s => (
+                  <div key={s} style={{fontSize:11,padding:'3px 8px',borderRadius:12,
+                    background: companionTurnUsed[s] ? 'var(--border)' : SECTION_COLORS[s],
+                    color: companionTurnUsed[s] ? 'var(--text-dim)' : '#fff',
+                    textDecoration: companionTurnUsed[s] ? 'line-through' : 'none',
+                    transition:'all 0.2s', cursor:'pointer',
+                  }} onClick={() => setCompanionTurnUsed(p => ({...p,[s]:!p[s]}))}>
+                    {s === 'Bonus Action' ? 'Bonus' : s}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <div style={{flex:1,overflowY:'auto',padding:'0 0 16px'}}>
+            {companionAbilities.length === 0 && (
+              <div style={{color:'var(--text-dim)',fontSize:12,textAlign:'center',padding:20}}>
+                No abilities yet — add them from the {companion.tab_name || 'Companion'} tab.
+              </div>
+            )}
+            {SECTION_ORDER.map(section => {
+              const sectionAbilities = companionAbilities.map((a,i) => ({a,i})).filter(({a}) => a.section === section);
+              if (sectionAbilities.length === 0) return null;
+              return (
+                <div key={section}>
+                  <div style={{padding:'6px 12px',background:SECTION_COLORS[section],fontSize:11,fontWeight:600,color:'#fff',letterSpacing:1,position:'sticky',top:0,zIndex:1}}>
+                    {section.toUpperCase()}
+                  </div>
+                  {sectionAbilities.map(({a, i}) => {
+                    const depleted = (a.max||0) > 0 && (a.current||0) <= 0;
+                    const bucket = companionBucket(section);
+                    const bucketUsed = isCompanionBucketUsed(bucket);
+                    const unavailable = depleted || bucketUsed;
+                    return (
+                      <div key={i} style={{display:'flex',alignItems:'center',padding:'8px 12px',borderBottom:'1px solid var(--border)',background: unavailable ? 'var(--bg-primary)' : 'var(--bg-card)',opacity: unavailable ? 0.5 : 1,gap:8}}>
+                        <div style={{width:60,flexShrink:0,display:'flex',justifyContent:'center'}}>
+                          {!depleted && (
+                            <button className="btn btn-sm" onClick={() => useCompanionAbility(i, section)} disabled={bucketUsed} style={{background: bucketUsed ? 'var(--border)' : 'var(--accent)',color:'#fff',minWidth:36}}>
+                              USE
+                            </button>
+                          )}
+                        </div>
+                        <div style={{flex:1,cursor:'pointer'}} onClick={() => setCompanionDetail(a)}>
+                          <div style={{color: unavailable ? 'var(--text-dim)' : 'var(--text-primary)',fontWeight:500,fontSize:13,textDecoration: depleted ? 'line-through' : 'none'}}>
+                            {a.name}
+                          </div>
+                          {bucketUsed && !depleted && <div style={{color:'var(--warning)',fontSize:10}}>Already used this turn</div>}
+                        </div>
+                        {(a.max||0) > 0 && <div style={{color: a.current > 0 ? 'var(--success)' : 'var(--danger)',fontWeight:600,fontSize:13,minWidth:36,textAlign:'right'}}>{a.current}/{a.max}</div>}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </>
+    )}
 
       {detail    && <AbilityDetailModal ability={detail} onClose={() => setDetail(null)} />}
+      {companionDetail && <AbilityDetailModal ability={companionDetail} onClose={() => setCompanionDetail(null)} />}
       {showSorceryPoints && sorceryFeatureName && (
         <SorceryPointsModal featureName={sorceryFeatureName} onClose={() => setShowSorceryPoints(false)} />
       )}
