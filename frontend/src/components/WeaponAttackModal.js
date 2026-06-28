@@ -34,7 +34,11 @@ export default function WeaponAttackModal({ itemIndex, weaponOverride, onClose, 
   // feature (Versatile two-handed toggle) never applies to something with no inventory row.
   const weapon = weaponOverride || items[itemIndex];
   if (!weapon) return null;
-  const attacksExhausted = td.in_initiative && attacksUsed >= maxAttacks;
+  // attacksUsed is LIVE from the parent and already reflects the +1 this modal's own
+  // onAttack() just caused (thisAttackCounted) - without the thisAttackCounted escape
+  // hatch, clicking Roll Attack as your last attack would immediately disable Roll
+  // Damage for that exact same swing, before you ever got to finish resolving it.
+  const attacksExhausted = td.in_initiative && attacksUsed >= maxAttacks && !thisAttackCounted;
 
   // Divine Smite isn't a separate charge pool - it just spends a real spell slot on a
   // melee hit, so any character with the feature (manually-built Paladins always get it
