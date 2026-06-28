@@ -11,7 +11,7 @@ const parseDice = (diceStr) => {
   return { count: 0, sides: 0, flat: isNaN(flat) ? 0 : flat };
 };
 
-export default function WeaponAttackModal({ itemIndex, onClose, attacksUsed, maxAttacks, onAttack }) {
+export default function WeaponAttackModal({ itemIndex, onClose, attacksUsed, maxAttacks, onAttack, cantripSpell }) {
   const { character, saveTrackerData, useSlot } = useCharacter();
   const [attackResult, setAttackResult] = useState(null);
   const [damageResult, setDamageResult] = useState(null);
@@ -94,6 +94,18 @@ export default function WeaponAttackModal({ itemIndex, onClose, attacksUsed, max
     return { count, sides, bonus: flat || 0, damage_type: weapon.bonus_damage_type || weaponDamageDice(weapon).damage_type };
   };
 
+  // A weapon-attack cantrip (Booming Blade, Green-Flame Blade, etc.) cast through here -
+  // its own damage_dice rolls as a third, independent component, same pattern as the
+  // weapon's own bonus dice. Uses exactly whatever's entered on the spell (no character-
+  // level scaling applied here) - this app doesn't guess at a cantrip's exact RAW scaling
+  // table, the player keeps that correct via the spell editor same as any other spell data.
+  const buildCantripDamage = () => {
+    if (!cantripSpell?.damage_dice) return null;
+    const { count, sides, flat } = parseDice(cantripSpell.damage_dice);
+    if (!count && !flat) return null;
+    return { count, sides, bonus: flat || 0, damage_type: cantripSpell.damage_type || 'Force' };
+  };
+
   // 2d8 radiant, +1d8 per slot level above 1st (capped at 5d8 total), +1d8 more vs
   // undead/fiends - RAW Divine Smite. The slot is spent here, when damage is first
   // rolled, not just when the checkbox is ticked (so unchecking/closing without rolling
@@ -104,6 +116,8 @@ export default function WeaponAttackModal({ itemIndex, onClose, attacksUsed, max
     const dmg = rollDamageDetailed(buildDamage());
     const extraSpec = buildBonusDamage();
     const extra = extraSpec ? { ...extraSpec, ...rollDamageDetailed(extraSpec) } : null;
+    const cantripSpec = buildCantripDamage();
+    const cantrip = cantripSpec ? { ...cantripSpec, ...rollDamageDetailed(cantripSpec) } : null;
     let smite = null;
     if (smiteOn && smiteLevel) {
       if (!smiteApplied) { await useSlot(smiteLevel); setSmiteApplied(true); }
@@ -111,15 +125,17 @@ export default function WeaponAttackModal({ itemIndex, onClose, attacksUsed, max
       const smiteSpec = { count, sides: 8, bonus: 0, damage_type: 'Radiant' };
       smite = { ...smiteSpec, ...rollDamageDetailed(smiteSpec) };
     }
-    setDamageResult({ ...buildDamage(), ...dmg, extra, smite });
+    setDamageResult({ ...buildDamage(), ...dmg, extra, cantrip, smite });
   };
 
   const rerollDamage = () => {
     const dmg = rollDamageDetailed(buildDamage());
     const extraSpec = buildBonusDamage();
     const extra = extraSpec ? { ...extraSpec, ...rollDamageDetailed(extraSpec) } : null;
+    const cantripSpec = buildCantripDamage();
+    const cantrip = cantripSpec ? { ...cantripSpec, ...rollDamageDetailed(cantripSpec) } : null;
     const smite = damageResult.smite ? { ...damageResult.smite, ...rollDamageDetailed(damageResult.smite) } : null;
-    setDamageResult({ ...buildDamage(), ...dmg, extra, smite });
+    setDamageResult({ ...buildDamage(), ...dmg, extra, cantrip, smite });
   };
 
   return (
@@ -139,6 +155,14 @@ export default function WeaponAttackModal({ itemIndex, onClose, attacksUsed, max
             <div><b>Attack:</b> {attackMod>=0?'+':''}{attackMod} ({abilityLabel} {abilityMod>=0?'+':''}{abilityMod}{weapon.proficient ? `, +${prof} prof` : ', not proficient'}{itemBonus.attack ? `, +${itemBonus.attack} item` : ''})</div>
             <div><b>Damage:</b> {weaponDamageDice(weapon).damage_dice} {(abilityMod + itemBonus.damage) !== 0 ? `${(abilityMod + itemBonus.damage) >= 0 ? '+' : ''}${abilityMod + itemBonus.damage} ` : ''}{weaponDamageDice(weapon).damage_type}{weapon.bonus_damage_dice ? ` + ${weapon.bonus_damage_dice} ${weapon.bonus_damage_type || weaponDamageDice(weapon).damage_type}` : ''}</div>
           </div>
+
+          {cantripSpell && (
+            <div style={{border:'1px solid var(--accent-light)',borderRadius:'var(--radius-sm)',padding:10,marginBottom:12}}>
+              <div style={{color:'var(--accent-light)',fontWeight:600,fontSize:13,marginBottom:4}}>✨ {cantripSpell.name}{cantripSpell.damage_dice ? ` (+${cantripSpell.damage_dice} ${cantripSpell.damage_type || ''})` : ''}</div>
+              {cantripSpell.description && <div style={{color:'var(--text-secondary)',fontSize:12,whiteSpace:'pre-wrap'}}>{cantripSpell.description}</div>}
+              {cantripSpell.higher_level && <div style={{color:'var(--text-dim)',fontSize:11,marginTop:4}}><b>At Higher Levels.</b> {cantripSpell.higher_level}</div>}
+            </div>
+          )}
 
           {isVersatile && (
             <label style={{display:'flex',alignItems:'center',gap:6,marginBottom:12,fontSize:13,color:'var(--text-secondary)'}}>
@@ -188,7 +212,7 @@ export default function WeaponAttackModal({ itemIndex, onClose, attacksUsed, max
           {damageResult ? (
             <div style={{width:'100%',background:'var(--bg-primary)',borderRadius:'var(--radius-sm)',padding:12,textAlign:'center'}}>
               <div style={{color:'var(--text-dim)',fontSize:11,textTransform:'uppercase',letterSpacing:1,marginBottom:4}}>
-                {damageResult.damage_type} damage{damageResult.extra ? ` + ${damageResult.extra.damage_type}` : ''}{damageResult.smite ? ` + Divine Smite` : ''}
+                {damageResult.damage_type} damage{damageResult.extra ? ` + ${damageResult.extra.damage_type}` : ''}{damageResult.cantrip ? ` + ${damageResult.cantrip.damage_type}` : ''}{damageResult.smite ? ` + Divine Smite` : ''}
               </div>
               <div style={{display:'flex',gap:20,justifyContent:'center',flexWrap:'wrap'}}>
                 <div>
@@ -199,6 +223,12 @@ export default function WeaponAttackModal({ itemIndex, onClose, attacksUsed, max
                   <div>
                     <div style={{color:'var(--accent-light)',fontWeight:700,fontSize:28}}>{damageResult.extra.total}</div>
                     <div style={{color:'var(--text-dim)',fontSize:10}}>{damageResult.extra.damage_type} · [{damageResult.extra.rolls.join(', ')}]</div>
+                  </div>
+                )}
+                {damageResult.cantrip && (
+                  <div>
+                    <div style={{color:'var(--accent-light)',fontWeight:700,fontSize:28}}>{damageResult.cantrip.total}</div>
+                    <div style={{color:'var(--text-dim)',fontSize:10}}>{damageResult.cantrip.damage_type} · [{damageResult.cantrip.rolls.join(', ')}] ({cantripSpell.name})</div>
                   </div>
                 )}
                 {damageResult.smite && (

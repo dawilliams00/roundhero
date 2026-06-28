@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
-import { schoolColor, getSpellcastingBlocks, getAbilityOverrideBlock, scaleSpellDamage, rollDamageDetailed, concentrationSlotCount, HASTED_EFFECT, METAMAGIC_OPTIONS, metamagicCost } from '../utils/dnd';
+import { schoolColor, getSpellcastingBlocks, getAbilityOverrideBlock, scaleSpellDamage, rollDamageDetailed, concentrationSlotCount, maxAttacksForCharacter, HASTED_EFFECT, METAMAGIC_OPTIONS, metamagicCost } from '../utils/dnd';
 import InfoModal from './InfoModal';
+import WeaponAttackModal from './WeaponAttackModal';
 
 const SELF_TARGET_EFFECTS = { haste: HASTED_EFFECT };
 
 export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuccess }) {
-  const { character, useSlot, useFeature, saveTrackerData, setConcentration, replaceConcentration, spendFeatureCharges } = useCharacter();
+  const { character, useSlot, useFeature, saveTrackerData, setConcentration, replaceConcentration, spendFeatureCharges, turnUsed, setTurnUsed } = useCharacter();
   const [casting, setCasting] = useState(false);
   const [cast, setCast]       = useState(null);
   const [awaitingTarget, setAwaitingTarget] = useState(false);
@@ -16,6 +17,12 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
   const [concSlotIdx, setConcSlotIdx] = useState(null);
   const [hasteEndedMessage, setHasteEndedMessage] = useState(null);
   const [metamagicChoice, setMetamagicChoice] = useState('');
+  // Weapon-attack cantrips (Booming Blade, Green-Flame Blade, etc.) - flagged on the
+  // spell with requires_weapon_attack, set via the spell editor - hand off to
+  // WeaponAttackModal instead of this modal's own damage roll, since the actual damage is
+  // weapon damage + the cantrip's bonus together, not the spell alone.
+  const [awaitingWeapon, setAwaitingWeapon] = useState(false);
+  const [pickedWeaponIdx, setPickedWeaponIdx] = useState(null);
 
   if (!character) return null;
   const slots = character.tracker_data?.spell_slots || {};
@@ -67,6 +74,10 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
   });
 
   const continueAfterCast = (levelUsed) => {
+    if (spell.requires_weapon_attack) {
+      setAwaitingWeapon(true);
+      return;
+    }
     const dmg = scaleSpellDamage(spell, levelUsed);
     if (dmg) {
       setPendingDamage(dmg);
@@ -220,7 +231,17 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
           )}
         </div>
         <div className="modal-footer" style={{flexDirection:'column'}}>
-          {concPrompt ? (
+          {awaitingWeapon ? (
+            <div style={{width:'100%',background:'var(--bg-primary)',borderRadius:'var(--radius-sm)',padding:12,textAlign:'center'}}>
+              <div style={{color:'var(--text-secondary)',fontSize:13,marginBottom:8}}>Which weapon are you attacking with?</div>
+              {(character.tracker_data?.inventory?.items || []).filter(it => it.is_weapon && it.equipped).length === 0 ? (
+                <div style={{color:'var(--text-dim)',fontSize:12,marginBottom:8}}>No equipped weapons found - add/equip one on the Inventory tab first.</div>
+              ) : (character.tracker_data.inventory.items.map((it, i) => it.is_weapon && it.equipped ? (
+                <button key={i} className="btn btn-secondary" style={{width:'100%',marginBottom:6}} onClick={() => setPickedWeaponIdx(i)}>{it.name}</button>
+              ) : null))}
+              <button className="btn btn-secondary" style={{width:'100%'}} onClick={finish}>Skip (no weapon attack)</button>
+            </div>
+          ) : concPrompt ? (
             <div style={{width:'100%',background:'var(--bg-primary)',borderRadius:'var(--radius-sm)',padding:12,textAlign:'center'}}>
               <div style={{color:'var(--warning)',fontWeight:700,marginBottom:8}}>Concentration full</div>
               <div style={{color:'var(--text-secondary)',fontSize:12,marginBottom:10}}>Replace which spell with {spell.name}?</div>
@@ -341,6 +362,20 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
         </div>
       </div>
       {hasteEndedMessage && <InfoModal title="Haste Ended" message={hasteEndedMessage} onClose={() => setHasteEndedMessage(null)} />}
+      {pickedWeaponIdx != null && (
+        <WeaponAttackModal
+          itemIndex={pickedWeaponIdx}
+          cantripSpell={spell}
+          attacksUsed={turnUsed.Attacks || 0}
+          maxAttacks={maxAttacksForCharacter(character.tracker_data?.features)}
+          onAttack={() => setTurnUsed(p => {
+            const used = (p.Attacks || 0) + 1;
+            const max = maxAttacksForCharacter(character.tracker_data?.features);
+            return { ...p, Attacks: used, ...(used >= max ? { Action: true } : {}) };
+          })}
+          onClose={() => { setPickedWeaponIdx(null); setAwaitingWeapon(false); finish(); }}
+        />
+      )}
     </div>
   );
 }

@@ -368,6 +368,14 @@ export const rollDamageDetailed = ({ count, sides, bonus }) => {
 
 export const rollDamage = (spec) => rollDamageDetailed(spec).total;
 
+// Extra Attack (Fighter/Paladin/etc.) grants a second attack - detected by feature name
+// substring, same approach as the Sorcery Points/Divine Smite name-based detection
+// elsewhere, so it works for both engine-built and PDF-imported characters regardless of
+// exact spelling. No support yet for 3+ attacks (Fighter 11/20) - same scoped-out
+// territory as the rest of this app's "the mechanism exists, not every edge case" stance.
+export const maxAttacksForCharacter = (features) =>
+  Object.keys(features || {}).some(n => n.toLowerCase().includes('extra attack')) ? 2 : 1;
+
 // Parses a recharge formula like "4d6 + 2" into {count, sides, bonus} for rollDamage.
 // Mirrors the backend's old roll_dice regex (now removed server-side - recharge rolls
 // are player-initiated from the item's Recharge button, not auto-rolled on rest).

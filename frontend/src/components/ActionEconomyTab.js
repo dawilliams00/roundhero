@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
-import { SECTION_ORDER, SECTION_COLORS, slotBadgeTextColor, concentrationSlotCount, HASTED_EFFECT, LETHARGIC_CONDITION } from '../utils/dnd';
+import { SECTION_ORDER, SECTION_COLORS, slotBadgeTextColor, concentrationSlotCount, HASTED_EFFECT, LETHARGIC_CONDITION, maxAttacksForCharacter } from '../utils/dnd';
 import AbilityDetailModal from './AbilityDetailModal';
 import CastSpellPickerModal from './CastSpellPickerModal';
 import ItemSpellsModal from './ItemSpellsModal';
@@ -54,7 +54,7 @@ export default function ActionEconomyTab() {
   // so it works whether the feature is the engine's exact name or a PDF-imported variant.
   const sorceryFeatureName = Object.keys(features).find(n => n.toLowerCase().includes('font of magic'));
   const knownMetamagic = td.metamagic_known || [];
-  const maxAttacks = Object.keys(features).some(n => n.toLowerCase().includes('extra attack')) ? 2 : 1;
+  const maxAttacks = maxAttacksForCharacter(features);
 
   const recordAttack = () => {
     setTurnUsed(p => {

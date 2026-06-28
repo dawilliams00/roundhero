@@ -52,7 +52,7 @@ export default function SpellEditModal({ spell, mode, onSave, onDelete, onClose 
               style={{width:'100%',resize:'vertical',fontFamily:'monospace',fontSize:12}}
             />
             <div style={{color:'var(--text-dim)',fontSize:11,marginTop:6}}>
-              Same fields shown in the spell's detail view - description, higher_level ("At Higher Levels" text), damage_dice, damage_type, save_type_abbr, school, level_int, casting_time, range, components, duration, concentration, ritual, classes, etc.
+              Same fields shown in the spell's detail view - description, higher_level ("At Higher Levels" text), damage_dice, damage_type, save_type_abbr, school, level_int, casting_time, range, components, duration, concentration, ritual, classes, etc. Add <code>"requires_weapon_attack": true</code> for a weapon-attack cantrip (Booming Blade, Green-Flame Blade, etc.) - casting it will prompt to pick an equipped weapon and roll the weapon's damage plus this spell's own damage_dice together.
             </div>
           </div>
         </div>
