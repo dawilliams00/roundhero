@@ -137,6 +137,25 @@ export default function WeaponAttackModal({ itemIndex, onClose, attacksUsed, max
     setDamageResult({ ...buildDamage(), ...dmg, extra, cantrip, smite });
   };
 
+  // Consolidated "what to roll" checklist - shown whether or not the player ends up
+  // using the digital roll, so picking "I'll roll in person" still leaves them knowing
+  // exactly which dice and damage types apply instead of having to piece it together
+  // from the separate Attack/Damage/cantrip/smite lines above.
+  const damageComponentsPreview = () => {
+    const list = [];
+    const base = buildDamage();
+    list.push({ label: 'Weapon', dice: `${base.count}d${base.sides}${base.bonus ? ` ${base.bonus>=0?'+':''}${base.bonus}` : ''}`, type: base.damage_type });
+    const extra = buildBonusDamage();
+    if (extra) list.push({ label: 'Bonus', dice: `${extra.count}d${extra.sides}${extra.bonus ? ` +${extra.bonus}` : ''}`, type: extra.damage_type });
+    const cantrip = buildCantripDamage();
+    if (cantrip) list.push({ label: cantripSpell.name, dice: `${cantrip.count}d${cantrip.sides}`, type: cantrip.damage_type });
+    if (smiteOn && smiteLevel) {
+      const count = Math.min(5, 2 + (smiteLevel - 1)) + (smiteVsUndeadFiend ? 1 : 0);
+      list.push({ label: 'Divine Smite', dice: `${count}d8`, type: 'Radiant' });
+    }
+    return list;
+  };
+
   const rerollDamage = () => {
     const dmg = rollDamageDetailed(buildDamage());
     const extraSpec = buildBonusDamage();
@@ -252,6 +271,14 @@ export default function WeaponAttackModal({ itemIndex, onClose, attacksUsed, max
                   </div>
                 )}
               </div>
+              {(damageResult.extra || damageResult.cantrip || damageResult.smite) && (
+                <div style={{borderTop:'1px solid var(--border)',marginTop:10,paddingTop:8}}>
+                  <div style={{color:'var(--text-dim)',fontSize:10,textTransform:'uppercase',letterSpacing:1}}>Total Damage</div>
+                  <div style={{color:'var(--accent-light)',fontWeight:700,fontSize:24}}>
+                    {damageResult.total + (damageResult.extra?.total||0) + (damageResult.cantrip?.total||0) + (damageResult.smite?.total||0)}
+                  </div>
+                </div>
+              )}
               <div style={{display:'flex',gap:8,marginTop:10}}>
                 <button className="btn btn-secondary" style={{flex:1}} onClick={rerollDamage}>Reroll</button>
                 <button className="btn btn-primary" style={{flex:1}} onClick={onClose}>Done</button>
@@ -259,6 +286,17 @@ export default function WeaponAttackModal({ itemIndex, onClose, attacksUsed, max
             </div>
           ) : (
             <>
+              {!attacksExhausted && (
+                <div style={{width:'100%',marginBottom:8}}>
+                  <div style={{color:'var(--text-dim)',fontSize:10,textTransform:'uppercase',letterSpacing:1,marginBottom:4}}>Damage to Roll</div>
+                  {damageComponentsPreview().map((c, i) => (
+                    <div key={i} style={{display:'flex',justifyContent:'space-between',fontSize:12,color:'var(--text-secondary)'}}>
+                      <span>{c.label}</span>
+                      <span>{c.dice} {c.type}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
               <div style={{display:'flex',gap:8,width:'100%'}}>
                 <button className="btn btn-primary" style={{flex:1}} disabled={attacksExhausted} onClick={rollAttack}>Roll Attack</button>
                 <button className="btn btn-primary" style={{flex:1}} disabled={attacksExhausted} onClick={rollDamageNow}>Roll Damage?</button>
