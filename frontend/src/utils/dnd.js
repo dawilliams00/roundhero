@@ -368,6 +368,21 @@ export const rollDamageDetailed = ({ count, sides, bonus }) => {
 
 export const rollDamage = (spec) => rollDamageDetailed(spec).total;
 
+// Several weapon-attack cantrips (Booming Blade, Green-Flame Blade, etc.) gain an
+// on-hit bonus damage die that scales with CHARACTER level, not spell slot level - a
+// different mechanic from scaleSpellDamage's upcast scaling, and not a uniform 1x/2x/3x
+// multiplier either (e.g. Booming Blade has no on-hit bonus at all below 5th level).
+// cantrip_hit_bonus_by_level is an array of {level, dice} tiers, ascending; this picks
+// the highest tier the character qualifies for, or null below the first tier's level.
+export const cantripHitBonusForLevel = (tiers, level) => {
+  if (!tiers || !tiers.length) return null;
+  let chosen = null;
+  for (const t of tiers) {
+    if (level >= t.level) chosen = t.dice;
+  }
+  return chosen;
+};
+
 // Extra Attack (Fighter/Paladin/etc.) grants a second attack - detected by feature name
 // substring, same approach as the Sorcery Points/Divine Smite name-based detection
 // elsewhere, so it works for both engine-built and PDF-imported characters regardless of

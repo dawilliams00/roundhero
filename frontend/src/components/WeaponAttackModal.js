@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
-import { effectiveAbilityScores, weaponAbilityMod, weaponItemBonus, weaponDamageDice, profBonus, rollD20, rollDamageDetailed, modifier } from '../utils/dnd';
+import { effectiveAbilityScores, weaponAbilityMod, weaponItemBonus, weaponDamageDice, profBonus, rollD20, rollDamageDetailed, modifier, cantripHitBonusForLevel } from '../utils/dnd';
 
 // Equipment.json weapon damage strings are always plain "NdM" (or, for things like
 // the Blowgun, a flat "1") - no inline "+N" the way some spell damage_dice has.
@@ -95,15 +95,24 @@ export default function WeaponAttackModal({ itemIndex, onClose, attacksUsed, max
   };
 
   // A weapon-attack cantrip (Booming Blade, Green-Flame Blade, etc.) cast through here -
-  // its own damage_dice rolls as a third, independent component, same pattern as the
-  // weapon's own bonus dice. Uses exactly whatever's entered on the spell (no character-
-  // level scaling applied here) - this app doesn't guess at a cantrip's exact RAW scaling
-  // table, the player keeps that correct via the spell editor same as any other spell data.
+  // its on-hit bonus damage rolls as a third, independent component, same pattern as the
+  // weapon's own bonus dice. cantrip_hit_bonus_by_level (character-level tiers, e.g.
+  // Booming Blade's 1d8/2d8/3d8 at 5th/11th/17th) takes priority when present since it's
+  // the correct RAW mechanic for these specific cantrips; falls back to a plain
+  // damage_dice field for anything simpler. Delayed-trigger/second-target effects (the
+  // "if it moves" rider, Green-Flame Blade's second creature) aren't auto-applied here -
+  // those need target/condition tracking this app doesn't have, and are shown as a
+  // reminder banner instead for the player to apply by hand.
   const buildCantripDamage = () => {
-    if (!cantripSpell?.damage_dice) return null;
-    const { count, sides, flat } = parseDice(cantripSpell.damage_dice);
+    if (!cantripSpell) return null;
+    const tieredDice = cantripHitBonusForLevel(cantripSpell.cantrip_hit_bonus_by_level, character.level);
+    const diceStr = tieredDice || cantripSpell.damage_dice;
+    if (!diceStr) return null;
+    const { count, sides, flat } = parseDice(diceStr);
     if (!count && !flat) return null;
-    return { count, sides, bonus: flat || 0, damage_type: cantripSpell.damage_type || 'Force' };
+    // Ferocious Strike (and any cantrip with no fixed damage_type) deals its bonus damage
+    // as the same type as the weapon's own damage, not a fixed elemental type.
+    return { count, sides, bonus: flat || 0, damage_type: cantripSpell.damage_type || weaponDamageDice(weapon).damage_type };
   };
 
   // 2d8 radiant, +1d8 per slot level above 1st (capped at 5d8 total), +1d8 more vs
@@ -156,13 +165,18 @@ export default function WeaponAttackModal({ itemIndex, onClose, attacksUsed, max
             <div><b>Damage:</b> {weaponDamageDice(weapon).damage_dice} {(abilityMod + itemBonus.damage) !== 0 ? `${(abilityMod + itemBonus.damage) >= 0 ? '+' : ''}${abilityMod + itemBonus.damage} ` : ''}{weaponDamageDice(weapon).damage_type}{weapon.bonus_damage_dice ? ` + ${weapon.bonus_damage_dice} ${weapon.bonus_damage_type || weaponDamageDice(weapon).damage_type}` : ''}</div>
           </div>
 
-          {cantripSpell && (
-            <div style={{border:'1px solid var(--accent-light)',borderRadius:'var(--radius-sm)',padding:10,marginBottom:12}}>
-              <div style={{color:'var(--accent-light)',fontWeight:600,fontSize:13,marginBottom:4}}>✨ {cantripSpell.name}{cantripSpell.damage_dice ? ` (+${cantripSpell.damage_dice} ${cantripSpell.damage_type || ''})` : ''}</div>
-              {cantripSpell.description && <div style={{color:'var(--text-secondary)',fontSize:12,whiteSpace:'pre-wrap'}}>{cantripSpell.description}</div>}
-              {cantripSpell.higher_level && <div style={{color:'var(--text-dim)',fontSize:11,marginTop:4}}><b>At Higher Levels.</b> {cantripSpell.higher_level}</div>}
-            </div>
-          )}
+          {cantripSpell && (() => {
+            const tieredDice = cantripHitBonusForLevel(cantripSpell.cantrip_hit_bonus_by_level, character.level);
+            const onHitDice = tieredDice || cantripSpell.damage_dice;
+            const onHitType = cantripSpell.damage_type || weaponDamageDice(weapon).damage_type;
+            return (
+              <div style={{border:'1px solid var(--accent-light)',borderRadius:'var(--radius-sm)',padding:10,marginBottom:12}}>
+                <div style={{color:'var(--accent-light)',fontWeight:600,fontSize:13,marginBottom:4}}>✨ {cantripSpell.name}{onHitDice ? ` (+${onHitDice} ${onHitType} on hit)` : ' (no on-hit bonus at your level)'}</div>
+                {cantripSpell.description && <div style={{color:'var(--text-secondary)',fontSize:12,whiteSpace:'pre-wrap'}}>{cantripSpell.description}</div>}
+                {cantripSpell.higher_level && <div style={{color:'var(--text-dim)',fontSize:11,marginTop:4}}><b>At Higher Levels.</b> {cantripSpell.higher_level}</div>}
+              </div>
+            );
+          })()}
 
           {isVersatile && (
             <label style={{display:'flex',alignItems:'center',gap:6,marginBottom:12,fontSize:13,color:'var(--text-secondary)'}}>
