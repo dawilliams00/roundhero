@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
-import { effectiveAbilityScores, weaponAbilityMod, weaponItemBonus, weaponDamageDice, profBonus, rollD20, rollDamageDetailed, modifier, cantripHitBonusForLevel } from '../utils/dnd';
+import { effectiveAbilityScores, weaponAbilityMod, weaponItemBonus, weaponDamageDice, profBonus, rollD20, rollDamageDetailed, modifier, cantripHitBonusForLevel, fightingStyleBonus } from '../utils/dnd';
 
 // Equipment.json weapon damage strings are always plain "NdM" (or, for things like
 // the Blowgun, a flat "1") - no inline "+N" the way some spell damage_dice has.
@@ -57,9 +57,12 @@ export default function WeaponAttackModal({ itemIndex, weaponOverride, onClose, 
   const effAb = effectiveAbilityScores(character.ability_scores, items);
   const abilityMod = weaponAbilityMod(weapon, effAb);
   const itemBonus = weaponItemBonus(weapon);
+  // Fighting Styles (Dueling/Archery) don't apply to the virtual Unarmed Strike "weapon" -
+  // RAW Dueling/Archery require an actual weapon, not an unarmed attack.
+  const fsBonus = weaponOverride ? { attack: 0, damage: 0 } : fightingStyleBonus(td.features, weapon);
   const prof = profBonus(character.level);
   const profPart = weapon.proficient ? prof : 0;
-  const attackMod = abilityMod + profPart + itemBonus.attack;
+  const attackMod = abilityMod + profPart + itemBonus.attack + fsBonus.attack;
   const isVersatile = (weapon.properties || []).includes('Versatile') && weapon.two_handed_damage;
   const abilityLabel = (weapon.properties || []).includes('Finesse')
     ? (modifier(effAb.STR || 10) >= modifier(effAb.DEX || 10) ? 'STR' : 'DEX')
@@ -93,7 +96,7 @@ export default function WeaponAttackModal({ itemIndex, weaponOverride, onClose, 
   const buildDamage = () => {
     const dice = weaponDamageDice(weapon);
     const { count, sides, flat } = parseDice(dice.damage_dice);
-    return { count, sides, bonus: (flat || 0) + abilityMod + itemBonus.damage, damage_type: dice.damage_type };
+    return { count, sides, bonus: (flat || 0) + abilityMod + itemBonus.damage + fsBonus.damage, damage_type: dice.damage_type };
   };
 
   // A bonus damage component (Vicious's extra 2d6, or a different-typed bonus die like
@@ -194,8 +197,8 @@ export default function WeaponAttackModal({ itemIndex, weaponOverride, onClose, 
         </div>
         <div className="modal-body">
           <div style={{display:'flex',gap:12,flexWrap:'wrap',fontSize:12,color:'var(--text-secondary)',marginBottom:12}}>
-            <div><b>Attack:</b> {attackMod>=0?'+':''}{attackMod} ({abilityLabel} {abilityMod>=0?'+':''}{abilityMod}{weapon.proficient ? `, +${prof} prof` : ', not proficient'}{itemBonus.attack ? `, +${itemBonus.attack} item` : ''})</div>
-            <div><b>Damage:</b> {weaponDamageDice(weapon).damage_dice} {(abilityMod + itemBonus.damage) !== 0 ? `${(abilityMod + itemBonus.damage) >= 0 ? '+' : ''}${abilityMod + itemBonus.damage} ` : ''}{weaponDamageDice(weapon).damage_type}{weapon.bonus_damage_dice ? ` + ${weapon.bonus_damage_dice} ${weapon.bonus_damage_type || weaponDamageDice(weapon).damage_type}` : ''}</div>
+            <div><b>Attack:</b> {attackMod>=0?'+':''}{attackMod} ({abilityLabel} {abilityMod>=0?'+':''}{abilityMod}{weapon.proficient ? `, +${prof} prof` : ', not proficient'}{itemBonus.attack ? `, +${itemBonus.attack} item` : ''}{fsBonus.attack ? `, +${fsBonus.attack} Archery` : ''})</div>
+            <div><b>Damage:</b> {weaponDamageDice(weapon).damage_dice} {(abilityMod + itemBonus.damage + fsBonus.damage) !== 0 ? `${(abilityMod + itemBonus.damage + fsBonus.damage) >= 0 ? '+' : ''}${abilityMod + itemBonus.damage + fsBonus.damage} ` : ''}{weaponDamageDice(weapon).damage_type}{weapon.bonus_damage_dice ? ` + ${weapon.bonus_damage_dice} ${weapon.bonus_damage_type || weaponDamageDice(weapon).damage_type}` : ''}{fsBonus.damage ? ` (incl. +${fsBonus.damage} Dueling)` : ''}</div>
           </div>
 
           {cantripSpell && (() => {

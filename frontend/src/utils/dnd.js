@@ -262,6 +262,34 @@ export const weaponAbilityMod = (weapon, effAb) => {
   return modifier(effAb?.STR ?? 10);
 };
 
+// Flat, always-on Fighting Style bonuses computable purely from data this app already
+// has - detected by feature name (same substring approach as Extra Attack/Sorcery
+// Points), not a separate "which style did you pick" setting, since a PDF-imported
+// character's sheet already has a feature literally named after the style. Styles with a
+// situational/manual rider (Great Weapon Fighting's reroll, Two-Weapon Fighting's off-
+// hand modifier, Protection's reaction, etc.) aren't modeled - same "track what's
+// computable, the player applies the rest" philosophy as everything else this app
+// doesn't mechanically enforce.
+export const hasFightingStyle = (features, styleName) => {
+  const target = styleName.toLowerCase();
+  return Object.keys(features || {}).some(n => n.toLowerCase().includes(target));
+};
+
+// Dueling (+2 damage) requires the weapon to actually be held in one hand right now -
+// false for anything with the Two-Handed property, and false for a Versatile weapon
+// currently toggled two-handed (the existing "Wielding two-handed" checkbox IS the same
+// fact Dueling's "one hand" requirement cares about, so no separate input is needed).
+// Archery (+2 to attack rolls) only needs the weapon to be Ranged.
+export const fightingStyleBonus = (features, weapon) => {
+  const bonus = { attack: 0, damage: 0 };
+  if (!weapon) return bonus;
+  const isRanged = weapon.weapon_range === 'Ranged';
+  const heldOneHanded = !isRanged && !(weapon.properties || []).includes('Two-Handed') && !weapon.two_handed;
+  if (heldOneHanded && hasFightingStyle(features, 'Dueling')) bonus.damage += 2;
+  if (isRanged && hasFightingStyle(features, 'Archery')) bonus.attack += 2;
+  return bonus;
+};
+
 // Which damage dice apply right now - the Versatile two-handed die if the player
 // has it gripped two-handed, otherwise the weapon's base damage.
 export const weaponDamageDice = (weapon) => {
