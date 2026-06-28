@@ -17,6 +17,7 @@ function EditableField({ value, onCommit, type = 'text', placeholder, width, tex
   return (
     <input
       type={type}
+      className={type === 'number' ? 'no-spinner' : undefined}
       value={val}
       placeholder={placeholder}
       onChange={e => setVal(e.target.value)}
@@ -84,25 +85,25 @@ export default function CompanionTab() {
             <button onClick={() => adjustHp(-1)} style={{ background: 'var(--danger)', color: '#fff', borderRadius: 4, width: 22, height: 22, fontWeight: 700, fontSize: 13 }}>−</button>
             <div className="stat-box">
               <div className="stat-value" style={{ color: 'var(--success)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                <EditableField type="number" value={hp.current} onCommit={v => saveHp({ current: Math.max(0, Math.min(hp.max || 0, parseInt(v) || 0)) })} width={40} textAlign="center" />
+                <EditableField type="number" value={hp.current} onCommit={v => saveHp({ current: Math.max(0, Math.min(hp.max || 0, parseInt(v) || 0)) })} width={48} textAlign="center" />
                 /
-                <EditableField type="number" value={hp.max} onCommit={v => { const mx = Math.max(0, parseInt(v) || 0); saveHp({ max: mx, current: Math.min(hp.current || 0, mx) }); }} width={40} textAlign="center" />
+                <EditableField type="number" value={hp.max} onCommit={v => { const mx = Math.max(0, parseInt(v) || 0); saveHp({ max: mx, current: Math.min(hp.current || 0, mx) }); }} width={48} textAlign="center" />
               </div>
               <div className="stat-label">HP</div>
             </div>
             <button onClick={() => adjustHp(1)} style={{ background: 'var(--success)', color: '#fff', borderRadius: 4, width: 22, height: 22, fontWeight: 700, fontSize: 13 }}>+</button>
           </div>
           <div className="stat-box">
-            <EditableField type="number" value={hp.temp} onCommit={v => saveHp({ temp: Math.max(0, parseInt(v) || 0) })} width={40} textAlign="center" />
+            <EditableField type="number" value={hp.temp} onCommit={v => saveHp({ temp: Math.max(0, parseInt(v) || 0) })} width={48} textAlign="center" />
             <div className="stat-label">Temp HP</div>
           </div>
           <div className="stat-box">
-            <EditableField type="number" value={companion.ac} onCommit={v => saveCompanion({ ac: parseInt(v) || 0 })} width={40} textAlign="center" />
+            <EditableField type="number" value={companion.ac} onCommit={v => saveCompanion({ ac: parseInt(v) || 0 })} width={48} textAlign="center" />
             <div className="stat-label">AC</div>
           </div>
-          <div style={{ flex: 1, minWidth: 160 }}>
-            <label style={{ fontSize: 11, color: 'var(--text-dim)' }}>Movement</label>
-            <EditableField value={companion.movement} onCommit={v => saveCompanion({ movement: v })} placeholder="30 ft." width="100%" />
+          <div className="stat-box">
+            <EditableField value={companion.movement} onCommit={v => saveCompanion({ movement: v })} placeholder="30 ft." width={90} textAlign="center" />
+            <div className="stat-label">Movement</div>
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
@@ -111,7 +112,7 @@ export default function CompanionTab() {
             return (
               <div className="stat-box" key={key}>
                 <div className="stat-value">
-                  <EditableField type="number" value={score} onCommit={v => saveAbilityScore(key, v)} width={36} textAlign="center" />
+                  <EditableField type="number" value={score} onCommit={v => saveAbilityScore(key, v)} width={48} textAlign="center" />
                 </div>
                 <div className="stat-sub">{modStr(score)}</div>
                 <div className="stat-label">{key}</div>
