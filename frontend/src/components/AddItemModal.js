@@ -21,6 +21,9 @@ const WEAPON_PROPERTIES = ['Ammunition','Finesse','Heavy','Light','Loading','Mon
 // can be entered without hand-writing JSON via the admin editor. ADD-mode stats sum a
 // flat value; SET-mode (an ability key) overrides that ability's score while equipped
 // (computeItemBonuses takes the max against the character's raw score, never lowers it).
+const FULL_DAMAGE_TYPES = ['Acid','Bludgeoning','Cold','Fire','Force','Lightning','Necrotic','Piercing','Poison','Psychic','Radiant','Slashing','Thunder'];
+const CONDITIONS = ['Blinded','Charmed','Deafened','Exhaustion','Frightened','Grappled','Incapacitated','Invisible','Paralyzed','Petrified','Poisoned','Prone','Restrained','Stunned','Unconscious'];
+
 const ADD_MODIFIERS = [
   { stat: 'ac_base', label: 'AC' },
   { stat: 'saving_throw_modifier', label: 'All Saving Throws' },
@@ -77,18 +80,25 @@ export default function AddItemModal({ item, onSave, onClose }) {
   const removeModifier = (i) => set('buffs', form.buffs.filter((_, idx) => idx !== i));
   const setModifierType = (i, value) => {
     // "set:STR" (ability override), "add:STR" (flat ability bonus), "advsave:STR"/
-    // "advsave:all" (advantage on saves) all select a different buff shape; anything
-    // else is a plain ADD_MODIFIERS stat key. One update, not several sequential ones
-    // reading the same stale form.buffs - that's the exact bug class this file's
-    // submit() footgun note warns about, just on the read side instead of the save side.
+    // "advsave:all" (advantage on saves), "resist"/"immune"/"vuln" (damage type buffs,
+    // defaulting to the first damage type until the player picks one), "condimmune"
+    // (condition immunity) all select a different buff shape; anything else is a plain
+    // ADD_MODIFIERS stat key. One update, not several sequential ones reading the same
+    // stale form.buffs - that's the exact bug class this file's submit() footgun note
+    // warns about, just on the read side instead of the save side.
     if (value.startsWith('set:')) {
-      updateModifier(i, { stat: value.slice(4), mode: 'set', ability: undefined, value: 19 });
+      updateModifier(i, { stat: value.slice(4), mode: 'set', ability: undefined, damage_type: undefined, condition: undefined, value: 19 });
     } else if (value.startsWith('add:')) {
-      updateModifier(i, { stat: value.slice(4), mode: 'add', ability: undefined, value: 1 });
+      updateModifier(i, { stat: value.slice(4), mode: 'add', ability: undefined, damage_type: undefined, condition: undefined, value: 1 });
     } else if (value.startsWith('advsave:')) {
-      updateModifier(i, { stat: 'advantage_save', mode: undefined, ability: value.slice(8), value: undefined });
+      updateModifier(i, { stat: 'advantage_save', mode: undefined, ability: value.slice(8), damage_type: undefined, condition: undefined, value: undefined });
+    } else if (value === 'resist' || value === 'immune' || value === 'vuln') {
+      const stat = { resist: 'damage_resistance', immune: 'damage_immunity', vuln: 'damage_vulnerability' }[value];
+      updateModifier(i, { stat, mode: undefined, ability: undefined, damage_type: FULL_DAMAGE_TYPES[0], condition: undefined, value: undefined });
+    } else if (value === 'condimmune') {
+      updateModifier(i, { stat: 'condition_immunity', mode: undefined, ability: undefined, damage_type: undefined, condition: CONDITIONS[0], value: undefined });
     } else {
-      updateModifier(i, { stat: value, mode: undefined, ability: undefined, value: 1 });
+      updateModifier(i, { stat: value, mode: undefined, ability: undefined, damage_type: undefined, condition: undefined, value: 1 });
     }
   };
 
@@ -228,7 +238,11 @@ export default function AddItemModal({ item, onSave, onClose }) {
           const isSetMode = b.mode === 'set';
           const isAddMode = b.mode === 'add';
           const isAdvSave = b.stat === 'advantage_save';
-          const selectValue = isSetMode ? `set:${b.stat}` : isAddMode ? `add:${b.stat}` : isAdvSave ? `advsave:${b.ability || 'all'}` : b.stat;
+          const isDamageBuff = ['damage_resistance','damage_immunity','damage_vulnerability'].includes(b.stat);
+          const isCondImmune = b.stat === 'condition_immunity';
+          const damageBuffPrefix = { damage_resistance: 'resist', damage_immunity: 'immune', damage_vulnerability: 'vuln' }[b.stat];
+          const selectValue = isSetMode ? `set:${b.stat}` : isAddMode ? `add:${b.stat}` : isAdvSave ? `advsave:${b.ability || 'all'}`
+            : isDamageBuff ? damageBuffPrefix : isCondImmune ? 'condimmune' : b.stat;
           return (
             <div key={i} style={{display:'flex',gap:6,alignItems:'center',marginBottom:6}}>
               <select value={selectValue} onChange={e => setModifierType(i, e.target.value)} style={{flex:2}}>
@@ -244,8 +258,22 @@ export default function AddItemModal({ item, onSave, onClose }) {
                 {ABILITY_KEYS.map(k => <option key={`add-${k}`} value={`add:${k}`}>Add to {k} Score</option>)}
                 <option value="advsave:all">Advantage on All Saving Throws</option>
                 {ABILITY_KEYS.map(k => <option key={`advsave-${k}`} value={`advsave:${k}`}>Advantage on {k} Saves</option>)}
+                <option value="resist">Resistance to Damage Type...</option>
+                <option value="immune">Immunity to Damage Type...</option>
+                <option value="vuln">Vulnerability to Damage Type...</option>
+                <option value="condimmune">Immunity to Condition...</option>
               </select>
-              {!isAdvSave && (
+              {isDamageBuff && (
+                <select value={b.damage_type} onChange={e => updateModifier(i, { damage_type: e.target.value })} style={{flex:1}}>
+                  {FULL_DAMAGE_TYPES.map(t => <option key={t}>{t}</option>)}
+                </select>
+              )}
+              {isCondImmune && (
+                <select value={b.condition} onChange={e => updateModifier(i, { condition: e.target.value })} style={{flex:1}}>
+                  {CONDITIONS.map(c => <option key={c}>{c}</option>)}
+                </select>
+              )}
+              {!isAdvSave && !isDamageBuff && !isCondImmune && (
                 <>
                   <span style={{fontSize:12,color:'var(--text-dim)'}}>{isSetMode ? 'becomes' : '+'}</span>
                   <input type="number" value={b.value} onChange={e => updateModifier(i, { value: parseInt(e.target.value) || 0 })} style={{width:60}} />

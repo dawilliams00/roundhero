@@ -85,7 +85,7 @@ function SpellcastBox({ block }) {
 // can't un-apply a buff that's already sitting in the raw number). Shows the effective
 // (post-item) score normally; editing always edits the underlying base, never the
 // boosted display value.
-function AbilityBox({ abbr, score, baseScore, onSaveBase }) {
+function AbilityBox({ abbr, score, baseScore, onSaveBase, color }) {
   const boosted = baseScore != null && score !== baseScore;
   const [editing, setEditing] = useState(false);
   const [val, setVal] = useState(baseScore);
@@ -110,7 +110,7 @@ function AbilityBox({ abbr, score, baseScore, onSaveBase }) {
           style={{width:30,textAlign:'center',fontWeight:700,fontSize:14,padding:'1px 2px'}}
         />
       ) : (
-        <div onClick={() => { setVal(baseScore); setEditing(true); }} className="stat-value" style={{cursor: onSaveBase ? 'pointer' : undefined, color: boosted ? 'var(--accent-light)' : undefined}}>
+        <div onClick={() => { setVal(baseScore); setEditing(true); }} className="stat-value" style={{cursor: onSaveBase ? 'pointer' : undefined, color: boosted ? 'var(--accent-light)' : color}}>
           {score}
         </div>
       )}
@@ -118,6 +118,13 @@ function AbilityBox({ abbr, score, baseScore, onSaveBase }) {
     </div>
   );
 }
+
+// Each stat box gets its own color so AC/INIT/PROF/SPEED/ability scores don't all blend
+// into the same accent-light purple at a glance - purely cosmetic, no mechanical meaning.
+const STAT_COLORS = {
+  AC: '#4FC3F7', INIT: '#FFD54F', PROF: '#CE93D8', SPEED: '#81C784',
+  STR: '#EF5350', DEX: '#4DD0E1', CON: '#FF8A65', INT: '#7986CB', WIS: '#AED581', CHA: '#F06292',
+};
 
 function EffectAdder({ onAdd }) {
   const [open, setOpen] = useState(false);
@@ -266,6 +273,13 @@ export default function CharacterHeader({ onBack }) {
     ...itemBonuses.advantageSaves.map(a => ({
       t: `ADV on ${a.ability !== 'all' ? `${a.ability} ` : ''}saves`, d: a.source, c: 'var(--accent-light)',
     })),
+    // Item-granted resistances/immunities/vulnerabilities (e.g. the Great Silver Sword's
+    // psychic resistance + charmed immunity while held) - same chip styling as the
+    // character-level trait fields above, just only active while the item actually is.
+    ...itemBonuses.resistances.map(r => ({ t: `Resist ${r.type}`, d: r.source, c: 'var(--text-dim)' })),
+    ...itemBonuses.immunities.map(r => ({ t: `Immune ${r.type}`, d: r.source, c: 'var(--success)' })),
+    ...itemBonuses.vulnerabilities.map(r => ({ t: `Vuln ${r.type}`, d: r.source, c: 'var(--danger)' })),
+    ...itemBonuses.conditionImmunities.map(r => ({ t: `Immune: ${r.condition}`, d: r.source, c: 'var(--success)' })),
   ];
 
   const adjustHp = async delta => {
@@ -315,11 +329,11 @@ export default function CharacterHeader({ onBack }) {
               </div>
               {tempHp > 0 && <PMStat label="Temp HP" value={tempHp} color={hpCol} onAdjust={adjustTempHp} />}
 
-              <EditableStat label="AC" value={ac} onSave={setAc} title={(itemBonuses.ac_base || hasteAcBonus) ? `${baseAc} base${itemBonuses.ac_base ? ` + ${itemBonuses.ac_base} items` : ''}${hasteAcBonus ? ` + ${hasteAcBonus} Hasted` : ''}` : undefined} />
-              <EditableStat label="INIT" value={init} onSave={setInit} />
-              <EditableStat label="SPEED" value={speed} onSave={setSpeed} title={isHasted ? `${baseSpeed} ft. base, doubled while Hasted` : undefined} />
+              <EditableStat label="AC" value={ac} onSave={setAc} color={STAT_COLORS.AC} title={(itemBonuses.ac_base || hasteAcBonus) ? `${baseAc} base${itemBonuses.ac_base ? ` + ${itemBonuses.ac_base} items` : ''}${hasteAcBonus ? ` + ${hasteAcBonus} Hasted` : ''}` : undefined} />
+              <EditableStat label="INIT" value={init} onSave={setInit} color={STAT_COLORS.INIT} />
+              <EditableStat label="SPEED" value={speed} onSave={setSpeed} color={STAT_COLORS.SPEED} title={isHasted ? `${baseSpeed} ft. base, doubled while Hasted` : undefined} />
               <div className="stat-box">
-                <div className="stat-value">+{prof}</div>
+                <div className="stat-value" style={{color: STAT_COLORS.PROF}}>+{prof}</div>
                 <div className="stat-label">Prof</div>
               </div>
               <div onClick={toggleInspiration} className="stat-box" style={{cursor:'pointer'}}>
@@ -337,7 +351,7 @@ export default function CharacterHeader({ onBack }) {
               <div style={{display:'flex',flexDirection:'column',gap:4}}>
                 <div style={{display:'flex',gap:6}}>
                   {ABILITY_KEYS.map(k => (
-                    <AbilityBox key={k} abbr={k} score={effAb[k]||10} baseScore={ab?.[k]||10}
+                    <AbilityBox key={k} abbr={k} score={effAb[k]||10} baseScore={ab?.[k]||10} color={STAT_COLORS[k]}
                       onSaveBase={(n) => updateCharacter(character.id, { ability_scores: { ...ab, [k]: n } })} />
                   ))}
                 </div>

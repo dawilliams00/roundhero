@@ -41,6 +41,23 @@ export default function SpellsTab() {
   // castable even with zero spell slots - this is the actual bug behind "the app says
   // he can't cast it" for a non-caster who only knows one spell through a feat.
   const hasFreeUse = (spell) => spell.free_use_feature && (character.tracker_data?.features?.[spell.free_use_feature]?.current || 0) > 0;
+  // A spell added the OLD ad hoc way (before the granted-known-spell mechanic existed -
+  // "+Custom Spell" with just a typed granted_by string, no free_use_feature tag) looks
+  // exactly like a real feat-granted spell to the player but has no link to the feature's
+  // charge, so it can never be cast without a real slot even though the feature exists
+  // and has uses left. Detects that exact shape and offers a one-click repair instead of
+  // making the player delete and recreate it through CustomAbilityModal.
+  const findOrphanFix = (spell) => {
+    if (!spell.granted_by || spell.free_use_feature) return null;
+    const features = character.tracker_data?.features || {};
+    const match = Object.keys(features).find(n => n.toLowerCase() === spell.granted_by.toLowerCase())
+      || Object.keys(features).find(n => n.toLowerCase().includes(spell.granted_by.toLowerCase()) || spell.granted_by.toLowerCase().includes(n.toLowerCase()));
+    return match || null;
+  };
+  const fixOrphanSpell = (spell, featureKey) => {
+    const newKnown = knownSpells.map(s => s.name === spell.name ? { ...s, free_use_feature: featureKey } : s);
+    saveSpellData({ ...sd, known_spells: newKnown });
+  };
   const spellBlocks = getSpellcastingBlocks(character.class_name, character.ability_scores, character.level, character.tracker_data?.inventory?.items);
 
   const addSpell = (spell) => {
@@ -156,6 +173,7 @@ export default function SpellsTab() {
           <div className="card">
             {spells.map((spell,i) => {
               const castable = spell.level_int === 0 || hasAvailableSlot(spell) || hasFreeUse(spell);
+              const orphanFix = findOrphanFix(spell);
               return (
                 <div key={i} style={{display:'flex',alignItems:'center',gap:8,padding:'8px 0',borderBottom:'1px solid var(--border)'}}>
                   <div style={{flex:1,cursor:'pointer'}} onClick={() => setViewing(spell)}>
@@ -166,6 +184,14 @@ export default function SpellsTab() {
                       <div style={{flex:1}}>
                         <div style={{color: schoolColor(spell.school),fontWeight:500,fontSize:13}}>{spell.name}</div>
                         <div style={{color:'var(--text-dim)',fontSize:11}}>{spell.school} {spell.ritual?'· Ritual':''} {spell.concentration?'· Concentration':''} {spell.granted_by?`· Granted by ${spell.granted_by}`:''}</div>
+                        {orphanFix && (
+                          <div style={{color:'var(--warning)',fontSize:11,marginTop:2}}>
+                            Not linked to {orphanFix}'s free-cast charge yet.{' '}
+                            <button className="btn btn-secondary btn-sm" style={{padding:'1px 8px',fontSize:11}} onClick={(e) => { e.stopPropagation(); fixOrphanSpell(spell, orphanFix); }}>
+                              🔧 Fix
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>

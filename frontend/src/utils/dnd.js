@@ -210,6 +210,10 @@ export const computeItemBonuses = (items) => {
   const abilityOverrides = {};
   const abilityAdds = {};
   const advantageSaves = [];
+  const resistances = [];
+  const immunities = [];
+  const vulnerabilities = [];
+  const conditionImmunities = [];
   (items || []).forEach(it => {
     if (!isItemActive(it)) return;
     (it.buffs || []).forEach(b => {
@@ -220,12 +224,20 @@ export const computeItemBonuses = (items) => {
         abilityAdds[b.stat] = (abilityAdds[b.stat] || 0) + (b.value || 0);
       } else if (b.stat === 'advantage_save') {
         advantageSaves.push({ ability: b.ability || 'all', source: it.name });
+      } else if (b.stat === 'damage_resistance') {
+        resistances.push({ type: b.damage_type, source: it.name });
+      } else if (b.stat === 'damage_immunity') {
+        immunities.push({ type: b.damage_type, source: it.name });
+      } else if (b.stat === 'damage_vulnerability') {
+        vulnerabilities.push({ type: b.damage_type, source: it.name });
+      } else if (b.stat === 'condition_immunity') {
+        conditionImmunities.push({ condition: b.condition, source: it.name });
       } else if (ADDITIVE_BUFF_STATS.includes(b.stat)) {
         bonuses[b.stat] += b.value || 0;
       }
     });
   });
-  return { ...bonuses, abilityOverrides, abilityAdds, advantageSaves };
+  return { ...bonuses, abilityOverrides, abilityAdds, advantageSaves, resistances, immunities, vulnerabilities, conditionImmunities };
 };
 
 // Weapon attack/damage buffs (e.g. a +1 longsword) are intrinsically tied to that
@@ -278,6 +290,10 @@ export const formatItemBuff = (b) => {
   if (b.stat === 'advantage_save') {
     return `Advantage on ${b.ability && b.ability !== 'all' ? `${ABILITY_LABELS[b.ability] || b.ability} ` : 'all '}saving throws`;
   }
+  if (b.stat === 'damage_resistance') return `Resistance to ${b.damage_type} damage`;
+  if (b.stat === 'damage_immunity') return `Immunity to ${b.damage_type} damage`;
+  if (b.stat === 'damage_vulnerability') return `Vulnerability to ${b.damage_type} damage`;
+  if (b.stat === 'condition_immunity') return `Immune to being ${b.condition}`;
   const label = BUFF_STAT_LABELS[b.stat] || b.stat.replace(/_/g, ' ');
   return `${label}: +${b.value}`;
 };
