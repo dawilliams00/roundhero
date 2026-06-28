@@ -25,6 +25,11 @@ export default function WeaponAttackModal({ itemIndex, weaponOverride, onClose, 
   const [thisAttackCounted, setThisAttackCounted] = useState(false);
   const [smiteApplied, setSmiteApplied] = useState(false);
   const [unarmedChoice, setUnarmedChoice] = useState(null);
+  // "I'll roll in person" + a heal-or-advantage item skips the digital damage roll
+  // entirely - the player rolls the bonus dice themselves, so this just asks for the
+  // result they got (to apply as healing) instead of rolling it for them.
+  const [manualHealAdvOpen, setManualHealAdvOpen] = useState(false);
+  const [manualHealAmount, setManualHealAmount] = useState('');
 
   if (!character) return null;
   const td = character.tracker_data || {};
@@ -319,6 +324,38 @@ export default function WeaponAttackModal({ itemIndex, weaponOverride, onClose, 
                 <button className="btn btn-primary" style={{flex:1}} onClick={onClose}>Done</button>
               </div>
             </div>
+          ) : manualHealAdvOpen ? (
+            <div style={{width:'100%',background:'var(--bg-primary)',borderRadius:'var(--radius-sm)',padding:12}}>
+              {unarmedChoice ? (
+                <div style={{color:'var(--success)',fontSize:12}}>
+                  {unarmedChoice === 'healed' ? `Healed ${manualHealAmount || 0} HP.` : 'Advantage on your next roll - remove the chip from the header once used.'}
+                </div>
+              ) : (
+                <>
+                  <div style={{color:'var(--text-dim)',fontSize:11,marginBottom:8,textAlign:'center'}}>
+                    Roll your {weapon.bonus_damage_dice} {weapon.bonus_damage_type || weaponDamageDice(weapon).damage_type} bonus damage yourself, then:
+                  </div>
+                  <div style={{display:'flex',gap:6,alignItems:'center',marginBottom:8}}>
+                    <input type="number" placeholder="Amount rolled" value={manualHealAmount} onChange={e => setManualHealAmount(e.target.value)} style={{flex:1}} />
+                    <button className="btn btn-secondary" disabled={!manualHealAmount} onClick={async () => {
+                      const amt = parseInt(manualHealAmount) || 0;
+                      const hp = td.hp || {};
+                      const cap = hp.max_override || hp.max || 0;
+                      await saveTrackerData({ ...td, hp: { ...hp, current: Math.min(cap, (hp.current||0) + amt) } });
+                      setUnarmedChoice('healed');
+                    }}>Heal That Much</button>
+                  </div>
+                  <button className="btn btn-secondary" style={{width:'100%'}} onClick={async () => {
+                    const effects = td.active_effects || [];
+                    if (!effects.includes('Advantage (next roll)')) {
+                      await saveTrackerData({ ...td, active_effects: [...effects, 'Advantage (next roll)'] });
+                    }
+                    setUnarmedChoice('advantage');
+                  }}>Gain Advantage (next roll) Instead</button>
+                </>
+              )}
+              <button className="btn btn-secondary" style={{width:'100%',marginTop:8}} onClick={onClose}>Close</button>
+            </div>
           ) : (
             <>
               {!attacksExhausted && (
@@ -340,6 +377,9 @@ export default function WeaponAttackModal({ itemIndex, weaponOverride, onClose, 
                 <button className="btn btn-secondary" style={{width:'100%',marginTop:8}} disabled={attacksExhausted} onClick={async () => {
                   if (smiteOn && smiteLevel && !smiteApplied) { await useSlot(smiteLevel); setSmiteApplied(true); }
                   onAttack();
+                  if ((weapon.bonus_heal_or_advantage || weapon.unarmed_heal_or_advantage) && weapon.bonus_damage_dice) {
+                    setManualHealAdvOpen(true);
+                  }
                 }}>
                   ✓ I'll roll in person - log an attack{smitePreview() ? ` (+ spend smite slot)` : ''}
                 </button>
