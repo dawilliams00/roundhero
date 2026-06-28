@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
+import api from '../utils/api';
 import { maxPreparedSpells, schoolColor, slotBadgeTextColor, getSpellcastingBlocks } from '../utils/dnd';
 import SpellBrowserModal from './SpellBrowserModal';
 import SpellDetailModal from './SpellDetailModal';
@@ -14,6 +15,8 @@ export default function SpellsTab() {
   const [viewing, setViewing]     = useState(null);
   const [addingCustom, setAddingCustom] = useState(false);
   const [managingLists, setManagingLists] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshMsg, setRefreshMsg] = useState('');
 
   if (!character) return null;
   const sd    = character.spell_data || {};
@@ -50,6 +53,39 @@ export default function SpellsTab() {
     saveSpellData({ ...sd, spell_lists: newLists, active_list: newActive });
   };
 
+  // Known spells are a snapshot copied at add-time, same staleness problem inventory
+  // items had before their per-item Refresh button - a later fix to the spell database
+  // (a missing higher_level, a newly-added requires_weapon_attack flag, corrected damage
+  // dice, etc.) never reaches a character who already knows that spell. One button
+  // re-pulls every known spell fresh by name match and overwrites it wholesale, except
+  // for the character-specific tags a feat-granted spell carries (granted_by,
+  // ability_override, free_use_feature) which have no equivalent in the master library
+  // and would otherwise be wiped.
+  const refreshSpells = async () => {
+    setRefreshing(true);
+    setRefreshMsg('');
+    try {
+      const r = await api.get('/content/spells');
+      const library = r.data;
+      let changed = 0;
+      const newKnown = knownSpells.map(s => {
+        const fresh = library.find(l => l.name.toLowerCase() === s.name.toLowerCase());
+        if (!fresh) return s;
+        changed++;
+        return {
+          ...fresh,
+          ...(s.granted_by !== undefined ? { granted_by: s.granted_by } : {}),
+          ...(s.ability_override !== undefined ? { ability_override: s.ability_override } : {}),
+          ...(s.free_use_feature !== undefined ? { free_use_feature: s.free_use_feature } : {}),
+        };
+      });
+      await saveSpellData({ ...sd, known_spells: newKnown });
+      setRefreshMsg(`Refreshed ${changed} of ${knownSpells.length} known spell(s) from the latest data.`);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   return (
     <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
       <div style={{padding:12,flexShrink:0}}>
@@ -60,9 +96,13 @@ export default function SpellsTab() {
               <span key={b.className} style={{color:'var(--accent-light)',fontSize:11,fontWeight:600}}>{b.className}: {b.attackMod>=0?'+':''}{b.attackMod} atk · DC {b.saveDC}</span>
             ))}
             <button className="btn btn-secondary btn-sm" onClick={() => setManagingLists(true)}>Manage Lists</button>
+            <button className="btn btn-secondary btn-sm" disabled={refreshing} onClick={refreshSpells} title="Re-pull all known spells from the latest spell data">
+              {refreshing ? 'Refreshing...' : '🔄 Refresh Spell Data'}
+            </button>
             <button className="btn btn-secondary btn-sm" onClick={() => setBrowsing(true)}>+ Add Spells</button>
             <button className="btn btn-primary btn-sm" onClick={() => setAddingCustom(true)}>+ Custom Spell</button>
           </div>
+          {refreshMsg && <div style={{color:'var(--success)',fontSize:11,marginTop:6}}>{refreshMsg}</div>}
           <div style={{display:'flex',flexWrap:'wrap',gap:12,alignItems:'center'}}>
             {slotLevels.length > 0 ? (
               slotLevels.map(([lvl,slot]) => (
