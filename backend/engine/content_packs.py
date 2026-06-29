@@ -430,3 +430,35 @@ def get_spell_slots(class_name, level):
 
 def get_proficiency_bonus(level):
     return PROFICIENCY_BONUS.get(level, 2)
+
+# RAW multiclass spellcaster table: full casters count their whole class level, half
+# casters (Paladin/Ranger/Artificer) count half (rounded down), then the combined
+# "effective caster level" indexes into the SAME progression the single-class "full"
+# caster table already uses (PHB's Multiclass Spellcaster table is literally that table
+# reused). Warlock is excluded entirely - Pact Magic is its own separate slot pool that
+# never feeds into or draws from the shared table, returned separately as pact_slots.
+def get_multiclass_spell_slots(classes):
+    """classes: list of {class_name, level}. Returns (spell_slots, pact_slots) - pact_slots
+    is None if no class in the list is a Warlock. Third-caster subclasses (Eldritch Knight
+    Fighter, Arcane Trickster Rogue) aren't counted - this app has no subclass-mechanics
+    model for base classes, so a character relying on one will under-count slightly until
+    that's modeled; a known, documented limitation rather than a silent guess."""
+    effective = 0
+    warlock_level = 0
+    for c in classes:
+        caster_type = SPELLCASTER_TYPE.get(c["class_name"], "none")
+        if caster_type == "full":
+            effective += c["level"]
+        elif caster_type == "half":
+            effective += c["level"] // 2
+        elif caster_type == "warlock":
+            warlock_level += c["level"]
+    spell_slots = {}
+    if effective > 0:
+        raw = SPELL_SLOTS["full"].get(min(effective, 20), {})
+        spell_slots = {lvl: {"current": mx, "max": mx} for lvl, mx in raw.items()}
+    pact_slots = None
+    if warlock_level > 0:
+        raw = SPELL_SLOTS["warlock"].get(min(warlock_level, 20), {})
+        pact_slots = {lvl: {"current": mx, "max": mx} for lvl, mx in raw.items()}
+    return spell_slots, pact_slots

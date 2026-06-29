@@ -20,6 +20,22 @@ def _recharge_item(ch, recharge_set, summary, item_name):
         ch["current"] = mx
         summary["items_recharged"].append(item_name)
 
+def _restore_pact_slots(td, summary):
+    # Multiclass characters with a Warlock level keep Pact Magic as a separate pool from
+    # the combined spell_slots table (see get_multiclass_spell_slots) - Pact Magic
+    # recovers on a short OR long rest per RAW, unconditionally, unlike the shared table
+    # which is long-rest only. A single-class Warlock still uses the older convention of
+    # storing pact slots directly in spell_slots (gated on spell_data.caster_type below),
+    # so this only ever does anything for a character that actually has this field.
+    pact = td.get("pact_slots")
+    if not pact:
+        return
+    for slot in pact.values():
+        mx = int(slot.get("max", 0))
+        if slot.get("current", 0) < mx:
+            slot["current"] = mx
+            summary["slots_restored"] = True
+
 def apply_rest(tracker_data, spell_data, rest_type="long"):
     td = copy.deepcopy(tracker_data)
     features = td.get("features", {})
@@ -51,6 +67,7 @@ def apply_rest(tracker_data, spell_data, rest_type="long"):
                 summary["slots_restored"] = True
         for item in items:
             _recharge_item(item.get("charges"), LONG_REST_RECHARGES, summary, item["name"])
+        _restore_pact_slots(td, summary)
         td["conditions"] = []
         if "hp" in td:
             hp = td["hp"]
@@ -80,6 +97,7 @@ def apply_rest(tracker_data, spell_data, rest_type="long"):
                     summary["features_reset"].append(ability.get("name", "Companion ability"))
         for item in items:
             _recharge_item(item.get("charges"), SHORT_REST_RECHARGES, summary, item["name"])
+        _restore_pact_slots(td, summary)
         caster_type = spell_data.get("caster_type", "none")
         if caster_type == "warlock":
             for level, slot in slots.items():

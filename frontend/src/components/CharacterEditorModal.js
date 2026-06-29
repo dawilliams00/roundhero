@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useCharacter } from '../context/CharacterContext';
 import api from '../utils/api';
-import InfoModal from './InfoModal';
+import LevelUpFlowModal from './LevelUpFlowModal';
 import { ABILITY_KEYS, ABILITY_LABELS, SAVE_PROFS, SKILL_MAP, suspectedAbilityContamination, featBuffItems } from '../utils/dnd';
 
 // Full base-stat editor - identity, ability scores, and save/skill proficiencies, on top
@@ -12,9 +12,8 @@ import { ABILITY_KEYS, ABILITY_LABELS, SAVE_PROFS, SKILL_MAP, suspectedAbilityCo
 // header click-to-edit box per-stat, but save/skill proficiencies had no UI at all and
 // manually-created characters never got skill_proficiencies populated in the first place.
 export default function CharacterEditorModal({ onClose }) {
-  const { character, setCharacter, updateCharacter, saveTrackerData } = useCharacter();
-  const [leveling, setLeveling] = useState(false);
-  const [summary, setSummary] = useState(null);
+  const { character, updateCharacter, saveTrackerData } = useCharacter();
+  const [showLevelUp, setShowLevelUp] = useState(false);
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
 
@@ -76,21 +75,6 @@ export default function CharacterEditorModal({ onClose }) {
   }, [classMode, identity?.class_name, classList]);
 
   if (!character) return null;
-
-  const levelUp = async () => {
-    setLeveling(true);
-    setError(null);
-    try {
-      const r = await api.post(`/characters/${character.id}/level_up`);
-      setCharacter(r.data);
-      setSummary(r.data.level_up_summary);
-      setIdentity(f => ({ ...f, level: r.data.level }));
-    } catch (err) {
-      setError(err?.response?.data?.error || 'Could not level up.');
-    } finally {
-      setLeveling(false);
-    }
-  };
 
   const toggleSave = (ab) => setSaveProfs(p => p.includes(ab) ? p.filter(x => x !== ab) : [...p, ab]);
   const toggleSkillProf = (skill) => setSkillProfs(p => {
@@ -175,10 +159,10 @@ export default function CharacterEditorModal({ onClose }) {
           <div className="form-group" style={{maxWidth:90}}><label>Level</label><input type="number" min={1} max={20} value={identity.level} onChange={e=>setIdentity(f=>({...f,level:e.target.value}))} /></div>
         </div>
         <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:16}}>
-          <button className="btn btn-secondary" disabled={leveling || character.level >= 20} onClick={levelUp}>
-            {leveling ? 'Leveling up...' : `Level Up to ${character.level + 1} (engine)`}
+          <button className="btn btn-secondary" disabled={character.level >= 20} onClick={() => setShowLevelUp(true)}>
+            Level Up to {character.level + 1}
           </button>
-          <span style={{color:'var(--text-dim)',fontSize:11}}>Recomputes HP/slots/features. PDF-imported or multiclass characters should edit Level above by hand instead.</span>
+          <span style={{color:'var(--text-dim)',fontSize:11}}>Walks through class confirmation (if needed), subclass picks, and Ability Score Improvements as they come up.</span>
         </div>
 
         <div style={{fontSize:12,color:'var(--text-dim)',textTransform:'uppercase',letterSpacing:1,marginBottom:8}}>Ability Scores</div>
@@ -232,12 +216,16 @@ export default function CharacterEditorModal({ onClose }) {
           <button className="btn btn-primary" style={{flex:2}} disabled={saving} onClick={saveAll}>{saving ? 'Saving...' : 'Save Changes'}</button>
         </div>
       </div>
-      {summary && (
-        <InfoModal
-          title={`Welcome to Level ${summary.new_level}!`}
-          message={`HP max increased by ${summary.hp_gained}. New features and spell slots (if any) for this level have been added — check the Feats/Attunement and Spells tabs.`}
-          onClose={() => setSummary(null)}
-        />
+      {showLevelUp && (
+        <LevelUpFlowModal onClose={() => {
+          setShowLevelUp(false);
+          // Leveling up can change level/ability_scores(/class_name for multiclass) on
+          // `character` out from under this modal's own local draft state (identity/
+          // scores were seeded once at mount) - re-sync both so Save Changes afterward
+          // doesn't silently overwrite the just-applied level-up with stale values.
+          setIdentity(f => ({ ...f, class_name: character.class_name, level: character.level }));
+          setScores({ ...character.ability_scores });
+        }} />
       )}
     </div>
   );
