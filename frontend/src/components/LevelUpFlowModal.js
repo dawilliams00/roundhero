@@ -12,7 +12,11 @@ import { ABILITY_KEYS, ABILITY_LABELS } from '../utils/dnd';
 // mode='level_up' (default) drives the full level-up flow via POST /level_up. mode=
 // 'confirm_classes' is for a proactive prompt (e.g. a banner on a freshly-imported
 // character) that only needs to save tracker_data.classes, with no level-up side effect.
-export default function LevelUpFlowModal({ onClose, mode = 'level_up' }) {
+// initialLevelingClass skips the choose_leveling_class step entirely - used when the
+// caller already knows which class is leveling (e.g. a per-class "Level Up" button in
+// the editor's structured Class 1/Class 2 rows), since the backend never needs to ask
+// when leveling_class is already provided on the very first attempt.
+export default function LevelUpFlowModal({ onClose, mode = 'level_up', initialLevelingClass }) {
   const { character, setCharacter, saveTrackerData, rollbackLevelUp } = useCharacter();
   const [step, setStep] = useState('loading'); // loading | confirm_classes | choose_leveling_class | choose_subclass | choose_asi | done | error
   const [error, setError] = useState(null);
@@ -86,7 +90,7 @@ export default function LevelUpFlowModal({ onClose, mode = 'level_up' }) {
   // Intentionally fires once on mount only - attempt()/checkClassStatus are recreated
   // every render (they close over `character`/`saveTrackerData`), but this should only
   // auto-fire once when the modal opens, not on every subsequent render.
-  useEffect(() => { if (mode === 'confirm_classes') checkClassStatus(); else attempt(); }, []);
+  useEffect(() => { if (mode === 'confirm_classes') checkClassStatus(); else attempt(initialLevelingClass); }, []);
 
   const startSubclassStep = (className) => {
     api.get(`/content/classes/${encodeURIComponent(className)}/subclasses`).then(r => setSubclassOptions(r.data || []));
