@@ -1,19 +1,28 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useCampaign } from '../context/CampaignContext';
 import { useCharacter } from '../context/CharacterContext';
 
 export default function CharacterSelect() {
   const { user, logout }              = useAuth();
   const { characters, fetchCharacters, loading, importCharacter, deleteCharacter } = useCharacter();
+  const { campaigns, fetchCampaigns, createCampaign, joinCampaign, loading: campaignsLoading } = useCampaign();
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const nav = useNavigate();
   const fileInputRef = useRef(null);
   const [importing, setImporting] = useState(false);
   const [importError, setImportError] = useState('');
+  const [campaignName, setCampaignName] = useState('');
+  const [inviteCode, setInviteCode] = useState('');
+  const [campaignError, setCampaignError] = useState('');
+  const [campaignBusy, setCampaignBusy] = useState(false);
 
-  useEffect(() => { fetchCharacters(); }, [fetchCharacters]);
+  useEffect(() => {
+    fetchCharacters();
+    fetchCampaigns();
+  }, [fetchCharacters, fetchCampaigns]);
 
   const handleDelete = async () => {
     if (!confirmDelete) return;
@@ -42,9 +51,41 @@ export default function CharacterSelect() {
     }
   };
 
+  const handleCreateCampaign = async e => {
+    e.preventDefault();
+    if (!campaignName.trim()) return;
+    setCampaignBusy(true);
+    setCampaignError('');
+    try {
+      const created = await createCampaign(campaignName.trim());
+      setCampaignName('');
+      nav(`/campaigns?id=${created.id}`);
+    } catch (err) {
+      setCampaignError(err?.response?.data?.error || 'Could not create campaign.');
+    } finally {
+      setCampaignBusy(false);
+    }
+  };
+
+  const handleJoinCampaign = async e => {
+    e.preventDefault();
+    if (!inviteCode.trim()) return;
+    setCampaignBusy(true);
+    setCampaignError('');
+    try {
+      const joined = await joinCampaign(inviteCode.trim());
+      setInviteCode('');
+      nav(`/campaigns?id=${joined.id}`);
+    } catch (err) {
+      setCampaignError(err?.response?.data?.error || 'Could not join campaign.');
+    } finally {
+      setCampaignBusy(false);
+    }
+  };
+
   return (
     <div style={{minHeight:'100vh',background:'var(--bg-primary)',padding:24}}>
-      <div style={{maxWidth:600,margin:'0 auto'}}>
+      <div style={{maxWidth:980,margin:'0 auto'}}>
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:32}}>
           <div style={{fontFamily:"'Cinzel',serif",fontSize:22,color:'var(--accent-light)'}}>RoundHero</div>
           <div style={{display:'flex',alignItems:'center',gap:12}}>
@@ -52,8 +93,9 @@ export default function CharacterSelect() {
             <button className="btn btn-secondary btn-sm" onClick={logout}>Sign Out</button>
           </div>
         </div>
+
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8,flexWrap:'wrap',gap:8}}>
-          <h2 style={{color:'var(--text-primary)',fontSize:18,fontWeight:500}}>Your Characters</h2>
+          <h2 style={{color:'var(--text-primary)',fontSize:18,fontWeight:500}}>Active Characters</h2>
           <div style={{display:'flex',gap:8}}>
             <input ref={fileInputRef} type="file" accept="application/pdf" onChange={handleFileChange} style={{display:'none'}} />
             <button className="btn btn-secondary" disabled={importing} onClick={() => fileInputRef.current.click()}>
@@ -90,6 +132,66 @@ export default function CharacterSelect() {
             ))}
           </div>
         )}
+
+        <div style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) 300px',gap:16,alignItems:'start',marginTop:32}}>
+          <div className="card">
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,marginBottom:14}}>
+              <div>
+                <h2 style={{color:'var(--text-primary)',fontSize:18,fontWeight:600,marginBottom:2}}>Campaigns</h2>
+                <div style={{color:'var(--text-secondary)',fontSize:12}}>Your parties and allies.</div>
+              </div>
+              <button className="btn btn-secondary btn-sm" onClick={() => nav('/campaigns')}>Manage</button>
+            </div>
+
+            {campaignsLoading ? (
+              <div style={{color:'var(--text-dim)',padding:'18px 0'}}>Loading campaigns...</div>
+            ) : campaigns.length === 0 ? (
+              <div style={{color:'var(--text-secondary)',fontSize:13,padding:'14px 0'}}>
+                You are not in a campaign yet. Your characters remain available above.
+              </div>
+            ) : (
+              <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))',gap:10}}>
+                {campaigns.map(campaign => (
+                  <button
+                    key={campaign.id}
+                    onClick={() => nav(`/campaigns?id=${campaign.id}`)}
+                    style={{textAlign:'left',background:'var(--bg-hover)',border:'1px solid var(--border-light)',borderRadius:'var(--radius-sm)',padding:12}}
+                  >
+                    <div style={{display:'flex',justifyContent:'space-between',gap:8,alignItems:'flex-start'}}>
+                      <div>
+                        <div style={{color:'var(--text-primary)',fontWeight:700,fontSize:15}}>{campaign.name}</div>
+                        <div style={{color:'var(--text-secondary)',fontSize:12,marginTop:3}}>
+                          {campaign.member_count || 0} members · {campaign.character_count || 0} characters
+                        </div>
+                      </div>
+                      <span style={{color:'var(--accent-light)',fontSize:10,textTransform:'uppercase',fontWeight:800}}>{campaign.role || 'player'}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="card" style={{display:'flex',flexDirection:'column',gap:12}}>
+            <form onSubmit={handleCreateCampaign}>
+              <div className="form-group" style={{marginBottom:8}}>
+                <label>Create Campaign</label>
+                <input value={campaignName} onChange={e => setCampaignName(e.target.value)} placeholder="Campaign name" />
+              </div>
+              <button className="btn btn-primary" style={{width:'100%'}} disabled={campaignBusy || !campaignName.trim()}>Create Campaign</button>
+            </form>
+
+            <form onSubmit={handleJoinCampaign}>
+              <div className="form-group" style={{marginBottom:8}}>
+                <label>Join Campaign</label>
+                <input value={inviteCode} onChange={e => setInviteCode(e.target.value.toUpperCase())} placeholder="Invite code" />
+              </div>
+              <button className="btn btn-secondary" style={{width:'100%'}} disabled={campaignBusy || !inviteCode.trim()}>Join Campaign</button>
+            </form>
+
+            {campaignError && <div style={{color:'var(--danger)',fontSize:12}}>{campaignError}</div>}
+          </div>
+        </div>
       </div>
 
       {confirmDelete && (
