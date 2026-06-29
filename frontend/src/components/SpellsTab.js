@@ -66,28 +66,39 @@ export default function SpellsTab() {
   const buffItems = [...(character.tracker_data?.inventory?.items || []), ...featBuffItems(character.tracker_data?.features), ...raceBuffItems(character.race)];
   const maxPrepared = maxPreparedSpells(character.class_name, character.ability_scores, buffItems);
   const isAlwaysVisible = s => s.ritual || !!s.granted_by || s.level_int === 0;
+  // A spell auto-synced from a full-list class's complete spell list (see the sync effect
+  // above) genuinely needs to be prepared before it's usable, per RAW - unlike a spell a
+  // character actually *knows* (a Wizard's spellbook, a Sorcerer's known spells, anything
+  // manually added/granted). This has to be a per-spell check, not a global "this
+  // character has a full-list class so gate everything" rule - a multiclass character
+  // like a Paladin/Sorcerer has both kinds at once, and gating the Sorcerer half's own
+  // known spells behind "build a Paladin prepared list first" was a real bug (the
+  // Sorcerer's cantrips showed correctly since cantrips never need prep, but the
+  // messaging made it look like nothing was usable).
+  const isMasterListSpell = s => s._source === 'master_list';
   // Whether a spell counts as actually prepared today, separate from whether it's
   // visible in the list at all (isAlwaysVisible) - a ritual spell stays visible/castable
   // even when not prepared (RAW: ritual casting never needs preparation), but
   // SpellDetailModal uses this to know whether to also offer the faster slot-cast option
-  // alongside the ritual-cast one. Manual-known casters (Wizard etc.) with no active list
-  // selected are treated as "everything's prepared" - this app has never enforced
-  // prepared-spell restrictions for them, and changing that now would be a bigger,
-  // separate behavior change from what was asked for here.
+  // alongside the ritual-cast one. A manually-known spell with no active list selected
+  // is treated as "prepared" - this app has never enforced prepared-spell restrictions
+  // for known-spell casters, and changing that now would be a bigger, separate behavior
+  // change from what was asked for here.
   const isPrepared = (spell) => {
     if (spell.granted_by || spell.level_int === 0) return true;
-    if (!activeList) return !isFullList;
-    return !!spellLists[activeList]?.includes(spell.name);
+    if (activeList) return !!spellLists[activeList]?.includes(spell.name);
+    return !isMasterListSpell(spell);
   };
-  // A full-list caster with no prepared list chosen yet shouldn't see their entire class
-  // spell list dumped into the tab as if it's all available today - only the
-  // always-visible stuff (cantrips/rituals/granted) shows until they build a list.
-  const needsListPrompt = isFullList && !activeList;
-  const visibleSpells = needsListPrompt
-    ? knownSpells.filter(isAlwaysVisible)
-    : (activeList && spellLists[activeList]
-      ? knownSpells.filter(s => spellLists[activeList].includes(s.name) || isAlwaysVisible(s))
-      : knownSpells);
+  // A full-list class's auto-synced spells need a prepared list before they show as
+  // available - everything else (cantrips/rituals/granted, plus any manually-known spell
+  // from a different class on the same character) stays visible regardless.
+  const visibleSpells = activeList && spellLists[activeList]
+    ? knownSpells.filter(s => spellLists[activeList].includes(s.name) || isAlwaysVisible(s))
+    : knownSpells.filter(s => isAlwaysVisible(s) || !isMasterListSpell(s));
+  // Only worth showing the "build a list" prompt if there's actually a full-list class's
+  // spell sitting unprepared right now - a multiclass character whose Sorcerer half is
+  // fully usable shouldn't see a prompt implying nothing works.
+  const needsListPrompt = !activeList && knownSpells.some(s => isMasterListSpell(s) && !isAlwaysVisible(s));
   const toggleCatFilter = (key) => setCatFilter(prev => {
     const next = new Set(prev);
     if (next.has(key)) next.delete(key); else next.add(key);
@@ -262,9 +273,12 @@ export default function SpellsTab() {
                 onChange={e => saveLists(spellLists, e.target.value || null)}
                 style={{fontWeight:600,color:'var(--accent-light)',fontSize:13,minWidth:140}}
               >
-                <option value="">{isFullList ? 'No List Selected' : 'All Known Spells'}</option>
+                <option value="">{needsListPrompt ? 'No List Selected' : 'All Known Spells'}</option>
                 {Object.keys(spellLists).map(name => <option key={name} value={name}>{name}</option>)}
               </select>
+              <button className="btn btn-secondary btn-sm" onClick={() => setBrowsing(true)} title="Add or remove spells from your known spells - prepared lists are built from these">
+                ✏️ Edit Known Spells
+              </button>
               {maxPrepared != null && <span style={{color:'var(--text-dim)',fontSize:11}}>prepares up to {maxPrepared} (cantrips don't count)</span>}
             </div>
           </div>
@@ -275,10 +289,10 @@ export default function SpellsTab() {
         {needsListPrompt && (
           <div className="card" style={{textAlign:'center',padding:20,marginBottom:12}}>
             <div style={{color:'var(--text-secondary)',fontSize:13}}>
-              No spell list prepared yet — use <b>Manage Lists</b> above to choose today's spells.
+              No prepared list selected yet for your {fullListClasses.join('/')} spells — use <b>Manage Lists</b> above to choose today's spells.
             </div>
             <div style={{color:'var(--text-dim)',fontSize:11,marginTop:4}}>
-              Cantrips, rituals, and granted spells are always available below regardless of what's prepared.
+              Cantrips, rituals, granted spells, and any other known spells stay available below regardless of what's prepared.
             </div>
           </div>
         )}
