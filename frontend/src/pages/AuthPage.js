@@ -12,6 +12,8 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false);
   const { login, register }   = useAuth();
   const nav = useNavigate();
+  const requestedNext = params.get('next');
+  const next = requestedNext && requestedNext.startsWith('/') ? requestedNext : '/characters';
 
   const handle = e => setForm(f => ({ ...f, [e.target.name]: e.target.value }));
 
@@ -32,10 +34,10 @@ export default function AuthPage() {
         setMessage(r.data?.message || 'If that email exists, a password reset link has been sent.');
       } else if (mode === 'login') {
         await login(form.email, form.password);
-        nav('/characters');
+        nav(next);
       } else {
         await register(form.username, form.email, form.password);
-        nav('/characters');
+        nav(next);
       }
     } catch (err) {
       setError(err.response?.data?.error || 'Could not reach the password reset service. Refresh the page and try again.');

@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useCampaign } from '../context/CampaignContext';
 import { useCharacter } from '../context/CharacterContext';
 import FeedbackModal from '../components/FeedbackModal';
+import EncounterRunnerModal from '../components/EncounterRunnerModal';
 import MonsterDetailModal from '../components/MonsterDetailModal';
 import api from '../utils/api';
 
@@ -28,6 +29,22 @@ function initiativeValue(value) {
   return toNumber(value, -999);
 }
 
+function inviteUrlFor(code) {
+  const origin = window.location.origin;
+  return `${origin}/campaigns?join=${encodeURIComponent(code || '')}`;
+}
+
+function mailtoForInvite(campaign) {
+  const url = inviteUrlFor(campaign?.invite_code);
+  const subject = encodeURIComponent(`Join my RoundHero campaign: ${campaign?.name || 'Campaign'}`);
+  const body = encodeURIComponent(
+    `You have been invited to join ${campaign?.name || 'my RoundHero campaign'}.\n\n` +
+    `Invite code: ${campaign?.invite_code || ''}\n\n` +
+    `Open this link, sign in, and join the campaign:\n${url}`
+  );
+  return `mailto:?subject=${subject}&body=${body}`;
+}
+
 function normalizeCombatant(row) {
   return {
     id: row.id || combatantId(),
@@ -47,7 +64,43 @@ function normalizeCombatant(row) {
     notes: row.notes || '',
     user_id: row.user_id || null,
     character_id: row.character_id || null,
+    effects: Array.isArray(row.effects) ? row.effects : [],
+    snapshot: row.snapshot || null,
   };
+}
+
+function rosterHpText(entry) {
+  const hp = entry.sheet_snapshot?.hp || {};
+  if (hp.current == null && hp.max == null) return 'HP ?';
+  return `HP ${hp.current ?? '?'}/${hp.max ?? '?'}${hp.temp ? ` +${hp.temp}` : ''}`;
+}
+
+function rosterConText(entry) {
+  const slots = entry.sheet_snapshot?.concentration_slots || [];
+  if (!slots.length) return '';
+  return slots.map(slot => slot.spell).filter(Boolean).join(' / ');
+}
+
+function combatantFromRosterEntry(entry) {
+  const snapshot = entry.sheet_snapshot || {};
+  const hp = snapshot.hp || {};
+  return normalizeCombatant({
+    type: 'player',
+    name: entry.name,
+    character_id: entry.character_id,
+    user_id: entry.user_id,
+    group_key: 'Players',
+    hp_current: hp.current ?? '',
+    hp_max: hp.max ?? '',
+    temp_hp: hp.temp ?? 0,
+    ac: snapshot.ac ?? '',
+    conditions: Array.isArray(snapshot.conditions) ? snapshot.conditions : [],
+    concentration: rosterConText(entry),
+    effects: Array.isArray(snapshot.active_effects)
+      ? snapshot.active_effects.map(name => ({ id: `sheet_${name}`, name, type: 'sheet' }))
+      : [],
+    snapshot,
+  });
 }
 
 function sortedCombatants(encounter) {
@@ -124,23 +177,38 @@ function MemberRow({ member, campaign, onRole, onRemove }) {
   );
 }
 
-function RosterRow({ entry, campaign, user, onPrimary, onRemove }) {
+function RosterRow({ entry, campaign, user, onPrimary, onActive }) {
   const canManage = campaign.is_dm || sameId(entry.user_id, user?.id);
+  const conditions = entry.sheet_snapshot?.conditions || [];
+  const activeEffects = entry.sheet_snapshot?.active_effects || [];
+  const conText = rosterConText(entry);
   return (
     <div style={{display:'grid',gridTemplateColumns:'1fr auto',gap:10,padding:'10px 0',borderBottom:'1px solid var(--border)',alignItems:'center'}}>
       <div>
         <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
           <span style={{color:'var(--text-primary)',fontWeight:600}}>{entry.name}</span>
-          {entry.is_primary && <span style={{color:'var(--success)',fontSize:11,textTransform:'uppercase',fontWeight:800}}>Active</span>}
+          {entry.is_primary && <span style={{color:'var(--success)',fontSize:11,textTransform:'uppercase',fontWeight:800}}>Primary</span>}
+          <span style={{color:entry.active ? 'var(--success)' : 'var(--text-dim)',fontSize:11,textTransform:'uppercase',fontWeight:800}}>
+            {entry.active ? 'Active' : 'Inactive'}
+          </span>
         </div>
         <div style={{color:'var(--text-secondary)',fontSize:12}}>
           Level {entry.level || '?'} {entry.race} {entry.class_name} · {entry.username}
         </div>
+        <div style={{display:'flex',gap:8,flexWrap:'wrap',color:'var(--text-dim)',fontSize:11,marginTop:4}}>
+          <span>{rosterHpText(entry)}</span>
+          {entry.sheet_snapshot?.ac != null && <span>AC {entry.sheet_snapshot.ac}</span>}
+          {conditions.length > 0 && <span>Conditions: {conditions.join(', ')}</span>}
+          {conText && <span>Con: {conText}</span>}
+          {activeEffects.length > 0 && <span>Effects: {activeEffects.join(', ')}</span>}
+        </div>
       </div>
       {canManage && (
         <div style={{display:'flex',gap:6}}>
-          {!entry.is_primary && <button className="btn btn-secondary btn-sm" onClick={() => onPrimary(entry)}>Set Active</button>}
-          <button className="btn btn-secondary btn-sm" onClick={() => onRemove(entry)}>Remove</button>
+          {entry.active && !entry.is_primary && <button className="btn btn-secondary btn-sm" onClick={() => onPrimary(entry)}>Set Primary</button>}
+          <button className={entry.active ? 'btn btn-secondary btn-sm' : 'btn btn-primary btn-sm'} onClick={() => onActive(entry, !entry.active)}>
+            {entry.active ? 'Inactivate' : 'Reactivate'}
+          </button>
         </div>
       )}
     </div>
@@ -181,7 +249,7 @@ function EffectRow({ effect, onStatus }) {
   );
 }
 
-function EncounterRow({ encounter, selected, isDm, onStatus, onDelete, onSelect }) {
+function EncounterRow({ encounter, selected, isDm, onStatus, onDelete, onSelect, onRun }) {
   const nextActions = {
     planned: [['Start', 'running']],
     running: [['Pause', 'paused'], ['Complete', 'complete']],
@@ -205,6 +273,7 @@ function EncounterRow({ encounter, selected, isDm, onStatus, onDelete, onSelect 
       {isDm && (
         <div style={{display:'flex',gap:6}}>
           <button className="btn btn-primary btn-sm" onClick={() => onSelect(encounter.id)}>{selected ? 'Open' : 'Build'}</button>
+          <button className="btn btn-success btn-sm" onClick={() => onRun(encounter.id)}>Run</button>
           {nextActions.map(([label, status]) => (
             <button key={status} className="btn btn-secondary btn-sm" onClick={() => onStatus(encounter.id, status)}>{label}</button>
           ))}
@@ -264,16 +333,7 @@ function EncounterBuilder({
     if (existing) return;
     patchCombatants([
       ...(data.combatants || []),
-      normalizeCombatant({
-        type: 'player',
-        name: entry.name,
-        character_id: entry.character_id,
-        user_id: entry.user_id,
-        group_key: 'Players',
-        hp_current: '',
-        hp_max: '',
-        temp_hp: 0,
-      }),
+      combatantFromRosterEntry(entry),
     ]);
   };
 
@@ -434,7 +494,7 @@ export default function CampaignsPage() {
     joinCampaign,
     regenerateInvite,
     attachCharacter,
-    detachCharacter,
+    setCampaignCharacterActive,
     setPrimaryCharacter,
     updateMemberRole,
     removeMember,
@@ -462,6 +522,7 @@ export default function CampaignsPage() {
   });
   const [encounterForm, setEncounterForm] = useState({ name: '', notes: '' });
   const [selectedEncounterId, setSelectedEncounterId] = useState(null);
+  const [runningEncounterId, setRunningEncounterId] = useState(null);
   const [monsters, setMonsters] = useState([]);
   const [monsterSearch, setMonsterSearch] = useState('');
   const [addMonsterQuantity, setAddMonsterQuantity] = useState('1');
@@ -475,6 +536,13 @@ export default function CampaignsPage() {
     fetchCampaigns();
     fetchCharacters();
   }, [fetchCampaigns, fetchCharacters]);
+
+  useEffect(() => {
+    const joinCode = params.get('join');
+    if (joinCode) {
+      setInviteCode(joinCode.toUpperCase());
+    }
+  }, [params]);
 
   useEffect(() => {
     api.get('/content/monsters')
@@ -495,10 +563,13 @@ export default function CampaignsPage() {
     }
   }, [campaigns, campaign, loadCampaign, params]);
 
-  const activeRoster = (campaign?.characters || []).filter(entry => entry.active);
+  const allRoster = campaign?.characters || [];
+  const activeRoster = allRoster.filter(entry => entry.active);
+  const inactiveRoster = allRoster.filter(entry => !entry.active);
   const activeEffects = (campaign?.effects || []).filter(effect => effect.status !== 'removed');
   const encounters = campaign?.encounters || [];
   const selectedEncounter = encounters.find(entry => entry.id === selectedEncounterId) || encounters[0] || null;
+  const runningEncounter = encounters.find(entry => entry.id === runningEncounterId) || null;
   const attached = useMemo(
     () => new Set(activeRoster.map(entry => entry.character_id)),
     [activeRoster]
@@ -583,6 +654,20 @@ export default function CampaignsPage() {
     } catch (err) {
       setError(err.response?.data?.error || 'Could not regenerate invite');
     }
+  };
+
+  const copyInviteLink = async () => {
+    if (!campaign?.invite_code) return;
+    try {
+      await navigator.clipboard.writeText(inviteUrlFor(campaign.invite_code));
+    } catch (err) {
+      window.prompt('Copy campaign invite link', inviteUrlFor(campaign.invite_code));
+    }
+  };
+
+  const toggleRosterActive = async (entry, active) => {
+    if (!campaign) return;
+    await setCampaignCharacterActive(campaign.id, entry.id, active);
   };
 
   const handleLeave = async () => {
@@ -692,8 +777,13 @@ export default function CampaignsPage() {
                     <div style={{color:'var(--text-secondary)',fontSize:12,marginTop:4}}>
                       Invite Code: <span style={{color:'var(--accent-light)',fontWeight:800,letterSpacing:1}}>{campaign.invite_code}</span>
                     </div>
+                    <div style={{color:'var(--text-dim)',fontSize:11,marginTop:3,wordBreak:'break-all'}}>
+                      {inviteUrlFor(campaign.invite_code)}
+                    </div>
                   </div>
                   <div style={{display:'flex',gap:6}}>
+                    <a className="btn btn-secondary btn-sm" href={mailtoForInvite(campaign)}>Email Invite</a>
+                    <button className="btn btn-secondary btn-sm" onClick={copyInviteLink}>Copy Link</button>
                     {campaign.is_dm && <button className="btn btn-secondary btn-sm" onClick={refreshInvite}>New Code</button>}
                     {!sameId(campaign.owner_user_id, user?.id) && <button className="btn btn-secondary btn-sm" onClick={handleLeave}>Leave</button>}
                   </div>
@@ -754,9 +844,24 @@ export default function CampaignsPage() {
                           campaign={campaign}
                           user={user}
                           onPrimary={row => setPrimaryCharacter(campaign.id, row.id)}
-                          onRemove={row => detachCharacter(campaign.id, row.id)}
+                          onActive={toggleRosterActive}
                         />
                       ))}
+                      {inactiveRoster.length > 0 && (
+                        <div style={{marginTop:16}}>
+                          <h3 style={{color:'var(--text-secondary)',fontSize:13,marginBottom:4}}>Inactive Characters</h3>
+                          {inactiveRoster.map(entry => (
+                            <RosterRow
+                              key={entry.id}
+                              entry={entry}
+                              campaign={campaign}
+                              user={user}
+                              onPrimary={row => setPrimaryCharacter(campaign.id, row.id)}
+                              onActive={toggleRosterActive}
+                            />
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
@@ -817,6 +922,7 @@ export default function CampaignsPage() {
                         onStatus={setEncounterStatus}
                         onDelete={removeEncounter}
                         onSelect={setSelectedEncounterId}
+                        onRun={setRunningEncounterId}
                       />
                     ))}
                     {selectedEncounter && campaign.is_dm && (
@@ -846,6 +952,20 @@ export default function CampaignsPage() {
           </div>
         </div>
       </div>
+      {runningEncounter && campaign?.is_dm && (
+        <EncounterRunnerModal
+          campaign={campaign}
+          encounter={runningEncounter}
+          roster={allRoster}
+          monsters={monsters}
+          onClose={() => setRunningEncounterId(null)}
+          onPatchData={patchEncounterData}
+          onStatus={setEncounterStatus}
+          onDelete={removeEncounter}
+          onViewMonster={setViewingMonster}
+          reloadCampaign={loadCampaign}
+        />
+      )}
       {viewingMonster && <MonsterDetailModal monster={viewingMonster} onClose={() => setViewingMonster(null)} />}
       {showFeedback && <FeedbackModal contextLabel={campaign ? `Campaign: ${campaign.name}${selectedEncounter ? ` / Encounter: ${selectedEncounter.name}` : ''}` : 'Campaigns'} onClose={() => setShowFeedback(false)} />}
     </div>

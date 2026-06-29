@@ -311,6 +311,33 @@ def set_primary_character(campaign_id, campaign_character_id):
     return jsonify(_campaign_response(campaign, member)), 200
 
 
+
+
+@campaigns_bp.route("/<int:campaign_id>/characters/<int:campaign_character_id>/active", methods=["POST"])
+@jwt_required()
+def set_campaign_character_active(campaign_id, campaign_character_id):
+    user_id = int(get_jwt_identity())
+    campaign, member = _campaign_for_user(campaign_id, user_id)
+    if not campaign:
+        return jsonify({"error": "Campaign not found"}), 404
+
+    entry = CampaignCharacter.query.filter_by(
+        id=campaign_character_id,
+        campaign_id=campaign.id,
+    ).first_or_404()
+    if entry.user_id != user_id and not _is_dm(campaign, member):
+        return jsonify({"error": "You can only update your own character"}), 403
+
+    data = request.get_json() or {}
+    active = bool(data.get("active", True))
+    entry.active = active
+    if not active:
+        entry.is_primary = False
+    elif not CampaignCharacter.query.filter_by(campaign_id=campaign.id, user_id=entry.user_id, active=True, is_primary=True).first():
+        entry.is_primary = True
+    db.session.commit()
+    return jsonify(_campaign_response(campaign, member)), 200
+
 @campaigns_bp.route("/<int:campaign_id>/effects", methods=["POST"])
 @jwt_required()
 def create_effect(campaign_id):
