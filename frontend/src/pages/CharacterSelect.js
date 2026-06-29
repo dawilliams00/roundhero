@@ -58,6 +58,7 @@ export default function CharacterSelect() {
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:32}}>
           <div style={{fontFamily:"'Cinzel',serif",fontSize:22,color:'var(--accent-light)'}}>RoundHero</div>
           <div style={{display:'flex',alignItems:'center',gap:12}}>
+            <button className="btn btn-secondary btn-sm" onClick={() => nav('/campaigns')}>🗺 Campaigns</button>
             <span style={{color:'var(--text-secondary)',fontSize:13}}>{user?.username}</span>
             <button className="btn btn-secondary btn-sm" onClick={logout}>Sign Out</button>
           </div>
