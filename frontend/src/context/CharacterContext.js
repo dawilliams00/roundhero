@@ -160,6 +160,16 @@ export function CharacterProvider({ children }) {
     setCharacters(prev => prev.filter(c => c.id !== id));
   }, []);
 
+  // Lets a player freely experiment with leveling/setup choices on a copy without any
+  // risk to the original - explicit ask, since players like to try out a level-up or
+  // build change and back out if they don't like it. Clones everything including
+  // source_pdf, so Re-sync still works on the duplicate too.
+  const duplicateCharacter = useCallback(async (id) => {
+    const r = await api.post(`/characters/${id}/duplicate`);
+    await fetchCharacters();
+    return r.data;
+  }, [fetchCharacters]);
+
   const addActiveEffect = useCallback(async (name) => {
     if (!character) return;
     const effects = character.tracker_data.active_effects || [];
@@ -268,7 +278,7 @@ export function CharacterProvider({ children }) {
     <CharacterContext.Provider value={{
       character, characters, loading, turnUsed, setTurnUsed, companionTurnUsed, setCompanionTurnUsed, resetTurn,
       fetchCharacters, loadCharacter, updateCharacter,
-      useFeature, useSlot, restoreSlot, doRest, saveTrackerData, saveSpellData, importCharacter, resyncCharacter, deleteCharacter, useItemCharge, addActiveEffect, removeActiveEffect, addCondition, removeCondition, setConcentration, setConcentrationTarget, replaceConcentration, spendFeatureCharges, setCharacter,
+      useFeature, useSlot, restoreSlot, doRest, saveTrackerData, saveSpellData, importCharacter, resyncCharacter, deleteCharacter, duplicateCharacter, useItemCharge, addActiveEffect, removeActiveEffect, addCondition, removeCondition, setConcentration, setConcentrationTarget, replaceConcentration, spendFeatureCharges, setCharacter,
     }}>
       {children}
     </CharacterContext.Provider>

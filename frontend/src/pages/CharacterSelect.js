@@ -5,9 +5,10 @@ import { useCharacter } from '../context/CharacterContext';
 
 export default function CharacterSelect() {
   const { user, logout }              = useAuth();
-  const { characters, fetchCharacters, loading, importCharacter, deleteCharacter } = useCharacter();
+  const { characters, fetchCharacters, loading, importCharacter, deleteCharacter, duplicateCharacter } = useCharacter();
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [duplicatingId, setDuplicatingId] = useState(null);
   const nav = useNavigate();
   const fileInputRef = useRef(null);
   const [importing, setImporting] = useState(false);
@@ -23,6 +24,15 @@ export default function CharacterSelect() {
       setConfirmDelete(null);
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const handleDuplicate = async (id) => {
+    setDuplicatingId(id);
+    try {
+      await duplicateCharacter(id);
+    } finally {
+      setDuplicatingId(null);
     }
   };
 
@@ -84,6 +94,9 @@ export default function CharacterSelect() {
                     </div>
                     <div style={{color:'var(--accent-light)',fontSize:20}}>→</div>
                   </div>
+                </button>
+                <button className="btn btn-secondary btn-sm" disabled={duplicatingId === c.id} onClick={() => handleDuplicate(c.id)} title="Make an independent copy to freely experiment with (leveling, build changes) without touching the original">
+                  {duplicatingId === c.id ? 'Copying...' : '📋 Duplicate'}
                 </button>
                 <button className="btn btn-secondary btn-sm" onClick={() => setConfirmDelete(c)}>Delete</button>
               </div>

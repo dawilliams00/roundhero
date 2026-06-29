@@ -234,6 +234,33 @@ def delete_character(char_id):
     db.session.commit()
     return jsonify({"message": "Deleted"}), 200
 
+@characters_bp.route("/<int:char_id>/duplicate", methods=["POST"])
+@jwt_required()
+def duplicate_character(char_id):
+    """Clones a character wholesale so a player can freely experiment with leveling/build
+    choices on the copy without any risk to the original - source_pdf is copied too, so
+    Re-sync still works on the duplicate. The copy is otherwise fully independent from
+    the moment it's created (no link back to the original, same as a fresh import)."""
+    user_id = int(get_jwt_identity())
+    original = Character.query.filter_by(id=char_id, user_id=user_id).first_or_404()
+    copy = Character(
+        user_id=user_id,
+        name=f"{original.name} (Copy)",
+        class_name=original.class_name,
+        subclass=original.subclass,
+        race=original.race,
+        level=original.level,
+    )
+    copy.ability_scores = original.ability_scores
+    copy.tracker_data = original.tracker_data
+    copy.spell_data = original.spell_data
+    copy.ae_data = original.ae_data
+    copy.notes = original.notes
+    copy.source_pdf = original.source_pdf
+    db.session.add(copy)
+    db.session.commit()
+    return jsonify(copy.to_dict()), 201
+
 @characters_bp.route("/<int:char_id>/rest", methods=["POST"])
 @jwt_required()
 def do_rest(char_id):
