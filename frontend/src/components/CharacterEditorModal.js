@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useCharacter } from '../context/CharacterContext';
 import api from '../utils/api';
 import InfoModal from './InfoModal';
@@ -33,6 +33,36 @@ export default function CharacterEditorModal({ onClose }) {
   ) : null);
   const [skillProfs, setSkillProfs] = useState(character ? [...(td.skill_proficiencies || [])] : null);
   const [skillExpertise, setSkillExpertise] = useState(character ? [...(td.skill_expertise || [])] : null);
+
+  // Class/Subclass start as dropdowns sourced from the engine's known class list (same
+  // /content/classes(/<name>/subclasses) endpoints CharacterSetup.js already uses) so a
+  // manually-created character can't drift into a typo'd or unrecognized name. A
+  // PDF-imported or multiclass character's class_name (e.g. "Wizard 13" or "Paladin 6 /
+  // Sorcerer 6") won't match any single known class, so this falls back to free text for
+  // both fields automatically - and the player can flip back to free text manually too.
+  const [classList, setClassList] = useState([]);
+  const [subclassOptions, setSubclassOptions] = useState([]);
+  const [classMode, setClassMode] = useState('custom');
+
+  // Intentionally runs once on mount only - this modal remounts fresh every time it's
+  // opened (SettingsModal renders it behind `showEditor &&`), so `character` here is
+  // never stale, and re-running this on every keystroke elsewhere would be wasteful.
+  useEffect(() => {
+    api.get('/content/classes').then(r => {
+      const list = r.data || [];
+      setClassList(list);
+      if (character && list.some(c => c.name === character.class_name)) setClassMode('known');
+    });
+  }, []);
+
+  // Only fetches once class_name is an exact match in classList - guards against firing
+  // this for a still-unmatched value sitting in the field right after flipping into
+  // 'known' mode (e.g. a multiclass "Paladin 6 / Sorcerer 6" string, which would also
+  // break the URL route since it contains a literal "/").
+  useEffect(() => {
+    if (classMode !== 'known' || !classList.some(c => c.name === identity?.class_name)) { setSubclassOptions([]); return; }
+    api.get(`/content/classes/${encodeURIComponent(identity.class_name)}/subclasses`).then(r => setSubclassOptions(r.data || []));
+  }, [classMode, identity?.class_name, classList]);
 
   if (!character) return null;
 
@@ -102,8 +132,35 @@ export default function CharacterEditorModal({ onClose }) {
           <div className="form-group"><label>Race</label><input value={identity.race} onChange={e=>setIdentity(f=>({...f,race:e.target.value}))} /></div>
         </div>
         <div className="form-row">
-          <div className="form-group"><label>Class</label><input value={identity.class_name} onChange={e=>setIdentity(f=>({...f,class_name:e.target.value}))} placeholder="e.g. Wizard, or Wizard 10 / Fighter 3" /></div>
-          <div className="form-group"><label>Subclass</label><input value={identity.subclass} onChange={e=>setIdentity(f=>({...f,subclass:e.target.value}))} /></div>
+          <div className="form-group">
+            <label>Class</label>
+            {classMode === 'known' ? (
+              <select value={identity.class_name} onChange={e=>setIdentity(f=>({...f,class_name:e.target.value,subclass:''}))}>
+                {!classList.some(c => c.name === identity.class_name) && <option value={identity.class_name}>{identity.class_name}</option>}
+                {classList.map(c => <option key={c.name} value={c.name}>{c.name} (d{c.hit_die})</option>)}
+              </select>
+            ) : (
+              <input value={identity.class_name} onChange={e=>setIdentity(f=>({...f,class_name:e.target.value}))} placeholder="e.g. Wizard, or Wizard 10 / Fighter 3" />
+            )}
+            <div style={{marginTop:4}}>
+              <button type="button" className="btn-link" style={{fontSize:11,color:'var(--text-dim)',background:'none',border:'none',padding:0,cursor:'pointer',textDecoration:'underline'}}
+                onClick={() => setClassMode(m => m === 'known' ? 'custom' : 'known')}>
+                {classMode === 'known' ? 'Use free text instead (multiclass/PDF)' : 'Pick from list instead'}
+              </button>
+            </div>
+          </div>
+          <div className="form-group">
+            <label>Subclass</label>
+            {classMode === 'known' && subclassOptions.length > 0 ? (
+              <select value={identity.subclass} onChange={e=>setIdentity(f=>({...f,subclass:e.target.value}))}>
+                <option value="">None / Not chosen</option>
+                {!subclassOptions.includes(identity.subclass) && identity.subclass && <option value={identity.subclass}>{identity.subclass} (custom)</option>}
+                {subclassOptions.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            ) : (
+              <input value={identity.subclass} onChange={e=>setIdentity(f=>({...f,subclass:e.target.value}))} />
+            )}
+          </div>
           <div className="form-group" style={{maxWidth:90}}><label>Level</label><input type="number" min={1} max={20} value={identity.level} onChange={e=>setIdentity(f=>({...f,level:e.target.value}))} /></div>
         </div>
         <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:16}}>
