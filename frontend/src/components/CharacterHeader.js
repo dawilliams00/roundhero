@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useCharacter } from '../context/CharacterContext';
 import api from '../utils/api';
-import { modifier, modStr, hpColor, profBonus, ABILITY_KEYS, getSpellcastingBlocks, computeItemBonuses, effectiveAbilityScores, HASTED_EFFECT, HARDCODED_CONDITION_INFO, EXHAUSTION_RAW_TEXT } from '../utils/dnd';
+import { modifier, modStr, hpColor, profBonus, ABILITY_KEYS, getSpellcastingBlocks, computeItemBonuses, effectiveAbilityScores, featBuffItems, HASTED_EFFECT, HARDCODED_CONDITION_INFO, EXHAUSTION_RAW_TEXT } from '../utils/dnd';
 import SavesModal from './SavesModal';
 import SkillsModal from './SkillsModal';
 import TraitsModal from './TraitsModal';
@@ -220,15 +220,20 @@ export default function CharacterHeader({ onBack }) {
   const inventory = td?.inventory || { currency: {}, items: [] };
   const currency  = inventory.currency || {};
   const invItems  = inventory.items || [];
-  const itemBonuses = computeItemBonuses(invItems);
-  const effAb  = effectiveAbilityScores(ab, invItems);
+  // Feats with buffs (set via CustomAbilityModal's Modifiers editor, same as items) are
+  // always-on - no equip/attune step - so they're folded into every AC/save/spell-mod
+  // calculation as synthetic always-equipped "items" rather than duplicating the whole
+  // aggregation a second time for feats specifically.
+  const buffItems = [...invItems, ...featBuffItems(td?.features)];
+  const itemBonuses = computeItemBonuses(buffItems);
+  const effAb  = effectiveAbilityScores(ab, buffItems);
   const dexMod = modifier(effAb.DEX || 10);
   const attunedCount = invItems.filter(it => it.attunement && it.attuned).length;
   const attunableCount = invItems.filter(it => it.attunement).length;
   const hasUnattunedEligible = invItems.some(it => it.attunement && !it.attuned);
   const attuneWarn = attunedCount > 3 || (attunedCount < 3 && hasUnattunedEligible);
   const hd = td?.hit_dice;
-  const spellBlocks = getSpellcastingBlocks(class_name, ab, level, invItems);
+  const spellBlocks = getSpellcastingBlocks(class_name, ab, level, buffItems);
   const prof   = profBonus(level);
   const con    = modifier(ab?.CON || 10);
   const calcMaxHp = hp.max || (level * (({ Barbarian:12,Fighter:10,Paladin:10,Ranger:10,Monk:8,Rogue:8,Bard:8,Cleric:8,Druid:8,Warlock:8,Sorcerer:6,Wizard:6 }[class_name] || 8) / 2 + 1 + con));

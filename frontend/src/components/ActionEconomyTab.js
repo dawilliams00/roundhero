@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
-import { SECTION_ORDER, SECTION_COLORS, slotBadgeTextColor, concentrationSlotCount, HASTED_EFFECT, LETHARGIC_CONDITION, maxAttacksForCharacter, isItemActive, formatItemBuff, spellCastBucket, martialArtsDie } from '../utils/dnd';
+import { SECTION_ORDER, SECTION_COLORS, slotBadgeTextColor, concentrationSlotCount, HASTED_EFFECT, LETHARGIC_CONDITION, maxAttacksForCharacter, isItemActive, formatItemBuff, spellCastBucket, martialArtsDie, sorceryDisplayName } from '../utils/dnd';
 import AbilityDetailModal from './AbilityDetailModal';
 import CastSpellPickerModal from './CastSpellPickerModal';
 import ItemSpellsModal from './ItemSpellsModal';
@@ -92,12 +92,21 @@ export default function ActionEconomyTab() {
   // so it works whether the feature is the engine's exact name or a PDF-imported variant.
   const sorceryFeatureName = Object.keys(features).find(n => n.toLowerCase().includes('font of magic'));
   const knownMetamagic = td.metamagic_known || [];
-  const maxAttacks = maxAttacksForCharacter(features);
+  const baseMaxAttacks = maxAttacksForCharacter(features);
+  // A hasted melee character gets their normal attacks (Extra Attack) PLUS one more via
+  // Haste's bonus action - RAW lets that extra action be used to Attack specifically, not
+  // just Dash/Disengage/Hide/Use an Object. Folding it into maxAttacks here means the
+  // WEAPONS section's ATTACK button doesn't grey out one swing too early for a hasted
+  // character; the bonus swing marks the Haste bucket instead of Action (see recordAttack).
+  const maxAttacks = baseMaxAttacks + (isHasted ? 1 : 0);
 
   const recordAttack = () => {
     setTurnUsed(p => {
       const used = (p.Attacks || 0) + 1;
-      return { ...p, Attacks: used, ...(used >= maxAttacks ? { Action: true } : {}) };
+      const patch = { Attacks: used };
+      if (used >= baseMaxAttacks) patch.Action = true;
+      if (isHasted && used >= maxAttacks) patch.Haste = true;
+      return { ...p, ...patch };
     });
   };
 
@@ -310,7 +319,12 @@ export default function ActionEconomyTab() {
               shows (RAW always lets you do this), even with no weapons in inventory. */}
           {[...weaponItems.map(({it, idx}) => ({ it, idx, key: idx })), { it: unarmedStrike, idx: 'unarmed', key: 'unarmed' }].map(({it, idx, key}) => {
             const attacksUsed = turnUsed.Attacks || 0;
-            const attacksExhausted = inInitiative && attacksUsed >= maxAttacks;
+            // The Haste bucket is one shared bonus action - if it's already been spent on
+            // the "Haste Action" row (Dash/Disengage/Hide/Use an Object) before all normal
+            // attacks were taken, the bonus 3rd swing it would have unlocked isn't
+            // available either; don't let both be spent independently.
+            const hasteSpentElsewhere = isHasted && isBucketUsed('Haste') && attacksUsed < maxAttacks;
+            const attacksExhausted = inInitiative && (attacksUsed >= maxAttacks || hasteSpentElsewhere);
             return (
               <div key={key} style={{display:'flex',alignItems:'center',padding:'8px 12px',borderBottom:'1px solid var(--border)',gap:8,opacity: attacksExhausted ? 0.5 : 1}}>
                 <div style={{width:60,flexShrink:0,display:'flex',justifyContent:'center'}}>
@@ -462,7 +476,7 @@ export default function ActionEconomyTab() {
                     </div>
                     <div style={{flex:1,cursor:'pointer'}} onClick={() => { if (isTuck) setTuckTarget({ ability, section }); else if (isSorcery) setShowSorceryPoints(true); else setDetail(ability); }}>
                       <div style={{color: unavailable ? 'var(--text-dim)' : 'var(--text-primary)',fontWeight:500,fontSize:13,textDecoration: depleted && !isSorcery ? 'line-through' : 'none'}}>
-                        {isTuck ? '🃏 ' : ''}{ability.name}
+                        {isTuck ? '🃏 ' : ''}{isSorcery ? sorceryDisplayName(ability.name) : ability.name}
                       </div>
                       {ability.source && <div style={{color:'var(--text-dim)',fontSize:11}}>{ability.source}</div>}
                       {isTuck && features[ability.tracker_key]?.tucked_spell && (

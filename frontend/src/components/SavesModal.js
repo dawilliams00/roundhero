@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
-import { calcSaves, ABILITY_KEYS, ABILITY_LABELS, rollD20, HASTED_EFFECT } from '../utils/dnd';
+import { calcSaves, ABILITY_KEYS, ABILITY_LABELS, rollD20, HASTED_EFFECT, featBuffItems } from '../utils/dnd';
 import D20Icon from './D20Icon';
 
 export default function SavesModal({ onClose }) {
@@ -8,7 +8,7 @@ export default function SavesModal({ onClose }) {
   const [lastRoll, setLastRoll] = useState(null);
   if (!character) return null;
   const savedProfs = character.tracker_data?.save_proficiencies;
-  const items = character.tracker_data?.inventory?.items;
+  const items = [...(character.tracker_data?.inventory?.items || []), ...featBuffItems(character.tracker_data?.features)];
   const saves = calcSaves(character.ability_scores, character.class_name, character.level, savedProfs, items);
   const isHasted = (character.tracker_data?.active_effects || []).includes(HASTED_EFFECT);
 

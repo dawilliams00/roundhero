@@ -292,6 +292,7 @@ def parse_character_pdf(file_bytes, spell_db_by_name=None):
             class_names.add(cm.group(1).strip().lower())
 
     known_spells = []
+    seen_spell_names = set()
     spell_db_by_name = spell_db_by_name or {}
     for idx in sorted(spell_rows.keys()):
         row = spell_rows[idx]
@@ -299,6 +300,14 @@ def parse_character_pdf(file_bytes, spell_db_by_name=None):
         if not raw_name:
             continue
         clean_name = re.sub(r"\s*\[R\]\s*$", "", raw_name).strip()
+        # A multiclass character's D&D Beyond PDF prints a separate spell table per
+        # casting class, and a spell known through both (or re-printed for clarity, e.g.
+        # a racial/feat-granted cantrip shown under every class section) would otherwise
+        # get parsed and appended twice - once per table - producing a literal duplicate
+        # entry in known_spells. Keep only the first occurrence by name.
+        if clean_name.lower() in seen_spell_names:
+            continue
+        seen_spell_names.add(clean_name.lower())
         level = row.get("level", 0)
         source = (row.get("Source") or "").strip()
         master = spell_db_by_name.get(clean_name.lower())
@@ -426,7 +435,18 @@ def _merge_spell_slots(old_slots, new_slots):
 
 def _merge_known_spells(old_spells, new_spells):
     merged = [s for s in (old_spells or []) if s.get("_source") != "pdf"]
-    merged.extend(new_spells)
+    # Defends against a custom/manually-added spell sharing a name with one the fresh PDF
+    # parse also found (e.g. added by hand before a Re-sync, or the same name appearing
+    # twice within a single parse for the reason described in parse_character_pdf) -
+    # without this, both copies would survive the merge and the Spells tab would show the
+    # same spell name twice. The kept (non-pdf) copy wins since it may carry player-
+    # specific tags (granted_by, free_use_feature) the fresh pdf copy wouldn't have.
+    existing_names = {s["name"].lower() for s in merged}
+    for s in new_spells:
+        if s["name"].lower() in existing_names:
+            continue
+        existing_names.add(s["name"].lower())
+        merged.append(s)
     return merged
 
 

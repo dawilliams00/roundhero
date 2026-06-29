@@ -8,6 +8,7 @@ from engine.item_data import get_all_items
 from engine.monster_data import get_all_monsters
 from engine.condition_data import get_all_conditions
 from engine.feat_data import get_all_feats
+from engine.class_feature_data import get_all_class_features
 from engine.equipment_data import get_all_equipment
 from engine.background_data import get_all_backgrounds
 from engine.race_data import get_all_races as get_all_srd_races, get_all_subraces
@@ -121,8 +122,17 @@ def delete_spell_override(name):
 @jwt_required()
 def list_feats():
     base = get_all_feats()
+    # Same two-layer pattern items already use: "feat_override" corrects a canon entry IN
+    # PLACE (matched by name) so a wording/modifier fix reaches everyone instantly - the
+    # static feats.json on disk is never touched. "feat" rows are independent
+    # duplicates/new homebrew, same as everything else in this shared library.
+    overrides = {c.name.lower(): c for c in CustomContent.query.filter_by(content_type="feat_override").all()}
+    merged_base = []
+    for feat in base:
+        ov = overrides.get(feat["name"].lower())
+        merged_base.append({**ov.data, "_override_id": ov.id, "_source": "canon_override"} if ov else feat)
     customs = [c.to_dict() for c in CustomContent.query.filter_by(content_type="feat").all()]
-    return jsonify(base + customs), 200
+    return jsonify(merged_base + customs), 200
 
 @content_bp.route("/feats", methods=["POST"])
 @jwt_required()
@@ -157,6 +167,87 @@ def delete_custom_feat(custom_id):
     entry = CustomContent.query.filter_by(id=custom_id, content_type="feat").first()
     if not entry:
         return jsonify({"error": "Custom feat not found"}), 404
+    db.session.delete(entry)
+    db.session.commit()
+    return jsonify({"ok": True}), 200
+
+@content_bp.route("/feats/override", methods=["PUT"])
+@jwt_required()
+def upsert_feat_override():
+    user_id = int(get_jwt_identity())
+    payload = request.get_json() or {}
+    # _canon_name is the ORIGINAL canon feat's name, kept separate from payload["name"]
+    # (which the admin-edit form may have changed) so the override stays matched to the
+    # right canon entry even if its displayed name is edited.
+    canon_name = (payload.pop("_canon_name", None) or payload.get("name") or "").strip()
+    if not canon_name:
+        return jsonify({"error": "Feat name is required"}), 400
+    entry = CustomContent.query.filter_by(content_type="feat_override").filter(
+        db.func.lower(CustomContent.name) == canon_name.lower()
+    ).first()
+    if not entry:
+        entry = CustomContent(user_id=user_id, content_type="feat_override", name=canon_name)
+        db.session.add(entry)
+    entry.data = payload
+    db.session.commit()
+    return jsonify({**entry.data, "_override_id": entry.id, "_source": "canon_override"}), 200
+
+@content_bp.route("/feats/override/<string:name>", methods=["DELETE"])
+@jwt_required()
+def delete_feat_override(name):
+    entry = CustomContent.query.filter_by(content_type="feat_override").filter(
+        db.func.lower(CustomContent.name) == name.lower()
+    ).first()
+    if not entry:
+        return jsonify({"error": "Override not found"}), 404
+    db.session.delete(entry)
+    db.session.commit()
+    return jsonify({"ok": True}), 200
+
+@content_bp.route("/class-features", methods=["GET"])
+@jwt_required()
+def list_class_features():
+    class_name = request.args.get("class_name")
+    base = get_all_class_features()
+    customs = [c.to_dict() for c in CustomContent.query.filter_by(content_type="class_feature").all()]
+    merged = base + customs
+    if class_name:
+        merged = [f for f in merged if f.get("class_name") == class_name]
+    return jsonify(merged), 200
+
+@content_bp.route("/class-features", methods=["POST"])
+@jwt_required()
+def create_custom_class_feature():
+    user_id = int(get_jwt_identity())
+    payload = request.get_json() or {}
+    if not (payload.get("name") or "").strip():
+        return jsonify({"error": "Feature name is required"}), 400
+    entry = CustomContent(user_id=user_id, content_type="class_feature", name=payload["name"].strip())
+    entry.data = payload
+    db.session.add(entry)
+    db.session.commit()
+    return jsonify(entry.to_dict()), 201
+
+@content_bp.route("/class-features/<int:custom_id>", methods=["PUT"])
+@jwt_required()
+def update_custom_class_feature(custom_id):
+    entry = CustomContent.query.filter_by(id=custom_id, content_type="class_feature").first()
+    if not entry:
+        return jsonify({"error": "Custom class feature not found"}), 404
+    payload = request.get_json() or {}
+    if not (payload.get("name") or "").strip():
+        return jsonify({"error": "Feature name is required"}), 400
+    entry.name = payload["name"].strip()
+    entry.data = payload
+    db.session.commit()
+    return jsonify(entry.to_dict()), 200
+
+@content_bp.route("/class-features/<int:custom_id>", methods=["DELETE"])
+@jwt_required()
+def delete_custom_class_feature(custom_id):
+    entry = CustomContent.query.filter_by(id=custom_id, content_type="class_feature").first()
+    if not entry:
+        return jsonify({"error": "Custom class feature not found"}), 404
     db.session.delete(entry)
     db.session.commit()
     return jsonify({"ok": True}), 200

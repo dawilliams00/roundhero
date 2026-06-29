@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
-import { effectiveAbilityScores, weaponAbilityMod, weaponItemBonus, weaponDamageDice, profBonus, rollD20, rollDamageDetailed, modifier, cantripHitBonusForLevel, fightingStyleBonus } from '../utils/dnd';
+import { effectiveAbilityScores, weaponAbilityMod, weaponItemBonus, weaponDamageDice, profBonus, rollD20, rollDamageDetailed, modifier, cantripHitBonusForLevel, fightingStyleBonus, featBuffItems } from '../utils/dnd';
 
 // Equipment.json weapon damage strings are always plain "NdM" (or, for things like
 // the Blowgun, a flat "1") - no inline "+N" the way some spell damage_dice has.
@@ -54,7 +54,11 @@ export default function WeaponAttackModal({ itemIndex, weaponOverride, onClose, 
   const smiteSlotLevels = Object.entries(td.spell_slots || {})
     .filter(([,s]) => (s.current||0) > 0).map(([lvl]) => parseInt(lvl)).sort((a,b)=>a-b);
 
-  const effAb = effectiveAbilityScores(character.ability_scores, items);
+  // Feat-granted ability score buffs (Set To/Add To, via the same Modifiers editor items
+  // use) still apply to weapon attacks - only weapon_attack_modifier/weapon_damage_modifier
+  // are excluded from what a feat can grant, since those are inherently per-weapon
+  // concepts on items and don't have a character-wide equivalent here.
+  const effAb = effectiveAbilityScores(character.ability_scores, [...items, ...featBuffItems(td.features)]);
   const abilityMod = weaponAbilityMod(weapon, effAb);
   const itemBonus = weaponItemBonus(weapon);
   // Fighting Styles (Dueling/Archery) don't apply to the virtual Unarmed Strike "weapon" -

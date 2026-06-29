@@ -1,21 +1,25 @@
 import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
 import api from '../utils/api';
+import { sorceryDisplayName } from '../utils/dnd';
 import AbilityDetailModal from './AbilityDetailModal';
 import ConfirmModal from './ConfirmModal';
 import CustomAbilityModal from './CustomAbilityModal';
 import FeatBrowserModal from './FeatBrowserModal';
+import ClassFeatureBrowserModal from './ClassFeatureBrowserModal';
 import FeatureEditModal from './FeatureEditModal';
 import SorceryPointsModal from './SorceryPointsModal';
 import InfoModal from './InfoModal';
 
+const SECTION_COST_TYPE = { 'Action':'action', 'Bonus Action':'bonus_action', 'Reaction':'reaction', 'Free Action':'free_action', 'Passive':'passive' };
+
 export default function TrackerTab() {
-  const { character, saveTrackerData, updateCharacter, addActiveEffect, removeActiveEffect } = useCharacter();
-  const [newEffect, setNewEffect] = useState('');
+  const { character, saveTrackerData, updateCharacter } = useCharacter();
   const [detail, setDetail] = useState(null);
   const [confirmRemove, setConfirmRemove] = useState(null);
   const [showCustom, setCustom] = useState(false);
   const [showFeatBrowser, setShowFeatBrowser] = useState(false);
+  const [showClassFeatureBrowser, setShowClassFeatureBrowser] = useState(false);
   const [infoMessage, setInfoMessage] = useState(null);
   const [editingFeature, setEditingFeature] = useState(null);
   const [showSorceryPoints, setShowSorceryPoints] = useState(false);
@@ -26,7 +30,6 @@ export default function TrackerTab() {
   const features = td.features   || {};
   const charges  = td.item_charges || {};
   const conds    = td.conditions || [];
-  const effects  = td.active_effects || [];
   const items    = td.inventory?.items || [];
 
   // Anything that isn't a hardcoded class-engine feature can be removed - PDF-imported
@@ -40,12 +43,6 @@ export default function TrackerTab() {
       newAe[section] = (arr||[]).filter(a => a.tracker_key !== name);
     }
     await updateCharacter(character.id, { tracker_data: { ...td, features: newFeatures }, ae_data: newAe });
-  };
-
-  const handleAddEffect = () => {
-    if (!newEffect.trim()) return;
-    addActiveEffect(newEffect.trim());
-    setNewEffect('');
   };
 
   const attunableItems = items.map((it,i) => ({ it, idx: i })).filter(({it}) => it.attunement);
@@ -70,7 +67,7 @@ export default function TrackerTab() {
     if (!newAe[feat.section]) newAe[feat.section] = [];
     newAe[feat.section] = [...newAe[feat.section], newAbility];
     const newTd = { ...td };
-    if (feat.max_uses > 0 || feat.isTuck || feat.grantsSpell) {
+    if (feat.max_uses > 0 || feat.isTuck || feat.grantsSpell || feat.buffs?.length > 0) {
       newTd.features = {
         ...newTd.features,
         [key]: {
@@ -78,6 +75,7 @@ export default function TrackerTab() {
           rest_type: feat.rest_type, action: feat.section, description: feat.description,
           ...(feat.isTuck ? { spell_picker: true, tucked_spell: '', tucked_level: '' } : {}),
           ...(feat.grantsSpell ? { granted_spell: feat.grantedSpellName, ability_override: feat.abilityOverride || null } : {}),
+          ...(feat.buffs?.length ? { buffs: feat.buffs } : {}),
         },
       };
     }
@@ -99,6 +97,31 @@ export default function TrackerTab() {
       }
     }
     await updateCharacter(character.id, { ae_data: newAe, tracker_data: newTd, ...(newSd ? { spell_data: newSd } : {}) });
+  };
+
+  // Same shape as addFeatFromLibrary above, but for a class/subclass feature from the
+  // class_features.json library (browse-and-add, same "you do it yourself, nothing is
+  // auto-granted on creation or level-up" model the feat library already uses).
+  const addClassFeatureFromLibrary = async (cf) => {
+    const key = cf.name;
+    const alreadyHas = Object.values(ae).some(arr => (arr||[]).some(a => a.tracker_key === key));
+    if (alreadyHas) {
+      setInfoMessage(`"${cf.name}" is already on this character.`);
+      return;
+    }
+    const section = cf.action || 'Passive';
+    const newAbility = { name: cf.name, source: cf.subclass_name || cf.class_name, source_type: 'custom', cost_type: SECTION_COST_TYPE[section] || 'passive', tracker_key: key, description: cf.description };
+    const newAe = { ...ae };
+    if (!newAe[section]) newAe[section] = [];
+    newAe[section] = [...newAe[section], newAbility];
+    const newTd = { ...td };
+    if (cf.max_uses > 0) {
+      newTd.features = {
+        ...newTd.features,
+        [key]: { current: cf.max_uses, max: cf.max_uses, rest_type: cf.rest_type || 'long', action: section, description: cf.description },
+      };
+    }
+    await updateCharacter(character.id, { ae_data: newAe, tracker_data: newTd });
   };
 
   const adjustFeature = async (name, delta) => {
@@ -127,6 +150,7 @@ export default function TrackerTab() {
   return (
     <div style={{flex:1,overflowY:'auto',padding:12}}>
       <div style={{display:'flex',gap:8,justifyContent:'flex-end',marginBottom:12}}>
+        <button className="btn btn-secondary btn-sm" onClick={() => setShowClassFeatureBrowser(true)}>📚 Class Features</button>
         <button className="btn btn-secondary btn-sm" onClick={() => setShowFeatBrowser(true)}>Browse Feats</button>
         <button className="btn btn-primary btn-sm" onClick={() => setCustom(true)}>+ Custom</button>
       </div>
@@ -154,7 +178,7 @@ export default function TrackerTab() {
           {featList.map(([name, feat]) => (
             <div key={name} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'8px 0',borderBottom:'1px solid var(--border)'}}>
               <div style={{flex:1,cursor:'pointer'}} onClick={() => setDetail({ name, description: feat.description, source: `${feat.rest_type} rest · ${feat.action}` })}>
-                <div style={{color:'var(--text-primary)',fontWeight:500,fontSize:13}}>{name}</div>
+                <div style={{color:'var(--text-primary)',fontWeight:500,fontSize:13}}>{name === sorceryFeatureName ? sorceryDisplayName(name) : name}</div>
                 <div style={{color:'var(--text-dim)',fontSize:11}}>{feat.rest_type} rest · {feat.action}</div>
               </div>
               <div style={{display:'flex',alignItems:'center',gap:6}}>
@@ -199,7 +223,7 @@ export default function TrackerTab() {
           {infoList.map(([name, feat]) => (
             <div key={name} style={{padding:'6px 0',borderBottom:'1px solid var(--border)',display:'flex',alignItems:'flex-start',gap:8,cursor:'pointer'}} onClick={() => setDetail({ name, description: feat.description, source: feat.action })}>
               <div style={{flex:1}}>
-                <div style={{color:'var(--text-primary)',fontSize:13,fontWeight:500}}>{name}</div>
+                <div style={{color:'var(--text-primary)',fontSize:13,fontWeight:500}}>{name === sorceryFeatureName ? sorceryDisplayName(name) : name}</div>
                 {feat.description && <div style={{color:'var(--text-dim)',fontSize:11,marginTop:2,lineHeight:1.5}}>{feat.description.substring(0,120)}{feat.description.length>120?'…':''}</div>}
               </div>
               {name === sorceryFeatureName && (
@@ -214,23 +238,6 @@ export default function TrackerTab() {
         </div>
       )}
 
-      <div className="card" style={{marginBottom:12}}>
-        <div style={{color:'var(--accent-light)',fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:1,marginBottom:8}}>Active Effects</div>
-        {effects.length > 0 && (
-          <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:8}}>
-            {effects.map(e => (
-              <div key={e} onClick={() => removeActiveEffect(e)} style={{cursor:'pointer',background:'rgba(124,77,255,0.15)',border:'1px solid var(--accent-light)',color:'var(--accent-light)',borderRadius:12,padding:'3px 10px',fontSize:12}}>
-                {e} ×
-              </div>
-            ))}
-          </div>
-        )}
-        <div style={{display:'flex',gap:6}}>
-          <input value={newEffect} onChange={e=>setNewEffect(e.target.value)} onKeyDown={e=>e.key==='Enter'&&handleAddEffect()} placeholder="e.g. Hasted, Bardic Inspiration..." style={{flex:1}} />
-          <button className="btn btn-secondary btn-sm" onClick={handleAddEffect}>Add</button>
-        </div>
-      </div>
-
       {conds.length > 0 && (
         <div className="card" style={{marginBottom:12}}>
           <div style={{color:'var(--danger)',fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:1,marginBottom:8}}>Active Conditions</div>
@@ -243,6 +250,7 @@ export default function TrackerTab() {
       {detail && <AbilityDetailModal ability={detail} onClose={() => setDetail(null)} />}
       {showCustom && <CustomAbilityModal onClose={() => setCustom(false)} />}
       {showFeatBrowser && <FeatBrowserModal onAdd={addFeatFromLibrary} onClose={() => setShowFeatBrowser(false)} />}
+      {showClassFeatureBrowser && <ClassFeatureBrowserModal onAdd={addClassFeatureFromLibrary} onClose={() => setShowClassFeatureBrowser(false)} />}
       {infoMessage && <InfoModal title="Feats" message={infoMessage} onClose={() => setInfoMessage(null)} />}
       {editingFeature && (
         <FeatureEditModal name={editingFeature} feature={features[editingFeature]} onClose={() => setEditingFeature(null)} />

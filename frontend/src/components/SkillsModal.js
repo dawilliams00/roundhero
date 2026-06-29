@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
-import { calcSkills, rollD20 } from '../utils/dnd';
+import { calcSkills, rollD20, featBuffItems } from '../utils/dnd';
 import D20Icon from './D20Icon';
 
 export default function SkillsModal({ onClose }) {
@@ -9,7 +9,7 @@ export default function SkillsModal({ onClose }) {
   const [lastRoll, setLastRoll] = useState(null);
   if (!character) return null;
   const skillProfs = character.tracker_data?.skill_proficiencies || [];
-  const items = character.tracker_data?.inventory?.items;
+  const items = [...(character.tracker_data?.inventory?.items || []), ...featBuffItems(character.tracker_data?.features)];
   const skills = calcSkills(character.ability_scores, skillProfs, [], character.level, items)
     .filter(s => s.skill.toLowerCase().includes(search.toLowerCase()))
     .sort((a,b) => b.bonus - a.bonus);

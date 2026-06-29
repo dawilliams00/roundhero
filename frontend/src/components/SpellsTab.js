@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
 import api from '../utils/api';
-import { maxPreparedSpells, schoolColor, slotBadgeTextColor, getSpellcastingBlocks } from '../utils/dnd';
+import { maxPreparedSpells, schoolColor, slotBadgeTextColor, getSpellcastingBlocks, featBuffItems } from '../utils/dnd';
 import SpellBrowserModal from './SpellBrowserModal';
 import SpellDetailModal from './SpellDetailModal';
 import CustomSpellModal from './CustomSpellModal';
@@ -24,7 +24,8 @@ export default function SpellsTab() {
   const knownSpells = sd.known_spells || [];
   const spellLists  = sd.spell_lists || {};
   const activeList  = sd.active_list || null;
-  const maxPrepared = maxPreparedSpells(character.class_name, character.ability_scores, character.tracker_data?.inventory?.items);
+  const buffItems = [...(character.tracker_data?.inventory?.items || []), ...featBuffItems(character.tracker_data?.features)];
+  const maxPrepared = maxPreparedSpells(character.class_name, character.ability_scores, buffItems);
   const isAlwaysAvailable = s => s.ritual || !!s.granted_by || s.level_int === 0;
   const visibleSpells = activeList && spellLists[activeList]
     ? knownSpells.filter(s => spellLists[activeList].includes(s.name) || isAlwaysAvailable(s))
@@ -58,7 +59,7 @@ export default function SpellsTab() {
     const newKnown = knownSpells.map(s => s.name === spell.name ? { ...s, free_use_feature: featureKey } : s);
     saveSpellData({ ...sd, known_spells: newKnown });
   };
-  const spellBlocks = getSpellcastingBlocks(character.class_name, character.ability_scores, character.level, character.tracker_data?.inventory?.items);
+  const spellBlocks = getSpellcastingBlocks(character.class_name, character.ability_scores, character.level, buffItems);
 
   const addSpell = (spell) => {
     saveSpellData({ ...sd, known_spells: [...knownSpells, spell] });

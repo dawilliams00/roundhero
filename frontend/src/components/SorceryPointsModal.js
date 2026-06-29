@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
-import { METAMAGIC_OPTIONS, SORCERY_POINTS_TO_SLOT_COST } from '../utils/dnd';
+import { METAMAGIC_OPTIONS, SORCERY_POINTS_TO_SLOT_COST, sorceryDisplayName } from '../utils/dnd';
 
 // Font of Magic's Flexible Casting (convert sorcery points <-> a spell slot) plus a
 // checklist of which Metamagic options this character knows - SpellDetailModal reads
@@ -59,7 +59,7 @@ export default function SorceryPointsModal({ featureName, onClose }) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal modal-flex modal-lg" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>{featureName}</h2>
+          <h2>{sorceryDisplayName(featureName)}</h2>
           <div style={{color:'var(--accent-light)',fontSize:13,fontWeight:600}}>{points}/{feature.max} Sorcery Points</div>
           <div style={{display:'flex',gap:8,marginTop:8}}>
             <button className={tab==='casting' ? 'btn btn-primary btn-sm' : 'btn btn-secondary btn-sm'} onClick={() => setTab('casting')}>Flexible Casting</button>

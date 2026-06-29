@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
-import { schoolColor, getSpellcastingBlocks, getAbilityOverrideBlock, scaleSpellDamage, rollDamageDetailed, concentrationSlotCount, maxAttacksForCharacter, HASTED_EFFECT, METAMAGIC_OPTIONS, metamagicCost } from '../utils/dnd';
+import { schoolColor, getSpellcastingBlocks, getAbilityOverrideBlock, scaleSpellDamage, rollDamageDetailed, concentrationSlotCount, maxAttacksForCharacter, HASTED_EFFECT, METAMAGIC_OPTIONS, metamagicCost, featBuffItems } from '../utils/dnd';
 import InfoModal from './InfoModal';
 import WeaponAttackModal from './WeaponAttackModal';
 
@@ -33,13 +33,14 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
     .sort((a,b) => a-b);
   const [castLevel, setCastLevel] = useState(availableLevels[0] || spell.level_int);
   const selfEffect = SELF_TARGET_EFFECTS[spell.name?.toLowerCase()];
-  const spellBlocks = getSpellcastingBlocks(character.class_name, character.ability_scores, character.level, character.tracker_data?.inventory?.items);
+  const buffItems = [...(character.tracker_data?.inventory?.items || []), ...featBuffItems(character.tracker_data?.features)];
+  const spellBlocks = getSpellcastingBlocks(character.class_name, character.ability_scores, character.level, buffItems);
   // A feat-granted spell (e.g. Draconic Healing's Cure Wounds) can fix its own
   // spellcasting ability independent of the character's class - replaces the class
   // blocks entirely for this spell rather than adding to them, since the feat text reads
   // as "this spell always uses X," not "in addition to your class ability."
   const displayBlocks = spell.ability_override
-    ? [getAbilityOverrideBlock(spell.ability_override, character.ability_scores, character.level, character.tracker_data?.inventory?.items)]
+    ? [getAbilityOverrideBlock(spell.ability_override, character.ability_scores, character.level, buffItems)]
     : spellBlocks;
   // free_use_feature names a tracker_data.features entry with a charge that casts this
   // spell without a slot (e.g. "once per long rest") - independent of whether the

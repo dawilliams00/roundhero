@@ -1,17 +1,21 @@
 import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
+import ModifiersEditor from './ModifiersEditor';
 
 const REST_TYPES = ['long','short','dawn','midnight','dusk','none'];
 
 // Lets a player directly fix up an existing tracker_data.features entry - mainly for
 // PDF-imported characters whose sheet printed a feature name (e.g. "Font of Magic") with
 // no real numbers behind it, where previously the only option was deleting it and
-// recreating it from scratch via "+ Custom".
+// recreating it from scratch via "+ Custom". Also the most common place to fix a feat
+// that's worded wrong or missing a modifier (AC/saves/ability scores/etc, same editor
+// items use) once it's already attached to a character - the shared-library admin-edit
+// in FeatBrowserModal only fixes the LIBRARY entry, not a copy a character already has.
 export default function FeatureEditModal({ name, feature, onClose }) {
   const { character, updateCharacter } = useCharacter();
   const [form, setForm] = useState({
     name, max: feature.max || 0, rest_type: feature.rest_type || 'long', description: feature.description || '',
-    reminder: !!feature.reminder, refillOnCombat: !!feature.refill_on_combat,
+    reminder: !!feature.reminder, refillOnCombat: !!feature.refill_on_combat, buffs: feature.buffs || [],
   });
   const set = (k,v) => setForm(f => ({...f,[k]:v}));
 
@@ -29,6 +33,7 @@ export default function FeatureEditModal({ name, feature, onClose }) {
     const updatedFeature = { ...feature, max: newMax, current: newCurrent, rest_type: form.rest_type, description: form.description };
     if (form.reminder) updatedFeature.reminder = true; else delete updatedFeature.reminder;
     if (form.refillOnCombat) updatedFeature.refill_on_combat = true; else delete updatedFeature.refill_on_combat;
+    if (form.buffs?.length) updatedFeature.buffs = form.buffs; else delete updatedFeature.buffs;
 
     const newFeatures = { ...td.features };
     let newAe = character.ae_data;
@@ -64,6 +69,12 @@ export default function FeatureEditModal({ name, feature, onClose }) {
           <input type="checkbox" checked={form.refillOnCombat} onChange={e=>set('refillOnCombat',e.target.checked)} />
           <span style={{fontSize:13,color:'var(--text-secondary)'}}>🛡️ Refills automatically on entering combat if it's at 0</span>
         </label>
+        <ModifiersEditor
+          buffs={form.buffs}
+          onChange={(buffs) => set('buffs', buffs)}
+          allowWeapon={false}
+          activeWhileText="Always active once you have this feature (no equip step, unlike an item)."
+        />
         <div style={{display:'flex',gap:8,marginTop:8}}>
           <button className="btn btn-secondary" style={{flex:1}} onClick={onClose}>Cancel</button>
           <button className="btn btn-primary" style={{flex:2}} disabled={!form.name.trim()} onClick={submit}>Save Changes</button>

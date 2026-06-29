@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../utils/api';
-import { ABILITY_KEYS } from '../utils/dnd';
+import ModifiersEditor from './ModifiersEditor';
 
 const RARITIES = ['Common','Uncommon','Rare','Very Rare','Legendary','Artifact'];
 // Mundane + magic item categories (5e SRD-ish grouping) - what TYPE of item this is
@@ -14,24 +14,7 @@ const WEAPON_CATEGORIES = ['Simple','Martial'];
 const WEAPON_RANGES = ['Melee','Ranged'];
 const DAMAGE_TYPES = ['Slashing','Piercing','Bludgeoning'];
 const WEAPON_PROPERTIES = ['Ammunition','Finesse','Heavy','Light','Loading','Monk','Reach','Special','Thrown','Two-Handed','Versatile'];
-
-// Every buff stat the engine actually consumes (computeItemBonuses/weaponItemBonus in
-// dnd.js) - the modifier editor below is just a friendly form over this same set, so a
-// "+3 weapon" (weapon_attack_modifier + weapon_damage_modifier) or a +1 AC ring (ac_base)
-// can be entered without hand-writing JSON via the admin editor. ADD-mode stats sum a
-// flat value; SET-mode (an ability key) overrides that ability's score while equipped
-// (computeItemBonuses takes the max against the character's raw score, never lowers it).
 const FULL_DAMAGE_TYPES = ['Acid','Bludgeoning','Cold','Fire','Force','Lightning','Necrotic','Piercing','Poison','Psychic','Radiant','Slashing','Thunder'];
-const CONDITIONS = ['Blinded','Charmed','Deafened','Exhaustion','Frightened','Grappled','Incapacitated','Invisible','Paralyzed','Petrified','Poisoned','Prone','Restrained','Stunned','Unconscious'];
-
-const ADD_MODIFIERS = [
-  { stat: 'ac_base', label: 'AC' },
-  { stat: 'saving_throw_modifier', label: 'All Saving Throws' },
-  { stat: 'spell_attack_modifier', label: 'Spell Attack Rolls' },
-  { stat: 'spell_dc_modifier', label: 'Spell Save DC' },
-  { stat: 'weapon_attack_modifier', label: 'Weapon Attack Rolls (this weapon)' },
-  { stat: 'weapon_damage_modifier', label: 'Weapon Damage (this weapon)' },
-];
 
 export default function AddItemModal({ item, onSave, onClose }) {
   const [form, setForm] = useState(() => item ? {
@@ -78,35 +61,6 @@ export default function AddItemModal({ item, onSave, onClose }) {
   });
   const set = (k,v) => setForm(f => ({...f,[k]:v}));
   const toggleProperty = (p) => setForm(f => ({...f, properties: f.properties.includes(p) ? f.properties.filter(x=>x!==p) : [...f.properties, p]}));
-
-  // Modifier rows mirror the buff shapes dnd.js actually reads - an ADD-mode stat from
-  // ADD_MODIFIERS, or an ability key with mode:'set' for "this item sets your score to X."
-  const addModifier = () => set('buffs', [...form.buffs, { stat: 'ac_base', value: 1 }]);
-  const updateModifier = (i, patch) => set('buffs', form.buffs.map((b, idx) => idx === i ? { ...b, ...patch } : b));
-  const removeModifier = (i) => set('buffs', form.buffs.filter((_, idx) => idx !== i));
-  const setModifierType = (i, value) => {
-    // "set:STR" (ability override), "add:STR" (flat ability bonus), "advsave:STR"/
-    // "advsave:all" (advantage on saves), "resist"/"immune"/"vuln" (damage type buffs,
-    // defaulting to the first damage type until the player picks one), "condimmune"
-    // (condition immunity) all select a different buff shape; anything else is a plain
-    // ADD_MODIFIERS stat key. One update, not several sequential ones reading the same
-    // stale form.buffs - that's the exact bug class this file's submit() footgun note
-    // warns about, just on the read side instead of the save side.
-    if (value.startsWith('set:')) {
-      updateModifier(i, { stat: value.slice(4), mode: 'set', ability: undefined, damage_type: undefined, condition: undefined, value: 19 });
-    } else if (value.startsWith('add:')) {
-      updateModifier(i, { stat: value.slice(4), mode: 'add', ability: undefined, damage_type: undefined, condition: undefined, value: 1 });
-    } else if (value.startsWith('advsave:')) {
-      updateModifier(i, { stat: 'advantage_save', mode: undefined, ability: value.slice(8), damage_type: undefined, condition: undefined, value: undefined });
-    } else if (value === 'resist' || value === 'immune' || value === 'vuln') {
-      const stat = { resist: 'damage_resistance', immune: 'damage_immunity', vuln: 'damage_vulnerability' }[value];
-      updateModifier(i, { stat, mode: undefined, ability: undefined, damage_type: FULL_DAMAGE_TYPES[0], condition: undefined, value: undefined });
-    } else if (value === 'condimmune') {
-      updateModifier(i, { stat: 'condition_immunity', mode: undefined, ability: undefined, damage_type: undefined, condition: CONDITIONS[0], value: undefined });
-    } else {
-      updateModifier(i, { stat: value, mode: undefined, ability: undefined, damage_type: undefined, condition: undefined, value: 1 });
-    }
-  };
 
   // Lets "Granted Spells" rows search the real spell library (canon + homebrew, same data
   // SpellBrowserModal uses) instead of free-typing a name - guarantees an exact match so
@@ -311,60 +265,12 @@ export default function AddItemModal({ item, onSave, onClose }) {
             <div style={{color:'var(--text-dim)',fontSize:11,marginTop:2}}>Adds a bonus damage component to the Unarmed Strike row in Action Economy, only while this item is equipped (and attuned, if required) - same as Vicious's weapon bonus dice, just for fists instead of a weapon.</div>
           </div>
         )}
-        <div style={{color:'var(--text-dim)',fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:1,margin:'12px 0 6px'}}>Modifiers</div>
-        {form.buffs.map((b, i) => {
-          const isSetMode = b.mode === 'set';
-          const isAddMode = b.mode === 'add';
-          const isAdvSave = b.stat === 'advantage_save';
-          const isDamageBuff = ['damage_resistance','damage_immunity','damage_vulnerability'].includes(b.stat);
-          const isCondImmune = b.stat === 'condition_immunity';
-          const damageBuffPrefix = { damage_resistance: 'resist', damage_immunity: 'immune', damage_vulnerability: 'vuln' }[b.stat];
-          const selectValue = isSetMode ? `set:${b.stat}` : isAddMode ? `add:${b.stat}` : isAdvSave ? `advsave:${b.ability || 'all'}`
-            : isDamageBuff ? damageBuffPrefix : isCondImmune ? 'condimmune' : b.stat;
-          return (
-            <div key={i} style={{display:'flex',gap:6,alignItems:'center',marginBottom:6}}>
-              <select value={selectValue} onChange={e => setModifierType(i, e.target.value)} style={{flex:2}}>
-                {/* weapon_attack_modifier/weapon_damage_modifier are gated to Weapon - they're
-                    explicitly "(this weapon)" buffs with no meaning on anything else. AC is
-                    NOT excluded for weapons - a JSON search turned up real existing items
-                    (a parrying dagger, a couple of archfiend artifact weapons) that
-                    legitimately grant AC while wielded, so that assumption didn't hold. */}
-                {ADD_MODIFIERS.filter(m => !m.stat.startsWith('weapon_') || form.item_type === 'Weapon').map(m => (
-                  <option key={m.stat} value={m.stat}>{m.label}</option>
-                ))}
-                {ABILITY_KEYS.map(k => <option key={`set-${k}`} value={`set:${k}`}>Set {k} Score To...</option>)}
-                {ABILITY_KEYS.map(k => <option key={`add-${k}`} value={`add:${k}`}>Add to {k} Score</option>)}
-                <option value="advsave:all">Advantage on All Saving Throws</option>
-                {ABILITY_KEYS.map(k => <option key={`advsave-${k}`} value={`advsave:${k}`}>Advantage on {k} Saves</option>)}
-                <option value="resist">Resistance to Damage Type...</option>
-                <option value="immune">Immunity to Damage Type...</option>
-                <option value="vuln">Vulnerability to Damage Type...</option>
-                <option value="condimmune">Immunity to Condition...</option>
-              </select>
-              {isDamageBuff && (
-                <select value={b.damage_type} onChange={e => updateModifier(i, { damage_type: e.target.value })} style={{flex:1}}>
-                  {FULL_DAMAGE_TYPES.map(t => <option key={t}>{t}</option>)}
-                </select>
-              )}
-              {isCondImmune && (
-                <select value={b.condition} onChange={e => updateModifier(i, { condition: e.target.value })} style={{flex:1}}>
-                  {CONDITIONS.map(c => <option key={c}>{c}</option>)}
-                </select>
-              )}
-              {!isAdvSave && !isDamageBuff && !isCondImmune && (
-                <>
-                  <span style={{fontSize:12,color:'var(--text-dim)'}}>{isSetMode ? 'becomes' : '+'}</span>
-                  <input type="number" value={b.value} onChange={e => updateModifier(i, { value: parseInt(e.target.value) || 0 })} style={{width:60}} />
-                </>
-              )}
-              <button className="btn btn-secondary btn-sm" onClick={() => removeModifier(i)}>✕</button>
-            </div>
-          );
-        })}
-        <button className="btn btn-secondary btn-sm" style={{marginBottom:8}} onClick={addModifier}>+ Add Modifier</button>
-        <div style={{color:'var(--text-dim)',fontSize:11,marginBottom:10}}>
-          Only applies while the item is Equipped (and Attuned, if attunement is required). "Set X Score To" never lowers the character's score - it only raises it up to the value entered. "Add to X Score" is a flat bonus regardless of current score. "Advantage on Saves" shows as a header chip (RAW advantage isn't auto-rolled anywhere in this app - same as conditions/exhaustion, you apply it yourself).
-        </div>
+        <ModifiersEditor
+          buffs={form.buffs}
+          onChange={(buffs) => set('buffs', buffs)}
+          allowWeapon={form.item_type === 'Weapon'}
+          activeWhileText="Only applies while the item is Equipped (and Attuned, if attunement is required)."
+        />
         <div className="form-group"><label>Description</label><textarea value={form.description} onChange={e=>set('description',e.target.value)} rows={3} style={{width:'100%',resize:'vertical'}} /></div>
 
         <div style={{color:'var(--text-dim)',fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:1,margin:'12px 0 6px'}}>Granted Spells</div>

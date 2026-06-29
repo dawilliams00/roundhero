@@ -2,25 +2,35 @@ import React, { useState, useEffect } from 'react';
 import { useCharacter } from '../context/CharacterContext';
 import api from '../utils/api';
 import { SECTION_ORDER, ABILITY_KEYS } from '../utils/dnd';
+import ModifiersEditor from './ModifiersEditor';
 
 const REST_TYPES = ['long','short','dawn','midnight','dusk','none'];
 const SECTION_COST_TYPE = { 'Action':'action', 'Bonus Action':'bonus_action', 'Reaction':'reaction', 'Free Action':'free_action', 'Passive':'passive' };
 
 // editingFeat (optional): when set, this edits an existing shared library entry instead
-// of creating a new one - submit only PUTs the library row, it does NOT touch the current
-// character's ae_data/features (editing the library shouldn't silently re-attach/change
-// this character's own copy, same separation MonsterEditModal.js already uses for monsters).
-export default function CustomAbilityModal({ onClose, editingFeat, onDelete }) {
+// of creating a new one - submit only PUTs/POSTs the library row, it does NOT touch the
+// current character's ae_data/features (editing the library shouldn't silently re-attach/
+// change this character's own copy, same separation MonsterEditModal.js already uses for
+// monsters). editMode distinguishes which library write that PUT/POST actually is:
+// 'custom' (default when editingFeat is set) edits an already-published custom feat in
+// place; 'admin' corrects a canon feats.json entry via a feat_override row, same
+// canon-override pattern items/spells/monsters already use; 'duplicate' clones a canon or
+// custom entry into a brand-new independent homebrew feat (editingFeat is just the
+// starting data, this always creates instead of updating).
+export default function CustomAbilityModal({ onClose, editingFeat, editMode = 'custom', onDelete }) {
   const { character, updateCharacter } = useCharacter();
   const [form, setForm] = useState(editingFeat ? {
-    name: editingFeat.name, section: editingFeat.section, source: editingFeat.source || 'Custom',
+    name: editMode === 'duplicate' ? `${editingFeat.name} (Homebrew)` : editingFeat.name,
+    section: editingFeat.section, source: editingFeat.source || 'Custom',
     tracker_key: '', max_uses: editingFeat.max_uses || 0, rest_type: editingFeat.rest_type || 'long',
     description: editingFeat.description || '', isSpell: !!editingFeat.isSpell, isTuck: !!editingFeat.isTuck,
     grantsSpell: !!editingFeat.grantsSpell, grantedSpellName: editingFeat.grantedSpellName || '', abilityOverride: editingFeat.abilityOverride || '', saveToLibrary: true,
     edition: editingFeat.edition || 'expanded',
     reminder: !!editingFeat.reminder, refillOnCombat: !!editingFeat.refillOnCombat,
-  } : { name:'', section:'Action', source:'Custom', tracker_key:'', max_uses:1, rest_type:'long', description:'', isSpell:false, isTuck:false, grantsSpell:false, grantedSpellName:'', abilityOverride:'', saveToLibrary:true, edition:'expanded', reminder:false, refillOnCombat:false });
+    buffs: editingFeat.buffs || [],
+  } : { name:'', section:'Action', source:'Custom', tracker_key:'', max_uses:1, rest_type:'long', description:'', isSpell:false, isTuck:false, grantsSpell:false, grantedSpellName:'', abilityOverride:'', saveToLibrary:true, edition:'expanded', reminder:false, refillOnCombat:false, buffs:[] });
   const [saving, setSaving] = useState(false);
+  const isLibraryEdit = !!editingFeat && editMode !== 'duplicate';
 
   // Search-as-you-type against the real spell library (same pattern as AddItemModal's
   // granted-spell picker) so "grants this known spell" resolves to a real spell object
@@ -49,9 +59,19 @@ export default function CustomAbilityModal({ onClose, editingFeat, onDelete }) {
       rest_type: form.rest_type, isSpell: form.isSpell, isTuck: form.isTuck,
       grantsSpell: form.grantsSpell, grantedSpellName: form.grantedSpellName, abilityOverride: form.abilityOverride,
       edition: form.edition, reminder: form.reminder, refillOnCombat: form.refillOnCombat,
+      buffs: form.buffs || [],
     };
-    if (editingFeat) {
-      await api.put(`/content/feats/${editingFeat._custom_id}`, payload);
+    if (isLibraryEdit) {
+      // All three library-only writes (custom edit, canon admin-edit, duplicate) just
+      // update/create a shared library row - none of them touch this character's own
+      // ae_data/features, same separation MonsterEditModal.js uses for monsters.
+      if (editMode === 'admin') {
+        await api.put('/content/feats/override', { ...payload, _canon_name: editingFeat.name });
+      } else if (editMode === 'duplicate') {
+        await api.post('/content/feats', payload);
+      } else {
+        await api.put(`/content/feats/${editingFeat._custom_id}`, payload);
+      }
       setSaving(false);
       onClose();
       return;
@@ -62,7 +82,7 @@ export default function CustomAbilityModal({ onClose, editingFeat, onDelete }) {
     if (!newAe[form.section]) newAe[form.section] = [];
     newAe[form.section] = [...newAe[form.section], newAbility];
     const newTd = { ...character.tracker_data };
-    if (form.max_uses > 0 || form.isTuck || form.grantsSpell || form.reminder || form.refillOnCombat) {
+    if (form.max_uses > 0 || form.isTuck || form.grantsSpell || form.reminder || form.refillOnCombat || (form.buffs && form.buffs.length > 0)) {
       newTd.features = {
         ...newTd.features,
         [key]: {
@@ -72,6 +92,7 @@ export default function CustomAbilityModal({ onClose, editingFeat, onDelete }) {
           ...(form.grantsSpell ? { granted_spell: form.grantedSpellName, ability_override: form.abilityOverride || null } : {}),
           ...(form.reminder ? { reminder: true } : {}),
           ...(form.refillOnCombat ? { refill_on_combat: true } : {}),
+          ...(form.buffs?.length ? { buffs: form.buffs } : {}),
         },
       };
     }
@@ -104,12 +125,19 @@ export default function CustomAbilityModal({ onClose, editingFeat, onDelete }) {
     ? spellOptions.filter(sp => sp.name.toLowerCase().includes(spellQuery)).slice(0, 8)
     : [];
 
+  const titles = { admin: 'Admin Edit Feat', duplicate: 'Duplicate Feat', custom: 'Edit Custom Feat' };
+  const descriptions = {
+    admin: 'Corrects this canon feat for everyone - the static reference data on disk is never touched, this just overrides it in place. Characters who already added it keep their own copy as-is.',
+    duplicate: 'Creates an independent homebrew copy - the original entry is untouched.',
+    custom: 'Updates the shared library entry - anyone searching for this feat will see your changes. Characters who already added it keep their own copy as-is.',
+  };
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={e => e.stopPropagation()}>
-        <h2>{editingFeat ? 'Edit Custom Feat' : 'Add Custom Ability'}</h2>
+        <h2>{isLibraryEdit ? titles[editMode] : 'Add Custom Ability'}</h2>
         <div style={{color:'var(--text-dim)',fontSize:11,marginBottom:12}}>
-          {editingFeat ? 'Updates the shared library entry - anyone searching for this feat will see your changes. Characters who already added it keep their own copy as-is.' : 'Saved to your feat library too — searchable to add to any future character.'}
+          {isLibraryEdit ? descriptions[editMode] : 'Saved to your feat library too — searchable to add to any future character.'}
         </div>
         <div className="form-group"><label>Name</label><input value={form.name} onChange={e => set('name',e.target.value)} placeholder="Ability name" autoFocus /></div>
         <div className="form-row">
@@ -190,7 +218,14 @@ export default function CustomAbilityModal({ onClose, editingFeat, onDelete }) {
           <span style={{fontSize:13,color:'var(--text-secondary)'}}>🛡️ Refills automatically on entering combat if it's at 0 (e.g. Primal Champion, Perfect Self)</span>
         </label>
 
-        {!editingFeat && (
+        <ModifiersEditor
+          buffs={form.buffs}
+          onChange={(buffs) => set('buffs', buffs)}
+          allowWeapon={false}
+          activeWhileText="Always active once you have this feat (no equip step, unlike an item)."
+        />
+
+        {!isLibraryEdit && (
           <label style={{display:'flex',alignItems:'center',gap:8,marginBottom:8,cursor:'pointer'}}>
             <input type="checkbox" checked={form.saveToLibrary} onChange={e => set('saveToLibrary', e.target.checked)} />
             <span style={{fontSize:13,color:'var(--text-secondary)'}}>Save to shared feat library (searchable by anyone) — uncheck to keep this for your character only</span>
@@ -199,10 +234,10 @@ export default function CustomAbilityModal({ onClose, editingFeat, onDelete }) {
 
         <div style={{display:'flex',gap:8,marginTop:8}}>
           <button className="btn btn-secondary" style={{flex:1}} onClick={onClose}>Cancel</button>
-          {editingFeat && onDelete && (
+          {editMode === 'custom' && editingFeat && onDelete && (
             <button className="btn btn-secondary" style={{flex:1,color:'var(--danger)'}} onClick={onDelete}>Delete</button>
           )}
-          <button className="btn btn-primary" style={{flex:2}} disabled={!form.name||saving} onClick={submit}>{saving?'Saving...':editingFeat?'Save Changes':'Add Ability'}</button>
+          <button className="btn btn-primary" style={{flex:2}} disabled={!form.name||saving} onClick={submit}>{saving?'Saving...':isLibraryEdit?(editMode==='duplicate'?'Create Duplicate':'Save Changes'):'Add Ability'}</button>
         </div>
       </div>
     </div>

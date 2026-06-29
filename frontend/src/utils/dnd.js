@@ -50,6 +50,21 @@ export const metamagicCost = (optionName, spell) => {
 // No slot higher than 5th can be created this way.
 export const SORCERY_POINTS_TO_SLOT_COST = { 1: 2, 2: 3, 3: 5, 4: 6, 5: 7 };
 
+// Manually-built characters get this feature named "Font of Magic (Sorcerer Points)"
+// straight from content_packs.py, but PDF-imported characters carry over whatever D&D
+// Beyond printed - usually the bare "Font of Magic", since the rename only applies going
+// forward through the engine, not retroactively to already-imported data. Detection stays
+// substring-based (sorceryFeatureName = .find(n => n.toLowerCase().includes('font of
+// magic'))) so this works either way; this just fixes what gets DISPLAYED for the bare
+// case, without touching the underlying tracker_key/feature name (renaming that on a live
+// character would break every reference to it - the slot conversions, Metamagic spend, etc).
+export const sorceryDisplayName = (name) => {
+  if (!name) return name;
+  const lower = name.toLowerCase();
+  if (lower.includes('sorcery points') || lower.includes('sorcerer points')) return name;
+  return `${name} (Sorcery Points)`;
+};
+
 export const ABILITY_KEYS = ['STR','DEX','CON','INT','WIS','CHA'];
 export const ABILITY_LABELS = { STR:'Strength', DEX:'Dexterity', CON:'Constitution', INT:'Intelligence', WIS:'Wisdom', CHA:'Charisma' };
 export const SKILL_MAP = {
@@ -239,6 +254,19 @@ export const computeItemBonuses = (items) => {
   });
   return { ...bonuses, abilityOverrides, abilityAdds, advantageSaves, resistances, immunities, vulnerabilities, conditionImmunities };
 };
+
+// A feat's buffs (AC/saves/spell attack-DC/ability scores/weapon mods/resistances etc.,
+// same editor as AddItemModal's) are always-on once you have the feat - there's no
+// equip/attune step the way an item has one. Rather than duplicating computeItemBonuses'
+// whole aggregation a second time for feats, this synthesizes a feat into the exact shape
+// an always-equipped, attunement-not-required item already takes, so every existing
+// consumer (computeItemBonuses, effectiveAbilityScores, calcSaves, calcSkills,
+// getSpellcastingBlocks) picks feat buffs up automatically just by including these
+// alongside the real items array passed in - no changes needed to any of them.
+export const featBuffItems = (features) =>
+  Object.entries(features || {})
+    .filter(([, f]) => (f.buffs || []).length > 0)
+    .map(([name, f]) => ({ name, equipped: true, attunement: false, buffs: f.buffs }));
 
 // Weapon attack/damage buffs (e.g. a +1 longsword) are intrinsically tied to that
 // one weapon - they must NOT pool across a character's other weapons the way
