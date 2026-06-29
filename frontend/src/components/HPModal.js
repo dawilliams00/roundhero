@@ -58,7 +58,20 @@ export default function HPModal({ onClose }) {
       setCurrent(c => Math.min(effectiveMax, c + delta));
     }
   };
-  const applyMaxOverrideDelta = (delta) => setMaxOverride(v => Math.max(0, v + delta));
+  // RAW (Aid, etc.): "your hit point maximum and current hit points increase by 5" - both
+  // move together, and both come back down together when the effect ends. The override
+  // field is an absolute replacement value, not a flat bonus on top of calculatedMax, so
+  // the "bonus" current actually needs to move by is the override's value relative to
+  // calculatedMax (0 while inactive) - tracking the CHANGE in that bonus (not the raw
+  // override delta itself) is what makes this correct whether activating an override from
+  // scratch, topping up an already-active one, or clearing it back to 0.
+  const applyMaxOverrideDelta = (delta) => {
+    const oldBonus = maxOverride > 0 ? (maxOverride - calculatedMax) : 0;
+    const newOverride = Math.max(0, maxOverride + delta);
+    const newBonus = newOverride > 0 ? (newOverride - calculatedMax) : 0;
+    setMaxOverride(newOverride);
+    setCurrent(c => Math.max(0, c + (newBonus - oldBonus)));
+  };
   const applyTempDelta = (delta) => setTemp(v => Math.max(0, v + delta));
 
   const save = async () => {
@@ -96,7 +109,7 @@ export default function HPModal({ onClose }) {
         <div style={{background:'var(--bg-primary)',borderRadius:'var(--radius-sm)',padding:10,marginBottom:16}}>
           <div style={{color:'var(--text-dim)',fontSize:11,fontWeight:600,marginBottom:4}}>D&amp;D 5e HP Rules</div>
           <div style={{color:'var(--text-dim)',fontSize:11,lineHeight:1.6}}>
-            • Max Override replaces calculated Max HP when set (spells like Aid)<br/>
+            • Max Override replaces calculated Max HP when set (spells like Aid) - Current HP moves with it by the same amount, both up when applied and back down when cleared<br/>
             • Click any value above to apply damage/healing - Temp HP absorbs Current HP damage first, doesn't increase your max<br/>
             • Healing restores Current HP up to effective maximum<br/>
             • Long rest clears Temp HP and restores Current to max
