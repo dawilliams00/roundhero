@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useCharacter } from '../context/CharacterContext';
 import api from '../utils/api';
 import LevelUpFlowModal from './LevelUpFlowModal';
+import ClassFeatureBrowserModal from './ClassFeatureBrowserModal';
 import { ABILITY_KEYS, ABILITY_LABELS, SAVE_PROFS, SKILL_MAP, suspectedAbilityContamination, featBuffItems } from '../utils/dnd';
 
 // Full base-stat editor - identity, ability scores, and save/skill proficiencies, on top
@@ -15,6 +16,7 @@ export default function CharacterEditorModal({ onClose }) {
   const { character, setCharacter, updateCharacter, saveTrackerData, rollbackLevelUp } = useCharacter();
   const [showLevelUp, setShowLevelUp] = useState(false);
   const [levelingUpClass, setLevelingUpClass] = useState(null);
+  const [previewing, setPreviewing] = useState(null); // { class_name, level } | null
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
   const [rollingBack, setRollingBack] = useState(false);
@@ -253,6 +255,10 @@ export default function CharacterEditorModal({ onClose }) {
                 <button className="btn btn-secondary btn-sm" style={{marginBottom:12}} disabled={!c.class_name || c.level >= 20} onClick={() => startLevelUpForRow(c.class_name)}>
                   Level Up {c.class_name || `Class ${i + 1}`}
                 </button>
+                <button className="btn btn-secondary btn-sm" style={{marginBottom:12}} disabled={!c.class_name} title="Browse this class's features at any level, without committing to anything"
+                  onClick={() => setPreviewing({ class_name: c.class_name, level: c.level })}>
+                  📖 Preview
+                </button>
                 {classesDraft.length > 1 && (
                   <button className="btn btn-secondary btn-sm" style={{marginBottom:12}} onClick={() => removeClassRow(i)}>Remove</button>
                 )}
@@ -300,6 +306,12 @@ export default function CharacterEditorModal({ onClose }) {
               <button className="btn btn-secondary" disabled={character.level >= 20} onClick={() => setShowLevelUp(true)}>
                 Level Up to {character.level + 1}
               </button>
+              {classMode === 'known' && (
+                <button className="btn btn-secondary btn-sm" title="Browse this class's features at any level, without committing to anything"
+                  onClick={() => setPreviewing({ class_name: identity.class_name, level: parseInt(identity.level) || character.level })}>
+                  📖 Preview
+                </button>
+              )}
               <button className="btn btn-secondary btn-sm" onClick={setUpStructuredClasses}>⚙ Set Up Structured Classes (per-class Level Up)</button>
               <span style={{color:'var(--text-dim)',fontSize:11}}>"Level Up" walks through class confirmation, subclass picks, and Ability Score Improvements as they come up. "Set Up Structured Classes" switches to explicit Class 1/Class 2 rows with their own Level Up buttons.</span>
             </div>
@@ -374,6 +386,13 @@ export default function CharacterEditorModal({ onClose }) {
       )}
       {levelingUpClass && (
         <LevelUpFlowModal initialLevelingClass={levelingUpClass} onClose={() => { setLevelingUpClass(null); syncDraftFromCharacter(character); }} />
+      )}
+      {previewing && (
+        <ClassFeatureBrowserModal
+          initialClassFilter={previewing.class_name}
+          initialLevel={previewing.level}
+          onClose={() => setPreviewing(null)}
+        />
       )}
     </div>
   );

@@ -9,17 +9,27 @@ import { parseClassLevels } from '../utils/dnd';
 // way addFeatFromLibrary already does for feats; there's no auto-grant-on-creation or
 // auto-grant-on-level-up wiring here, by design - same "browse and add yourself" model
 // every other shared library (feats/spells/monsters) already uses in this app.
-export default function ClassFeatureBrowserModal({ onAdd, onClose }) {
+//
+// onAdd is optional - omit it (e.g. opened as a pure "preview my level-up options"
+// browser from the character editor) to hide the Add button entirely and get a
+// read-only view. initialClassFilter/initialLevel seed the dropdowns so a caller that
+// already knows "this character, this class, currently at level N" doesn't make the
+// player re-select them - the level dropdown then lets the player move freely between
+// levels to see what a different level would grant without committing to anything,
+// since players like to check this before deciding whether to level up at all.
+export default function ClassFeatureBrowserModal({ onAdd, onClose, initialClassFilter, initialLevel }) {
   const { character } = useCharacter();
   const [features, setFeatures] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [classFilter, setClassFilter] = useState('');
+  const [classFilter, setClassFilter] = useState(initialClassFilter || '');
   const [subclassFilter, setSubclassFilter] = useState('');
+  const [levelFilter, setLevelFilter] = useState(initialLevel || '');
 
   useEffect(() => {
     api.get('/content/class-features').then(r => {
       setFeatures(r.data);
+      if (initialClassFilter) return;
       // Default the class filter to the character's own class(es) if recognized -
       // parseClassLevels already handles PDF-decorated strings like "Wizard 13" or
       // multiclass "Paladin 6 / Sorcerer 6".
@@ -36,9 +46,13 @@ export default function ClassFeatureBrowserModal({ onAdd, onClose }) {
     return [...new Set(features.filter(f => f.class_name === classFilter && f.subclass_name).map(f => f.subclass_name))].sort();
   }, [features, classFilter]);
 
+  // "At level N" means cumulative (everything gained at or below that level) - matches
+  // how a player thinks about "what do I have if I'm level N", not just what's newly
+  // granted exactly at N.
   const filtered = features.filter(f => {
     if (classFilter && f.class_name !== classFilter) return false;
     if (subclassFilter && f.subclass_name !== subclassFilter) return false;
+    if (levelFilter && f.level > parseInt(levelFilter)) return false;
     if (search && !f.name.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   }).sort((a, b) => (a.level - b.level) || a.name.localeCompare(b.name));
@@ -46,8 +60,10 @@ export default function ClassFeatureBrowserModal({ onAdd, onClose }) {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" style={{maxWidth:480,maxHeight:'85vh',display:'flex',flexDirection:'column'}} onClick={e => e.stopPropagation()}>
-        <h2>Browse Class Features</h2>
-        <div style={{color:'var(--text-dim)',fontSize:11,marginBottom:10}}>Search class & subclass features and add one straight to this character.</div>
+        <h2>{onAdd ? 'Browse Class Features' : 'Preview Class Features'}</h2>
+        <div style={{color:'var(--text-dim)',fontSize:11,marginBottom:10}}>
+          {onAdd ? 'Search class & subclass features and add one straight to this character.' : 'Move the Level dropdown to see what a different level grants, without committing to anything.'}
+        </div>
         <div style={{display:'flex',gap:8,marginBottom:8}}>
           <select value={classFilter} onChange={e => { setClassFilter(e.target.value); setSubclassFilter(''); }} style={{flex:1}}>
             <option value="">All classes</option>
@@ -59,6 +75,10 @@ export default function ClassFeatureBrowserModal({ onAdd, onClose }) {
               {subclassNames.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
           )}
+          <select value={levelFilter} onChange={e => setLevelFilter(e.target.value)} style={{flex:1}}>
+            <option value="">All levels</option>
+            {Array.from({length:20}, (_,i) => i+1).map(l => <option key={l} value={l}>At level {l}</option>)}
+          </select>
         </div>
         <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search feature names..." style={{marginBottom:12}} />
         <div style={{flex:1,overflowY:'auto'}}>
@@ -73,7 +93,7 @@ export default function ClassFeatureBrowserModal({ onAdd, onClose }) {
                 <div style={{color:'var(--text-dim)',fontSize:11}}>L{f.level} {f.subclass_name ? `${f.subclass_name} · ` : ''}{f.class_name} · {f.source}</div>
                 <div style={{color:'var(--text-secondary)',fontSize:11,marginTop:2}}>{f.description}</div>
               </div>
-              <button className="btn btn-primary btn-sm" onClick={() => { onAdd(f); onClose(); }}>Add</button>
+              {onAdd && <button className="btn btn-primary btn-sm" onClick={() => { onAdd(f); onClose(); }}>Add</button>}
             </div>
           ))}
         </div>
