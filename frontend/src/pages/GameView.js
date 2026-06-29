@@ -9,6 +9,7 @@ import InventoryTab from '../components/InventoryTab';
 import NotesTab from '../components/NotesTab';
 import BestiaryTab from '../components/BestiaryTab';
 import CompanionTab from '../components/CompanionTab';
+import { activeCompanionKey } from '../utils/dnd';
 
 export default function GameView() {
   const { id }                    = useParams();
@@ -22,10 +23,15 @@ export default function GameView() {
     return <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'100vh',color:'var(--text-secondary)'}}>Loading character...</div>;
   }
 
-  const companion = character.tracker_data?.companion || {};
-  // The Companion tab only exists when the player has opted in via Settings - its label
-  // is whatever they typed there (default "Companion"), since this is meant to cover any
-  // future player's pet/familiar/sidekick, not just Shadow specifically.
+  const td = character.tracker_data || {};
+  const companion = td.companion || {};
+  const companion2 = td.companion2 || {};
+  // The Companion tab only exists when the player has opted into at least one slot via
+  // Settings - its label reflects whichever slot is currently active, so the bottom nav
+  // itself shows which form is "in play" right now (e.g. a Blood Hunter's normal form vs.
+  // Hybrid Transformation) without having to open the tab first.
+  const activeKey = activeCompanionKey(td);
+  const activeCompanion = activeKey === 'companion2' ? companion2 : companion;
   const tabs = [
     { label: '⚔️ Actions', Component: ActionEconomyTab },
     { label: '📋 Feats/Attunement', Component: TrackerTab },
@@ -33,7 +39,7 @@ export default function GameView() {
     { label: '🎒 Inventory', Component: InventoryTab },
     { label: '📝 Notes', Component: NotesTab },
     { label: '🐉 Bestiary', Component: BestiaryTab },
-    ...(companion.enabled ? [{ label: `🐾 ${companion.tab_name || 'Companion'}`, Component: CompanionTab }] : []),
+    ...((companion.enabled || companion2.enabled) ? [{ label: `🐾 ${activeCompanion.tab_name || 'Companion'}`, Component: CompanionTab }] : []),
   ];
   // If a companion was just disabled in Settings while it was the active tab, fall back
   // to the first tab rather than rendering past the end of the now-shorter array.

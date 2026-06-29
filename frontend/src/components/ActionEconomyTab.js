@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
-import { SECTION_ORDER, SECTION_COLORS, slotBadgeTextColor, concentrationSlotCount, HASTED_EFFECT, LETHARGIC_CONDITION, maxAttacksForCharacter, isItemActive, formatItemBuff, spellCastBucket, martialArtsDie, sorceryDisplayName } from '../utils/dnd';
+import { SECTION_ORDER, SECTION_COLORS, slotBadgeTextColor, concentrationSlotCount, HASTED_EFFECT, LETHARGIC_CONDITION, maxAttacksForCharacter, isItemActive, formatItemBuff, spellCastBucket, martialArtsDie, sorceryDisplayName, activeCompanionKey } from '../utils/dnd';
 import AbilityDetailModal from './AbilityDetailModal';
 import CastSpellPickerModal from './CastSpellPickerModal';
 import ItemSpellsModal from './ItemSpellsModal';
@@ -78,8 +78,12 @@ export default function ActionEconomyTab() {
   // a second column below, with its own turn-bucket state (companionTurnUsed) so e.g.
   // Shadow using its Reaction doesn't dim Syric's. No weapons/items/spellcasting on this
   // side by design - everything here is a plain ability the player typed in themselves.
-  const companion = td.companion || {};
-  const companionEnabled = !!companion.enabled;
+  // Only the active slot (of up to 2 - see activeCompanionKey) shows here; the other
+  // slot's abilities/turn state are untouched and resume right where they were once the
+  // player toggles back (e.g. a Blood Hunter's Hybrid Transformation vs. normal form).
+  const companionKey = activeCompanionKey(td);
+  const companion = td[companionKey] || {};
+  const companionEnabled = !!(td.companion?.enabled || td.companion2?.enabled);
   const companionAbilities = companion.abilities || [];
 
   const inInitiative = !!td.in_initiative;
@@ -176,7 +180,7 @@ export default function ActionEconomyTab() {
     const ab = companionAbilities[idx];
     if (ab && (ab.max || 0) > 0) {
       const newCurrent = Math.max(0, (ab.current || 0) - 1);
-      saveTrackerData({ ...td, companion: { ...companion, abilities: companionAbilities.map((a, i) => i === idx ? { ...a, current: newCurrent } : a) } });
+      saveTrackerData({ ...td, [companionKey]: { ...companion, abilities: companionAbilities.map((a, i) => i === idx ? { ...a, current: newCurrent } : a) } });
     }
     markCompanionBucket(companionBucket(section));
   };

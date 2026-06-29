@@ -204,6 +204,13 @@ export const concentrationSlotCount = (items) => {
   return 1;
 };
 
+// A character can track up to two companion slots (e.g. a Blood Hunter's normal form and
+// Hybrid Transformation, or a familiar plus an animal companion) but only one is ever "in
+// play" at a time - tracker_data.active_companion (1 or 2) picks which. Falls back to slot
+// 1 whenever slot 2 isn't enabled, so turning slot 2 off in Settings never leaves the app
+// pointed at a companion that no longer exists.
+export const activeCompanionKey = (td) => (td?.active_companion === 2 && td?.companion2?.enabled) ? 'companion2' : 'companion';
+
 // Whether an item's buffs are currently "live" - worn/wielded, and attuned if
 // attunement is required. Shared by every buff consumer so the gating rule can't
 // drift between them (Staff of the Magi/Robe of the Archmagi being gated wrong

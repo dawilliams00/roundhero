@@ -25,7 +25,11 @@ def apply_rest(tracker_data, spell_data, rest_type="long"):
     features = td.get("features", {})
     slots    = td.get("spell_slots", {})
     items    = td.get("inventory", {}).get("items", [])
-    companion_abilities = td.get("companion", {}).get("abilities", [])
+    # Up to two companion slots (e.g. a Blood Hunter's normal form and Hybrid
+    # Transformation) - both reset on rest regardless of which one is currently active,
+    # same as a real character's own resources don't pause just because you're not
+    # looking at them.
+    companion_abilities = td.get("companion", {}).get("abilities", []) + td.get("companion2", {}).get("abilities", [])
 
     summary = {"features_reset": [], "items_recharged": [], "items_need_recharge": [], "slots_restored": False}
 

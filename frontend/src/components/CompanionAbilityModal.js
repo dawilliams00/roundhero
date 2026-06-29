@@ -6,12 +6,13 @@ const REST_TYPES = ['long', 'short', 'dawn', 'midnight', 'dusk', 'none'];
 
 // Stripped-down sibling of CustomAbilityModal - a companion's abilities are hardcoded by
 // the player (no spell-picker/granted-spell/shared-library machinery), so this only ever
-// writes to tracker_data.companion.abilities, identified by array index rather than a
+// writes to tracker_data[companionKey].abilities (companion or companion2 - see
+// activeCompanionKey in utils/dnd.js), identified by array index rather than a
 // tracker_key, since there's no separate features/ae_data split to keep in sync here.
-export default function CompanionAbilityModal({ onClose, editingIndex }) {
+export default function CompanionAbilityModal({ onClose, editingIndex, companionKey = 'companion' }) {
   const { character, saveTrackerData } = useCharacter();
   const td = character?.tracker_data || {};
-  const companion = td.companion || {};
+  const companion = td[companionKey] || {};
   const abilities = companion.abilities || [];
   const editing = editingIndex != null ? abilities[editingIndex] : null;
 
@@ -35,12 +36,12 @@ export default function CompanionAbilityModal({ onClose, editingIndex }) {
     const newAbilities = editingIndex != null
       ? abilities.map((a, i) => i === editingIndex ? newAbility : a)
       : [...abilities, newAbility];
-    saveTrackerData({ ...td, companion: { ...companion, abilities: newAbilities } });
+    saveTrackerData({ ...td, [companionKey]: { ...companion, abilities: newAbilities } });
     onClose();
   };
 
   const remove = () => {
-    saveTrackerData({ ...td, companion: { ...companion, abilities: abilities.filter((_, i) => i !== editingIndex) } });
+    saveTrackerData({ ...td, [companionKey]: { ...companion, abilities: abilities.filter((_, i) => i !== editingIndex) } });
     onClose();
   };
 

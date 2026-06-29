@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useCharacter } from '../context/CharacterContext';
-import { SECTION_ORDER, SECTION_COLORS, ABILITY_KEYS, modStr } from '../utils/dnd';
+import { SECTION_ORDER, SECTION_COLORS, ABILITY_KEYS, modStr, activeCompanionKey } from '../utils/dnd';
 import AbilityDetailModal from './AbilityDetailModal';
 import CompanionAbilityModal from './CompanionAbilityModal';
 import CompanionHPModal from './CompanionHPModal';
@@ -38,12 +38,17 @@ export default function CompanionTab() {
 
   if (!character) return null;
   const td = character.tracker_data || {};
-  const companion = td.companion || {};
+  const companion1 = td.companion || {};
+  const companion2 = td.companion2 || {};
+  const hasSecondSlot = !!companion2.enabled;
+  const companionKey = activeCompanionKey(td);
+  const companion = companionKey === 'companion2' ? companion2 : companion1;
   const hp = companion.hp || { current: 0, max: 0, temp: 0 };
   const abilities = companion.abilities || [];
   const abilityScores = companion.ability_scores || {};
 
-  const saveCompanion = (patch) => saveTrackerData({ ...td, companion: { ...companion, ...patch } });
+  const setActiveSlot = (key) => saveTrackerData({ ...td, active_companion: key === 'companion2' ? 2 : 1 });
+  const saveCompanion = (patch) => saveTrackerData({ ...td, [companionKey]: { ...companion, ...patch } });
   const saveHp = (patch) => saveCompanion({ hp: { ...hp, ...patch } });
   const saveAbilityScore = (key, value) => saveCompanion({ ability_scores: { ...abilityScores, [key]: Math.max(1, parseInt(value) || 10) } });
 
@@ -75,6 +80,20 @@ export default function CompanionTab() {
 
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: 12 }}>
+      {hasSecondSlot && (
+        <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+          {[['companion', companion1], ['companion2', companion2]].map(([key, c]) => (
+            <button
+              key={key}
+              onClick={() => setActiveSlot(key)}
+              className={companionKey === key ? 'btn btn-primary' : 'btn btn-secondary'}
+              style={{ flex: 1 }}
+            >
+              🐾 {c.tab_name || (key === 'companion2' ? 'Companion 2' : 'Companion')}
+            </button>
+          ))}
+        </div>
+      )}
       <div className="card" style={{ marginBottom: 12 }}>
         <div style={{ marginBottom: 10 }}>
           <EditableField
@@ -165,9 +184,9 @@ export default function CompanionTab() {
         );
       })}
 
-      {showHP && <CompanionHPModal onClose={() => setShowHP(false)} />}
+      {showHP && <CompanionHPModal companionKey={companionKey} onClose={() => setShowHP(false)} />}
       {detail && <AbilityDetailModal ability={detail} onClose={() => setDetail(null)} />}
-      {editingIndex !== undefined && <CompanionAbilityModal editingIndex={editingIndex} onClose={() => setEditingIndex(undefined)} />}
+      {editingIndex !== undefined && <CompanionAbilityModal companionKey={companionKey} editingIndex={editingIndex} onClose={() => setEditingIndex(undefined)} />}
       {confirmRemove !== null && (
         <ConfirmModal
           title="Remove Ability?"

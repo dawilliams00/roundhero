@@ -25,10 +25,10 @@ function HPRow({ label, value, color = 'var(--text-primary)', onApply, open, onO
   );
 }
 
-export default function CompanionHPModal({ onClose }) {
+export default function CompanionHPModal({ onClose, companionKey = 'companion' }) {
   const { character, saveTrackerData } = useCharacter();
   const td = character?.tracker_data || {};
-  const companion = td.companion || {};
+  const companion = td[companionKey] || {};
   const hp = companion.hp || { current: 0, max: 0, temp: 0 };
 
   const [current, setCurrent] = useState(hp.current ?? 0);
@@ -57,7 +57,7 @@ export default function CompanionHPModal({ onClose }) {
   const save = async () => {
     await saveTrackerData({
       ...td,
-      companion: { ...companion, hp: { current: Math.min(max, current), max, temp } },
+      [companionKey]: { ...companion, hp: { current: Math.min(max, current), max, temp } },
     });
     onClose();
   };

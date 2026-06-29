@@ -15,6 +15,7 @@ export default function SettingsModal({ onClose }) {
   const settings = td.settings || {};
   const exhaustionRules = settings.exhaustion_rules || { mode: 'raw', name: '', description: '' };
   const companion = td.companion || {};
+  const companion2 = td.companion2 || {};
 
   // Local buffer for the two free-text fields - saveTrackerData round-trips to the server
   // on every call, and binding the inputs directly to the remote value meant every
@@ -25,6 +26,7 @@ export default function SettingsModal({ onClose }) {
   const [localName, setLocalName] = useState(exhaustionRules.name || '');
   const [localDesc, setLocalDesc] = useState(exhaustionRules.description || '');
   const [localCompanionName, setLocalCompanionName] = useState(companion.tab_name || 'Companion');
+  const [localCompanion2Name, setLocalCompanion2Name] = useState(companion2.tab_name || 'Companion 2');
   const [showBrowser, setShowBrowser] = useState(false);
   const [showEditor, setShowEditor] = useState(false);
 
@@ -32,6 +34,7 @@ export default function SettingsModal({ onClose }) {
     setLocalName(exhaustionRules.name || '');
     setLocalDesc(exhaustionRules.description || '');
     setLocalCompanionName(companion.tab_name || 'Companion');
+    setLocalCompanion2Name(companion2.tab_name || 'Companion 2');
   }, [character?.id]);
 
   if (!character) return null;
@@ -43,11 +46,26 @@ export default function SettingsModal({ onClose }) {
   const toggleEdition = (key) => saveTrackerData({ ...td, settings: { ...settings, content_editions: { ...contentEditions, [key]: !contentEditions[key] } } });
   const setExhaustionRules = (patch) => saveTrackerData({ ...td, settings: { ...settings, exhaustion_rules: { ...exhaustionRules, ...patch } } });
   const setCompanion = (patch) => saveTrackerData({ ...td, companion: { ...companion, ...patch } });
+  const setCompanion2 = (patch) => saveTrackerData({ ...td, companion2: { ...companion2, ...patch } });
   const toggleCompanionEnabled = () => setCompanion({ enabled: !companion.enabled });
+  // Disabling slot 2 also bounces active_companion back to slot 1, so a character mid-
+  // Hybrid-Transformation doesn't end up with the AE tab/Companion tab silently pointed at
+  // a slot that no longer exists (activeCompanionKey already falls back defensively, but
+  // resetting it here too keeps tracker_data itself consistent, not just the derived read).
+  const toggleCompanion2Enabled = () => saveTrackerData({
+    ...td,
+    companion2: { ...companion2, enabled: !companion2.enabled },
+    ...(companion2.enabled ? { active_companion: 1 } : {}),
+  });
   const commitCompanionName = () => {
     const name = localCompanionName.trim() || 'Companion';
     setLocalCompanionName(name);
     if (name !== (companion.tab_name || 'Companion')) setCompanion({ tab_name: name });
+  };
+  const commitCompanion2Name = () => {
+    const name = localCompanion2Name.trim() || 'Companion 2';
+    setLocalCompanion2Name(name);
+    if (name !== (companion2.tab_name || 'Companion 2')) setCompanion2({ tab_name: name });
   };
 
   // Keeps the shared ruleset library in sync with whatever this character has typed -
@@ -122,6 +140,23 @@ export default function SettingsModal({ onClose }) {
               <div style={{color:'var(--text-dim)',fontSize:11,marginTop:6}}>
                 Adds a tab (named above) for tracking a companion/familiar's own HP, AC, movement, and abilities — and splits the Action Economy tab so you can track both turns side by side.
               </div>
+              <label style={{display:'flex',alignItems:'center',gap:8,cursor:'pointer',marginTop:12}}>
+                <input type="checkbox" style={{width:'auto',flexShrink:0}} checked={!!companion2.enabled} onChange={toggleCompanion2Enabled} /> Track a Second Form/Companion
+              </label>
+              {companion2.enabled && (
+                <>
+                  <input
+                    value={localCompanion2Name}
+                    onChange={e => setLocalCompanion2Name(e.target.value)}
+                    onBlur={commitCompanion2Name}
+                    placeholder="Companion 2"
+                    style={{marginTop:8}}
+                  />
+                  <div style={{color:'var(--text-dim)',fontSize:11,marginTop:6}}>
+                    For something like a Blood Hunter's Hybrid Transformation vs. normal form, or a second pet — a toggle on the Companion tab switches which one is "in play" (its HP/AC/abilities, and the Action Economy column) without losing the other's data.
+                  </div>
+                </>
+              )}
             </>
           )}
         </div>
