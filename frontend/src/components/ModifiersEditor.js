@@ -60,6 +60,7 @@ export default function ModifiersEditor({ buffs, onChange, allowWeapon = false, 
               {ADD_MODIFIERS(weaponScope).filter(m => !m.stat.startsWith('weapon_') || allowWeapon).map(m => (
                 <option key={m.stat} value={m.stat}>{m.label}</option>
               ))}
+              <option value="set:ac_base">Set Base AC To... (heavy armor)</option>
               {ABILITY_KEYS.map(k => <option key={`set-${k}`} value={`set:${k}`}>Set {k} Score To...</option>)}
               {ABILITY_KEYS.map(k => <option key={`add-${k}`} value={`add:${k}`}>Add to {k} Score</option>)}
               <option value="advsave:all">Advantage on All Saving Throws</option>
@@ -91,7 +92,7 @@ export default function ModifiersEditor({ buffs, onChange, allowWeapon = false, 
       })}
       <button className="btn btn-secondary btn-sm" style={{marginBottom:8}} onClick={addModifier}>+ Add Modifier</button>
       <div style={{color:'var(--text-dim)',fontSize:11,marginBottom:10}}>
-        {activeWhileText || 'Always active.'} "Set X Score To" never lowers the character's score - it only raises it up to the value entered. "Add to X Score" is a flat bonus regardless of current score. "Advantage on Saves" shows as a header chip (RAW advantage isn't auto-rolled anywhere in this app - same as conditions/exhaustion, you apply it yourself).
+        {activeWhileText || 'Always active.'} "Set X Score To" never lowers the character's score - it only raises it up to the value entered. "Add to X Score" is a flat bonus regardless of current score. "Set Base AC To" is for body armor whose AC replaces the unarmored calculation entirely (e.g. Plate's flat 18, ignoring DEX) rather than adding to it - it overrides the character's base AC while equipped/attuned and reverts the moment it's unequipped; a shield or other AC item should use the plain "AC" modifier above instead, since that one still adds on top. "Advantage on Saves" shows as a header chip (RAW advantage isn't auto-rolled anywhere in this app - same as conditions/exhaustion, you apply it yourself).
       </div>
     </>
   );

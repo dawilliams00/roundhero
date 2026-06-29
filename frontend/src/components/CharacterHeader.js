@@ -248,7 +248,11 @@ export default function CharacterHeader({ onBack }) {
   const activeEffects = td?.active_effects || [];
   const isHasted = activeEffects.includes(HASTED_EFFECT);
   const hasteAcBonus = isHasted ? 2 : 0;
-  const baseAc = td?.ac ?? (10 + dexMod);
+  // Heavy armor (a "Set Base AC To" item buff) replaces the unarmored 10+DEX calculation
+  // entirely rather than adding to it - takes priority over the manually-entered/saved
+  // td.ac while equipped+attuned, and falls back to it the instant the armor comes off.
+  const armorOverride = itemBonuses.acOverride;
+  const baseAc = armorOverride != null ? armorOverride : (td?.ac ?? (10 + dexMod));
   const ac     = baseAc + itemBonuses.ac_base + hasteAcBonus;
   const init   = td?.initiative ?? dexMod;
   // Speed is stored as a free-form string from PDF import ("30 ft.") or a plain number
@@ -338,7 +342,7 @@ export default function CharacterHeader({ onBack }) {
               </div>
               {tempHp > 0 && <PMStat label="Temp HP" value={tempHp} color={hpCol} onAdjust={adjustTempHp} />}
 
-              <EditableStat label="AC" value={ac} onSave={setAc} color={STAT_COLORS.AC} title={(itemBonuses.ac_base || hasteAcBonus) ? `${baseAc} base${itemBonuses.ac_base ? ` + ${itemBonuses.ac_base} items` : ''}${hasteAcBonus ? ` + ${hasteAcBonus} Hasted` : ''}` : undefined} />
+              <EditableStat label="AC" value={ac} onSave={setAc} color={STAT_COLORS.AC} title={(armorOverride != null || itemBonuses.ac_base || hasteAcBonus) ? `${baseAc} base${armorOverride != null ? ' (set by equipped armor)' : ''}${itemBonuses.ac_base ? ` + ${itemBonuses.ac_base} items` : ''}${hasteAcBonus ? ` + ${hasteAcBonus} Hasted` : ''}${armorOverride != null ? ' — editing this box has no effect until that armor is unequipped' : ''}` : undefined} />
               <EditableStat label="INIT" value={init} onSave={setInit} color={STAT_COLORS.INIT} />
               <EditableStat label="SPEED" value={speed} onSave={setSpeed} color={STAT_COLORS.SPEED} title={isHasted ? `${baseSpeed} ft. base, doubled while Hasted` : undefined} />
               <div className="stat-box" style={{borderColor: STAT_COLORS.PROF}}>

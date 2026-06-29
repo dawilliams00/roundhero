@@ -265,6 +265,14 @@ export const computeItemBonuses = (items) => {
   const immunities = [];
   const vulnerabilities = [];
   const conditionImmunities = [];
+  // Body armor (heavy armor especially) replaces the unarmored AC calculation entirely
+  // rather than adding to it the way a shield/ring/cloak does - kept separate from the
+  // additive ac_base bonus below so a Plate Armor item's "Set Base AC To 18" and a
+  // Shield's plain "+2 AC" can both be equipped at once and combine correctly (override
+  // the base, then add the shield on top), instead of summing two flat numbers that don't
+  // actually stack that way in 5e. Takes the max across equipped items, same precedent as
+  // ability score overrides, for the rare case of more than one equipped at once.
+  let acOverride = null;
   (items || []).forEach(it => {
     if (!isItemActive(it)) return;
     (it.buffs || []).forEach(b => {
@@ -273,6 +281,8 @@ export const computeItemBonuses = (items) => {
         abilityOverrides[b.stat] = Math.max(abilityOverrides[b.stat] ?? -Infinity, b.value || 0);
       } else if (b.mode === 'add' && ABILITY_KEYS.includes(b.stat)) {
         abilityAdds[b.stat] = (abilityAdds[b.stat] || 0) + (b.value || 0);
+      } else if (b.mode === 'set' && b.stat === 'ac_base') {
+        acOverride = Math.max(acOverride ?? -Infinity, b.value || 0);
       } else if (b.stat === 'advantage_save') {
         advantageSaves.push({ ability: b.ability || 'all', source: it.name });
       } else if (b.stat === 'damage_resistance') {
@@ -288,7 +298,7 @@ export const computeItemBonuses = (items) => {
       }
     });
   });
-  return { ...bonuses, abilityOverrides, abilityAdds, advantageSaves, resistances, immunities, vulnerabilities, conditionImmunities };
+  return { ...bonuses, acOverride, abilityOverrides, abilityAdds, advantageSaves, resistances, immunities, vulnerabilities, conditionImmunities };
 };
 
 // A feat's buffs (AC/saves/spell attack-DC/ability scores/weapon mods/resistances etc.,
