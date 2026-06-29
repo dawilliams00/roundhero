@@ -3,10 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCampaign } from '../context/CampaignContext';
 import { useCharacter } from '../context/CharacterContext';
+import ImportAbilityConfirmModal from '../components/ImportAbilityConfirmModal';
 
 export default function CharacterSelect() {
   const { user, logout }              = useAuth();
-  const { characters, fetchCharacters, loading, importCharacter, deleteCharacter, duplicateCharacter } = useCharacter();
+  const { characters, fetchCharacters, loading, importCharacter, updateCharacter, deleteCharacter, duplicateCharacter } = useCharacter();
   const { campaigns, fetchCampaigns, createCampaign, joinCampaign, loading: campaignsLoading } = useCampaign();
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
@@ -20,6 +21,7 @@ export default function CharacterSelect() {
   const [campaignError, setCampaignError] = useState('');
   const [campaignBusy, setCampaignBusy] = useState(false);
   const [importSummary, setImportSummary] = useState(null); // { name, id, summary } | null
+  const [confirmingAbilities, setConfirmingAbilities] = useState(null); // imported character | null
 
   useEffect(() => {
     fetchCharacters();
@@ -54,19 +56,28 @@ export default function CharacterSelect() {
     setImportError('');
     try {
       const created = await importCharacter(file);
-      const summary = created.import_summary;
-      const hasFindings = summary && (
-        summary.unmatched_items.length || summary.unmatched_spells.length || summary.missing_fields.length
-      );
-      if (hasFindings) {
-        setImportSummary({ id: created.id, name: created.name, summary });
-      } else {
-        nav(`/play/${created.id}`);
-      }
+      // Ability score confirmation always comes first (the PDF never has raw scores, so
+      // this is needed for every import) - the parsing-gaps summary, if any, comes after.
+      setConfirmingAbilities(created);
     } catch (err) {
       setImportError(err?.response?.data?.error || 'Import failed. Make sure this is a D&D Beyond character sheet PDF.');
     } finally {
       setImporting(false);
+    }
+  };
+
+  const handleAbilitiesConfirmed = async (rawScores) => {
+    const created = confirmingAbilities;
+    await updateCharacter(created.id, { ability_scores: rawScores });
+    setConfirmingAbilities(null);
+    const summary = created.import_summary;
+    const hasFindings = summary && (
+      summary.unmatched_items.length || summary.unmatched_spells.length || summary.missing_fields.length
+    );
+    if (hasFindings) {
+      setImportSummary({ id: created.id, name: created.name, summary });
+    } else {
+      nav(`/play/${created.id}`);
     }
   };
 
@@ -216,6 +227,10 @@ export default function CharacterSelect() {
           </div>
         </div>
       </div>
+
+      {confirmingAbilities && (
+        <ImportAbilityConfirmModal character={confirmingAbilities} onConfirm={handleAbilitiesConfirmed} />
+      )}
 
       {importSummary && (
         <div className="modal-overlay" onClick={() => { setImportSummary(null); nav(`/play/${importSummary.id}`); }}>

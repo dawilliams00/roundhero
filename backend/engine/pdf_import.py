@@ -207,9 +207,13 @@ def parse_character_pdf(file_bytes, spell_db_by_name=None):
         weight_raw = (fields.get(f"Eq Weight{idx}") or "").strip()
         wm = re.search(r"[\d.]+", weight_raw)
         weight = float(wm.group()) if wm else 0.0
+        # Attunement without being equipped isn't a real state in 5e - the PDF has no
+        # separate "equipped" checkbox for attuned items, so infer it instead of always
+        # parsing equipped as False and making the player re-check every attuned item.
+        is_attuned = n in attuned_names
         items.append({
             "name": n, "quantity": qty, "weight": weight, "rarity": "Common",
-            "equipped": False, "attunement": n in attuned_names, "attuned": n in attuned_names,
+            "equipped": is_attuned, "attunement": is_attuned, "attuned": is_attuned,
             "description": "", "charges": None, "granted_spells": [], "buffs": [], "_source": "pdf",
         })
 

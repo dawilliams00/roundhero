@@ -475,6 +475,34 @@ export const suspectedAbilityContamination = (abilityScores, items) => {
   return flags;
 };
 
+// Best-effort guess at a PDF-imported character's true raw (pre-modifier) ability
+// scores, since the D&D Beyond export only ever has the final, already-modified number -
+// there's no separate "base" field anywhere in the PDF to parse. Subtracts any ADD-mode
+// item/race bonus (those are safely reversible - effective = raw + bonus). A SET-mode
+// item bonus (e.g. a Belt of Giant Strength) is NOT safely reversible the same way -
+// effective = max(raw, override), so if the imported score exactly matches that item's
+// override value (suspectedAbilityContamination's signal), the true raw is genuinely
+// unknowable from the final number alone. Rather than leave the contaminated number in
+// place, this falls back to a conservative, clearly-a-guess floor (10 + any racial bonus)
+// for just that ability, so the player edits from an honest "we don't know" starting
+// point instead of unknowingly keeping a number that's already double-counting the item.
+export const guessRawAbilityScores = (importedScores, race, items) => {
+  const allItems = [...(items || []), ...raceBuffItems(race)];
+  const { abilityAdds } = computeItemBonuses(allItems);
+  const contamination = suspectedAbilityContamination(importedScores, items);
+  const raceAdds = computeItemBonuses(raceBuffItems(race)).abilityAdds;
+  const guesses = {};
+  ABILITY_KEYS.forEach(ab => {
+    const imported = importedScores?.[ab] ?? 10;
+    if (contamination[ab]) {
+      guesses[ab] = 10 + (raceAdds[ab] || 0);
+    } else {
+      guesses[ab] = imported - (abilityAdds[ab] || 0);
+    }
+  });
+  return guesses;
+};
+
 // Sum of any equipped (and, where required, attuned) items' spell attack/DC buffs
 // (e.g. Staff of the Magi, Robe of the Archmagi).
 export const itemSpellBonuses = (items) => {
