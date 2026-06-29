@@ -297,6 +297,24 @@ export const weaponAbilityMod = (weapon, effAb) => {
   return modifier(effAb?.STR ?? 10);
 };
 
+// A feat granting a flat weapon attack/damage bonus applies to EVERY weapon attack the
+// character makes, unlike an item's own weapon_attack_modifier/weapon_damage_modifier
+// (weaponItemBonus above), which is intrinsically tied to that one weapon and must never
+// leak onto a character's other weapons. Reads tracker_data.features directly (not the
+// featBuffItems-synthesized item shape computeItemBonuses/effectiveAbilityScores use) -
+// there's no equip/attune step to gate a feat's bonus on, same "always active once you
+// have the feature" rule Fighting Styles already follow below.
+export const featWeaponBonus = (features) => {
+  const bonus = { attack: 0, damage: 0 };
+  Object.values(features || {}).forEach(f => {
+    (f.buffs || []).forEach(b => {
+      if (b?.stat === 'weapon_attack_modifier') bonus.attack += b.value || 0;
+      if (b?.stat === 'weapon_damage_modifier') bonus.damage += b.value || 0;
+    });
+  });
+  return bonus;
+};
+
 // Flat, always-on Fighting Style bonuses computable purely from data this app already
 // has - detected by feature name (same substring approach as Extra Attack/Sorcery
 // Points), not a separate "which style did you pick" setting, since a PDF-imported

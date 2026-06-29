@@ -221,7 +221,8 @@ export default function CustomAbilityModal({ onClose, editingFeat, editMode = 'c
         <ModifiersEditor
           buffs={form.buffs}
           onChange={(buffs) => set('buffs', buffs)}
-          allowWeapon={false}
+          allowWeapon={true}
+          weaponScope="all weapons"
           activeWhileText="Always active once you have this feat (no equip step, unlike an item)."
         />
 

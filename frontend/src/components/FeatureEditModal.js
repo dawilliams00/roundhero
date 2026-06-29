@@ -72,7 +72,8 @@ export default function FeatureEditModal({ name, feature, onClose }) {
         <ModifiersEditor
           buffs={form.buffs}
           onChange={(buffs) => set('buffs', buffs)}
-          allowWeapon={false}
+          allowWeapon={true}
+          weaponScope="all weapons"
           activeWhileText="Always active once you have this feature (no equip step, unlike an item)."
         />
         <div style={{display:'flex',gap:8,marginTop:8}}>

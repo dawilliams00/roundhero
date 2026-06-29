@@ -118,7 +118,7 @@
       "rest_type": "long",
       "source": "SRD",
       "official": false,
-      "description": "Through a lifestyle of hard, competitive drinking, you\u2019ve learned how to quaff drinks at an incredibly accelerated pace. You gain the following benefits:\n\n- You can drink a potion as a Bonus action, instead of as an action.\n- You have advantage on any saving throws triggered by ingesting an alcoholic or dangerous substance.",
+      "description": "Through a lifestyle of hard, competitive drinking, you’ve learned how to quaff drinks at an incredibly accelerated pace. You gain the following benefits:\n\n- You can drink a potion as a Bonus action, instead of as an action.\n- You have advantage on any saving throws triggered by ingesting an alcoholic or dangerous substance.",
       "edition": "2014"
     },
     {
@@ -250,7 +250,7 @@
       "rest_type": "long",
       "source": "SRD",
       "official": true,
-      "description": "You gain the following benefits.\nAbility Score Increase. Increase one ability score of your choice by 1, to a maximum of 30.\nFree Casting. Whenever you cast a spell with a level 1\u20134 spell slot, roll 1d4. If the number you roll is the same as the slot's level, the slot isn't expended.\n\nPrerequisite: 19th level",
+      "description": "You gain the following benefits.\nAbility Score Increase. Increase one ability score of your choice by 1, to a maximum of 30.\nFree Casting. Whenever you cast a spell with a level 1–4 spell slot, roll 1d4. If the number you roll is the same as the slot's level, the slot isn't expended.\n\nPrerequisite: 19th level",
       "edition": "2014"
     },
     {
@@ -340,6 +340,72 @@
       "official": true,
       "description": "When you make an extra attack as a result of using a weapon that has the Light property, you can add your ability modifier to the damage of that attack if you aren't already adding it to the damage.",
       "edition": "2014"
+    },
+    {
+      "name": "Tough",
+      "section": "Passive",
+      "cost_type": "passive",
+      "max_uses": 0,
+      "rest_type": "none",
+      "source": "PHB",
+      "official": true,
+      "edition": "2014",
+      "description": "Your hit point maximum increases by 2 when you take this feat, and increases by 2 again every time you gain a level after that. This app doesn't have a per-feat HP-max modifier mechanism yet - apply the bonus yourself via Settings -> Edit Character -> Ability Scores/HP, or the header's HP Max Override."
+    },
+    {
+      "name": "Lucky",
+      "section": "Passive",
+      "cost_type": "passive",
+      "max_uses": 3,
+      "rest_type": "long",
+      "source": "PHB",
+      "official": true,
+      "edition": "2014",
+      "description": "You have 3 luck points. Whenever you make an attack roll, ability check, or saving throw, you can spend one luck point to roll an additional d20 and choose which of the d20s to use. You can also spend a luck point when an attack roll is made against you, rolling a d20 and choosing whether the attacker uses their roll or yours. You regain all spent luck points when you finish a long rest. The 3 Uses tracked here are those luck points - spend one (USE button) whenever you use this ability."
+    },
+    {
+      "name": "Resilient",
+      "section": "Passive",
+      "cost_type": "passive",
+      "max_uses": 0,
+      "rest_type": "none",
+      "source": "PHB",
+      "official": true,
+      "edition": "2014",
+      "description": "Choose one ability score. You gain proficiency in saving throws using the chosen ability, and the chosen ability score increases by 1 (to a maximum of 20). This is a one-time choice made when you take the feat - apply it yourself via Settings -> Edit Character: check the matching Saving Throw Proficiency box, and bump that ability score up by 1."
+    },
+    {
+      "name": "War Caster",
+      "section": "Passive",
+      "cost_type": "passive",
+      "max_uses": 0,
+      "rest_type": "none",
+      "source": "PHB",
+      "official": true,
+      "edition": "2014",
+      "description": "You have advantage on Constitution saving throws that you make to maintain concentration on a spell when you take damage. You can perform the somatic components of spells even when you have weapons or a shield in one or both hands. When a hostile creature's movement provokes an opportunity attack from you, you can use your reaction to cast a spell at the creature instead of making an opportunity attack, provided the spell has a casting time of 1 action and targets only that creature."
+    },
+    {
+      "name": "Sharpshooter",
+      "section": "Passive",
+      "cost_type": "passive",
+      "max_uses": 0,
+      "rest_type": "none",
+      "source": "PHB",
+      "official": true,
+      "edition": "2014",
+      "description": "Attacking at long range doesn't impose disadvantage on your ranged weapon attack rolls. Your ranged weapon attacks ignore half and three-quarters cover. Before you make an attack with a ranged weapon that you're proficient with, you can choose to take a -5 penalty to the attack roll; if the attack hits, you add +10 to the attack's damage. This is a per-attack choice, not an always-on bonus, so it isn't auto-applied by a Modifier here - toggle it yourself when rolling via WeaponAttackModal (manually subtract 5 from the attack, add 10 to the damage)."
+    },
+    {
+      "name": "Polearm Master",
+      "section": "Bonus Action",
+      "cost_type": "bonus_action",
+      "max_uses": 0,
+      "rest_type": "none",
+      "source": "PHB",
+      "official": true,
+      "edition": "2014",
+      "description": "While you are wielding a glaive, halberd, pike, quarterstaff, or spear, other creatures provoke an opportunity attack from you when they enter your reach. You can also use a bonus action to make a melee attack with the opposite end of the weapon - it deals 1d4 bludgeoning damage (plus your Strength modifier), and is treated as a separate attack roll, not a flat bonus to your existing attack(s). Roll this manually via the weapon's normal attack flow, picking 1d4 bludgeoning as the damage die for that swing."
     }
   ]
 }

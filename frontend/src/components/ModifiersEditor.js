@@ -5,22 +5,23 @@ import { ABILITY_KEYS } from '../utils/dnd';
 // CustomAbilityModal/FeatureEditModal) can offer the exact same level of control over
 // AC/saves/spell attack-DC/ability scores/resistances/advantage-on-saves, rather than
 // re-implementing (and inevitably drifting from) the same buff-shape logic a second time.
-// weapon_attack_modifier/weapon_damage_modifier are gated behind allowWeapon - they're
-// inherently "this one weapon" concepts (see weaponItemBonus in dnd.js, which deliberately
-// never pools them character-wide) that don't have a clean equivalent for a feat granting
-// a bonus to ALL weapon attacks, so feats simply don't offer them.
-const ADD_MODIFIERS = [
+// weapon_attack_modifier/weapon_damage_modifier are gated behind allowWeapon - on an item
+// they're inherently "this one weapon" (weaponItemBonus in dnd.js deliberately never
+// pools an item's copy character-wide), but on a feat they mean "every weapon attack"
+// (featWeaponBonus, a separate character-wide aggregator) - weaponScope picks the right
+// wording for whichever caller this is.
+const ADD_MODIFIERS = (weaponScope) => [
   { stat: 'ac_base', label: 'AC' },
   { stat: 'saving_throw_modifier', label: 'All Saving Throws' },
   { stat: 'spell_attack_modifier', label: 'Spell Attack Rolls' },
   { stat: 'spell_dc_modifier', label: 'Spell Save DC' },
-  { stat: 'weapon_attack_modifier', label: 'Weapon Attack Rolls (this weapon)' },
-  { stat: 'weapon_damage_modifier', label: 'Weapon Damage (this weapon)' },
+  { stat: 'weapon_attack_modifier', label: `Weapon Attack Rolls (${weaponScope})` },
+  { stat: 'weapon_damage_modifier', label: `Weapon Damage (${weaponScope})` },
 ];
 const FULL_DAMAGE_TYPES = ['Acid','Bludgeoning','Cold','Fire','Force','Lightning','Necrotic','Piercing','Poison','Psychic','Radiant','Slashing','Thunder'];
 const CONDITIONS = ['Blinded','Charmed','Deafened','Exhaustion','Frightened','Grappled','Incapacitated','Invisible','Paralyzed','Petrified','Poisoned','Prone','Restrained','Stunned','Unconscious'];
 
-export default function ModifiersEditor({ buffs, onChange, allowWeapon = false, activeWhileText }) {
+export default function ModifiersEditor({ buffs, onChange, allowWeapon = false, weaponScope = 'this weapon', activeWhileText }) {
   const addModifier = () => onChange([...buffs, { stat: 'ac_base', value: 1 }]);
   const updateModifier = (i, patch) => onChange(buffs.map((b, idx) => idx === i ? { ...b, ...patch } : b));
   const removeModifier = (i) => onChange(buffs.filter((_, idx) => idx !== i));
@@ -56,7 +57,7 @@ export default function ModifiersEditor({ buffs, onChange, allowWeapon = false, 
         return (
           <div key={i} style={{display:'flex',gap:6,alignItems:'center',marginBottom:6}}>
             <select value={selectValue} onChange={e => setModifierType(i, e.target.value)} style={{flex:2}}>
-              {ADD_MODIFIERS.filter(m => !m.stat.startsWith('weapon_') || allowWeapon).map(m => (
+              {ADD_MODIFIERS(weaponScope).filter(m => !m.stat.startsWith('weapon_') || allowWeapon).map(m => (
                 <option key={m.stat} value={m.stat}>{m.label}</option>
               ))}
               {ABILITY_KEYS.map(k => <option key={`set-${k}`} value={`set:${k}`}>Set {k} Score To...</option>)}
