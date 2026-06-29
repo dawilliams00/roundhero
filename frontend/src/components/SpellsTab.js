@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useCharacter } from '../context/CharacterContext';
 import api from '../utils/api';
-import { maxPreparedSpells, schoolColor, slotBadgeTextColor, getSpellcastingBlocks, featBuffItems, raceBuffItems } from '../utils/dnd';
+import { maxPreparedSpells, schoolColor, slotBadgeTextColor, getSpellcastingBlocks, featBuffItems, raceBuffItems, fullListCasterClassNames, maxCastableSpellLevel } from '../utils/dnd';
 import SpellBrowserModal from './SpellBrowserModal';
 import SpellDetailModal from './SpellDetailModal';
 import CustomSpellModal from './CustomSpellModal';
@@ -11,29 +11,98 @@ export default function SpellsTab() {
   const { character, useSlot, restoreSlot, saveSpellData } = useCharacter();
   const [search, setSearch]       = useState('');
   const [filter, setFilter]       = useState('all');
+  const [catFilter, setCatFilter] = useState(new Set()); // subset of 'granted'|'cantrip'|'ritual'
   const [browsing, setBrowsing]   = useState(false);
   const [viewing, setViewing]     = useState(null);
   const [addingCustom, setAddingCustom] = useState(false);
   const [managingLists, setManagingLists] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [refreshMsg, setRefreshMsg] = useState('');
+  const syncedMasterListFor = useRef(null);
 
-  if (!character) return null;
-  const sd    = character.spell_data || {};
-  const slots = character.tracker_data?.spell_slots || {};
+  const sd    = character?.spell_data || {};
+  const slots = character?.tracker_data?.spell_slots || {};
   const knownSpells = sd.known_spells || [];
   const spellLists  = sd.spell_lists || {};
   const activeList  = sd.active_list || null;
+  const fullListClasses = fullListCasterClassNames(character?.class_name);
+  const isFullList = fullListClasses.length > 0;
+
+  // Cleric/Druid/Paladin (etc - see FULL_LIST_CASTER_CLASSES) have automatic access to
+  // their entire class spell list rather than "knowing" a curated subset the way a
+  // Wizard's spellbook works, so known_spells is kept in sync with every class spell at
+  // or below the highest level they currently have a real slot for (cantrips always
+  // included, never slot-gated) instead of requiring manual Browse & Add. Merges by name
+  // only ever ADD missing entries - never overwrites or removes anything already there,
+  // so homebrew/granted/manually-added spells are untouched. Runs once per
+  // character+level (the only thing that changes what the master list should contain),
+  // guarded by a ref so it doesn't refire on every unrelated render.
+  useEffect(() => {
+    if (!character || !isFullList) return;
+    const key = `${character.id}:${character.level}`;
+    if (syncedMasterListFor.current === key) return;
+    syncedMasterListFor.current = key;
+    const maxLvl = maxCastableSpellLevel(slots);
+    Promise.all(fullListClasses.map(cls => api.get('/content/spells', { params: { class_name: cls } })))
+      .then(responses => {
+        const known = new Set(knownSpells.map(s => s.name.toLowerCase()));
+        const toAdd = [];
+        responses.forEach(r => (r.data || []).forEach(s => {
+          if (s.level_int !== 0 && s.level_int > maxLvl) return;
+          if (known.has(s.name.toLowerCase())) return;
+          known.add(s.name.toLowerCase());
+          toAdd.push({ ...s, _source: 'master_list' });
+        }));
+        if (toAdd.length > 0) {
+          saveSpellData({ ...sd, known_spells: [...knownSpells, ...toAdd] });
+        }
+      });
+    // Deps intentionally limited to character.id/level/isFullList - the ref guard above
+    // is what actually controls re-running this, not React's dependency diffing, since
+    // slots/knownSpells/etc. change on every render anyway via fresh saveSpellData calls.
+  }, [character?.id, character?.level, isFullList]);
+
+  if (!character) return null;
   const buffItems = [...(character.tracker_data?.inventory?.items || []), ...featBuffItems(character.tracker_data?.features), ...raceBuffItems(character.race)];
   const maxPrepared = maxPreparedSpells(character.class_name, character.ability_scores, buffItems);
-  const isAlwaysAvailable = s => s.ritual || !!s.granted_by || s.level_int === 0;
-  const visibleSpells = activeList && spellLists[activeList]
-    ? knownSpells.filter(s => spellLists[activeList].includes(s.name) || isAlwaysAvailable(s))
-    : knownSpells;
+  const isAlwaysVisible = s => s.ritual || !!s.granted_by || s.level_int === 0;
+  // Whether a spell counts as actually prepared today, separate from whether it's
+  // visible in the list at all (isAlwaysVisible) - a ritual spell stays visible/castable
+  // even when not prepared (RAW: ritual casting never needs preparation), but
+  // SpellDetailModal uses this to know whether to also offer the faster slot-cast option
+  // alongside the ritual-cast one. Manual-known casters (Wizard etc.) with no active list
+  // selected are treated as "everything's prepared" - this app has never enforced
+  // prepared-spell restrictions for them, and changing that now would be a bigger,
+  // separate behavior change from what was asked for here.
+  const isPrepared = (spell) => {
+    if (spell.granted_by || spell.level_int === 0) return true;
+    if (!activeList) return !isFullList;
+    return !!spellLists[activeList]?.includes(spell.name);
+  };
+  // A full-list caster with no prepared list chosen yet shouldn't see their entire class
+  // spell list dumped into the tab as if it's all available today - only the
+  // always-visible stuff (cantrips/rituals/granted) shows until they build a list.
+  const needsListPrompt = isFullList && !activeList;
+  const visibleSpells = needsListPrompt
+    ? knownSpells.filter(isAlwaysVisible)
+    : (activeList && spellLists[activeList]
+      ? knownSpells.filter(s => spellLists[activeList].includes(s.name) || isAlwaysVisible(s))
+      : knownSpells);
+  const toggleCatFilter = (key) => setCatFilter(prev => {
+    const next = new Set(prev);
+    if (next.has(key)) next.delete(key); else next.add(key);
+    return next;
+  });
+  const matchesCatFilter = (s) => {
+    if (catFilter.size === 0) return true;
+    return (catFilter.has('granted') && !!s.granted_by)
+      || (catFilter.has('cantrip') && s.level_int === 0)
+      || (catFilter.has('ritual') && !!s.ritual);
+  };
   const spells = visibleSpells.filter(s => {
     const matchSearch = !search || s.name?.toLowerCase().includes(search.toLowerCase());
     const matchFilter = filter === 'all' || (filter === 'cantrip' ? s.level_int===0 : s.level_int===parseInt(filter));
-    return matchSearch && matchFilter;
+    return matchSearch && matchFilter && matchesCatFilter(s);
   }).sort((a,b) => (a.level_int - b.level_int) || a.name.localeCompare(b.name));
   const levels = [...new Set(knownSpells.map(s=>s.level_int))].sort((a,b)=>a-b);
   const slotLevels = Object.entries(slots).filter(([,s])=>(s.max||0)>0);
@@ -172,6 +241,16 @@ export default function SpellsTab() {
               </div>
             )}
           </div>
+          {knownSpells.length > 0 && (
+            <div style={{display:'flex',gap:6,marginTop:8}}>
+              {[['granted','Granted'],['cantrip','Cantrips'],['ritual','Rituals']].map(([key,label]) => (
+                <button key={key} className="btn btn-secondary btn-sm" onClick={() => toggleCatFilter(key)}
+                  style={catFilter.has(key) ? {background:'var(--accent)',color:'#fff',borderColor:'var(--accent)'} : undefined}>
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {knownSpells.length > 0 && (
@@ -183,7 +262,7 @@ export default function SpellsTab() {
                 onChange={e => saveLists(spellLists, e.target.value || null)}
                 style={{fontWeight:600,color:'var(--accent-light)',fontSize:13,minWidth:140}}
               >
-                <option value="">All Known Spells</option>
+                <option value="">{isFullList ? 'No List Selected' : 'All Known Spells'}</option>
                 {Object.keys(spellLists).map(name => <option key={name} value={name}>{name}</option>)}
               </select>
               {maxPrepared != null && <span style={{color:'var(--text-dim)',fontSize:11}}>prepares up to {maxPrepared} (cantrips don't count)</span>}
@@ -193,10 +272,20 @@ export default function SpellsTab() {
       </div>
 
       <div style={{flex:1,overflowY:'auto',padding:'0 12px 12px'}}>
+        {needsListPrompt && (
+          <div className="card" style={{textAlign:'center',padding:20,marginBottom:12}}>
+            <div style={{color:'var(--text-secondary)',fontSize:13}}>
+              No spell list prepared yet — use <b>Manage Lists</b> above to choose today's spells.
+            </div>
+            <div style={{color:'var(--text-dim)',fontSize:11,marginTop:4}}>
+              Cantrips, rituals, and granted spells are always available below regardless of what's prepared.
+            </div>
+          </div>
+        )}
         {knownSpells.length > 0 && (
           <div className="card">
             {spells.map((spell,i) => {
-              const castable = spell.level_int === 0 || hasAvailableSlot(spell) || hasFreeUse(spell);
+              const castable = spell.level_int === 0 || hasAvailableSlot(spell) || hasFreeUse(spell) || spell.ritual;
               const orphanFix = findOrphanFix(spell);
               return (
                 <div key={i} style={{display:'flex',alignItems:'center',gap:8,padding:'8px 0',borderBottom:'1px solid var(--border)'}}>
@@ -260,6 +349,7 @@ export default function SpellsTab() {
       {viewing && (
         <SpellDetailModal
           spell={viewing}
+          prepared={isPrepared(viewing)}
           onClose={() => setViewing(null)}
         />
       )}

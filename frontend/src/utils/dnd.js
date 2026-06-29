@@ -190,6 +190,35 @@ export const parseClassLevels = (classNameRaw) => {
   }).filter(Boolean);
 };
 
+// RAW: Cleric/Druid/Paladin have access to their entire class spell list and choose
+// which to prepare each day, rather than "knowing" a curated subset the way a Wizard's
+// spellbook works (Artificer is technically a known-spells half-caster in 2014 rules,
+// included here anyway per the owner's explicit call; the three homebrew classes are
+// included on the same basis - not an attempt at RAW accuracy for them, since this app
+// has no rules text for them to check against). Drives whether the Spells tab
+// auto-populates known_spells from the full class list (see SpellsTab.js) instead of
+// requiring the player to manually Browse & Add one at a time.
+export const FULL_LIST_CASTER_CLASSES = ['Cleric', 'Druid', 'Paladin', 'Artificer', 'Pugilist', 'Illrigger', 'Blood Hunter'];
+
+// Multiclass-aware: a Paladin/Sorcerer only gets the full-list treatment for the
+// Paladin half - the Sorcerer half stays a manually-curated known-spells list, same as
+// a single-class Sorcerer. Falls back to treating the whole string as one class name for
+// a clean, non-decorated value (e.g. "Cleric") since parseClassLevels only matches the
+// decorated "Name LEVEL" pattern PDF imports and multiclass strings use.
+export const fullListCasterClassNames = (classNameRaw) => {
+  const parsed = parseClassLevels(classNameRaw);
+  const names = parsed.length ? parsed.map(p => p.className) : [classNameRaw];
+  return names.filter(n => FULL_LIST_CASTER_CLASSES.includes(n));
+};
+
+export const isFullListCaster = (classNameRaw) => fullListCasterClassNames(classNameRaw).length > 0;
+
+// Highest spell level this character currently has a real slot for - the level cap for
+// auto-populating a full-list caster's master spell list. Cantrips are handled
+// separately (always included, not slot-gated) by the caller.
+export const maxCastableSpellLevel = (spellSlots) =>
+  Object.entries(spellSlots || {}).reduce((max, [lvl, s]) => (s?.max > 0 ? Math.max(max, parseInt(lvl)) : max), 0);
+
 // Most characters can only concentrate on one spell at a time; a small number of
 // items/features grant a second slot. Rather than hardcoding a specific item name,
 // this scans equipped+attuned items for a description that reads like it grants a

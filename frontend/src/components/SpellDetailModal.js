@@ -6,7 +6,7 @@ import WeaponAttackModal from './WeaponAttackModal';
 
 const SELF_TARGET_EFFECTS = { haste: HASTED_EFFECT };
 
-export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuccess }) {
+export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuccess, prepared = true }) {
   const { character, useSlot, useFeature, saveTrackerData, setConcentration, replaceConcentration, spendFeatureCharges, turnUsed, setTurnUsed } = useCharacter();
   const [casting, setCasting] = useState(false);
   const [cast, setCast]       = useState(null);
@@ -168,6 +168,20 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
     try {
       await useFeature(freeUseFeature);
       setCast(`Cast free (${freeUseFeature})!`);
+      const tracked = await tryTrackConcentration(spell.level_int);
+      if (tracked) continueAfterCast(spell.level_int);
+    } finally { setCasting(false); }
+  };
+
+  // RAW: a ritual spell can always be cast as a ritual (10 extra minutes, no slot spent)
+  // even if it isn't prepared today - this is what the `prepared` prop matters for: when
+  // false, the normal slot-cast option below is hidden entirely and this is the only way
+  // to cast it, same as 5e's actual restriction. When prepared, this still shows
+  // alongside the normal cast button as the "skip the slot" alternative.
+  const doCastRitual = async () => {
+    setCasting(true);
+    try {
+      setCast('Cast as a ritual (10 extra minutes, no slot used)!');
       const tracked = await tryTrackConcentration(spell.level_int);
       if (tracked) continueAfterCast(spell.level_int);
     } finally { setCasting(false); }
@@ -348,11 +362,25 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
                         {casting ? 'Casting...' : `Cast Free (${freeUseFeature}: ${freeUseCharge.current}/${freeUseCharge.max})`}
                       </button>
                     )}
-                    {!isCantrip && availableLevels.length === 0 ? (
-                      !freeUseAvailable && <div style={{color:'var(--danger)',fontSize:12,marginBottom:8}}>No spell slots available.</div>
-                    ) : (
-                      <button className="btn btn-primary" style={{width:'100%'}} disabled={casting} onClick={doCast}>
-                        {casting ? 'Casting...' : isCantrip ? 'Cast (Cantrip)' : `Cast — Use Level ${castLevel} Slot`}
+                    {!prepared && (
+                      <div style={{color:'var(--warning)',fontSize:12,marginBottom:8,textAlign:'center'}}>
+                        {spell.ritual
+                          ? 'Not prepared today — castable only as a ritual.'
+                          : 'Not prepared today.'}
+                      </div>
+                    )}
+                    {prepared && (
+                      !isCantrip && availableLevels.length === 0 ? (
+                        !freeUseAvailable && <div style={{color:'var(--danger)',fontSize:12,marginBottom:8}}>No spell slots available.</div>
+                      ) : (
+                        <button className="btn btn-primary" style={{width:'100%',marginBottom: spell.ritual ? 8 : 0}} disabled={casting} onClick={doCast}>
+                          {casting ? 'Casting...' : isCantrip ? 'Cast (Cantrip)' : `Cast — Use Level ${castLevel} Slot`}
+                        </button>
+                      )
+                    )}
+                    {spell.ritual && !isCantrip && (
+                      <button className="btn btn-secondary" style={{width:'100%'}} disabled={casting} onClick={doCastRitual}>
+                        {casting ? 'Casting...' : '🕯 Cast as Ritual (+10 min, no slot)'}
                       </button>
                     )}
                   </>

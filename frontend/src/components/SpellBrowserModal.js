@@ -9,14 +9,20 @@ export default function SpellBrowserModal({ character, knownSpells, onAdd, onRem
   const [loading, setLoading]     = useState(true);
   const [search, setSearch]       = useState('');
   const [filter, setFilter]       = useState('all');
+  // Off by default (filtered to the character's own class list, same as always) - a
+  // player can flip this when they've learned a spell outside their normal class (a
+  // feat, a multiclass dip not reflected in class_name, a DM ruling, etc.) instead of
+  // having no way to find it at all. Ported from the same idea in the owner's Pi tracker.
+  const [allClasses, setAllClasses] = useState(false);
   const [editTarget, setEditTarget] = useState(null); // { spell, mode }
   const [confirmDelete, setConfirmDelete] = useState(null);
 
-  const loadSpells = () => api.get('/content/spells', { params: { class_name: character.class_name } }).then(r => setAllSpells(r.data));
+  const loadSpells = () => api.get('/content/spells', allClasses ? {} : { params: { class_name: character.class_name } }).then(r => setAllSpells(r.data));
 
   useEffect(() => {
+    setLoading(true);
     loadSpells().finally(() => setLoading(false));
-  }, [character.class_name]);
+  }, [character.class_name, allClasses]);
 
   const saveEdit = async (data) => {
     const { spell, mode } = editTarget;
@@ -51,6 +57,10 @@ export default function SpellBrowserModal({ character, knownSpells, onAdd, onRem
       <div className="modal" style={{maxWidth:480,maxHeight:'80vh',display:'flex',flexDirection:'column'}} onClick={e => e.stopPropagation()}>
         <h2>Add Spells</h2>
         <div style={{color:'var(--text-dim)',fontSize:11,marginBottom:10}}>Click Remove to take a spell out of your known spells.</div>
+        <div style={{display:'flex',gap:8,marginBottom:8}}>
+          <button className="btn btn-secondary btn-sm" style={!allClasses ? {background:'var(--accent)',color:'#fff',borderColor:'var(--accent)'} : undefined} onClick={() => setAllClasses(false)}>My Class</button>
+          <button className="btn btn-secondary btn-sm" style={allClasses ? {background:'var(--accent)',color:'#fff',borderColor:'var(--accent)'} : undefined} onClick={() => setAllClasses(true)} title="Search every spell, not just this character's class list - for a spell learned through a feat, multiclass dip, or DM ruling">All Spells</button>
+        </div>
         <div style={{display:'flex',gap:8,marginBottom:12,flexWrap:'wrap'}}>
           <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search spells..." style={{flex:1,minWidth:120}} />
           <select value={filter} onChange={e=>setFilter(e.target.value)} style={{minWidth:80}}>
