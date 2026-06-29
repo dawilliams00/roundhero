@@ -434,18 +434,36 @@ def _merge_spell_slots(old_slots, new_slots):
 
 
 def _merge_known_spells(old_spells, new_spells):
-    merged = [s for s in (old_spells or []) if s.get("_source") != "pdf"]
     # Defends against a custom/manually-added spell sharing a name with one the fresh PDF
     # parse also found (e.g. added by hand before a Re-sync, or the same name appearing
     # twice within a single parse for the reason described in parse_character_pdf) -
     # without this, both copies would survive the merge and the Spells tab would show the
     # same spell name twice. The kept (non-pdf) copy wins since it may carry player-
     # specific tags (granted_by, free_use_feature) the fresh pdf copy wouldn't have.
-    existing_names = {s["name"].lower() for s in merged}
-    for s in new_spells:
-        if s["name"].lower() in existing_names:
+    #
+    # The old version of this function only deduped *new* spells against the kept-old
+    # set, never the kept-old set against itself - so a character whose known_spells
+    # already had duplicate-named entries (e.g. from before this dedup logic existed, or
+    # from data that predates the _source:"pdf" tagging convention so it was never cleared
+    # by the old-entries filter below) kept those duplicates forever, surviving every
+    # future Re-sync. Deduping both halves through the same `existing_names` set means any
+    # pre-existing duplicate finally collapses to one on the next Re-sync, regardless of
+    # how it got there.
+    merged = []
+    existing_names = set()
+    for s in (old_spells or []):
+        if s.get("_source") == "pdf":
             continue
-        existing_names.add(s["name"].lower())
+        name = s["name"].lower()
+        if name in existing_names:
+            continue
+        existing_names.add(name)
+        merged.append(s)
+    for s in new_spells:
+        name = s["name"].lower()
+        if name in existing_names:
+            continue
+        existing_names.add(name)
         merged.append(s)
     return merged
 

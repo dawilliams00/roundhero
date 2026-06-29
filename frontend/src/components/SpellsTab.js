@@ -104,6 +104,24 @@ export default function SpellsTab() {
     }
   };
 
+  // A multiclass PDF's per-class spell tables (or accumulated pre-dedup-fix Re-syncs) can
+  // leave the same spell name in known_spells more than once - see the fix in
+  // _merge_known_spells in pdf_import.py for the backend half of this, which only takes
+  // effect on the *next* Re-sync. This button collapses any duplicates immediately,
+  // keeping the first occurrence of each name (same "first wins" rule the parser and
+  // merge already use) without requiring a Re-sync at all.
+  const duplicateCount = knownSpells.length - new Set(knownSpells.map(s => s.name.toLowerCase())).size;
+  const dedupeSpells = () => {
+    const seen = new Set();
+    const deduped = knownSpells.filter(s => {
+      const key = s.name.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+    saveSpellData({ ...sd, known_spells: deduped });
+  };
+
   return (
     <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
       <div style={{padding:12,flexShrink:0}}>
@@ -117,6 +135,11 @@ export default function SpellsTab() {
             <button className="btn btn-secondary btn-sm" disabled={refreshing} onClick={refreshSpells} title="Re-pull all known spells from the latest spell data">
               {refreshing ? 'Refreshing...' : '🔄 Refresh Spell Data'}
             </button>
+            {duplicateCount > 0 && (
+              <button className="btn btn-secondary btn-sm" onClick={dedupeSpells} title="Collapse duplicate-named known spells down to one each">
+                🧹 Remove {duplicateCount} Duplicate{duplicateCount === 1 ? '' : 's'}
+              </button>
+            )}
             <button className="btn btn-secondary btn-sm" onClick={() => setBrowsing(true)}>+ Add Spells</button>
             <button className="btn btn-primary btn-sm" onClick={() => setAddingCustom(true)}>+ Custom Spell</button>
           </div>
