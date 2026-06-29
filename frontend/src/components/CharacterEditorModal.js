@@ -12,10 +12,11 @@ import { ABILITY_KEYS, ABILITY_LABELS, SAVE_PROFS, SKILL_MAP, suspectedAbilityCo
 // header click-to-edit box per-stat, but save/skill proficiencies had no UI at all and
 // manually-created characters never got skill_proficiencies populated in the first place.
 export default function CharacterEditorModal({ onClose }) {
-  const { character, updateCharacter, saveTrackerData } = useCharacter();
+  const { character, updateCharacter, saveTrackerData, rollbackLevelUp } = useCharacter();
   const [showLevelUp, setShowLevelUp] = useState(false);
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [rollingBack, setRollingBack] = useState(false);
 
   const td = character?.tracker_data || {};
   const [identity, setIdentity] = useState(character ? {
@@ -158,10 +159,25 @@ export default function CharacterEditorModal({ onClose }) {
           </div>
           <div className="form-group" style={{maxWidth:90}}><label>Level</label><input type="number" min={1} max={20} value={identity.level} onChange={e=>setIdentity(f=>({...f,level:e.target.value}))} /></div>
         </div>
-        <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:16}}>
+        <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:16,flexWrap:'wrap'}}>
           <button className="btn btn-secondary" disabled={character.level >= 20} onClick={() => setShowLevelUp(true)}>
             Level Up to {character.level + 1}
           </button>
+          {td._level_up_snapshot && (
+            <button className="btn btn-secondary" disabled={rollingBack} onClick={async () => {
+              setRollingBack(true);
+              try {
+                const restored = await rollbackLevelUp();
+                // Same re-sync rule LevelUpFlowModal's onClose follows - level/class_name/
+                // ability_scores changed on `character` out from under this modal's own
+                // local draft state, which was only ever seeded once at mount.
+                setIdentity(f => ({ ...f, class_name: restored.class_name, level: restored.level }));
+                setScores({ ...restored.ability_scores });
+              } finally { setRollingBack(false); }
+            }}>
+              {rollingBack ? 'Rolling back...' : `↺ Roll Back to Level ${td._level_up_snapshot.level}`}
+            </button>
+          )}
           <span style={{color:'var(--text-dim)',fontSize:11}}>Walks through class confirmation (if needed), subclass picks, and Ability Score Improvements as they come up.</span>
         </div>
 

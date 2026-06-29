@@ -106,6 +106,21 @@ def class_status_route(char_id):
         return jsonify({"needs_confirmation": False}), 200
     return jsonify({"needs_confirmation": True, "inferred_classes": infer_classes(char.class_name, char.level)}), 200
 
+def _snapshot_for_rollback(char):
+    """Captures everything a level-up (and any subclass/ASI choices made right after it)
+    touches, so POST /rollback_level_up can put the character back exactly as it was
+    before the player clicked Level Up - players like to preview a level-up and back out
+    if they don't like what they see. Single-step undo only (this overwrites whatever
+    snapshot was already there), and the snapshot is stripped of any snapshot-of-its-own
+    so it can't nest/grow across repeated level-ups."""
+    td = dict(char.tracker_data)
+    td.pop("_level_up_snapshot", None)
+    return {
+        "tracker_data": td, "spell_data": char.spell_data, "ae_data": char.ae_data,
+        "level": char.level, "class_name": char.class_name, "subclass": char.subclass,
+        "ability_scores": char.ability_scores,
+    }
+
 @characters_bp.route("/<int:char_id>/level_up", methods=["POST"])
 @jwt_required()
 def level_up_character_route(char_id):
@@ -115,10 +130,12 @@ def level_up_character_route(char_id):
     leveling_class = data.get("leveling_class")
     td = char.tracker_data
     stored_classes = td.get("classes")
+    snapshot = _snapshot_for_rollback(char)
 
-    # Original single-class manual-creation path, byte-for-byte unchanged, so an existing
-    # manually-created character that's never touched the newer multiclass confirmation
-    # flow below keeps working exactly as it always has.
+    # Original single-class manual-creation path, byte-for-byte unchanged except for the
+    # added rollback snapshot, so an existing manually-created character that's never
+    # touched the newer multiclass confirmation flow below keeps working exactly as it
+    # always has.
     if not stored_classes and char.class_name in CLASSES:
         if char.level >= 20:
             return jsonify({"error": "Already at level 20."}), 400
@@ -126,6 +143,7 @@ def level_up_character_route(char_id):
         merged_td, merged_sd, merged_ae, hp_gained = level_up_character(
             char.tracker_data, char.spell_data, char.ae_data, char.class_name, new_level, char.ability_scores,
         )
+        merged_td["_level_up_snapshot"] = snapshot
         char.level = new_level
         char.tracker_data = merged_td
         char.spell_data = merged_sd
@@ -160,6 +178,7 @@ def level_up_character_route(char_id):
     merged_td, merged_sd, merged_ae, info = level_up_one_class(
         char.tracker_data, char.spell_data, char.ae_data, stored_classes, leveling_class, char.ability_scores,
     )
+    merged_td["_level_up_snapshot"] = snapshot
     char.level = info["new_total_level"]
     char.class_name = info["new_class_name"]
     char.tracker_data = merged_td
@@ -167,6 +186,24 @@ def level_up_character_route(char_id):
     char.ae_data = merged_ae
     db.session.commit()
     return jsonify({**char.to_dict(), "level_up_summary": info}), 200
+
+@characters_bp.route("/<int:char_id>/rollback_level_up", methods=["POST"])
+@jwt_required()
+def rollback_level_up_route(char_id):
+    user_id = int(get_jwt_identity())
+    char = Character.query.filter_by(id=char_id, user_id=user_id).first_or_404()
+    snapshot = char.tracker_data.get("_level_up_snapshot")
+    if not snapshot:
+        return jsonify({"error": "Nothing to roll back - no recent level-up found."}), 400
+    char.tracker_data = snapshot["tracker_data"]
+    char.spell_data = snapshot["spell_data"]
+    char.ae_data = snapshot["ae_data"]
+    char.level = snapshot["level"]
+    char.class_name = snapshot["class_name"]
+    char.subclass = snapshot["subclass"]
+    char.ability_scores = snapshot["ability_scores"]
+    db.session.commit()
+    return jsonify(char.to_dict()), 200
 
 @characters_bp.route("/<int:char_id>/classes/subclass", methods=["POST"])
 @jwt_required()

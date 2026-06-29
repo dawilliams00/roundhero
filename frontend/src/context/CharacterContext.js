@@ -170,6 +170,16 @@ export function CharacterProvider({ children }) {
     return r.data;
   }, [fetchCharacters]);
 
+  // Undoes the most recent level-up (and any subclass/ASI choices made right after it) -
+  // players like to preview a level-up and back out if they don't like it. Single-step
+  // only; tracker_data._level_up_snapshot's presence is what gates showing this in the UI.
+  const rollbackLevelUp = useCallback(async () => {
+    if (!character) return;
+    const r = await api.post(`/characters/${character.id}/rollback_level_up`);
+    setCharacter(r.data);
+    return r.data;
+  }, [character]);
+
   const addActiveEffect = useCallback(async (name) => {
     if (!character) return;
     const effects = character.tracker_data.active_effects || [];
@@ -278,7 +288,7 @@ export function CharacterProvider({ children }) {
     <CharacterContext.Provider value={{
       character, characters, loading, turnUsed, setTurnUsed, companionTurnUsed, setCompanionTurnUsed, resetTurn,
       fetchCharacters, loadCharacter, updateCharacter,
-      useFeature, useSlot, restoreSlot, doRest, saveTrackerData, saveSpellData, importCharacter, resyncCharacter, deleteCharacter, duplicateCharacter, useItemCharge, addActiveEffect, removeActiveEffect, addCondition, removeCondition, setConcentration, setConcentrationTarget, replaceConcentration, spendFeatureCharges, setCharacter,
+      useFeature, useSlot, restoreSlot, doRest, saveTrackerData, saveSpellData, importCharacter, resyncCharacter, deleteCharacter, duplicateCharacter, rollbackLevelUp, useItemCharge, addActiveEffect, removeActiveEffect, addCondition, removeCondition, setConcentration, setConcentrationTarget, replaceConcentration, spendFeatureCharges, setCharacter,
     }}>
       {children}
     </CharacterContext.Provider>

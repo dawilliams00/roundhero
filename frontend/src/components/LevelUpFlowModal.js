@@ -13,7 +13,7 @@ import { ABILITY_KEYS, ABILITY_LABELS } from '../utils/dnd';
 // 'confirm_classes' is for a proactive prompt (e.g. a banner on a freshly-imported
 // character) that only needs to save tracker_data.classes, with no level-up side effect.
 export default function LevelUpFlowModal({ onClose, mode = 'level_up' }) {
-  const { character, setCharacter, saveTrackerData } = useCharacter();
+  const { character, setCharacter, saveTrackerData, rollbackLevelUp } = useCharacter();
   const [step, setStep] = useState('loading'); // loading | confirm_classes | choose_leveling_class | choose_subclass | choose_asi | done | error
   const [error, setError] = useState(null);
   const [classList, setClassList] = useState([]);
@@ -27,6 +27,7 @@ export default function LevelUpFlowModal({ onClose, mode = 'level_up' }) {
   const [asiMode, setAsiMode] = useState('two'); // 'two' = +1/+1, 'one' = +2
   const [asiAbilities, setAsiAbilities] = useState(['STR', 'DEX']);
   const [summary, setSummary] = useState(null);
+  const [rollingBack, setRollingBack] = useState(false);
 
   useEffect(() => {
     api.get('/content/classes').then(r => setClassList(r.data || []));
@@ -253,7 +254,12 @@ export default function LevelUpFlowModal({ onClose, mode = 'level_up' }) {
             <div style={{color:'var(--text-dim)',fontSize:12,marginBottom:16}}>
               HP max increased by {summary?.hp_gained}. New features and spell slots (if any) have been added - check the Feats/Attunement and Spells tabs.
             </div>
-            <button className="btn btn-primary" style={{width:'100%'}} onClick={onClose}>Close</button>
+            <div style={{display:'flex',gap:8}}>
+              <button className="btn btn-secondary" style={{flex:1}} disabled={rollingBack} onClick={async () => { setRollingBack(true); try { await rollbackLevelUp(); } finally { setRollingBack(false); onClose(); } }}>
+                {rollingBack ? 'Rolling back...' : "↺ Undo, I'll check first"}
+              </button>
+              <button className="btn btn-primary" style={{flex:1}} onClick={onClose}>Close</button>
+            </div>
           </>
         )}
       </div>
