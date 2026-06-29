@@ -28,7 +28,6 @@ export default function ClassFeatureBrowserModal({ onAdd, onClose }) {
       const match = own.find(p => names.has(p.className));
       if (match) setClassFilter(match.className);
     }).finally(() => setLoading(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const classNames = useMemo(() => [...new Set(features.map(f => f.class_name))].sort(), [features]);
