@@ -17,19 +17,27 @@ import { parseClassLevels } from '../utils/dnd';
 // player re-select them - the level dropdown then lets the player move freely between
 // levels to see what a different level would grant without committing to anything,
 // since players like to check this before deciding whether to level up at all.
-export default function ClassFeatureBrowserModal({ onAdd, onClose, initialClassFilter, initialLevel }) {
+//
+// lockedClass/lockedSubclass hide the class/subclass selectors entirely and pin the
+// view to exactly that class+subclass - the editor's per-row Preview button uses this so
+// browsing options doesn't drift into "what if I were some other class entirely", which
+// isn't a real option for that row. maxLevel caps the Level dropdown at the highest level
+// that class could actually reach given the character's other classes' levels already
+// committed (total character level can't exceed 20) - no point offering to preview a
+// level this multiclass build could never legally reach.
+export default function ClassFeatureBrowserModal({ onAdd, onClose, initialClassFilter, initialLevel, lockedClass, lockedSubclass, maxLevel = 20 }) {
   const { character } = useCharacter();
   const [features, setFeatures] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [classFilter, setClassFilter] = useState(initialClassFilter || '');
-  const [subclassFilter, setSubclassFilter] = useState('');
+  const [classFilter, setClassFilter] = useState(lockedClass || initialClassFilter || '');
+  const [subclassFilter, setSubclassFilter] = useState(lockedSubclass || '');
   const [levelFilter, setLevelFilter] = useState(initialLevel || '');
 
   useEffect(() => {
     api.get('/content/class-features').then(r => {
       setFeatures(r.data);
-      if (initialClassFilter) return;
+      if (lockedClass || initialClassFilter) return;
       // Default the class filter to the character's own class(es) if recognized -
       // parseClassLevels already handles PDF-decorated strings like "Wizard 13" or
       // multiclass "Paladin 6 / Sorcerer 6".
@@ -48,10 +56,15 @@ export default function ClassFeatureBrowserModal({ onAdd, onClose, initialClassF
 
   // "At level N" means cumulative (everything gained at or below that level) - matches
   // how a player thinks about "what do I have if I'm level N", not just what's newly
-  // granted exactly at N.
+  // granted exactly at N. A locked subclass still shows base-class (subclass_name===null)
+  // features alongside it - "no subclass chosen yet" shows base-class features only.
   const filtered = features.filter(f => {
     if (classFilter && f.class_name !== classFilter) return false;
-    if (subclassFilter && f.subclass_name !== subclassFilter) return false;
+    if (lockedClass) {
+      if (f.subclass_name && f.subclass_name !== lockedSubclass) return false;
+    } else if (subclassFilter && f.subclass_name !== subclassFilter) {
+      return false;
+    }
     if (levelFilter && f.level > parseInt(levelFilter)) return false;
     if (search && !f.name.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
@@ -59,25 +72,33 @@ export default function ClassFeatureBrowserModal({ onAdd, onClose, initialClassF
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" style={{maxWidth:480,maxHeight:'85vh',display:'flex',flexDirection:'column'}} onClick={e => e.stopPropagation()}>
+      <div className="modal" style={{maxWidth:960,maxHeight:'85vh',display:'flex',flexDirection:'column'}} onClick={e => e.stopPropagation()}>
         <h2>{onAdd ? 'Browse Class Features' : 'Preview Class Features'}</h2>
         <div style={{color:'var(--text-dim)',fontSize:11,marginBottom:10}}>
           {onAdd ? 'Search class & subclass features and add one straight to this character.' : 'Move the Level dropdown to see what a different level grants, without committing to anything.'}
         </div>
         <div style={{display:'flex',gap:8,marginBottom:8}}>
-          <select value={classFilter} onChange={e => { setClassFilter(e.target.value); setSubclassFilter(''); }} style={{flex:1}}>
-            <option value="">All classes</option>
-            {classNames.map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
-          {subclassNames.length > 0 && (
-            <select value={subclassFilter} onChange={e => setSubclassFilter(e.target.value)} style={{flex:1}}>
-              <option value="">All subclasses</option>
-              {subclassNames.map(s => <option key={s} value={s}>{s}</option>)}
-            </select>
+          {lockedClass ? (
+            <div style={{flex:1,fontSize:13,color:'var(--text-primary)',fontWeight:600,padding:'7px 0'}}>
+              {lockedClass}{lockedSubclass ? ` · ${lockedSubclass}` : ''}
+            </div>
+          ) : (
+            <>
+              <select value={classFilter} onChange={e => { setClassFilter(e.target.value); setSubclassFilter(''); }} style={{flex:1}}>
+                <option value="">All classes</option>
+                {classNames.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+              {subclassNames.length > 0 && (
+                <select value={subclassFilter} onChange={e => setSubclassFilter(e.target.value)} style={{flex:1}}>
+                  <option value="">All subclasses</option>
+                  {subclassNames.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              )}
+            </>
           )}
           <select value={levelFilter} onChange={e => setLevelFilter(e.target.value)} style={{flex:1}}>
             <option value="">All levels</option>
-            {Array.from({length:20}, (_,i) => i+1).map(l => <option key={l} value={l}>At level {l}</option>)}
+            {Array.from({length:maxLevel}, (_,i) => i+1).map(l => <option key={l} value={l}>At level {l}</option>)}
           </select>
         </div>
         <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search feature names..." style={{marginBottom:12}} />
