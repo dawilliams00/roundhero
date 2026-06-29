@@ -107,6 +107,53 @@ Likely navigation hook:
 
 - Add a `Campaigns` button/link to `frontend/src/pages/CharacterSelect.js` or the app header.
 
+
+### Claude handoff: merge and deploy staged campaign/encounter work
+
+Current Codex campaign/encounter work lives in the sibling worktree `C:\Users\David\Desktop\RoundHero-Campaigns` on branch `feature/campaigns`. The work may be staged there but not committed. Render will not see any of it until it is committed, merged into the main `C:\Users\David\Desktop\RoundHero` working tree, committed on `main`, and pushed to GitHub.
+
+Use this exact handoff flow when the owner says to deploy the encounter/campaign work:
+
+1. In `C:\Users\David\Desktop\RoundHero-Campaigns`, confirm the staged payload:
+   - `git branch --show-current` should be `feature/campaigns`.
+   - `git diff --cached --name-only` should include campaign/encounter files such as `backend/models/campaign.py`, `backend/routes/campaigns.py`, `frontend/src/pages/CampaignsPage.js`, `frontend/src/context/CampaignContext.js`, plus bridge files.
+   - `CODEX_SETTINGS.json` is intentionally local and should not be committed unless the owner explicitly asks.
+2. Still in `RoundHero-Campaigns`, commit the staged campaign work with a clear message, for example `git commit -m "Add campaign encounter builder"`.
+3. In the main folder `C:\Users\David\Desktop\RoundHero`, stop and inspect `git status --short` before merging. If Claude has active character-sheet edits, commit them first or explicitly preserve them. Do not overwrite dirty character work.
+4. Merge the campaign branch into main from the main folder: `git merge feature/campaigns`.
+5. Resolve conflicts deliberately. The expected bridge/conflict files are:
+   - `backend/app.py`
+   - `backend/models/__init__.py`
+   - `frontend/src/App.js`
+   - `frontend/src/pages/CharacterSelect.js`
+   - `frontend/src/components/FeedbackModal.js`
+   Keep Claude's active character-sheet changes and add the campaign hooks around them rather than replacing whole files.
+6. Confirm the backend bridge is present:
+   - `backend/app.py` imports/registers `campaigns_bp` at `/api/campaigns`.
+   - `backend/models/__init__.py` imports `Campaign`, `CampaignMember`, `CampaignCharacter`, `CampaignEffect`, and `CampaignEncounter`.
+   - `backend/models/campaign.py` is included. These are new tables; `db.create_all()` can create them on Render, so no `PENDING_COLUMNS` entry is needed unless a future change adds columns to an existing table.
+7. Confirm the frontend bridge is present:
+   - `CampaignProvider` wraps the authenticated app providers in `frontend/src/App.js`.
+   - `/campaigns` routes to `CampaignsPage` behind `PrivateRoute`.
+   - `CharacterSelect` still shows active characters at the top and campaigns below them.
+   - Campaign/encounter feedback buttons still use `FeedbackModal` with a context label.
+8. Verify before pushing:
+   - Run `python -m py_compile backend\app.py backend\models\__init__.py backend\models\campaign.py backend\routes\campaigns.py`.
+   - Node/npm are not available in the assistant sandbox; do a careful JSX/diff review and let Render run the real frontend build.
+9. Commit and push from main:
+   - `git add` the merged campaign/encounter files and any conflict resolutions.
+   - `git commit -m "Deploy campaign encounter tools"`.
+   - `git push origin main`.
+10. After Render deploys, smoke-test live:
+   - Log in.
+   - Confirm the dashboard still shows characters first, campaigns second.
+   - Create or open a campaign.
+   - Confirm the creator is DM by default.
+   - Attach a character to the campaign roster.
+   - Open `Encounters`, create an encounter, add a party member, pull a monster from the monster list, set quantity/shared initiative, start/pause/resume/complete, open a stat block, and send campaign/encounter feedback.
+
+Do not deploy by clicking Render redeploy alone. Render only deploys what is on `origin/main`; if the campaign branch is not merged and pushed, the live site will not change.
+
 ## Architecture
 
 ### Two parallel character-build paths feed one shared shape
@@ -379,6 +426,8 @@ Extra Attack is now actually counted (`turnUsed.Attacks`, `maxAttacksForCharacte
 - **`feats.json` is still sparse (~37 entries)** — Tough/Lucky/Resilient/War Caster/Sharpshooter/Polearm Master were added this session, but most other core PHB feats are still missing. Many classic feats' effects (HP-per-level, save proficiency grants, conditional "while wearing heavy armor" effects) don't cleanly fit the buffs schema without RAW inaccuracy, so this still needs a feat-by-feat judgment call, not a bulk data dump. The new "+ Custom"/Admin Edit/Duplicate UI is fully self-service, so the owner or players can add missing ones themselves in the meantime.
 - **Feat-granted `weapon_attack_modifier`/`weapon_damage_modifier` are now offered** — `featWeaponBonus(features)` in `dnd.js` (a new character-wide aggregator, distinct from an item's own weapon-specific `weaponItemBonus`) lets a feat grant a flat bonus to *all* weapon attacks/damage, wired into `WeaponAttackModal.js`. This bullet used to say it was deliberately excluded; that's no longer true as of this session.
 - **Spell add eligibility TODO:** The Spells tab's "Add Spells" browser currently allows adding spells above the character's current accessible spell level (e.g. level 9 spells for a character without 9th-level access). Keep those spells visible/searchable so players can read details if they want, but disable or hide the Add button when the spell level is above what the character can actually learn/prepare from their class/level/slots. This is separate from casting enforcement, which already correctly blocks unavailable casts.
+- **Action Economy label regression TODO:** A recent Sorcery Points rename appears to have incorrectly appended `(Sorcery Points)` to stock/common actions such as Attack, Dash, Disengage, Dodge, Help, Hide, Ready, and Search. Only the Sorcerer resource feature should be displayed as `Font of Magic (Sorcery Points)`; stock actions and unrelated features must keep their normal names. Likely check the display-name helper used by Action Economy rows, especially any broad name/resource matcher that treats caster actions as sorcery resources.
+- **Action Economy stock-action cleanup TODO:** Replace the many separate stock action rows (`Attack`, `Dash`, `Disengage`, `Dodge`, `Help`, `Hide`, `Ready`, `Search`, etc.) with one compact `Standard Action` row/button or picker labeled along the lines of `Attack / Dash / Disengage / ...`. The current one-row-per-basic-action layout clogs the AE tab; the player still needs access to mark the Action bucket used and optionally choose which standard action was taken, but not eight separate always-visible rows.
 - **Friendly spell and monster editors TODO:** `SpellEditModal` and `MonsterEditModal` should become UI-friendly structured editors instead of raw backend JSON text boxes. Spell editing should expose fields such as name, level, school, casting time, range, components, duration/concentration, classes, damage/save fields, higher-level text, and description. Monster editing should expose stat-block fields such as name, size/type/alignment, AC, HP/hit dice, speed, ability scores, saves/skills, senses, languages, CR, traits/actions/reactions/legendary actions, and source, while still preserving advanced JSON only as an optional fallback if needed.
 - **Item data completeness TODO:** Audit/update item JSON for all item types so item records capture structured modifiers and mechanics wherever possible, not just prose. Examples: +2 AC, weapon attack/damage bonuses, damage formulas like `1d8 + STR + proficiency slashing`, save bonuses, DC bonuses, resistances/immunities/vulnerabilities, condition immunities, granted spells, charges/recharge, attunement/equipped requirements, and penalties/negative modifiers. These structured fields are what let the sheet automate correctly instead of relying on description text.
 - **Polymorph TODO:** When the player polymorphs themself or an ally, the creature picker should only allow valid beast forms. For a PC target, valid forms are beasts with CR less than or equal to the target character level; for a creature with a CR, use the target's CR instead. When a form is selected, automatically apply the beast form's HP as the polymorph/temp-form HP. When that HP drops to 0, show an on-screen reminder that the target has dropped shape and should revert. This should connect to the campaign ally-targeting work (now real, see the Parallel Claude/Codex workflow section above) so Polymorph cast on an ally can update or notify the correct character sheet.
