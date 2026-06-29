@@ -17,11 +17,11 @@ export default function ResetPasswordPage() {
     setMessage('');
     setLoading(true);
     try {
-      const r = await api.post('/auth/reset-password', { token, password });
+      const r = await api.post('/auth/reset-password', { token, password }, { suppressGlobalError: true });
       setMessage(r.data?.message || 'Password updated. You can sign in now.');
       setTimeout(() => nav('/auth?mode=login'), 900);
     } catch (err) {
-      setError(err.response?.data?.error || 'Reset link is invalid or expired');
+      setError(err.response?.data?.error || 'Could not reach the password reset service. Refresh the page and try again.');
     } finally {
       setLoading(false);
     }

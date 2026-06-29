@@ -13,6 +13,9 @@ if (token) api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 api.interceptors.response.use(
   res => res,
   err => {
+    if (err.config?.suppressGlobalError) {
+      return Promise.reject(err);
+    }
     if (err.response?.status === 401) {
       localStorage.removeItem('rh_token');
       delete api.defaults.headers.common['Authorization'];

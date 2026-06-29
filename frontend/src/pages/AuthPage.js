@@ -28,7 +28,7 @@ export default function AuthPage() {
     setLoading(true);
     try {
       if (mode === 'forgot') {
-        const r = await api.post('/auth/forgot-password', { email: form.email });
+        const r = await api.post('/auth/forgot-password', { email: form.email }, { suppressGlobalError: true });
         setMessage(r.data?.message || 'If that email exists, a password reset link has been sent.');
       } else if (mode === 'login') {
         await login(form.email, form.password);
@@ -38,7 +38,7 @@ export default function AuthPage() {
         nav('/characters');
       }
     } catch (err) {
-      setError(err.response?.data?.error || 'Something went wrong');
+      setError(err.response?.data?.error || 'Could not reach the password reset service. Refresh the page and try again.');
     } finally { setLoading(false); }
   };
 

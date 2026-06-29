@@ -38,7 +38,7 @@ def create_app():
     # Default is 15 minutes, which silently 401s every save mid-session for this single-user app.
     app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(days=30)
 
-    CORS(app, origins=["http://localhost:3000", "https://roundhero.app", "https://roundhero-web.onrender.com"])
+    CORS(app, origins=["http://localhost:3000", "https://roundhero.app", "https://www.roundhero.app", "https://roundhero-web.onrender.com"])
     JWTManager(app)
     db.init_app(app)
 
