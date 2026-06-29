@@ -60,7 +60,7 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
   // already overridden to the item's fixed cast_level - that's the level this preview and
   // the eventual cast both need, not the cast-level dropdown (which doesn't apply here).
   const previewLevel = chargeMode ? spell.level_int : (castLevel || spell.level_int);
-  const previewDamage = scaleSpellDamage(spell, previewLevel);
+  const previewDamage = scaleSpellDamage(spell, previewLevel, character.level);
   // Upcasting only matters for spells whose text actually does something different at a
   // higher level - Haste, Silvery Barbs, etc. have no higher_level text at all, so picking
   // a level for them is a pointless choice that just wastes a bigger slot for nothing.
@@ -79,7 +79,7 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
       setAwaitingWeapon(true);
       return;
     }
-    const dmg = scaleSpellDamage(spell, levelUsed);
+    const dmg = scaleSpellDamage(spell, levelUsed, character.level);
     if (dmg) {
       setPendingDamage(dmg);
     }

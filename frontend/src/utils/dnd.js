@@ -441,23 +441,42 @@ export const getAbilityOverrideBlock = (ability, abilityScores, totalLevel, item
   return { className: null, ability, attackMod: mod + prof + itemAtk, saveDC: 8 + mod + prof + itemDc };
 };
 
+// RAW: a damage-dealing cantrip's dice double at 5th character level, triple at 11th,
+// quadruple at 17th - based on total CHARACTER level, unlike a leveled spell's upcast
+// scaling below which is keyed off the slot it's cast with. Doesn't apply to the handful
+// of weapon-attack cantrips (Booming Blade etc.) that scale via cantrip_hit_bonus_by_level
+// instead - those have no damage_dice of their own (their damage comes from the weapon),
+// so scaleSpellDamage's own `if (!spell?.damage_dice) return null` already excludes them.
+const cantripDiceMultiplier = (characterLevel) => {
+  if (characterLevel >= 17) return 4;
+  if (characterLevel >= 11) return 3;
+  if (characterLevel >= 5) return 2;
+  return 1;
+};
+
 // Scales a spell's printed damage_dice up using its higher_level scaling text, if the
 // spell was cast above its base level. Only handles the common "+NdM per slot level
 // above Xth" phrasing; spells that scale differently (e.g. extra missiles) aren't scaled.
-export const scaleSpellDamage = (spell, castLevel) => {
+// `characterLevel` is optional and only used for the cantrip-scaling case above - omit it
+// (or pass a falsy value) to get the pre-cantrip-scaling behavior unchanged.
+export const scaleSpellDamage = (spell, castLevel, characterLevel) => {
   if (!spell?.damage_dice) return null;
   const base = spell.damage_dice.match(/(\d+)d(\d+)\s*(?:\+\s*(\d+))?/i);
   if (!base) return null;
   let count = parseInt(base[1]);
   const sides = parseInt(base[2]);
   const bonus = base[3] ? parseInt(base[3]) : 0;
-  // base_level_int (set when a spell is resolved from an item's fixed cast_level) is the
-  // spell's true base level - level_int itself may already be overridden to the cast level.
-  const baseLevel = spell.base_level_int ?? spell.level_int;
-  if (spell.higher_level && castLevel > baseLevel) {
-    const scale = spell.higher_level.match(/increases by (\d+)d(\d+) for each slot level above (\d+)/i);
-    if (scale && parseInt(scale[2]) === sides) {
-      count += (castLevel - parseInt(scale[3])) * parseInt(scale[1]);
+  if (spell.level_int === 0) {
+    if (characterLevel) count *= cantripDiceMultiplier(characterLevel);
+  } else {
+    // base_level_int (set when a spell is resolved from an item's fixed cast_level) is the
+    // spell's true base level - level_int itself may already be overridden to the cast level.
+    const baseLevel = spell.base_level_int ?? spell.level_int;
+    if (spell.higher_level && castLevel > baseLevel) {
+      const scale = spell.higher_level.match(/increases by (\d+)d(\d+) for each slot level above (\d+)/i);
+      if (scale && parseInt(scale[2]) === sides) {
+        count += (castLevel - parseInt(scale[3])) * parseInt(scale[1]);
+      }
     }
   }
   const result = { count, sides, bonus, label: `${count}d${sides}${bonus ? `+${bonus}` : ''}` };
