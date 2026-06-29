@@ -2376,9 +2376,19 @@
       "attunement": true,
       "weight": 0,
       "description": "While you wear these boots, you can click your heels together to cast the haste spell on yourself as a bonus action. You don't suffer from lethargy when the spell ends when cast using these boots. Once this property is used, it can't be used again until next dawn.",
-      "charges": null,
+      "charges": {
+        "current": 1,
+        "max": 1,
+        "recharge": "dawn"
+      },
       "buffs": [],
-      "granted_spells": [],
+      "granted_spells": [
+        {
+          "name": "Haste",
+          "charge_cost": 1,
+          "no_lethargy": true
+        }
+      ],
       "source": "SRD"
     },
     {

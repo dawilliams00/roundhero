@@ -44,7 +44,7 @@ export default function ItemSpellsModal({ item, onCast, onClose }) {
             {(item.granted_spells || []).map((g, i) => {
               const spell = resolveSpell(g);
               return (
-                <div key={i} onClick={() => setViewing({ spell, chargeCost: g.charge_cost || 1 })} style={{display:'flex',alignItems:'center',gap:8,padding:'8px 0',borderBottom:'1px solid var(--border)',cursor:'pointer'}}>
+                <div key={i} onClick={() => setViewing({ spell, chargeCost: g.charge_cost || 1, noLethargy: !!g.no_lethargy })} style={{display:'flex',alignItems:'center',gap:8,padding:'8px 0',borderBottom:'1px solid var(--border)',cursor:'pointer'}}>
                   <div style={{background: spell.level_int===0 ? 'var(--text-dim)' : `var(--slot-${spell.level_int})`,color: spell.level_int===0 ? '#fff' : slotBadgeTextColor(spell.level_int),borderRadius:4,padding:'1px 6px',fontSize:10,fontWeight:600,minWidth:24,textAlign:'center'}}>
                     {spell.level_int===0?'C':spell.level_int}
                   </div>
@@ -69,6 +69,7 @@ export default function ItemSpellsModal({ item, onCast, onClose }) {
             chargesCurrent: charges.current,
             chargesMax: charges.max,
             chargeCost: viewing.chargeCost,
+            noLethargy: viewing.noLethargy,
             onCast: () => onCast(viewing.chargeCost),
           }}
           onClose={() => setViewing(null)}

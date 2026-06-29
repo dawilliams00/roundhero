@@ -191,12 +191,12 @@ export function CharacterProvider({ children }) {
   // Reads characterRef (see above) rather than the closure `character`, because doCast
   // calls this AFTER useSlot already changed tracker_data - a closure-captured `character`
   // here would still be the pre-cast snapshot and would revert that slot use on save.
-  const setConcentration = useCallback(async (idx, spellName, level, target) => {
+  const setConcentration = useCallback(async (idx, spellName, level, target, noLethargy) => {
     const cur = characterRef.current;
     if (!cur) return;
     const conc = cur.tracker_data.concentration || {};
     const slots = [...(conc.slots || [{}, {}])];
-    slots[idx] = { spell: spellName, level: level ?? '', target };
+    slots[idx] = { spell: spellName, level: level ?? '', target, ...(noLethargy ? { no_lethargy: true } : {}) };
     await saveTrackerData({ ...cur.tracker_data, concentration: { ...conc, slots } });
   }, [saveTrackerData]);
 
@@ -221,7 +221,9 @@ export function CharacterProvider({ children }) {
   // and the caller is expected to show an info-only reminder instead. This used to be two
   // separate code paths (ConcentrationModal's Drop button vs SpellDetailModal's replace-
   // prompt) that only one of them implemented the cleanup for - now there's only one path.
-  const replaceConcentration = useCallback(async (idx, newSpellName = '', newLevel = '', newTarget = undefined) => {
+  // A slot tagged no_lethargy (Haste granted by an item like Boots of Haste, whose RAW text
+  // exempts it) still drops the Hasted effect but skips adding Lethargic.
+  const replaceConcentration = useCallback(async (idx, newSpellName = '', newLevel = '', newTarget = undefined, newNoLethargy = false) => {
     const cur = characterRef.current;
     if (!cur) return null;
     const td = cur.tracker_data;
@@ -232,7 +234,8 @@ export function CharacterProvider({ children }) {
     const wasHaste = oldSpell.toLowerCase() === 'haste';
     const wasSelfHaste = wasHaste && old.target === 'self';
     const wasAllyHaste = wasHaste && old.target === 'ally';
-    slots[idx] = newSpellName ? { spell: newSpellName, level: newLevel, target: newTarget } : { spell: '', level: '', target: undefined };
+    const skipLethargy = !!old.no_lethargy;
+    slots[idx] = newSpellName ? { spell: newSpellName, level: newLevel, target: newTarget, ...(newNoLethargy ? { no_lethargy: true } : {}) } : { spell: '', level: '', target: undefined };
     const activeEffects = td.active_effects || [];
     const conditions = td.conditions || [];
     await saveTrackerData({
@@ -240,10 +243,12 @@ export function CharacterProvider({ children }) {
       concentration: { ...conc, slots },
       ...(wasSelfHaste ? {
         active_effects: activeEffects.filter(e => e !== HASTED_EFFECT),
-        conditions: conditions.includes(LETHARGIC_CONDITION) ? conditions : [...conditions, LETHARGIC_CONDITION],
+        ...(skipLethargy ? {} : {
+          conditions: conditions.includes(LETHARGIC_CONDITION) ? conditions : [...conditions, LETHARGIC_CONDITION],
+        }),
       } : {}),
     });
-    return { droppedSpell: oldSpell, wasSelfHaste, wasAllyHaste };
+    return { droppedSpell: oldSpell, wasSelfHaste, wasAllyHaste, noLethargy: skipLethargy };
   }, [saveTrackerData]);
 
   // Deducts a class resource (e.g. Sorcery Points) by name - used for applying Metamagic

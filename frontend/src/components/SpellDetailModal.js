@@ -100,7 +100,7 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
     const slots = character?.tracker_data?.concentration?.slots || [];
     for (let i = 0; i < maxSlots; i++) {
       if (!slots[i]?.spell) {
-        await setConcentration(i, spell.name, levelUsed);
+        await setConcentration(i, spell.name, levelUsed, undefined, chargeMode?.noLethargy);
         setConcSlotIdx(i);
         return true;
       }
@@ -117,10 +117,12 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
   // is what's ending, not the one being cast now.
   const resolveConcPrompt = async (idx, levelUsed) => {
     if (idx != null) {
-      const result = await replaceConcentration(idx, spell.name, levelUsed);
+      const result = await replaceConcentration(idx, spell.name, levelUsed, undefined, chargeMode?.noLethargy);
       setConcSlotIdx(idx);
       if (result?.wasSelfHaste) {
-        setHasteEndedMessage("Haste ended - you are now Lethargic until the end of your next turn. While Lethargic, you can't move or take actions or reactions.");
+        setHasteEndedMessage(result.noLethargy
+          ? "Haste ended - the item that granted it means you don't suffer lethargy this time."
+          : "Haste ended - you are now Lethargic until the end of your next turn. While Lethargic, you can't move or take actions or reactions.");
       } else if (result?.wasAllyHaste) {
         setHasteEndedMessage("Your ally's Haste ended - they are now Lethargic until the end of their next turn. While Lethargic, they can't move or take actions or reactions. (Not tracked on their own sheet - just a reminder for the table.)");
       }

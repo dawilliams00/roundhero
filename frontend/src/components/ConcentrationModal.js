@@ -15,7 +15,9 @@ export default function ConcentrationModal({ onClose }) {
   const drop = async (idx) => {
     const result = await replaceConcentration(idx);
     if (result?.wasSelfHaste) {
-      setInfoMessage("Haste ended - you are now Lethargic until the end of your next turn. While Lethargic, you can't move or take actions or reactions.");
+      setInfoMessage(result.noLethargy
+        ? "Haste ended - the item that granted it means you don't suffer lethargy this time."
+        : "Haste ended - you are now Lethargic until the end of your next turn. While Lethargic, you can't move or take actions or reactions.");
     } else if (result?.wasAllyHaste) {
       setInfoMessage("Your ally's Haste ended - they are now Lethargic until the end of their next turn. While Lethargic, they can't move or take actions or reactions. (Not tracked on their own sheet - just a reminder for the table.)");
     }
