@@ -36,7 +36,11 @@ export default function LevelUpFlowModal({ onClose, mode = 'level_up' }) {
     setStep('loading');
     setError(null);
     try {
-      const r = await api.post(`/characters/${character.id}/level_up`, leveling_class ? { leveling_class } : {});
+      // suppressGlobalError: needs_class_confirmation/needs_leveling_class_choice are
+      // expected, recoverable 400s this component handles itself in the catch block below
+      // - without this, the global axios interceptor pops its own blocking "Something
+      // didn't save" alert first, which is exactly the confusing error a real player hit.
+      const r = await api.post(`/characters/${character.id}/level_up`, leveling_class ? { leveling_class } : {}, { suppressGlobalError: true });
       setCharacter(r.data);
       const info = r.data.level_up_summary;
       setSummary(info);
@@ -69,7 +73,7 @@ export default function LevelUpFlowModal({ onClose, mode = 'level_up' }) {
   const checkClassStatus = async () => {
     setStep('loading');
     try {
-      const r = await api.get(`/characters/${character.id}/class_status`);
+      const r = await api.get(`/characters/${character.id}/class_status`, { suppressGlobalError: true });
       setDraftClasses(r.data.inferred_classes && r.data.inferred_classes.length ? r.data.inferred_classes : [{ class_name: '', level: character.level || 1 }]);
       setStep('confirm_classes');
     } catch {

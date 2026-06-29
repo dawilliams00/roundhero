@@ -29,7 +29,7 @@ export default function GameView() {
   // read-only /class_status check LevelUpFlowModal's confirm_classes mode uses.
   useEffect(() => {
     if (!character) return;
-    api.get(`/characters/${character.id}/class_status`).then(r => setNeedsClassConfirm(r.data.needs_confirmation)).catch(() => {});
+    api.get(`/characters/${character.id}/class_status`, { suppressGlobalError: true }).then(r => setNeedsClassConfirm(r.data.needs_confirmation)).catch(() => {});
   }, [character?.id]);
 
   if (loading || !character) {

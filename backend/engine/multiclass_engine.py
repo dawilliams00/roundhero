@@ -156,11 +156,21 @@ def level_up_one_class(old_tracker_data, old_spell_data, old_ae_data, classes, l
     new_class_level = target["level"]
     new_total_level = sum(c["level"] for c in new_classes)
 
+    # Incremental, not a from-scratch recompute: a from-scratch compute_multiclass_hp()
+    # call here would overwrite the character's real recorded max HP with a generic
+    # average-formula total, which essentially never matches a PDF-imported character's
+    # actual (often manually-rolled, not averaged) HP - and if the recomputed total came
+    # out LOWER than what was actually recorded, the old code silently shrank max HP while
+    # reporting "+0 gained" (the max(0, ...) floor on a negative diff). The very-first-
+    # level max-hit-die bonus (compute_multiclass_hp's "first" flag) only ever applies at
+    # character creation, never on a level-up of an already-existing character, so the
+    # gain for any level-up is always just the average-roll formula for the ONE new level.
     con_mod = modifier((ability_scores or {}).get("CON", 10))
-    new_max_hp = compute_multiclass_hp(new_classes, con_mod)
+    hit_die = CLASSES.get(leveling_class_name, {}).get("hit_die", 8)
+    hp_gained = hit_die // 2 + 1 + con_mod
     old_hp = old_tracker_data.get("hp") or {}
-    old_max_hp = old_hp.get("max", new_max_hp)
-    hp_gained = max(0, new_max_hp - old_max_hp)
+    old_max_hp = old_hp.get("max", 0)
+    new_max_hp = max(1, old_max_hp + hp_gained)
 
     new_spell_slots, new_pact_slots = get_multiclass_spell_slots(new_classes)
 
