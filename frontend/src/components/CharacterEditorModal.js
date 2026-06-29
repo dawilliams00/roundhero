@@ -297,7 +297,7 @@ export default function CharacterEditorModal({ onClose }) {
             </div>
           </>
         )}
-        {td._level_up_snapshot && (
+        {(td._level_up_snapshots?.length > 0 || td._level_up_snapshot) && (
           <div style={{marginBottom:16}}>
             <button className="btn btn-secondary" disabled={rollingBack} onClick={async () => {
               setRollingBack(true);
@@ -305,7 +305,10 @@ export default function CharacterEditorModal({ onClose }) {
                 syncDraftFromCharacter(await rollbackLevelUp());
               } finally { setRollingBack(false); }
             }}>
-              {rollingBack ? 'Rolling back...' : `↺ Roll Back to Level ${td._level_up_snapshot.level}`}
+              {/* Pops one level-up at a time off the stack - clicking this repeatedly after
+                  multiple level-ups steps back through each one in order, not just the most
+                  recent. */}
+              {rollingBack ? 'Rolling back...' : `↺ Roll Back to Level ${td._level_up_snapshots?.length > 0 ? td._level_up_snapshots[td._level_up_snapshots.length - 1].level : td._level_up_snapshot.level}`}
             </button>
           </div>
         )}

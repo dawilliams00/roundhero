@@ -106,20 +106,24 @@ def class_status_route(char_id):
         return jsonify({"needs_confirmation": False}), 200
     return jsonify({"needs_confirmation": True, "inferred_classes": infer_classes(char.class_name, char.level)}), 200
 
-def _snapshot_for_rollback(char):
+def _push_rollback_snapshot(char, merged_td):
     """Captures everything a level-up (and any subclass/ASI choices made right after it)
-    touches, so POST /rollback_level_up can put the character back exactly as it was
-    before the player clicked Level Up - players like to preview a level-up and back out
-    if they don't like what they see. Single-step undo only (this overwrites whatever
-    snapshot was already there), and the snapshot is stripped of any snapshot-of-its-own
-    so it can't nest/grow across repeated level-ups."""
+    touches and pushes it onto tracker_data._level_up_snapshots, so POST
+    /rollback_level_up can step back through a real history one level at a time (e.g.
+    level up 13->14->15, then roll back twice to actually get back to 13) instead of only
+    ever undoing the single most recent level-up. The snapshot itself is stripped of its
+    own stack key so it can't nest/grow across repeated level-ups; merged_td (the
+    *post*-level-up tracker_data the caller is about to save) is the dict the new stack
+    gets attached to, since callers always overwrite char.tracker_data with it next."""
     td = dict(char.tracker_data)
-    td.pop("_level_up_snapshot", None)
-    return {
+    stack = list(td.pop("_level_up_snapshots", None) or [])
+    td.pop("_level_up_snapshot", None)  # drop the old single-slot key if present
+    stack.append({
         "tracker_data": td, "spell_data": char.spell_data, "ae_data": char.ae_data,
         "level": char.level, "class_name": char.class_name, "subclass": char.subclass,
         "ability_scores": char.ability_scores,
-    }
+    })
+    merged_td["_level_up_snapshots"] = stack
 
 @characters_bp.route("/<int:char_id>/level_up", methods=["POST"])
 @jwt_required()
@@ -130,7 +134,6 @@ def level_up_character_route(char_id):
     leveling_class = data.get("leveling_class")
     td = char.tracker_data
     stored_classes = td.get("classes")
-    snapshot = _snapshot_for_rollback(char)
 
     # Original single-class manual-creation path, byte-for-byte unchanged except for the
     # added rollback snapshot, so an existing manually-created character that's never
@@ -143,7 +146,7 @@ def level_up_character_route(char_id):
         merged_td, merged_sd, merged_ae, hp_gained = level_up_character(
             char.tracker_data, char.spell_data, char.ae_data, char.class_name, new_level, char.ability_scores,
         )
-        merged_td["_level_up_snapshot"] = snapshot
+        _push_rollback_snapshot(char, merged_td)
         char.level = new_level
         char.tracker_data = merged_td
         char.spell_data = merged_sd
@@ -178,7 +181,7 @@ def level_up_character_route(char_id):
     merged_td, merged_sd, merged_ae, info = level_up_one_class(
         char.tracker_data, char.spell_data, char.ae_data, stored_classes, leveling_class, char.ability_scores,
     )
-    merged_td["_level_up_snapshot"] = snapshot
+    _push_rollback_snapshot(char, merged_td)
     char.level = info["new_total_level"]
     char.class_name = info["new_class_name"]
     char.tracker_data = merged_td
@@ -190,12 +193,26 @@ def level_up_character_route(char_id):
 @characters_bp.route("/<int:char_id>/rollback_level_up", methods=["POST"])
 @jwt_required()
 def rollback_level_up_route(char_id):
+    """Pops one level-up off the stack each call, so leveling up multiple times (e.g.
+    13->14->15) and then calling this repeatedly steps back through that same history
+    one level at a time (15->14->13) instead of only ever being able to undo the single
+    most recent level-up. Falls back to the old single-slot `_level_up_snapshot` key for
+    any character whose stack predates this change."""
     user_id = int(get_jwt_identity())
     char = Character.query.filter_by(id=char_id, user_id=user_id).first_or_404()
-    snapshot = char.tracker_data.get("_level_up_snapshot")
+    stack = char.tracker_data.get("_level_up_snapshots")
+    if stack:
+        snapshot = stack[-1]
+        remaining_stack = stack[:-1]
+    else:
+        snapshot = char.tracker_data.get("_level_up_snapshot")
+        remaining_stack = None
     if not snapshot:
         return jsonify({"error": "Nothing to roll back - no recent level-up found."}), 400
-    char.tracker_data = snapshot["tracker_data"]
+    restored_td = dict(snapshot["tracker_data"])
+    if remaining_stack:
+        restored_td["_level_up_snapshots"] = remaining_stack
+    char.tracker_data = restored_td
     char.spell_data = snapshot["spell_data"]
     char.ae_data = snapshot["ae_data"]
     char.level = snapshot["level"]
@@ -203,7 +220,7 @@ def rollback_level_up_route(char_id):
     char.subclass = snapshot["subclass"]
     char.ability_scores = snapshot["ability_scores"]
     db.session.commit()
-    return jsonify(char.to_dict()), 200
+    return jsonify({**char.to_dict(), "can_rollback_further": bool(remaining_stack)}), 200
 
 @characters_bp.route("/<int:char_id>/classes/subclass", methods=["POST"])
 @jwt_required()
