@@ -26,6 +26,7 @@ export default function InventoryTab() {
   const [viewingSpells, setViewingSpells] = useState(null);
   const [recharging, setRecharging] = useState(null);
   const [infoMessage, setInfoMessage] = useState(null);
+  const [resyncingAll, setResyncingAll] = useState(false);
 
   if (!character) return null;
   const td  = character.tracker_data || {};
@@ -77,6 +78,39 @@ export default function InventoryTab() {
     setInfoMessage(`${item.name} refreshed from the database.`);
   };
 
+  // The per-item 🔄 Refresh button above only ever fixes one item at a time, but a data
+  // fix (a buff, a granted spell's cast_level, a recharge formula) can affect several
+  // already-owned items at once the same way Staff of the Magi's did - this loops the
+  // exact same merge logic across the whole inventory in one click and saves once at the
+  // end, instead of the player having to remember which items might be affected and
+  // refresh each by hand.
+  const resyncAllItems = async () => {
+    setResyncingAll(true);
+    try {
+      const r = await api.get('/content/items');
+      const library = r.data;
+      let changed = 0;
+      const newItems = items.map(item => {
+        const master = library.find(it => it.name.toLowerCase() === item.name.toLowerCase());
+        if (!master) return item;
+        changed++;
+        return {
+          ...item,
+          description: master.description || item.description,
+          weight: master.weight ?? item.weight,
+          rarity: master.rarity || item.rarity,
+          buffs: master.buffs ? master.buffs.map(b => ({ ...b })) : item.buffs,
+          granted_spells: (master.granted_spells || []).map(s => ({ ...s })),
+          charges: master.charges ? { ...master.charges, current: Math.min(item.charges?.current ?? master.charges.max, master.charges.max) } : item.charges,
+        };
+      });
+      await save({ ...inv, items: newItems });
+      setInfoMessage(`Resynced ${changed} of ${items.length} item(s) from the latest data.`);
+    } finally {
+      setResyncingAll(false);
+    }
+  };
+
   const castItemSpell = (idx, chargeCost) => {
     const item = items[idx];
     if (!item.charges) return;
@@ -116,6 +150,9 @@ export default function InventoryTab() {
           <select value={sortBy} onChange={e => setSortBy(e.target.value)} style={{fontSize:11,padding:'2px 4px',marginRight:8}}>
             {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
+          <button className="btn btn-secondary btn-sm" disabled={resyncingAll || items.length===0} onClick={resyncAllItems} title="Re-pull every item's static fields (description/buffs/charges/granted spells) from the latest data in one click">
+            {resyncingAll ? 'Resyncing...' : '🔄 Resync All'}
+          </button>
           <button className="btn btn-secondary btn-sm" onClick={() => setBrowsing(true)}>Add Item</button>
           <button className="btn btn-primary btn-sm" onClick={() => setAdding(true)}>+ Add Custom</button>
         </div>
