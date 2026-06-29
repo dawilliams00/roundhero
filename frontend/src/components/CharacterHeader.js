@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useCharacter } from '../context/CharacterContext';
 import api from '../utils/api';
-import { modifier, modStr, hpColor, profBonus, ABILITY_KEYS, getSpellcastingBlocks, computeItemBonuses, effectiveAbilityScores, featBuffItems, HASTED_EFFECT, HARDCODED_CONDITION_INFO, EXHAUSTION_RAW_TEXT } from '../utils/dnd';
+import { modifier, modStr, hpColor, profBonus, ABILITY_KEYS, getSpellcastingBlocks, computeItemBonuses, effectiveAbilityScores, suspectedAbilityContamination, featBuffItems, HASTED_EFFECT, HARDCODED_CONDITION_INFO, EXHAUSTION_RAW_TEXT } from '../utils/dnd';
 import SavesModal from './SavesModal';
 import SkillsModal from './SkillsModal';
 import TraitsModal from './TraitsModal';
@@ -85,7 +85,7 @@ function SpellcastBox({ block }) {
 // can't un-apply a buff that's already sitting in the raw number). Shows the effective
 // (post-item) score normally; editing always edits the underlying base, never the
 // boosted display value.
-function AbilityBox({ abbr, score, baseScore, onSaveBase, color }) {
+function AbilityBox({ abbr, score, baseScore, onSaveBase, color, suspectItem }) {
   const boosted = baseScore != null && score !== baseScore;
   const [editing, setEditing] = useState(false);
   const [val, setVal] = useState(baseScore);
@@ -97,9 +97,13 @@ function AbilityBox({ abbr, score, baseScore, onSaveBase, color }) {
     else setVal(baseScore);
   };
 
+  const title = suspectItem
+    ? `Base score (${baseScore}) exactly matches "${suspectItem}"'s Set-To value - if this already includes that item's old bonus, lower it to your true base. Click to edit.`
+    : (boosted ? `${baseScore} base, raised to ${score} by an equipped item - click to edit the base score` : 'Click to edit');
+
   return (
-    <div className="stat-box" style={{minWidth:38, borderColor: color}} title={boosted ? `${baseScore} base, raised to ${score} by an equipped item - click to edit the base score` : 'Click to edit'}>
-      <div className="stat-label" style={{marginTop:0,marginBottom:2,color}}>{abbr}</div>
+    <div className="stat-box" style={{minWidth:38, borderColor: suspectItem ? 'var(--warning)' : color}} title={title}>
+      <div className="stat-label" style={{marginTop:0,marginBottom:2,color}}>{abbr}{suspectItem ? ' ⚠' : ''}</div>
       {editing ? (
         <input
           autoFocus
@@ -227,6 +231,7 @@ export default function CharacterHeader({ onBack }) {
   const buffItems = [...invItems, ...featBuffItems(td?.features)];
   const itemBonuses = computeItemBonuses(buffItems);
   const effAb  = effectiveAbilityScores(ab, buffItems);
+  const abilityContamination = suspectedAbilityContamination(ab, buffItems);
   const dexMod = modifier(effAb.DEX || 10);
   const attunedCount = invItems.filter(it => it.attunement && it.attuned).length;
   const attunableCount = invItems.filter(it => it.attunement).length;
@@ -356,6 +361,7 @@ export default function CharacterHeader({ onBack }) {
                 <div style={{display:'flex',gap:6}}>
                   {ABILITY_KEYS.map(k => (
                     <AbilityBox key={k} abbr={k} score={effAb[k]||10} baseScore={ab?.[k]||10} color={STAT_COLORS.ABILITY}
+                      suspectItem={abilityContamination[k]}
                       onSaveBase={(n) => updateCharacter(character.id, { ability_scores: { ...ab, [k]: n } })} />
                   ))}
                 </div>

@@ -378,6 +378,29 @@ export const effectiveAbilityScores = (abilityScores, items) => {
   return out;
 };
 
+// Detects the real-world failure mode behind "unequipping a Set-To-X item didn't lower
+// my score back down, and a different belt's lower value didn't move it either": the
+// floor in effectiveAbilityScores is correct RAW behavior (a worse item never lowers an
+// already-higher score), but it silently defends a contaminated number forever if the
+// RAW base itself ever got baked-in from a Set-To buff - usually because a PDF import
+// captured the character sheet's printed (already-buffed) score as if it were the
+// unmodified base, since a real character sheet has no separate "base" field to read.
+// There's no way to algorithmically recover the true base after the fact, so this can't
+// auto-fix anything - it just flags an ability whose RAW score exactly matches the
+// Set-To value of SOME item in the character's inventory (equipped or not, current belt
+// or an old one), which is a strong tell that the number isn't really an unbuffed base,
+// so the player knows exactly which ability to manually correct and why.
+export const suspectedAbilityContamination = (abilityScores, items) => {
+  const flags = {};
+  ABILITY_KEYS.forEach(ab => {
+    const raw = abilityScores?.[ab];
+    if (raw == null) return;
+    const match = (items || []).find(it => (it.buffs || []).some(b => b && b.mode === 'set' && b.stat === ab && b.value === raw));
+    if (match) flags[ab] = match.name;
+  });
+  return flags;
+};
+
 // Sum of any equipped (and, where required, attuned) items' spell attack/DC buffs
 // (e.g. Staff of the Magi, Robe of the Archmagi).
 export const itemSpellBonuses = (items) => {

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useCharacter } from '../context/CharacterContext';
 import api from '../utils/api';
 import InfoModal from './InfoModal';
-import { ABILITY_KEYS, ABILITY_LABELS, SAVE_PROFS, SKILL_MAP } from '../utils/dnd';
+import { ABILITY_KEYS, ABILITY_LABELS, SAVE_PROFS, SKILL_MAP, suspectedAbilityContamination, featBuffItems } from '../utils/dnd';
 
 // Full base-stat editor - identity, ability scores, and save/skill proficiencies, on top
 // of the original v1 level-up-only framework. This is the one place all of the
@@ -33,6 +33,17 @@ export default function CharacterEditorModal({ onClose }) {
   ) : null);
   const [skillProfs, setSkillProfs] = useState(character ? [...(td.skill_proficiencies || [])] : null);
   const [skillExpertise, setSkillExpertise] = useState(character ? [...(td.skill_expertise || [])] : null);
+
+  // Flags an ability whose current input value exactly matches some inventory item's
+  // Set-To buff value - see suspectedAbilityContamination in dnd.js for why this can't be
+  // auto-fixed, only flagged. Recomputed live off `scores` (not the original character
+  // ability_scores) so the warning updates/clears as the player edits the number here.
+  const buffItems = character ? [...(td.inventory?.items || []), ...featBuffItems(td.features)] : [];
+  // scores' values are raw input strings once edited (controlled <input> onChange), so
+  // normalize to ints here - otherwise "29" !== 29 would silently break the match the
+  // moment the player touches any ability field, not just the contaminated one.
+  const normalizedScores = character ? Object.fromEntries(ABILITY_KEYS.map(k => [k, parseInt(scores[k]) || 10])) : {};
+  const contamination = character ? suspectedAbilityContamination(normalizedScores, buffItems) : {};
 
   // Class/Subclass start as dropdowns sourced from the engine's known class list (same
   // /content/classes(/<name>/subclasses) endpoints CharacterSetup.js already uses) so a
@@ -173,9 +184,15 @@ export default function CharacterEditorModal({ onClose }) {
         <div style={{fontSize:12,color:'var(--text-dim)',textTransform:'uppercase',letterSpacing:1,marginBottom:8}}>Ability Scores</div>
         <div className="form-row" style={{flexWrap:'wrap'}}>
           {ABILITY_KEYS.map(k => (
-            <div className="form-group" key={k} style={{maxWidth:80}}>
-              <label>{k}</label>
-              <input type="number" min={1} max={30} value={scores[k] ?? 10} onChange={e=>setScores(s=>({...s,[k]:e.target.value}))} />
+            <div className="form-group" key={k} style={{maxWidth:120}}>
+              <label>{k}{contamination[k] ? ' ⚠' : ''}</label>
+              <input type="number" min={1} max={30} value={scores[k] ?? 10} onChange={e=>setScores(s=>({...s,[k]:e.target.value}))}
+                style={contamination[k] ? {borderColor:'var(--warning)'} : undefined} />
+              {contamination[k] && (
+                <div style={{fontSize:10,color:'var(--warning)',marginTop:3,lineHeight:1.3}}>
+                  Matches "{contamination[k]}"'s Set-To value - if this already includes that item's bonus, lower it to the true base.
+                </div>
+              )}
             </div>
           ))}
         </div>
