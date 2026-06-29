@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useCharacter } from '../context/CharacterContext';
 import api from '../utils/api';
-import { ABILITY_KEYS, ABILITY_LABELS } from '../utils/dnd';
+import { ABILITY_KEYS, ABILITY_LABELS, modifier, rollDie } from '../utils/dnd';
 
 // Drives the full multi-step level-up flow for ANY character (single-class manually-
 // created, or multiclass/PDF-imported once classes are confirmed) - POST /level_up is
@@ -18,7 +18,9 @@ import { ABILITY_KEYS, ABILITY_LABELS } from '../utils/dnd';
 // when leveling_class is already provided on the very first attempt.
 export default function LevelUpFlowModal({ onClose, mode = 'level_up', initialLevelingClass }) {
   const { character, setCharacter, saveTrackerData, rollbackLevelUp } = useCharacter();
-  const [step, setStep] = useState('loading'); // loading | confirm_classes | choose_leveling_class | choose_subclass | choose_asi | done | error
+  const [step, setStep] = useState('loading'); // loading | confirm_classes | choose_leveling_class | choose_subclass | choose_hp | choose_asi | done | error
+  const [rolledHp, setRolledHp] = useState(null);
+  const [manualHp, setManualHp] = useState('');
   const [error, setError] = useState(null);
   const [classList, setClassList] = useState([]);
   const [draftClasses, setDraftClasses] = useState([]);
@@ -37,6 +39,21 @@ export default function LevelUpFlowModal({ onClose, mode = 'level_up', initialLe
     api.get('/content/classes').then(r => setClassList(r.data || []));
   }, []);
 
+  // Whatever comes after HP is settled - same destination the choose_hp step's
+  // "Continue"/"Apply" button lands on once it's done adjusting HP.
+  const proceedPastHp = (info) => {
+    const needSub = info.needs_subclass || [];
+    if (needSub.length) {
+      setSubclassQueue(needSub);
+      startSubclassStep(needSub[0]);
+    } else if (info.asi_level) {
+      setNeedsAsi(true);
+      setStep('choose_asi');
+    } else {
+      setStep('done');
+    }
+  };
+
   const attempt = async (leveling_class) => {
     setStep('loading');
     setError(null);
@@ -49,15 +66,15 @@ export default function LevelUpFlowModal({ onClose, mode = 'level_up', initialLe
       setCharacter(r.data);
       const info = r.data.level_up_summary;
       setSummary(info);
-      const needSub = info.needs_subclass || [];
-      if (needSub.length) {
-        setSubclassQueue(needSub);
-        startSubclassStep(needSub[0]);
-      } else if (info.asi_level) {
-        setNeedsAsi(true);
-        setStep('choose_asi');
+      // The backend always applies the Fixed/average HP gain - calc_mode==='rolled' means
+      // the player wants the option to roll (or enter what they rolled in person) instead,
+      // adjusting the already-applied average up or down to match before moving on.
+      if (r.data.tracker_data?.hp?.calc_mode === 'rolled' && info.hp_gained > 0) {
+        setRolledHp(null);
+        setManualHp('');
+        setStep('choose_hp');
       } else {
-        setStep('done');
+        proceedPastHp(info);
       }
     } catch (err) {
       const data = err?.response?.data;
@@ -126,6 +143,30 @@ export default function LevelUpFlowModal({ onClose, mode = 'level_up', initialLe
     } else {
       setStep('done');
     }
+  };
+
+  // hitDie: the leveling class's hit die size, for the "roll 1d{N}" button - multiclass
+  // responses carry leveling_class directly; the single-class engine's response doesn't,
+  // but for that path class_name never changes during a level-up, so it's a safe fallback.
+  const hitDie = classList.find(c => c.name === (summary?.leveling_class || character.class_name))?.hit_die || 8;
+  const conMod = modifier(character.ability_scores?.CON ?? 10);
+  const rollHp = () => setRolledHp(rollDie(hitDie));
+  const applyHpChoice = async (skip) => {
+    let finalSummary = summary;
+    if (!skip) {
+      const rollResult = rolledHp ?? parseInt(manualHp);
+      if (rollResult > 0) {
+        const newGain = rollResult + conMod;
+        const delta = newGain - summary.hp_gained;
+        if (delta !== 0) {
+          const hp = character.tracker_data.hp;
+          await saveTrackerData({ ...character.tracker_data, hp: { ...hp, max: hp.max + delta, current: hp.current + delta } });
+        }
+        finalSummary = { ...summary, hp_gained: newGain };
+        setSummary(finalSummary);
+      }
+    }
+    proceedPastHp(finalSummary);
   };
 
   const submitAsi = async () => {
@@ -197,6 +238,30 @@ export default function LevelUpFlowModal({ onClose, mode = 'level_up', initialLe
             <div style={{display:'flex',gap:8,marginTop:12}}>
               <button className="btn btn-secondary" style={{flex:1}} onClick={onClose}>Cancel</button>
               <button className="btn btn-primary" style={{flex:2}} onClick={() => attempt(pickedClass)}>Continue</button>
+            </div>
+          </>
+        )}
+
+        {step === 'choose_hp' && (
+          <>
+            <div style={{color:'var(--text-dim)',fontSize:12,marginBottom:12}}>
+              Fixed/average HP gain for this level was +{summary?.hp_gained}. Your Hit Die is a d{hitDie} - roll it, or enter what you rolled in person, to use that instead.
+            </div>
+            <div style={{display:'flex',gap:8,alignItems:'center',marginBottom:12}}>
+              <button className="btn btn-secondary" onClick={rollHp}>🎲 Roll 1d{hitDie}</button>
+              {rolledHp != null && (
+                <span style={{color:'var(--accent-light)',fontSize:14,fontWeight:700}}>
+                  {rolledHp} + {conMod>=0?'+':''}{conMod} CON = {rolledHp + conMod} total
+                </span>
+              )}
+            </div>
+            <div className="form-group">
+              <label>Or enter what you rolled in person (before CON modifier)</label>
+              <input type="number" min={1} max={hitDie} value={manualHp} onChange={e => { setManualHp(e.target.value); setRolledHp(null); }} placeholder={`1-${hitDie}`} />
+            </div>
+            <div style={{display:'flex',gap:8,marginTop:12}}>
+              <button className="btn btn-secondary" style={{flex:1}} onClick={() => applyHpChoice(true)}>Keep Average (+{summary?.hp_gained})</button>
+              <button className="btn btn-primary" style={{flex:1}} disabled={!(rolledHp > 0 || parseInt(manualHp) > 0)} onClick={() => applyHpChoice(false)}>Use This Roll</button>
             </div>
           </>
         )}

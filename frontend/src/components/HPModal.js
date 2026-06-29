@@ -82,6 +82,14 @@ export default function HPModal({ onClose }) {
     onClose();
   };
 
+  // Fixed (the default, matching how leveling has always worked here) always takes the
+  // average roll rounded up for the new level's HP gain. Rolled lets the level-up flow
+  // prompt for what was actually rolled instead. A standalone toggle (not folded into
+  // the Save & Close flow above) since it only ever matters the next time the character
+  // levels up, not anything being edited on this screen right now.
+  const calcMode = hp.calc_mode || 'fixed';
+  const setCalcMode = (mode) => saveTrackerData({ ...td, hp: { ...hp, calc_mode: mode } });
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" style={{maxWidth:420}} onClick={e => e.stopPropagation()}>
@@ -104,6 +112,21 @@ export default function HPModal({ onClose }) {
           <HPRow label="Temp HP (Buffer)" value={temp} onApply={applyTempDelta}
             open={openCalc==='temp'} onOpen={() => setOpenCalc('temp')} onCloseCalc={() => setOpenCalc(null)} />
           {openCalc==='temp' && <div style={{height:POPOVER_RESERVE}}/>}
+        </div>
+
+        <div style={{background:'var(--bg-primary)',borderRadius:'var(--radius-sm)',padding:10,marginBottom:12}}>
+          <div style={{color:'var(--text-dim)',fontSize:11,fontWeight:600,marginBottom:6}}>HP Gain on Level Up</div>
+          <div style={{display:'flex',gap:12,marginBottom:6}}>
+            <label style={{display:'flex',alignItems:'center',gap:6,cursor:'pointer'}}>
+              <input type="radio" checked={calcMode !== 'rolled'} onChange={() => setCalcMode('fixed')} /> Fixed (average, rounded up)
+            </label>
+            <label style={{display:'flex',alignItems:'center',gap:6,cursor:'pointer'}}>
+              <input type="radio" checked={calcMode === 'rolled'} onChange={() => setCalcMode('rolled')} /> Rolled
+            </label>
+          </div>
+          <div style={{color:'var(--text-dim)',fontSize:11,lineHeight:1.5}}>
+            Rolled lets the next Level Up prompt for what you actually rolled on your Hit Die instead of silently taking the average.
+          </div>
         </div>
 
         <div style={{background:'var(--bg-primary)',borderRadius:'var(--radius-sm)',padding:10,marginBottom:16}}>
