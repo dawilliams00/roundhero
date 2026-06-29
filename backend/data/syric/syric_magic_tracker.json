@@ -1,0 +1,675 @@
+{
+  "spell_slots": {
+    "1": {
+      "current": 2,
+      "max": 4
+    },
+    "2": {
+      "current": 2,
+      "max": 3
+    },
+    "3": {
+      "current": 2,
+      "max": 3
+    },
+    "4": {
+      "current": 3,
+      "max": 3
+    },
+    "5": {
+      "current": 1,
+      "max": 2
+    },
+    "6": {
+      "current": 1,
+      "max": 1
+    },
+    "7": {
+      "current": 0,
+      "max": 1
+    },
+    "8": {
+      "current": 0,
+      "max": 0
+    },
+    "9": {
+      "current": 0,
+      "max": 0
+    }
+  },
+  "features": {
+    "Echo Step": {
+      "current": 2,
+      "max": 2,
+      "rest_type": "short",
+      "description": "Mechanics:\nPassive with 2 Active Uses per Short Rest. \n\nAs a reaction or bonus action, Syric steps into the Shadowfold for a fraction of a second, gaining a glimpse of multiple possible outcomes before choosing the most favorable one.\n\n**Daily Use:**\n\nSyric can pause time for himself for a brief moment (does not stop the world, just his ability to act).\nWhile inside the Shadowfold, he gains Advantage on Investigation and Insight checks, as he can see faint echoes of past actions or sense how people might respond to certain words or choices.\nHe can also make a Wisdom (Perception) check with Advantage to foresee an immediate danger, such as a trap triggering, a hidden enemy moving, or someone about to lie.\n\n**Combat Use:** all once per long rest\nReaction \u2013 Flicker Dodge: \nWhen attacked, Syric can briefly phase out, forcing the enemy to reroll the attack once.\nBonus Action \u2013 Echoing Strike:\nWhen Syric lands an attack or casts a spell, he can \u201crewind\u201d his action and choose a different target, as if he had taken an alternate approach.\nReaction: \nIf Syric fails a Dexterity saving throw, he can step into the Shadowfold, allowing him to reroll the save with Advantage before snapping back into place.\n\nVisual Effect: \nTime slows slightly, and shadowy afterimages of Syric flicker around him, each representing different choices he could make before the correct one solidifies.",
+      "action": "Reaction / Bonus Action"
+    },
+    "Arcane Recovery": {
+      "current": 1,
+      "max": 1,
+      "rest_type": "long",
+      "action": "Free Action",
+      "description": "Once per day when you finish a short rest, you can choose expended spell slots to recover - up to a combined level of 6, and none of the slots can be 6th level or higher."
+    },
+    "Nyx Blessing": {
+      "current": 5,
+      "max": 5,
+      "rest_type": "long",
+      "action": "Bonus Action",
+      "description": "As a bonus action, you can magically teleport up to 30 ft. to an unoccupied space you can see. Starting at 3rd level, you gain resistance to all damage until the start of your next turn. You can use this feature 3 times per long rest."
+    },
+    "Void Anchor": {
+      "current": 0,
+      "max": 0,
+      "rest_type": "long",
+      "description": "When you would be knocked prone, pushed, pulled, or forcibly moved, you may choose to remain perfectly still.",
+      "action": "Free Action"
+    },
+    "Sovereign Silence": {
+      "current": 0,
+      "max": 0,
+      "rest_type": "long",
+      "description": "Reaction. When you or anyone within 10ft are targeted with a spell requiring verbal components, invoke the ring to cause the spell to fail as though the sound never existed.",
+      "action": "Reaction"
+    },
+    "Void Reprisal": {
+      "current": 0,
+      "max": 0,
+      "rest_type": "long",
+      "description": "Reaction. When hit by an attack, the attacker makes DC18 CON save or takes 4d8 force damage (half on success). Ignores resistance to force damage.",
+      "action": "Reaction"
+    },
+    "Comprehend Languages": {
+      "name": "Comprehend Languages",
+      "description": "For the duration, you understand the literal meaning of any spoken language that you hear. You also understand any written language that you see, but you must be touching the surface on which the words are written. It takes about 1 minute to read one page of text.\n\nThis spell doesn't decode secret messages in a text or a glyph, such as an arcane sigil, that isn't part of a written language.",
+      "usage_type": "long_rest",
+      "max_uses": 1,
+      "current_uses": 1,
+      "recharge_condition": "1 per long rest",
+      "source": "Rune Shaper",
+      "rest_type": "short",
+      "current": 1,
+      "max": 1,
+      "action": "Action"
+    },
+    "Rune Shaper": {
+      "name": "Rune Shaper",
+      "description": "Rune Magic:\nYou know a number of runes equal to half your proficiency bonus (rounded down), chosen from the Rune Spells table. Whenever you finish a long rest, you can inscribe each rune you know onto one nonmagical weapon, armor, piece of clothing, or other object you touch.\n\nYou temporarily learn the 1st-level spells that correspond to the runes you inscribed, as specified on the Rune Spells table, and you know those spells until you finish a long rest, when the runes fade. While you are wearing or carrying any rune-marked object, you can cast the spells associated with those runes using any spell slots you have.\n\nRune Invocation:\nYou can also invoke a rune inscribed on an object you are wearing or carrying and cast its associated spell without expending a spell slot or using material components. Once you cast the spell in this way, you can't do so again until you finish a long rest.\n\nSpellcasting Ability: Intelligence, Wisdom, or Charisma (choose when you select this feat).\n\nRune Advancement:\nEach time you gain a level, you can replace one of the runes you know with another one from the Rune Spells table.\n\nRune Spells:\n\u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u252c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\n\u2502    Rune     \u2502      Spell       \u2502\n\u251c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u253c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2524\n\u2502 Cloud       \u2502 Fog cloud        \u2502\n\u2502 Death       \u2502 Inflict wounds   \u2502\n\u2502 Dragon      \u2502 Chromatic orb    \u2502\n\u2502 Enemy       \u2502 Disguise self    \u2502\n\u2502 Fire        \u2502 Burning hands    \u2502\n\u2502 Friend      \u2502 Speak with animals\u2502\n\u2502 Frost       \u2502 Armor of Agathys \u2502\n\u2502 Hill        \u2502 Goodberry        \u2502\n\u2502 Journey     \u2502 Longstrider      \u2502\n\u2502 King        \u2502 Command          \u2502\n\u2502 Mountain    \u2502 Entangle         \u2502\n\u2502 Stone       \u2502 Sanctuary        \u2502\n\u2502 Storm       \u2502 Thunderwave      \u2502\n\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518",
+      "usage_type": "long_rest",
+      "max_uses": 2,
+      "current_uses": 2,
+      "recharge_condition": "Rune invocation 1 per long rest",
+      "source": "Feat",
+      "rest_type": "long",
+      "current": 2,
+      "max": 2,
+      "runes_known": [
+        "Frost",
+        "Friend"
+      ],
+      "rune_spells": [
+        "Armor of Agathys",
+        "Speak with Animals"
+      ],
+      "rune_shaper": true,
+      "rune_invocations": {},
+      "loaded_runes": {
+        "slot_1": {
+          "rune": "Frost",
+          "spell": "Armor of Agathys",
+          "used": false
+        },
+        "slot_2": {
+          "rune": "Friend",
+          "spell": "Speak with Animals",
+          "used": false
+        }
+      },
+      "all_rune_options": {
+        "Cloud": "Fog Cloud",
+        "Death": "Inflict Wounds",
+        "Dragon": "Chromatic Orb",
+        "Enemy": "Disguise Self",
+        "Fire": "Burning Hands",
+        "Friend": "Speak with Animals",
+        "Frost": "Armor of Agathys",
+        "Hill": "Goodberry",
+        "Journey": "Longstrider",
+        "King": "Command",
+        "Mountain": "Entangle",
+        "Stone": "Sanctuary",
+        "Storm": "Thunderwave"
+      },
+      "action": "Action"
+    },
+    "Minor Conjuration": {
+      "name": "Minor Conjuration",
+      "description": "You can use your action to conjure up an inanimate object (no larger than 3 ft. on a side and weigh no more than 10 lb.) in your hand or in an unoccupied space that you can reach. The object disappears after 1 hour, when you use this feature again, or if it takes or deals any damage.",
+      "usage_type": "recharge",
+      "max_uses": 1,
+      "current_uses": 1,
+      "recharge_condition": "At will",
+      "source": "School of Conjuration Feature",
+      "rest_type": "long",
+      "current": 1,
+      "max": 1,
+      "action": "Action"
+    },
+    "Pass Without Trace": {
+      "name": "Pass Without Trace",
+      "description": "A veil of shadows and silence radiates from you, masking you and your companions from detection. For the duration, each creature you choose within 30 feet of you (including you) has a +10 bonus to Dexterity (Stealth) checks and can\u2019t be tracked except by magical means. A creature that receives this bonus leaves behind no tracks or other traces of its passage.",
+      "usage_type": "recharge",
+      "max_uses": 1,
+      "current_uses": 1,
+      "recharge_condition": "At will",
+      "source": "Pipe of Obscurity",
+      "rest_type": "Short",
+      "current": 1,
+      "max": 1,
+      "action": "Action"
+    },
+    "Cartomancer use": {
+      "current": 0,
+      "max": 1,
+      "rest_type": "long",
+      "description": "mass suggestion",
+      "tucked_spell": "Teleport",
+      "tucked_level": "7",
+      "action": "Bonus Action"
+    },
+    "Inflict Wounds": {
+      "current": 1,
+      "max": 1,
+      "rest_type": "long",
+      "action": "Action"
+    },
+    "Benign Transposition": {
+      "current": 1,
+      "max": 1,
+      "rest_type": "long",
+      "action": "Action"
+    },
+    "Entangle": {
+      "current": 1,
+      "max": 1,
+      "rest_type": "long",
+      "action": "Action"
+    },
+    "Free Upcast (Codex P3)": {
+      "name": "Free Upcast (Codex P3)",
+      "current": 2,
+      "max": 2,
+      "rest_type": "long",
+      "action": "Free Action",
+      "sync_source": "codex_sync",
+      "description": "Mastery \u2014 Deepening the Connection (Page 3).\n\nUSES: 2/long rest at L11-16. (1 at L1-10. 3 at L17-20, each use may upcast by up to 2 levels.)\n\nEFFECT: Upcast any spell by one level for free. Cannot exceed a spell level for which Syric has slots. The original non-upcast slot is consumed.\n\nEXAMPLE: Cast Fireball at 4th level for free even if all 4th-level slots are used \u2014 but a 3rd-level slot must be available and is consumed.",
+      "codex_page": 3,
+      "display_name": "Free Upcast"
+    },
+    "Seamless Casting (Codex P4 NO V/S)": {
+      "name": "Seamless Casting (Codex P4 NO V/S)",
+      "current": 2,
+      "max": 2,
+      "rest_type": "long",
+      "action": "Free Action",
+      "sync_source": "codex_sync",
+      "description": "Runic Flow \u2014 Magic as Natural Extension (Page 4).\n\nUSES: 2/long rest at L11-16. (1 at L1-10. 3 at L17-20.)\n\nEFFECT: Cast one spell from one of Syric's inscribed runes without verbal or somatic components. Material components remain normal \u2014 a spellcasting focus covers non-costly materials; costly or consumed materials still required. Spell otherwise resolves normally.\n\nNOTE: Does not count as a strain effect. Does not change slot economy. Can share a round with other actions under normal limits.",
+      "codex_page": 4,
+      "display_name": "Seamless Casting"
+    },
+    "Contingency": {
+      "current": 1,
+      "max": 1,
+      "rest_type": "long",
+      "action": "Passive",
+      "description": "Giant Ape below 10 hp"
+    },
+    "Shadow Step": {
+      "current": 1,
+      "max": 1,
+      "rest_type": "long",
+      "action": "Reaction",
+      "description": "Swap places with Syric within 60ft"
+    },
+    "Necrotic": {
+      "current": 1,
+      "max": 1,
+      "rest_type": "long",
+      "action": "Passive"
+    },
+    "Overload System (Codex P2)": {
+      "name": "Overload System (Codex P2)",
+      "current": 0,
+      "max": 0,
+      "rest_type": "long",
+      "action": "Passive",
+      "sync_source": "codex_sync",
+      "description": "Inscription \u2014 Binding Magic to Flesh (Page 2). PASSIVE SYSTEM \u2014 tap to reference.\n\nINSCRIBING A RUNE\nTime: 1 hour per spell level. Cantrips: 30 minutes.\nRequired Check: Arcana check. DC = 10 + spell level.\nSuccess: Spell inscribed as a rune.\nFailure: Rune is unstable, cannot be used until long rest.\n\nARCANE CHARGE\nEach time Syric casts a leveled spell, he gains Arcane Charge equal to the spell's level. Shadow-cast spells using Syric's slots count. Reaction spells expending a leveled slot count normally. Charge resets to 0 when it naturally dissipates, is fully vented, or Arcane Discharge occurs.\n\nARCANE CAPACITY (THRESHOLD): Equal to Syric's Arcana Bonus (10 at L13). Dynamic \u2014 updates automatically.\nCharge CAN exceed the threshold \u2014 the threshold is when consequences begin, not a hard cap.\n\nNATURAL DISSIPATION\nEnd of turn: auto-reduce by minimum possible Vent Die value (2 at L11-16 with 2d6).\nIf no leveled spell cast that round: fully discharge at max Vent Die value (12 at L11-16 with 2d6).\n\nVENT DIE SCALING: L5-10 = 1d6 | L11-16 = 2d6 | L17-20 = 3d6\n\nOVERLOAD STATE TRIGGER\nArcane Charge equals or exceeds Arcane Capacity (Arcana Bonus). Entering Overload State does NOT immediately force a check.\nOnce in Overload State, casting another leveled spell triggers an Overload Check.\n\nOVERLOAD CHECK\nArcana check. DC = current Arcane Charge total.\nSUCCESS: Maintain control. Remain in Overload State.\nFAILURE: Arcane Discharge occurs.\n\nOVERLOAD STATE ENDS\nIf Arcane Charge drops below Arcane Capacity, Overload ends immediately. Charge is retained.\n\nARCANE DISCHARGE (on failed Overload Check)\n20-foot radius centered on Syric. Damage = 2x stored spell levels (force).\nDEX save for half (DC = Syric's spell save DC). Syric auto-fails, takes full damage.\nAfter Effect: Roll Arcane Rebound d120 table. Charge resets to 0.\n\nARCANE VENTING (Bonus Action)\nRoll Vent Die (2d6 at L11-16), reduce Arcane Charge by result. Min charge 0.\n\nEND OF TURN INSTABILITY\nAfter passive discharge, if charge still >= Arcane Capacity, must immediately make Overload Check.",
+      "codex_page": 2,
+      "display_name": "Overload System"
+    },
+    "Shadow: Core Reference": {
+      "name": "Shadow: Core Reference",
+      "display_name": "Shadow Core",
+      "current": 0,
+      "max": 0,
+      "rest_type": "long",
+      "action": "Passive",
+      "sync_source": "shadow_sync",
+      "shadow_level": 13,
+      "description": "Shadow Level 13 Reference.\n\nCORE STATS\nAC 15; HP = 1/2 Syric max HP, rounded down; PB +5.\nSize/Form: Default Tiny; Umbral Predator; Large max physical size; CR 3 appearance/form cap.\nMovement: Walk/Hover 45 ft.; Fly 55 ft. (hover); Climb 45 ft.\nDarkvision: 120 ft.; sees through magical darkness.\nSaves: Dex +8; Con +6; Wis +7; Int uses Syric when appropriate.\nSkills: Stealth +11 table formula; Perception +7; advantage on sight/hearing checks in dim light or darkness. Legacy approved Stealth +15 may be used as a floor if DM prefers.\nSenses/Bond: Darkvision 120 ft.; Shared Senses 1,000 ft.; Spell Delivery 300 ft..\nManifest Load: Carry 75 lb.; lift/drag/push 150 lb..\n\nCORE RULES\nShadow is Syric's will, senses, magic, and survival instinct given form. Shadow amplifies Syric, not replaces him.\nVoidshape grants appearance, anatomy, movement logic, and roleplay utility only. It never grants monster stat blocks, traits, spellcasting, legendary actions, recharge powers, or full Multiattack.\nShadowmeld: Bonus Action to merge into Syric's shadow. Immune to all effects while merged; cannot act; maintains telepathy. Shadowmeld is defensive/inactive; it is not Shadow Form.\nUmbral Shift: Bonus Action to shift between Corporeal Form and Shadow Form.\nCorporeal Form: interact with objects, block space, grapple/shove if shape has leverage, speak through suitable shape, be targeted normally, and use Void Rend.\nShadow Form: hover, slip through openings a gas could fit, hide in dim light/darkness/natural shadow, ignore nonmagical difficult terrain, deliver/originate spells where features allow. Cannot make physical attacks unless a feature allows.\nDamage Rules: Corporeal: resist cold, necrotic, psychic, and nonmagical B/P/S. Shadow Form: immune to all damage except radiant, fire, and lightning. Vulnerable to radiant, fire, and lightning.\nCondition Immunities: Charmed, exhaustion, frightened, grappled, paralyzed, petrified, poisoned, prone, restrained, unconscious."
+    },
+    "Shadow: Shadowmeld": {
+      "name": "Shadow: Shadowmeld",
+      "display_name": "Shadowmeld",
+      "current": 0,
+      "max": 0,
+      "rest_type": "long",
+      "action": "Bonus Action",
+      "sync_source": "shadow_sync",
+      "shadow_level": 13,
+      "description": "Shadow Level 13 Shadowmeld.\n\nBonus Action: merge into Syric's shadow. While merged, Shadow is immune to all effects, cannot act, and maintains telepathy. Shadowmeld is defensive/inactive; it is not Shadow Form."
+    },
+    "Shadow: Party Warding": {
+      "name": "Shadow: Party Warding",
+      "display_name": "Party Warding",
+      "current": 0,
+      "max": 0,
+      "rest_type": "long",
+      "action": "Passive",
+      "sync_source": "shadow_sync",
+      "shadow_level": 13,
+      "description": "Shadow Level 13 Party Warding.\n\nAllies within 60 ft. of Shadow gain advantage on Initiative and cannot be surprised by threats Shadow can perceive. This does not reveal hidden creatures or bypass total cover."
+    },
+    "Shadow: Party Warding Shield": {
+      "name": "Shadow: Party Warding Shield",
+      "display_name": "Party Warding Shield",
+      "current": 2,
+      "max": 2,
+      "rest_type": "long",
+      "action": "Reaction",
+      "sync_source": "shadow_sync",
+      "shadow_level": 13,
+      "description": "Shadow Level 13 Party Warding Shield.\n\nUses: 2/long rest.\nReaction: Shadow may cast Shield on an ally within 30 ft. of Shadow.\nEffect: +5 AC until the end of Shadow's next turn.\nAllies only; this does not target Syric."
+    },
+    "Shadow: Syric Channeling": {
+      "name": "Shadow: Syric Channeling",
+      "display_name": "Syric Channeling",
+      "current": 0,
+      "max": 0,
+      "rest_type": "long",
+      "action": "Passive",
+      "sync_source": "shadow_sync",
+      "shadow_level": 13,
+      "description": "Shadow Level 13 Syric Channeling.\n\nSyric may cast eligible prepared spells through Shadow using Syric's action and spell slot. Range and line of sight may originate from Shadow within current Spell Delivery range (300 ft.).\nActual spells delivered or released through Shadow use Syric's spell attack bonus and spell save DC. Normal spell rules remain unless a feature modifies them.\n\nECHO CONDUIT\nEchoed Rune may originate from Shadow's space. No new save. No new attack roll. No copied conditions, summons, teleportation, or ongoing zones unless a feature specifically allows it.\n\nRUNE IMPRINT\nShadow may leave a shadow-rune on a surface within Shared Senses range (1,000 ft.). Syric may shift senses to it as a sensory anchor. Duration: 8 hours or until dismissed, erased, or suppressed."
+    },
+    "Shadow: Nightbound Shadowcast": {
+      "name": "Shadow: Nightbound Shadowcast",
+      "display_name": "Nightbound Shadowcast",
+      "current": 1,
+      "max": 1,
+      "rest_type": "long",
+      "action": "Bonus Action",
+      "sync_source": "shadow_sync",
+      "shadow_level": 13,
+      "description": "Shadow Level 13 Nightbound Shadowcast.\n\nUses: 1/long rest.\nCap: 3rd-level spell.\nDuring meditative preparation, Syric stores one known wizard spell in Shadow up to the level cap; it does not need to be prepared. Syric spends the slot during preparation. Shadow releases it later with Shadow's bonus action.\nIt is Syric's magic held in Shadow, not Shadow learning magic.\nThe stored spell follows Syric's spell attack bonus, spell save DC, and all normal spell restrictions unless another Shadow feature modifies delivery or action economy."
+    },
+    "Shadow: Void Rend": {
+      "name": "Shadow: Void Rend",
+      "display_name": "Void Rend",
+      "current": 0,
+      "max": 0,
+      "rest_type": "long",
+      "action": "Action",
+      "sync_source": "shadow_sync",
+      "shadow_level": 13,
+      "description": "Shadow Level 13 Void Rend.\n\nMelee spell attack feature, not a spell. Requires Corporeal Form. Uses Syric's spell attack bonus. Cannot be Counterspelled. Counts as magical damage.\nOn hit: 2d8; Action \u2014 necrotic, radiant, or force, chosen by Syric each time it hits.\nShadow does not make multiple Void Rends unless a feature specifically says so."
+    },
+    "Shadow: Reactive Link": {
+      "name": "Shadow: Reactive Link",
+      "display_name": "Reactive Link",
+      "current": 1,
+      "max": 1,
+      "rest_type": "short",
+      "action": "Reaction",
+      "sync_source": "shadow_sync",
+      "shadow_level": 13,
+      "description": "Shadow Level 13 Reactive Link.\n\nUses: 1/short rest.\nTrigger: when Syric is hit, targeted by a spell attack, or forced to make a saving throw.\nReaction: Shadow grants Syric +5 AC and advantage on saving throws for 1d4 rounds.\nCost: Shadow loses HP equal to twice Syric's PB. At this level, PB is +5, so the HP cost is 10."
+    },
+    "Shadow: Flicker Defense": {
+      "name": "Shadow: Flicker Defense",
+      "display_name": "Flicker Defense",
+      "current": 2,
+      "max": 2,
+      "rest_type": "long",
+      "action": "Reaction",
+      "sync_source": "shadow_sync",
+      "shadow_level": 13,
+      "description": "Shadow Level 13 Flicker Defense.\n\nUses: floor(PB\u00f72)/long rest. At this level, uses = 2.\nTrigger: Shadow is hit while in Corporeal Form.\nReaction: Shadow makes a Dexterity save against the triggering attack roll.\nSuccess: no damage and Shadow shifts to Shadow Form.\nFailure: Shadow takes the damage, then shifts to Shadow Form."
+    },
+    "Shadow: Held Touch Spell": {
+      "name": "Shadow: Held Touch Spell",
+      "display_name": "Held Touch Spell",
+      "current": 1,
+      "max": 1,
+      "rest_type": "long",
+      "action": "Special",
+      "sync_source": "shadow_sync",
+      "shadow_level": 13,
+      "description": "Shadow Level 13 Held Touch Spell.\n\n Uses: 1/long rest.\nShadow may hold one prepared touch spell and deliver it later as an action, reaction, or bonus action within range. This remains separate from Nightbound Shadowcast."
+    },
+    "Shadow: Limited Ranged Delivery": {
+      "name": "Shadow: Limited Ranged Delivery",
+      "display_name": "Limited Ranged Delivery",
+      "current": 2,
+      "max": 2,
+      "rest_type": "long",
+      "action": "Action",
+      "sync_source": "shadow_sync",
+      "shadow_level": 13,
+      "description": "Shadow Level 13 Limited Ranged Delivery.\n\nUses: 2/long rest.\nShadow may deliver one ranged spell using Shadow's action and Syric's spell slot. Max spell level follows the Nightbound Shadowcast table cap for this level (3rd-level).\nRange and line of sight originate from Shadow within 300 ft..\nBaseline Syric Channeling still exists separately: Syric may also cast eligible ranged spells through Shadow using Syric's action and spell slot."
+    },
+    "Shadow: Shadow Step": {
+      "name": "Shadow: Shadow Step",
+      "display_name": "Shadow Step",
+      "current": 1,
+      "max": 1,
+      "rest_type": "long",
+      "action": "Special",
+      "sync_source": "shadow_sync",
+      "shadow_level": 13,
+      "description": "Shadow Level 13 Shadow Step.\n\nUses: 1/long rest.\nShadow may teleport to Syric's shadow or one of Shadow's Rune Imprints on the same plane, or swap places with Syric within 60 ft."
+    },
+    "Shadow: Dimensional Echo": {
+      "name": "Shadow: Dimensional Echo",
+      "display_name": "Dimensional Echo",
+      "current": 1,
+      "max": 1,
+      "rest_type": "long",
+      "action": "Special",
+      "sync_source": "shadow_sync",
+      "shadow_level": 13,
+      "description": "Shadow Level 13 Dimensional Echo.\n\nUses: 1/long rest.\nShadow may record up to 1 minute of sights and sounds it perceives and replay them telepathically to Syric."
+    },
+    "Echoed Rune (Codex P5)": {
+      "name": "Echoed Rune (Codex P5)",
+      "current": 1,
+      "max": 1,
+      "rest_type": "long",
+      "action": "Bonus Action",
+      "sync_source": "codex_sync",
+      "description": "The Price of Power \u2014 Echoed Rune (Page 5).\n\nUSES: 1/long rest at L13. (2 at L15. 3 at L17.)\n\nTRIGGER: After Syric casts an inscribed rune spell that damages at least one creature.\n\nACTIVATION: Bonus action after original spell resolves.\n\nCOST: Spend one spell slot equal to half the original slot level rounded down (min 1st-level), PLUS Codex Dice equal to the original spell's level. If the original spell was a cantrip, no slot cost.\n\nEFFECT: No new save. No new attack roll. Auto-deals half the original spell's rolled damage (rounded down) to same targets. Uses original damage type.\n\nEXAMPLE: Spell deals 40 damage \u2192 Echo deals 20 damage automatically.",
+      "codex_page": 5,
+      "display_name": "Echoed Rune"
+    },
+    "Veil (Codex P6)": {
+      "name": "Veil (Codex P6)",
+      "current": 2,
+      "max": 2,
+      "rest_type": "long",
+      "action": "Free Action",
+      "sync_source": "codex_sync",
+      "description": "Duality of Runes \u2014 Veil (Page 6).\n\nUSES: 2/long rest (half PB rounded down; PB=5 at L13).\n\nCOST: 1d12 psychic damage to hide runes. If kept hidden past 4 hours, 1d12 psychic again per additional 4 hours.\n\nDURATION: 4 hours, then runes reveal unless extended.\n\nEFFECT WHILE VEILED:\n\u2022 Runes do not visibly glow. Normal sight cannot see rune flare.\n\u2022 Detect Magic senses magic but not exact rune locations.\n\u2022 Truesight / True Seeing still sees runes.\n\u2022 +10 to Stealth checks (as Pass Without Trace).\n\u2022 Advantage on first spell attack roll, OR impose disadvantage on first save against one of Syric's spell save DCs.",
+      "codex_page": 6,
+      "display_name": "Veil"
+    },
+    "Reveal (Codex P6)": {
+      "name": "Reveal (Codex P6)",
+      "current": 1,
+      "max": 1,
+      "rest_type": "short",
+      "action": "Free Action",
+      "sync_source": "codex_sync",
+      "description": "Duality of Runes \u2014 Reveal (Page 6).\n\nUSES: 1/short rest.\n\nACTIVATION: Free action. Intentionally reveal hidden runes, causing them to visibly glow.\n\nEFFECT: Syric may use his Arcana skill as the modifier for one Intimidation or Persuasion check. The sudden display unsettles, impresses, or unnerves the target.",
+      "codex_page": 6,
+      "display_name": "Reveal"
+    }
+  },
+  "Hit Dice": {
+    "current": 7,
+    "max": 7,
+    "die_type": "d6"
+  },
+  "resources": {
+    "inspiration": {
+      "current": 0,
+      "max": 1
+    }
+  },
+  "hit_dice": {
+    "current": 13,
+    "max": 7,
+    "die_type": "d6"
+  },
+  "charged_items": [
+    {
+      "item": "Echo Step",
+      "cur": 2,
+      "max": 2,
+      "rule": "feature",
+      "when": "",
+      "source": "Feature"
+    },
+    {
+      "item": "Arcane Recovery",
+      "cur": 1,
+      "max": 1,
+      "rule": "long_rest",
+      "when": "",
+      "source": "Wizard Class Feature"
+    },
+    {
+      "item": "Nyx Blessing",
+      "cur": 1,
+      "max": 3,
+      "rule": "long_rest",
+      "when": "",
+      "source": "Shadar-kai Racial Feature"
+    },
+    {
+      "item": "Hex",
+      "cur": 1,
+      "max": 1,
+      "rule": "recharge",
+      "when": "1 per long rest",
+      "source": "Magic Initiate (Warlock)"
+    },
+    {
+      "item": "Armor of Agathys",
+      "cur": 1,
+      "max": 1,
+      "rule": "long_rest",
+      "when": "1 per long rest",
+      "source": "Rune Shaper"
+    },
+    {
+      "item": "Comprehend Languages",
+      "cur": 1,
+      "max": 1,
+      "rule": "long_rest",
+      "when": "1 per long rest",
+      "source": "Rune Shaper"
+    },
+    {
+      "item": "Rune Shaper",
+      "cur": 1,
+      "max": 1,
+      "rule": "long_rest",
+      "when": "Rune invocation 1 per long rest",
+      "source": "Feat"
+    },
+    {
+      "item": "Minor Conjuration",
+      "cur": 1,
+      "max": 1,
+      "rule": "recharge",
+      "when": "At will",
+      "source": "School of Conjuration Feature"
+    },
+    {
+      "item": "Pass Without Trace",
+      "cur": 1,
+      "max": 1,
+      "rule": "recharge",
+      "when": "At will",
+      "source": "Pipe of Obscurity"
+    },
+    {
+      "item": "Cartomancer use",
+      "cur": 0,
+      "max": 1,
+      "rule": "feature",
+      "when": "",
+      "source": "Feature"
+    },
+    {
+      "item": "Inflict Wounds",
+      "cur": 0,
+      "max": 1,
+      "rule": "feature",
+      "when": "",
+      "source": "Feature"
+    },
+    {
+      "item": "Codex Free Upcast",
+      "cur": 0,
+      "max": 1,
+      "rule": "feature",
+      "when": "",
+      "source": "Feature"
+    },
+    {
+      "item": "Codex No V/S",
+      "cur": 1,
+      "max": 1,
+      "rule": "feature",
+      "when": "",
+      "source": "Feature"
+    },
+    {
+      "item": "Benign Transposition",
+      "cur": 0,
+      "max": 1,
+      "rule": "feature",
+      "when": "",
+      "source": "Feature"
+    },
+    {
+      "item": "Entangle",
+      "cur": 1,
+      "max": 1,
+      "rule": "feature",
+      "when": "",
+      "source": "Feature"
+    },
+    {
+      "item": "Inspiration",
+      "cur": 0,
+      "max": 1,
+      "rule": "resource",
+      "when": "manual",
+      "source": "Tracker"
+    }
+  ],
+  "item_charges": {
+    "Staff of the Magi": {
+      "current": 50,
+      "max": 50,
+      "recharge_type": "manual",
+      "recharge_amount": "4d6+2",
+      "description": "",
+      "spell_list": [
+        "Arcane Lock (2 charges)",
+        "Conjure Elemental (7 charges)",
+        "Detect Magic (2 charges)",
+        "Dispel Magic (3 charges)",
+        "Enlarge/Reduce (2 charges)",
+        "Fireball \u2014 7th level, 13d6 (7 charges)",
+        "Flaming Sphere (2 charges)",
+        "Fly (3 charges)",
+        "Hold Monster (5 charges)",
+        "Ice Storm (4 charges)",
+        "Invisibility (2 charges)",
+        "Knock (2 charges)",
+        "Light (0 charges)",
+        "Lightning Bolt \u2014 7th level, 13d6 (7 charges)",
+        "Mage Hand (0 charges)",
+        "Passwall (5 charges)",
+        "Plane Shift (7 charges)",
+        "Protection from Evil and Good (2 charges)",
+        "Telekinesis (5 charges)",
+        "Wall of Fire (4 charges)",
+        "Web (2 charges)"
+      ]
+    },
+    "Viel of the Twilight Mind": {
+      "current": 1,
+      "max": 1,
+      "recharge_type": "long",
+      "recharge_amount": "",
+      "description": ""
+    },
+    "Viel Twilight Mind (DMG Boost)": {
+      "current": 2,
+      "max": 2,
+      "recharge_type": "long",
+      "recharge_amount": "",
+      "description": "twice per long rest: 1d12 + prof bonus"
+    },
+    "Arcane Charge": {
+      "name": "Arcane Charge",
+      "current": 1,
+      "max": 11,
+      "recharge_type": "manual",
+      "recharge_amount": "",
+      "arcane_charge": true,
+      "overload_threshold": 11,
+      "sync_source": "codex_sync",
+      "description": "Inscription (Page 2). BUILDING COUNTER \u2014 auto-increments when spell slots are spent.\n\nGains Arcane Charge equal to spell level cast. Shadow-cast spells using Syric's slots also count. Reaction spells that expend a leveled slot count normally.\n\nARCANE CAPACITY (THRESHOLD): Arcana Bonus (10 at L13). Dynamic \u2014 recalculates when Tracker tab redraws.\nCharge CAN exceed this threshold \u2014 it marks when Overload State begins, not a hard cap.\n\nOVERLOAD STATE: Triggered when charge equals or exceeds Arcane Capacity. Does NOT immediately force a check.\nWhile in Overload State, casting another leveled spell immediately triggers an Overload Check.\n\nOVERLOAD CHECK: Arcana check. DC = 10 + current Arcane Charge total.\nSUCCESS: Maintain control. Remain in Overload State.\nFAILURE: Arcane Discharge occurs.\n\nOVERLOAD STATE ENDS: If charge drops below Arcane Capacity, Overload ends immediately. Charge is retained.\n\nARCANE DISCHARGE (on failed check):\n20-foot radius centered on Syric. Damage = 2x stored spell levels (force).\nDEX save for half (DC = Syric's spell save DC). Syric auto-fails, takes full damage.\nAfter Effect: Roll Arcane Rebound d100 table. Charge resets to 0.\n\nARCANE VENTING (Bonus Action): Roll Vent Die (2d6 at L11-16), subtract result from charge. Min charge 0.\nPASSIVE DISCHARGE (end of turn): Reduce by minimum Vent Die value (2 at L11-16).\nMAX DISSIPATION: If no leveled spell cast that round, discharge at max Vent Die value (12 at L11-16).\nEND OF TURN INSTABILITY: After passive discharge, if charge still >= threshold, immediately make Overload Check.\n\nVENT DIE SCALING: L5-10 = 1d6 | L11-16 = 2d6 | L17-20 = 3d6\n\nRST button = zero out on Discharge or end of combat.",
+      "codex_page": 2,
+      "use_counter": true
+    },
+    "Codex Dice (Codex P5)": {
+      "name": "Codex Dice (Codex P5)",
+      "current": 10,
+      "max": 10,
+      "recharge_type": "long",
+      "recharge_amount": "",
+      "sync_source": "codex_sync",
+      "description": "The Price of Power \u2014 Codex Surge (Page 5).\n\nPOOL: 10 Codex Dice at L13-16. (6 at L5-8, 8 at L9-12, 12 at L17-19, 14 at L20.) Regain all after long rest.\n\nTRIGGER: After casting an inscribed rune spell that damages one or more creatures.\n\nFREE ACTION (d6): No action cost. Spend up to proficiency bonus dice (5 at L13).\nBONUS ACTION (d12): Dice become d12s. No limit on dice used.\n\nDamage type matches the spell. Does not work with scrolls.",
+      "codex_page": 5,
+      "force_counter": true,
+      "use_counter": true,
+      "display_name": "Codex Dice",
+      "migrates_from": [
+        "Burn Dice (Codex P5)"
+      ]
+    }
+  },
+  "codex_pages_found": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+  ],
+  "shadow_level_synced": 13,
+  "shadow_level_effective": 13,
+  "concentration": {
+    "slots": [
+      {
+        "spell": "",
+        "level": "",
+        "source": ""
+      },
+      {
+        "spell": "",
+        "level": "",
+        "source": ""
+      }
+    ],
+    "max_slots": 2
+  }
+}

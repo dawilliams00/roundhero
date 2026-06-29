@@ -50,6 +50,7 @@ def create_app():
     from routes.content import content_bp
     from routes.feedback import feedback_bp
     from routes.campaigns import campaigns_bp
+    from routes.character_modules import character_modules_bp
 
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
     app.register_blueprint(characters_bp, url_prefix="/api/characters")
@@ -58,6 +59,7 @@ def create_app():
     app.register_blueprint(content_bp, url_prefix="/api/content")
     app.register_blueprint(feedback_bp, url_prefix="/api/feedback")
     app.register_blueprint(campaigns_bp, url_prefix="/api/campaigns")
+    app.register_blueprint(character_modules_bp, url_prefix="/api/character-modules")
 
     with app.app_context():
         db.create_all()
