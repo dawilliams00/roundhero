@@ -70,6 +70,12 @@ export function CampaignProvider({ children }) {
     return r.data;
   }, []);
 
+  const setCampaignCharacterActive = useCallback(async (campaignId, campaignCharacterId, active) => {
+    const r = await api.post(`/campaigns/${campaignId}/characters/${campaignCharacterId}/active`, { active });
+    setCampaign(r.data);
+    return r.data;
+  }, []);
+
   const setPrimaryCharacter = useCallback(async (campaignId, campaignCharacterId) => {
     const r = await api.post(`/campaigns/${campaignId}/characters/${campaignCharacterId}/primary`);
     setCampaign(r.data);
@@ -143,6 +149,7 @@ export function CampaignProvider({ children }) {
       regenerateInvite,
       attachCharacter,
       detachCharacter,
+      setCampaignCharacterActive,
       setPrimaryCharacter,
       updateMemberRole,
       removeMember,

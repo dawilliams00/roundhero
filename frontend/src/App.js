@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { CharacterProvider } from './context/CharacterContext';
 import { CampaignProvider } from './context/CampaignContext';
@@ -13,8 +13,10 @@ import GameView       from './pages/GameView';
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth();
+  const location = useLocation();
   if (loading) return <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'100vh',color:'var(--text-secondary)'}}>Loading...</div>;
-  return user ? children : <Navigate to="/auth" replace />;
+  const next = `${location.pathname}${location.search}`;
+  return user ? children : <Navigate to={`/auth?mode=login&next=${encodeURIComponent(next)}`} replace />;
 }
 
 function AppRoutes() {

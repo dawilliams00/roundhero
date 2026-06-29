@@ -65,6 +65,69 @@ class CampaignMember(db.Model):
         }
 
 
+
+
+def _clean_list(value):
+    return value if isinstance(value, list) else []
+
+
+def _concentration_slots(tracker_data):
+    concentration = tracker_data.get("concentration") or {}
+    slots = concentration.get("slots") or []
+    cleaned = []
+    for slot in slots:
+        if isinstance(slot, dict) and (slot.get("spell") or slot.get("name")):
+            cleaned.append({
+                "spell": slot.get("spell") or slot.get("name"),
+                "target": slot.get("target") or slot.get("target_name") or "",
+                "source": slot.get("source") or "",
+                "no_lethargy": bool(slot.get("no_lethargy")),
+            })
+    return cleaned
+
+
+def _prepared_spells(spell_data):
+    known = spell_data.get("known_spells") or spell_data.get("spells") or []
+    prepared = []
+    for spell in known:
+        if isinstance(spell, str):
+            prepared.append({"name": spell})
+            continue
+        if not isinstance(spell, dict) or not spell.get("name"):
+            continue
+        if spell.get("prepared") is False:
+            continue
+        prepared.append({
+            "name": spell.get("name"),
+            "level": spell.get("level"),
+            "casting_time": spell.get("casting_time") or spell.get("castingTime") or "",
+            "concentration": bool(spell.get("concentration")),
+            "duration": spell.get("duration") or "",
+        })
+    return prepared
+
+
+def _character_snapshot(character):
+    if not character:
+        return {}
+    tracker_data = character.tracker_data or {}
+    spell_data = character.spell_data or {}
+    hp = tracker_data.get("hp") or {}
+    max_hp = hp.get("max_override") or hp.get("max")
+    return {
+        "hp": {
+            "current": hp.get("current"),
+            "max": max_hp,
+            "temp": hp.get("temp") or 0,
+        },
+        "ac": tracker_data.get("ac"),
+        "initiative": tracker_data.get("initiative"),
+        "conditions": _clean_list(tracker_data.get("conditions")),
+        "active_effects": _clean_list(tracker_data.get("active_effects")),
+        "concentration_slots": _concentration_slots(tracker_data),
+        "prepared_spells": _prepared_spells(spell_data),
+        "updated_at": character.updated_at.isoformat() if character.updated_at else None,
+    }
 class CampaignCharacter(db.Model):
     __tablename__ = "campaign_characters"
 
@@ -99,6 +162,7 @@ class CampaignCharacter(db.Model):
             "race": character.race if character else "",
             "level": character.level if character else None,
             "created_at": self.created_at.isoformat(),
+            "sheet_snapshot": _character_snapshot(character),
         }
 
 
