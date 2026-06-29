@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
 import api from '../utils/api';
-import { maxPreparedSpells, schoolColor, slotBadgeTextColor, getSpellcastingBlocks, featBuffItems } from '../utils/dnd';
+import { maxPreparedSpells, schoolColor, slotBadgeTextColor, getSpellcastingBlocks, featBuffItems, raceBuffItems } from '../utils/dnd';
 import SpellBrowserModal from './SpellBrowserModal';
 import SpellDetailModal from './SpellDetailModal';
 import CustomSpellModal from './CustomSpellModal';
@@ -24,7 +24,7 @@ export default function SpellsTab() {
   const knownSpells = sd.known_spells || [];
   const spellLists  = sd.spell_lists || {};
   const activeList  = sd.active_list || null;
-  const buffItems = [...(character.tracker_data?.inventory?.items || []), ...featBuffItems(character.tracker_data?.features)];
+  const buffItems = [...(character.tracker_data?.inventory?.items || []), ...featBuffItems(character.tracker_data?.features), ...raceBuffItems(character.race)];
   const maxPrepared = maxPreparedSpells(character.class_name, character.ability_scores, buffItems);
   const isAlwaysAvailable = s => s.ritual || !!s.granted_by || s.level_int === 0;
   const visibleSpells = activeList && spellLists[activeList]

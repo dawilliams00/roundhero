@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
-import { effectiveAbilityScores, weaponAbilityMod, weaponItemBonus, weaponDamageDice, profBonus, rollD20, rollDamageDetailed, modifier, cantripHitBonusForLevel, fightingStyleBonus, featWeaponBonus, featBuffItems } from '../utils/dnd';
+import { effectiveAbilityScores, weaponAbilityMod, weaponItemBonus, weaponDamageDice, profBonus, rollD20, rollDamageDetailed, modifier, cantripHitBonusForLevel, fightingStyleBonus, featWeaponBonus, featBuffItems, raceBuffItems } from '../utils/dnd';
 
 // Equipment.json weapon damage strings are always plain "NdM" (or, for things like
 // the Blowgun, a flat "1") - no inline "+N" the way some spell damage_dice has.
@@ -58,7 +58,7 @@ export default function WeaponAttackModal({ itemIndex, weaponOverride, onClose, 
   // use) still apply to weapon attacks. A feat can now also grant a flat
   // weapon_attack_modifier/weapon_damage_modifier that applies to EVERY weapon (unlike an
   // item's own copy of those, which stays tied to that one weapon - see featWeaponBonus).
-  const effAb = effectiveAbilityScores(character.ability_scores, [...items, ...featBuffItems(td.features)]);
+  const effAb = effectiveAbilityScores(character.ability_scores, [...items, ...featBuffItems(td.features), ...raceBuffItems(character.race)]);
   const abilityMod = weaponAbilityMod(weapon, effAb);
   const itemBonus = weaponItemBonus(weapon);
   const featBonus = featWeaponBonus(td.features);

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
-import { schoolColor, getSpellcastingBlocks, getAbilityOverrideBlock, scaleSpellDamage, rollDamageDetailed, concentrationSlotCount, maxAttacksForCharacter, HASTED_EFFECT, METAMAGIC_OPTIONS, metamagicCost, featBuffItems } from '../utils/dnd';
+import { schoolColor, getSpellcastingBlocks, getAbilityOverrideBlock, scaleSpellDamage, rollDamageDetailed, concentrationSlotCount, maxAttacksForCharacter, HASTED_EFFECT, METAMAGIC_OPTIONS, metamagicCost, featBuffItems, raceBuffItems } from '../utils/dnd';
 import InfoModal from './InfoModal';
 import WeaponAttackModal from './WeaponAttackModal';
 
@@ -33,7 +33,7 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
     .sort((a,b) => a-b);
   const [castLevel, setCastLevel] = useState(availableLevels[0] || spell.level_int);
   const selfEffect = SELF_TARGET_EFFECTS[spell.name?.toLowerCase()];
-  const buffItems = [...(character.tracker_data?.inventory?.items || []), ...featBuffItems(character.tracker_data?.features)];
+  const buffItems = [...(character.tracker_data?.inventory?.items || []), ...featBuffItems(character.tracker_data?.features), ...raceBuffItems(character.race)];
   const spellBlocks = getSpellcastingBlocks(character.class_name, character.ability_scores, character.level, buffItems);
   // A feat-granted spell (e.g. Draconic Healing's Cure Wounds) can fix its own
   // spellcasting ability independent of the character's class - replaces the class

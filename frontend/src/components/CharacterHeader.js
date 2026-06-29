@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useCharacter } from '../context/CharacterContext';
 import api from '../utils/api';
-import { modifier, modStr, hpColor, profBonus, ABILITY_KEYS, getSpellcastingBlocks, computeItemBonuses, effectiveAbilityScores, suspectedAbilityContamination, featBuffItems, HASTED_EFFECT, HARDCODED_CONDITION_INFO, EXHAUSTION_RAW_TEXT } from '../utils/dnd';
+import { modifier, modStr, hpColor, profBonus, ABILITY_KEYS, getSpellcastingBlocks, computeItemBonuses, effectiveAbilityScores, suspectedAbilityContamination, featBuffItems, raceBuffItems, HASTED_EFFECT, HARDCODED_CONDITION_INFO, EXHAUSTION_RAW_TEXT } from '../utils/dnd';
 import SavesModal from './SavesModal';
 import SkillsModal from './SkillsModal';
 import TraitsModal from './TraitsModal';
@@ -228,7 +228,7 @@ export default function CharacterHeader({ onBack }) {
   // always-on - no equip/attune step - so they're folded into every AC/save/spell-mod
   // calculation as synthetic always-equipped "items" rather than duplicating the whole
   // aggregation a second time for feats specifically.
-  const buffItems = [...invItems, ...featBuffItems(td?.features)];
+  const buffItems = [...invItems, ...featBuffItems(td?.features), ...raceBuffItems(character.race)];
   const itemBonuses = computeItemBonuses(buffItems);
   const effAb  = effectiveAbilityScores(ab, buffItems);
   const abilityContamination = suspectedAbilityContamination(ab, buffItems);

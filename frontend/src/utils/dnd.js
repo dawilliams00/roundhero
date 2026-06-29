@@ -275,6 +275,62 @@ export const featBuffItems = (features) =>
     .filter(([, f]) => (f.buffs || []).length > 0)
     .map(([name, f]) => ({ name, equipped: true, attunement: false, buffs: f.buffs }));
 
+// RAW racial ability score increases, keyed by the same flat decorated race string
+// (e.g. "Dwarf (Hill)") the Race dropdown/manual character creation already use - best-
+// effort from training knowledge for anything past the core 9 PHB races (same "type in
+// the well-known mechanical numbers, not the copyrighted flavor text" approach already
+// used for feats.json's expansion), not pulled from a licensed dataset, so double-check
+// against the printed source if a player disputes a specific number. Half-Elf's actual
+// RAW grants +1/+1 to two abilities OF THE PLAYER'S CHOICE on top of the flat CHA+2 -
+// that choice can't be represented in a flat table, so only the guaranteed CHA+2 is
+// applied here, same "track what's computable, the player applies the choice-based rest
+// themselves" philosophy already used for Resilient/Half-Elf-style feats. Empty/missing
+// entries (including "Custom") simply contribute no bonus.
+export const RACE_ABILITY_BONUSES = {
+  'Dragonborn': [{ stat: 'STR', value: 2 }, { stat: 'CHA', value: 1 }],
+  'Dwarf (Hill)': [{ stat: 'CON', value: 2 }, { stat: 'WIS', value: 1 }],
+  'Dwarf (Mountain)': [{ stat: 'CON', value: 2 }, { stat: 'STR', value: 2 }],
+  'Elf (High)': [{ stat: 'DEX', value: 2 }, { stat: 'INT', value: 1 }],
+  'Elf (Wood)': [{ stat: 'DEX', value: 2 }, { stat: 'WIS', value: 1 }],
+  'Elf (Dark/Drow)': [{ stat: 'DEX', value: 2 }, { stat: 'CHA', value: 1 }],
+  'Gnome (Forest)': [{ stat: 'INT', value: 2 }, { stat: 'DEX', value: 1 }],
+  'Gnome (Rock)': [{ stat: 'INT', value: 2 }, { stat: 'CON', value: 1 }],
+  'Half-Elf': [{ stat: 'CHA', value: 2 }],
+  'Half-Orc': [{ stat: 'STR', value: 2 }, { stat: 'CON', value: 1 }],
+  'Halfling (Lightfoot)': [{ stat: 'DEX', value: 2 }, { stat: 'CHA', value: 1 }],
+  'Halfling (Stout)': [{ stat: 'DEX', value: 2 }, { stat: 'CON', value: 1 }],
+  'Human': [{ stat: 'STR', value: 1 }, { stat: 'DEX', value: 1 }, { stat: 'CON', value: 1 }, { stat: 'INT', value: 1 }, { stat: 'WIS', value: 1 }, { stat: 'CHA', value: 1 }],
+  'Tiefling': [{ stat: 'CHA', value: 2 }, { stat: 'INT', value: 1 }],
+  'Aasimar': [{ stat: 'CHA', value: 2 }, { stat: 'WIS', value: 1 }],
+  'Firbolg': [{ stat: 'WIS', value: 2 }, { stat: 'STR', value: 1 }],
+  'Goliath': [{ stat: 'STR', value: 2 }, { stat: 'CON', value: 1 }],
+  'Kenku': [{ stat: 'DEX', value: 2 }, { stat: 'WIS', value: 1 }],
+  'Lizardfolk': [{ stat: 'CON', value: 2 }, { stat: 'WIS', value: 1 }],
+  'Tabaxi': [{ stat: 'DEX', value: 2 }, { stat: 'CHA', value: 1 }],
+  'Triton': [{ stat: 'STR', value: 1 }, { stat: 'CON', value: 1 }, { stat: 'CHA', value: 1 }],
+  'Yuan-Ti Pureblood': [{ stat: 'CHA', value: 2 }, { stat: 'INT', value: 1 }],
+  'Bugbear': [{ stat: 'STR', value: 2 }, { stat: 'DEX', value: 1 }],
+  'Goblin': [{ stat: 'DEX', value: 2 }, { stat: 'CON', value: 1 }],
+  'Hobgoblin': [{ stat: 'CON', value: 2 }, { stat: 'INT', value: 1 }],
+  'Kobold': [{ stat: 'DEX', value: 2 }, { stat: 'STR', value: -2 }],
+  'Orc': [{ stat: 'STR', value: 2 }, { stat: 'CON', value: 1 }],
+  'Tortle': [{ stat: 'STR', value: 2 }, { stat: 'WIS', value: 1 }],
+  'Shadar-kai': [{ stat: 'DEX', value: 2 }, { stat: 'WIS', value: 1 }],
+};
+
+// Synthesizes a race's ability bonuses into the same always-equipped, no-attunement
+// "item" shape featBuffItems already uses for feats - every existing buff consumer
+// (computeItemBonuses, effectiveAbilityScores, calcSaves, calcSkills,
+// getSpellcastingBlocks) picks it up automatically by including this alongside the real
+// items array, no changes needed to any of them. A negative racial modifier (Kobold's
+// STR-2) is a genuine ADD-mode buff here, not a floor like a Set-To item buff - RAW
+// racial penalties do lower the score, unlike a magic item that only ever raises one.
+export const raceBuffItems = (race) => {
+  const bonuses = RACE_ABILITY_BONUSES[race];
+  if (!bonuses || !bonuses.length) return [];
+  return [{ name: race, equipped: true, attunement: false, buffs: bonuses.map(b => ({ stat: b.stat, mode: 'add', value: b.value })) }];
+};
+
 // Weapon attack/damage buffs (e.g. a +1 longsword) are intrinsically tied to that
 // one weapon - they must NOT pool across a character's other weapons the way
 // computeItemBonuses pools AC/saves/spell bonuses character-wide.
