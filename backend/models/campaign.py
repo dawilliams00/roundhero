@@ -18,6 +18,7 @@ class Campaign(db.Model):
     members = db.relationship("CampaignMember", back_populates="campaign", cascade="all, delete-orphan")
     characters = db.relationship("CampaignCharacter", back_populates="campaign", cascade="all, delete-orphan")
     effects = db.relationship("CampaignEffect", back_populates="campaign", cascade="all, delete-orphan")
+    encounters = db.relationship("CampaignEncounter", back_populates="campaign", cascade="all, delete-orphan")
 
     def to_dict(self, include_detail=False):
         data = {
@@ -32,6 +33,7 @@ class Campaign(db.Model):
             data["members"] = [member.to_dict() for member in self.members]
             data["characters"] = [character.to_dict() for character in self.characters]
             data["effects"] = [effect.to_dict() for effect in self.effects]
+            data["encounters"] = [encounter.to_dict() for encounter in self.encounters]
         return data
 
 
@@ -71,6 +73,7 @@ class CampaignCharacter(db.Model):
     character_id = db.Column(db.Integer, db.ForeignKey("characters.id"), nullable=False, index=True)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
     active = db.Column(db.Boolean, default=True, nullable=False)
+    is_primary = db.Column(db.Boolean, default=False, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     campaign = db.relationship("Campaign", back_populates="characters")
@@ -90,6 +93,7 @@ class CampaignCharacter(db.Model):
             "user_id": self.user_id,
             "username": self.user.username if self.user else "",
             "active": self.active,
+            "is_primary": self.is_primary,
             "name": character.name if character else "",
             "class_name": character.class_name if character else "",
             "race": character.race if character else "",
@@ -140,6 +144,43 @@ class CampaignEffect(db.Model):
             "effect_type": self.effect_type,
             "status": self.status,
             "payload": self.payload,
+            "created_at": self.created_at.isoformat(),
+            "updated_at": self.updated_at.isoformat(),
+        }
+
+
+class CampaignEncounter(db.Model):
+    __tablename__ = "campaign_encounters"
+
+    id = db.Column(db.Integer, primary_key=True)
+    campaign_id = db.Column(db.Integer, db.ForeignKey("campaigns.id"), nullable=False, index=True)
+    created_by_user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+    name = db.Column(db.String(160), nullable=False)
+    status = db.Column(db.String(24), default="planned", nullable=False)
+    _data = db.Column("data", db.Text, default="{}")
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    campaign = db.relationship("Campaign", back_populates="encounters")
+    created_by = db.relationship("User")
+
+    @property
+    def data(self):
+        return json.loads(self._data or "{}")
+
+    @data.setter
+    def data(self, value):
+        self._data = json.dumps(value or {})
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "campaign_id": self.campaign_id,
+            "created_by_user_id": self.created_by_user_id,
+            "created_by_username": self.created_by.username if self.created_by else "",
+            "name": self.name,
+            "status": self.status,
+            "data": self.data,
             "created_at": self.created_at.isoformat(),
             "updated_at": self.updated_at.isoformat(),
         }

@@ -4,7 +4,7 @@ from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
 from database import db
-from models.campaign import Campaign, CampaignCharacter, CampaignEffect, CampaignMember
+from models.campaign import Campaign, CampaignCharacter, CampaignEffect, CampaignEncounter, CampaignMember
 from models.character import Character
 
 
@@ -39,6 +39,15 @@ def _is_dm(campaign, member):
     return campaign.owner_user_id == member.user_id or member.role == "dm"
 
 
+def _campaign_response(campaign, member, include_detail=True):
+    return {
+        **campaign.to_dict(include_detail=include_detail),
+        "role": member.role,
+        "is_dm": _is_dm(campaign, member),
+        "is_owner": campaign.owner_user_id == member.user_id,
+    }
+
+
 def _character_in_campaign(campaign_id, character_id):
     return CampaignCharacter.query.filter_by(
         campaign_id=campaign_id,
@@ -54,8 +63,7 @@ def list_campaigns():
     memberships = CampaignMember.query.filter_by(user_id=user_id).all()
     return jsonify([
         {
-            **membership.campaign.to_dict(),
-            "role": membership.role,
+            **_campaign_response(membership.campaign, membership, include_detail=False),
             "member_count": len(membership.campaign.members),
             "character_count": len([entry for entry in membership.campaign.characters if entry.active]),
         }
@@ -79,10 +87,11 @@ def create_campaign():
     )
     db.session.add(campaign)
     db.session.flush()
-    db.session.add(CampaignMember(campaign_id=campaign.id, user_id=user_id, role="dm"))
+    member = CampaignMember(campaign_id=campaign.id, user_id=user_id, role="dm")
+    db.session.add(member)
     db.session.commit()
 
-    return jsonify(campaign.to_dict(include_detail=True)), 201
+    return jsonify(_campaign_response(campaign, member)), 201
 
 
 @campaigns_bp.route("/join", methods=["POST"])
@@ -100,11 +109,76 @@ def join_campaign():
 
     existing = _membership(campaign.id, user_id)
     if existing:
-        return jsonify(campaign.to_dict(include_detail=True)), 200
+        return jsonify(_campaign_response(campaign, existing)), 200
 
-    db.session.add(CampaignMember(campaign_id=campaign.id, user_id=user_id, role="player"))
+    member = CampaignMember(campaign_id=campaign.id, user_id=user_id, role="player")
+    db.session.add(member)
     db.session.commit()
-    return jsonify(campaign.to_dict(include_detail=True)), 200
+    return jsonify(_campaign_response(campaign, member)), 200
+
+
+@campaigns_bp.route("/<int:campaign_id>/leave", methods=["POST"])
+@jwt_required()
+def leave_campaign(campaign_id):
+    user_id = int(get_jwt_identity())
+    campaign, member = _campaign_for_user(campaign_id, user_id)
+    if not campaign:
+        return jsonify({"error": "Campaign not found"}), 404
+    if campaign.owner_user_id == user_id:
+        return jsonify({"error": "The campaign owner cannot leave until ownership transfer exists"}), 400
+
+    for entry in CampaignCharacter.query.filter_by(campaign_id=campaign.id, user_id=user_id).all():
+        entry.active = False
+        entry.is_primary = False
+    db.session.delete(member)
+    db.session.commit()
+    return jsonify({"message": "Left campaign"}), 200
+
+
+@campaigns_bp.route("/<int:campaign_id>/members/<int:member_id>/role", methods=["POST"])
+@jwt_required()
+def update_member_role(campaign_id, member_id):
+    user_id = int(get_jwt_identity())
+    campaign, current_member = _campaign_for_user(campaign_id, user_id)
+    if not campaign:
+        return jsonify({"error": "Campaign not found"}), 404
+    if not _is_dm(campaign, current_member):
+        return jsonify({"error": "Only the DM can update campaign roles"}), 403
+
+    target = CampaignMember.query.filter_by(id=member_id, campaign_id=campaign.id).first_or_404()
+    if target.user_id == campaign.owner_user_id:
+        return jsonify({"error": "The campaign owner must remain DM"}), 400
+
+    data = request.get_json() or {}
+    role = (data.get("role") or "").strip().lower()
+    if role not in {"dm", "player"}:
+        return jsonify({"error": "Role must be dm or player"}), 400
+
+    target.role = role
+    db.session.commit()
+    return jsonify(_campaign_response(campaign, current_member)), 200
+
+
+@campaigns_bp.route("/<int:campaign_id>/members/<int:member_id>", methods=["DELETE"])
+@jwt_required()
+def remove_member(campaign_id, member_id):
+    user_id = int(get_jwt_identity())
+    campaign, current_member = _campaign_for_user(campaign_id, user_id)
+    if not campaign:
+        return jsonify({"error": "Campaign not found"}), 404
+    if not _is_dm(campaign, current_member):
+        return jsonify({"error": "Only the DM can remove members"}), 403
+
+    target = CampaignMember.query.filter_by(id=member_id, campaign_id=campaign.id).first_or_404()
+    if target.user_id == campaign.owner_user_id:
+        return jsonify({"error": "The campaign owner cannot be removed"}), 400
+
+    for entry in CampaignCharacter.query.filter_by(campaign_id=campaign.id, user_id=target.user_id).all():
+        entry.active = False
+        entry.is_primary = False
+    db.session.delete(target)
+    db.session.commit()
+    return jsonify(_campaign_response(campaign, current_member)), 200
 
 
 @campaigns_bp.route("/<int:campaign_id>", methods=["GET"])
@@ -115,11 +189,7 @@ def get_campaign(campaign_id):
     if not campaign:
         return jsonify({"error": "Campaign not found"}), 404
 
-    return jsonify({
-        **campaign.to_dict(include_detail=True),
-        "role": member.role,
-        "is_dm": _is_dm(campaign, member),
-    }), 200
+    return jsonify(_campaign_response(campaign, member)), 200
 
 
 @campaigns_bp.route("/<int:campaign_id>", methods=["PUT"])
@@ -137,7 +207,7 @@ def update_campaign(campaign_id):
     if name:
         campaign.name = name
     db.session.commit()
-    return jsonify(campaign.to_dict(include_detail=True)), 200
+    return jsonify(_campaign_response(campaign, member)), 200
 
 
 @campaigns_bp.route("/<int:campaign_id>/invite/regenerate", methods=["POST"])
@@ -175,14 +245,23 @@ def attach_character(campaign_id):
     ).first()
     if existing:
         existing.active = True
+        if not CampaignCharacter.query.filter_by(campaign_id=campaign.id, user_id=user_id, active=True, is_primary=True).first():
+            existing.is_primary = True
     else:
+        is_primary = not CampaignCharacter.query.filter_by(
+            campaign_id=campaign.id,
+            user_id=user_id,
+            active=True,
+            is_primary=True,
+        ).first()
         db.session.add(CampaignCharacter(
             campaign_id=campaign.id,
             character_id=character.id,
             user_id=user_id,
+            is_primary=is_primary,
         ))
     db.session.commit()
-    return jsonify(campaign.to_dict(include_detail=True)), 200
+    return jsonify(_campaign_response(campaign, member)), 200
 
 
 @campaigns_bp.route("/<int:campaign_id>/characters/<int:campaign_character_id>", methods=["DELETE"])
@@ -201,8 +280,35 @@ def detach_character(campaign_id, campaign_character_id):
         return jsonify({"error": "You can only remove your own character"}), 403
 
     entry.active = False
+    entry.is_primary = False
     db.session.commit()
-    return jsonify(campaign.to_dict(include_detail=True)), 200
+    return jsonify(_campaign_response(campaign, member)), 200
+
+
+@campaigns_bp.route("/<int:campaign_id>/characters/<int:campaign_character_id>/primary", methods=["POST"])
+@jwt_required()
+def set_primary_character(campaign_id, campaign_character_id):
+    user_id = int(get_jwt_identity())
+    campaign, member = _campaign_for_user(campaign_id, user_id)
+    if not campaign:
+        return jsonify({"error": "Campaign not found"}), 404
+
+    entry = CampaignCharacter.query.filter_by(
+        id=campaign_character_id,
+        campaign_id=campaign.id,
+        active=True,
+    ).first_or_404()
+    if entry.user_id != user_id and not _is_dm(campaign, member):
+        return jsonify({"error": "You can only set your own active character"}), 403
+
+    for other in CampaignCharacter.query.filter_by(
+        campaign_id=campaign.id,
+        user_id=entry.user_id,
+        active=True,
+    ).all():
+        other.is_primary = other.id == entry.id
+    db.session.commit()
+    return jsonify(_campaign_response(campaign, member)), 200
 
 
 @campaigns_bp.route("/<int:campaign_id>/effects", methods=["POST"])
@@ -232,9 +338,15 @@ def create_effect(campaign_id):
         target_character_id=target_character_id,
         name=name,
         effect_type=(data.get("effect_type") or "spell").strip() or "spell",
-        status="pending",
+        status=(data.get("status") or "pending").strip().lower() or "pending",
     )
-    effect.payload = data.get("payload") or {}
+    if effect.status not in {"pending", "applied", "dismissed", "removed"}:
+        return jsonify({"error": "Invalid effect status"}), 400
+    payload = data.get("payload") or {}
+    for key in ["duration", "concentration", "notes"]:
+        if key in data:
+            payload[key] = data.get(key)
+    effect.payload = payload
     db.session.add(effect)
     db.session.commit()
     return jsonify(effect.to_dict()), 201
@@ -266,3 +378,77 @@ def update_effect_status(campaign_id, effect_id):
     effect.status = status
     db.session.commit()
     return jsonify(effect.to_dict()), 200
+
+
+@campaigns_bp.route("/<int:campaign_id>/encounters", methods=["POST"])
+@jwt_required()
+def create_encounter(campaign_id):
+    user_id = int(get_jwt_identity())
+    campaign, member = _campaign_for_user(campaign_id, user_id)
+    if not campaign:
+        return jsonify({"error": "Campaign not found"}), 404
+    if not _is_dm(campaign, member):
+        return jsonify({"error": "Only the DM can create encounters"}), 403
+
+    data = request.get_json() or {}
+    name = (data.get("name") or "").strip()
+    if not name:
+        return jsonify({"error": "Encounter name required"}), 400
+
+    encounter = CampaignEncounter(
+        campaign_id=campaign.id,
+        created_by_user_id=user_id,
+        name=name,
+        status=(data.get("status") or "planned").strip().lower() or "planned",
+    )
+    if encounter.status not in {"planned", "running", "paused", "complete"}:
+        return jsonify({"error": "Invalid encounter status"}), 400
+    encounter.data = data.get("data") or {
+        "combatants": [],
+        "initiative_order": [],
+        "notes": data.get("notes") or "",
+    }
+    db.session.add(encounter)
+    db.session.commit()
+    return jsonify(encounter.to_dict()), 201
+
+
+@campaigns_bp.route("/<int:campaign_id>/encounters/<int:encounter_id>", methods=["PUT"])
+@jwt_required()
+def update_encounter(campaign_id, encounter_id):
+    user_id = int(get_jwt_identity())
+    campaign, member = _campaign_for_user(campaign_id, user_id)
+    if not campaign:
+        return jsonify({"error": "Campaign not found"}), 404
+    if not _is_dm(campaign, member):
+        return jsonify({"error": "Only the DM can update encounters"}), 403
+
+    encounter = CampaignEncounter.query.filter_by(id=encounter_id, campaign_id=campaign.id).first_or_404()
+    data = request.get_json() or {}
+    if "name" in data and str(data["name"]).strip():
+        encounter.name = str(data["name"]).strip()
+    if "status" in data:
+        status = (data.get("status") or "").strip().lower()
+        if status not in {"planned", "running", "paused", "complete"}:
+            return jsonify({"error": "Invalid encounter status"}), 400
+        encounter.status = status
+    if "data" in data:
+        encounter.data = data.get("data") or {}
+    db.session.commit()
+    return jsonify(encounter.to_dict()), 200
+
+
+@campaigns_bp.route("/<int:campaign_id>/encounters/<int:encounter_id>", methods=["DELETE"])
+@jwt_required()
+def delete_encounter(campaign_id, encounter_id):
+    user_id = int(get_jwt_identity())
+    campaign, member = _campaign_for_user(campaign_id, user_id)
+    if not campaign:
+        return jsonify({"error": "Campaign not found"}), 404
+    if not _is_dm(campaign, member):
+        return jsonify({"error": "Only the DM can delete encounters"}), 403
+
+    encounter = CampaignEncounter.query.filter_by(id=encounter_id, campaign_id=campaign.id).first_or_404()
+    db.session.delete(encounter)
+    db.session.commit()
+    return jsonify(_campaign_response(campaign, member)), 200

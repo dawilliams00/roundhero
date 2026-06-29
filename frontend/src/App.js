@@ -24,9 +24,9 @@ function AppRoutes() {
       <Route path="/auth"    element={<AuthPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/characters" element={<PrivateRoute><CharacterSelect /></PrivateRoute>} />
+      <Route path="/campaigns" element={<PrivateRoute><CampaignsPage /></PrivateRoute>} />
       <Route path="/setup"   element={<PrivateRoute><CharacterSetup /></PrivateRoute>} />
       <Route path="/play/:id" element={<PrivateRoute><GameView /></PrivateRoute>} />
-      <Route path="/campaigns" element={<PrivateRoute><CampaignsPage /></PrivateRoute>} />
       <Route path="*"        element={<Navigate to="/" replace />} />
     </Routes>
   );

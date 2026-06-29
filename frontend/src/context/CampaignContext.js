@@ -70,6 +70,30 @@ export function CampaignProvider({ children }) {
     return r.data;
   }, []);
 
+  const setPrimaryCharacter = useCallback(async (campaignId, campaignCharacterId) => {
+    const r = await api.post(`/campaigns/${campaignId}/characters/${campaignCharacterId}/primary`);
+    setCampaign(r.data);
+    return r.data;
+  }, []);
+
+  const updateMemberRole = useCallback(async (campaignId, memberId, role) => {
+    const r = await api.post(`/campaigns/${campaignId}/members/${memberId}/role`, { role });
+    setCampaign(r.data);
+    return r.data;
+  }, []);
+
+  const removeMember = useCallback(async (campaignId, memberId) => {
+    const r = await api.delete(`/campaigns/${campaignId}/members/${memberId}`);
+    setCampaign(r.data);
+    return r.data;
+  }, []);
+
+  const leaveCampaign = useCallback(async campaignId => {
+    await api.post(`/campaigns/${campaignId}/leave`);
+    setCampaign(null);
+    setCampaigns(prev => prev.filter(c => c.id !== campaignId));
+  }, []);
+
   const createEffect = useCallback(async (campaignId, effect) => {
     const r = await api.post(`/campaigns/${campaignId}/effects`, effect);
     setCampaign(prev => prev ? { ...prev, effects: [...(prev.effects || []), r.data] } : prev);
@@ -82,6 +106,27 @@ export function CampaignProvider({ children }) {
       ...prev,
       effects: (prev.effects || []).map(effect => effect.id === effectId ? r.data : effect),
     } : prev);
+    return r.data;
+  }, []);
+
+  const createEncounter = useCallback(async (campaignId, encounter) => {
+    const r = await api.post(`/campaigns/${campaignId}/encounters`, encounter);
+    setCampaign(prev => prev ? { ...prev, encounters: [...(prev.encounters || []), r.data] } : prev);
+    return r.data;
+  }, []);
+
+  const updateEncounter = useCallback(async (campaignId, encounterId, updates) => {
+    const r = await api.put(`/campaigns/${campaignId}/encounters/${encounterId}`, updates);
+    setCampaign(prev => prev ? {
+      ...prev,
+      encounters: (prev.encounters || []).map(encounter => encounter.id === encounterId ? r.data : encounter),
+    } : prev);
+    return r.data;
+  }, []);
+
+  const deleteEncounter = useCallback(async (campaignId, encounterId) => {
+    const r = await api.delete(`/campaigns/${campaignId}/encounters/${encounterId}`);
+    setCampaign(r.data);
     return r.data;
   }, []);
 
@@ -98,8 +143,15 @@ export function CampaignProvider({ children }) {
       regenerateInvite,
       attachCharacter,
       detachCharacter,
+      setPrimaryCharacter,
+      updateMemberRole,
+      removeMember,
+      leaveCampaign,
       createEffect,
       updateEffectStatus,
+      createEncounter,
+      updateEncounter,
+      deleteEncounter,
     }}>
       {children}
     </CampaignContext.Provider>

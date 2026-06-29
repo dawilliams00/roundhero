@@ -3,7 +3,7 @@ import { useCharacter } from '../context/CharacterContext';
 import api from '../utils/api';
 import InfoModal from './InfoModal';
 
-export default function FeedbackModal({ onClose }) {
+export default function FeedbackModal({ onClose, contextLabel }) {
   const { character } = useCharacter();
   const [comment, setComment] = useState('');
   const [image, setImage] = useState(null);
@@ -17,8 +17,8 @@ export default function FeedbackModal({ onClose }) {
     setError(null);
     try {
       const form = new FormData();
-      form.append('comment', comment.trim());
-      if (character?.name) form.append('character_name', character.name);
+      form.append('comment', contextLabel ? `[${contextLabel}]\n\n${comment.trim()}` : comment.trim());
+      if (contextLabel || character?.name) form.append('character_name', contextLabel || character.name);
       if (image) form.append('image', image);
       await api.post('/feedback', form, { headers: { 'Content-Type': undefined } });
       setSent(true);
