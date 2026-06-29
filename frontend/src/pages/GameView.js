@@ -9,6 +9,8 @@ import InventoryTab from '../components/InventoryTab';
 import NotesTab from '../components/NotesTab';
 import BestiaryTab from '../components/BestiaryTab';
 import CompanionTab from '../components/CompanionTab';
+import SyricConsoleTab from '../components/SyricConsoleTab';
+import { fetchCharacterModules } from '../utils/characterModules';
 import { activeCompanionKey } from '../utils/dnd';
 
 export default function GameView() {
@@ -16,8 +18,18 @@ export default function GameView() {
   const nav                       = useNavigate();
   const { character, loadCharacter, loading } = useCharacter();
   const [activeTab, setActiveTab] = useState(0);
+  const [modules, setModules] = useState([]);
 
   useEffect(() => { loadCharacter(parseInt(id)); }, [id, loadCharacter]);
+
+  useEffect(() => {
+    if (!character?.id) return;
+    let cancelled = false;
+    fetchCharacterModules(character.id)
+      .then(rows => { if (!cancelled) setModules(rows); })
+      .catch(() => { if (!cancelled) setModules([]); });
+    return () => { cancelled = true; };
+  }, [character?.id]);
 
   if (loading || !character) {
     return <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'100vh',color:'var(--text-secondary)'}}>Loading character...</div>;
@@ -34,6 +46,7 @@ export default function GameView() {
   const activeCompanion = activeKey === 'companion2' ? companion2 : companion;
   const tabs = [
     { label: '⚔️ Actions', Component: ActionEconomyTab },
+    ...(modules.some(module => module.id === 'syric_arcane') ? [{ label: '🔮 Syric', Component: SyricConsoleTab }] : []),
     { label: '📋 Feats/Attunement', Component: TrackerTab },
     { label: '✨ Spells', Component: SpellsTab },
     { label: '🎒 Inventory', Component: InventoryTab },

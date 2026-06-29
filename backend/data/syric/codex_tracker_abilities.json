@@ -1,0 +1,252 @@
+{
+  "_description": "Canonical tracker features for each Codex of Embodied Arcana page. Deploy to ~/syric_arcane_controller/ alongside tracker_sync.py. Values hard-coded for Syric at level 13 (tier L11-16), except Arcane Charge which should track Syric's Arcana bonus. Update max values manually when leveling into a new tier. Codex Dice migrates from the old Burn Dice key for existing live trackers.",
+  "_level_notes": {
+    "Free Upcast / Seamless Casting": "1 use (L1-10), 2 uses (L11-16), 3 uses (L17-20)",
+    "Deathline Reflex / Spell Recall": "1 use (L1-14), 2 uses (L15-16), 3 uses (L17+)",
+    "Hybrid Sigil": "1 use (L1-14), 2 uses (L15-17), 3 uses (L18+)",
+    "Echoed Rune / Veil": "half proficiency bonus rounded down (PB5 at L13 = 2 uses)",
+    "Codex Dice": "6 (L5-8), 8 (L9-12), 10 (L13-16), 12 (L17-19), 14 (L20)",
+    "Resonance Points": "half wizard level rounded up + INT mod (L13 INT20 = 7+5 = 12)",
+    "Arcane Charge": "Max and overload threshold equal Syric's Arcana bonus. L13 Arcana bonus = 10, so max = 10."
+  },
+  "1": {
+    "title": "The First Rune \u2014 Awakening the Arcane Flesh",
+    "migrates_from": [],
+    "features": []
+  },
+  "2": {
+    "title": "Inscription \u2014 Binding Magic to Flesh",
+    "migrates_from": [
+      "Overload (Codex P2)"
+    ],
+    "features": [
+      {
+        "name": "Overload System (Codex P2)",
+        "current": 0,
+        "max": 0,
+        "rest_type": "long",
+        "action": "Passive",
+        "sync_source": "codex_sync",
+        "description": "Inscription \u2014 Binding Magic to Flesh (Page 2). PASSIVE SYSTEM \u2014 tap to reference.\n\nINSCRIBING A RUNE\nTime: 1 hour per spell level. Cantrips: 30 minutes.\nRequired Check: Arcana check. DC = 10 + spell level.\nSuccess: Spell inscribed as a rune.\nFailure: Rune is unstable, cannot be used until long rest.\n\nARCANE CHARGE\nEach time Syric casts a leveled spell, he gains Arcane Charge equal to the spell's level. Shadow-cast spells using Syric's slots count. Reaction spells expending a leveled slot count normally. Charge resets to 0 when it naturally dissipates, is fully vented, or Arcane Discharge occurs.\n\nARCANE CAPACITY (THRESHOLD): Equal to Syric's Arcana Bonus (10 at L13). Dynamic \u2014 updates automatically.\nCharge CAN exceed the threshold \u2014 the threshold is when consequences begin, not a hard cap.\n\nNATURAL DISSIPATION\nEnd of turn: auto-reduce by minimum possible Vent Die value (2 at L11-16 with 2d6).\nIf no leveled spell cast that round: fully discharge at max Vent Die value (12 at L11-16 with 2d6).\n\nVENT DIE SCALING: L5-10 = 1d6 | L11-16 = 2d6 | L17-20 = 3d6\n\nOVERLOAD STATE TRIGGER\nArcane Charge equals or exceeds Arcane Capacity (Arcana Bonus). Entering Overload State does NOT immediately force a check.\nOnce in Overload State, casting another leveled spell triggers an Overload Check.\n\nOVERLOAD CHECK\nArcana check. DC = current Arcane Charge total.\nSUCCESS: Maintain control. Remain in Overload State.\nFAILURE: Arcane Discharge occurs.\n\nOVERLOAD STATE ENDS\nIf Arcane Charge drops below Arcane Capacity, Overload ends immediately. Charge is retained.\n\nARCANE DISCHARGE (on failed Overload Check)\n20-foot radius centered on Syric. Damage = 2x stored spell levels (force).\nDEX save for half (DC = Syric's spell save DC). Syric auto-fails, takes full damage.\nAfter Effect: Roll Arcane Rebound d100 table. Charge resets to 0.\n\nARCANE VENTING (Bonus Action)\nRoll Vent Die (2d6 at L11-16), reduce Arcane Charge by result. Min charge 0.\n\nEND OF TURN INSTABILITY\nAfter passive discharge, if charge still >= Arcane Capacity, must immediately make Overload Check.",
+        "codex_page": 2,
+        "display_name": "Overload System"
+      }
+    ],
+    "item_charges": [
+      {
+        "name": "Arcane Charge",
+        "current": 0,
+        "max": 10,
+        "recharge_type": "manual",
+        "recharge_amount": "",
+        "arcane_charge": true,
+        "overload_threshold": 10,
+        "sync_source": "codex_sync",
+        "description": "Inscription (Page 2). BUILDING COUNTER \u2014 auto-increments when spell slots are spent.\n\nGains Arcane Charge equal to spell level cast. Shadow-cast spells using Syric's slots also count. Reaction spells that expend a leveled slot count normally.\n\nARCANE CAPACITY (THRESHOLD): Arcana Bonus (10 at L13). Dynamic \u2014 recalculates when Tracker tab redraws.\nCharge CAN exceed this threshold \u2014 it marks when Overload State begins, not a hard cap.\n\nOVERLOAD STATE: Triggered when charge equals or exceeds Arcane Capacity. Does NOT immediately force a check.\nWhile in Overload State, casting another leveled spell immediately triggers an Overload Check.\n\nOVERLOAD CHECK: Arcana check. DC = 10 + current Arcane Charge total.\nSUCCESS: Maintain control. Remain in Overload State.\nFAILURE: Arcane Discharge occurs.\n\nOVERLOAD STATE ENDS: If charge drops below Arcane Capacity, Overload ends immediately. Charge is retained.\n\nARCANE DISCHARGE (on failed check):\n20-foot radius centered on Syric. Damage = 2x stored spell levels (force).\nDEX save for half (DC = Syric's spell save DC). Syric auto-fails, takes full damage.\nAfter Effect: Roll Arcane Rebound d100 table. Charge resets to 0.\n\nARCANE VENTING (Bonus Action): Roll Vent Die (2d6 at L11-16), subtract result from charge. Min charge 0.\nPASSIVE DISCHARGE (end of turn): Reduce by minimum Vent Die value (2 at L11-16).\nMAX DISSIPATION: If no leveled spell cast that round, discharge at max Vent Die value (12 at L11-16).\nEND OF TURN INSTABILITY: After passive discharge, if charge still >= threshold, immediately make Overload Check.\n\nVENT DIE SCALING: L5-10 = 1d6 | L11-16 = 2d6 | L17-20 = 3d6\n\nRST button = zero out on Discharge or end of combat.",
+        "codex_page": 2,
+        "use_counter": true
+      }
+    ]
+  },
+  "3": {
+    "title": "Mastery \u2014 Deepening the Connection",
+    "migrates_from": [],
+    "features": [
+      {
+        "name": "Free Upcast (Codex P3)",
+        "current": 2,
+        "max": 2,
+        "rest_type": "long",
+        "action": "Free Action",
+        "sync_source": "codex_sync",
+        "description": "Mastery \u2014 Deepening the Connection (Page 3).\n\nUSES: 2/long rest at L11-16. (1 at L1-10. 3 at L17-20, each use may upcast by up to 2 levels.)\n\nEFFECT: Upcast any spell by one level for free. Cannot exceed a spell level for which Syric has slots. The original non-upcast slot is consumed.\n\nEXAMPLE: Cast Fireball at 4th level for free even if all 4th-level slots are used \u2014 but a 3rd-level slot must be available and is consumed.",
+        "codex_page": 3,
+        "display_name": "Free Upcast"
+      }
+    ]
+  },
+  "4": {
+    "title": "Runic Flow \u2014 Magic as Natural Extension",
+    "migrates_from": [],
+    "features": [
+      {
+        "name": "Seamless Casting (Codex P4 NO V/S)",
+        "current": 2,
+        "max": 2,
+        "rest_type": "long",
+        "action": "Free Action",
+        "sync_source": "codex_sync",
+        "description": "Runic Flow \u2014 Magic as Natural Extension (Page 4).\n\nUSES: 2/long rest at L11-16. (1 at L1-10. 3 at L17-20.)\n\nEFFECT: Cast one spell from one of Syric's inscribed runes without verbal or somatic components. Material components remain normal \u2014 a spellcasting focus covers non-costly materials; costly or consumed materials still required. Spell otherwise resolves normally.\n\nNOTE: Does not count as a strain effect. Does not change slot economy. Can share a round with other actions under normal limits.",
+        "codex_page": 4,
+        "display_name": "Seamless Casting"
+      }
+    ]
+  },
+  "5": {
+    "title": "The Price of Power \u2014 Codex Surge",
+    "migrates_from": [],
+    "features": [
+      {
+        "name": "Echoed Rune (Codex P5)",
+        "current": 1,
+        "max": 1,
+        "rest_type": "long",
+        "action": "Bonus Action",
+        "sync_source": "codex_sync",
+        "description": "The Price of Power \u2014 Echoed Rune (Page 5).\n\nUSES: 1/long rest at L13. (2 at L15. 3 at L17.)\n\nTRIGGER: After Syric casts an inscribed rune spell that damages at least one creature.\n\nACTIVATION: Bonus action after original spell resolves.\n\nCOST: Spend one spell slot equal to half the original slot level rounded down (min 1st-level), PLUS Codex Dice equal to the original spell's level. If the original spell was a cantrip, no slot cost.\n\nEFFECT: No new save. No new attack roll. Auto-deals half the original spell's rolled damage (rounded down) to same targets. Uses original damage type.\n\nEXAMPLE: Spell deals 40 damage \u2192 Echo deals 20 damage automatically.",
+        "codex_page": 5,
+        "display_name": "Echoed Rune"
+      }
+    ],
+    "item_charges": [
+      {
+        "name": "Codex Dice (Codex P5)",
+        "current": 10,
+        "max": 10,
+        "recharge_type": "long",
+        "recharge_amount": "",
+        "sync_source": "codex_sync",
+        "description": "The Price of Power \u2014 Codex Surge (Page 5).\n\nPOOL: 10 Codex Dice at L13-16. (6 at L5-8, 8 at L9-12, 12 at L17-19, 14 at L20.) Regain all after long rest.\n\nTRIGGER: After casting an inscribed rune spell that damages one or more creatures.\n\nFREE ACTION (d6): No action cost. Spend up to proficiency bonus dice (5 at L13).\nBONUS ACTION (d12): Dice become d12s. No limit on dice used.\n\nDamage type matches the spell. Does not work with scrolls.",
+        "codex_page": 5,
+        "force_counter": true,
+        "use_counter": true,
+        "display_name": "Codex Dice",
+        "migrates_from": [
+          "Burn Dice (Codex P5)"
+        ]
+      }
+    ]
+  },
+  "6": {
+    "title": "Duality of Runes \u2014 Veil and Reveal",
+    "migrates_from": [],
+    "features": [
+      {
+        "name": "Veil (Codex P6)",
+        "current": 2,
+        "max": 2,
+        "rest_type": "long",
+        "action": "Free Action",
+        "sync_source": "codex_sync",
+        "description": "Duality of Runes \u2014 Veil (Page 6).\n\nUSES: 2/long rest (half PB rounded down; PB=5 at L13).\n\nCOST: 1d12 psychic damage to hide runes. If kept hidden past 4 hours, 1d12 psychic again per additional 4 hours.\n\nDURATION: 4 hours, then runes reveal unless extended.\n\nEFFECT WHILE VEILED:\n\u2022 Runes do not visibly glow. Normal sight cannot see rune flare.\n\u2022 Detect Magic senses magic but not exact rune locations.\n\u2022 Truesight / True Seeing still sees runes.\n\u2022 +10 to Stealth checks (as Pass Without Trace).\n\u2022 Advantage on first spell attack roll, OR impose disadvantage on first save against one of Syric's spell save DCs.",
+        "codex_page": 6,
+        "display_name": "Veil"
+      },
+      {
+        "name": "Reveal (Codex P6)",
+        "current": 1,
+        "max": 1,
+        "rest_type": "short",
+        "action": "Free Action",
+        "sync_source": "codex_sync",
+        "description": "Duality of Runes \u2014 Reveal (Page 6).\n\nUSES: 1/short rest.\n\nACTIVATION: Free action. Intentionally reveal hidden runes, causing them to visibly glow.\n\nEFFECT: Syric may use his Arcana skill as the modifier for one Intimidation or Persuasion check. The sudden display unsettles, impresses, or unnerves the target.",
+        "codex_page": 6,
+        "display_name": "Reveal"
+      }
+    ]
+  },
+  "7": {
+    "title": "Runic Resurgence \u2014 Deathline Reflex and Spell Recall",
+    "migrates_from": [],
+    "features": [
+      {
+        "name": "Deathline Reflex (Codex P7)",
+        "current": 1,
+        "max": 1,
+        "rest_type": "long",
+        "action": "Reaction",
+        "sync_source": "codex_sync",
+        "description": "Runic Resurgence \u2014 Deathline Reflex (Page 7).\n\nUSES: 1/long rest at L13. (2 at L15. 3 at L17.)\n\nTRIGGER: When Syric drops below half HP from damage.\n\nACTIVATION: Reaction. Roll 1d4:\n\n1 \u2014 RUNIC GUARD\nGain temporary HP = 2d6 + wizard level.\n\n2 \u2014 SHADOW REPOSITION\nTeleport up to 60 ft to a visible space. Gain resistance to all damage until start of next turn.\n\n3 \u2014 PAIN CONVERSION\nGain resistance to triggering damage type for 1 minute, including the triggering hit.\n\n4 \u2014 SPELL CLUTCH\nGain advantage on saves against triggering effect type for 1 minute (e.g., Spells, Piercing, Radiant).",
+        "codex_page": 7,
+        "display_name": "Deathline Reflex"
+      },
+      {
+        "name": "Spell Recall (Codex P7)",
+        "current": 1,
+        "max": 1,
+        "rest_type": "long",
+        "action": "No Action",
+        "sync_source": "codex_sync",
+        "description": "Runic Resurgence \u2014 Spell Recall (Page 7).\n\nUSES: 1/long rest at L13. (2 at L15. 3 at L17. Recalled spell does NOT become prepared.)\n\nACTIVATION: No action to recall. Recalled spell cast using normal casting time.\n\nREQUIREMENTS: Must be a spell Syric knows. Must be a level Syric can cast. Must NOT have been prepared that day. Must have an available spell slot of that level or higher.\n\nCOST: Spell slot spent normally. Syric takes psychic damage equal to the spell level.\n\nEXAMPLE: Syric knows Forcecage but did not prepare it. Uses Spell Recall, spends L7 slot, takes 7 psychic damage.",
+        "codex_page": 7,
+        "display_name": "Spell Recall"
+      }
+    ]
+  },
+  "8": {
+    "title": "Advanced Inscription \u2014 Hybrid Sigils and Resonance Shaping",
+    "migrates_from": [],
+    "features": [
+      {
+        "name": "Hybrid Sigil (Codex P8)",
+        "current": 1,
+        "max": 1,
+        "rest_type": "long",
+        "action": "Action",
+        "sync_source": "codex_sync",
+        "description": "Advanced Inscription \u2014 Hybrid Sigil (Page 8).\n\nUSES: 1/long rest at L13. (2 at L15. 3 at L18.)\n\nTRIGGER: When Syric casts a spell using a slot. Activate and choose one Hybrid Variant. Runic Interference is the exception \u2014 uses its own reaction trigger.\n\nARCANA CHECK: DC = 10 + slot level. Success: works. Failure: spell casts normally, Variant fails. Failure by 5+: also deals force damage = 2x slot level to Syric.\n\nHYBRID VARIANTS:\n\nRUNIC WARD \u2014 As part of casting.\nOne visible ally within 30 ft (60 ft at L17): +2 AC for 1d4 rounds, temp HP = 2d6 + wizard level, advantage on one d20 within next minute.\n\nRUNIC MOMENTUM \u2014 As part of casting.\nAfter spell resolves: Syric teleports up to 60 ft to unoccupied visible space, OR one willing visible ally within 60 ft moves up to 15 ft without opportunity attacks.\n\nSPELL FUSION \u2014 As part of casting. Timing: can be added after outcome of save or attack roll is known.\nFuse a second inscribed spell. Cost: Resonance Points = combined levels of both spells. Primary spell (higher level) controls all targeting/area/attack roll/saves. Secondary contributes ONE property only: Damage, Defense, Movement, Condition, or Utility.\nSECONDARY PROPERTIES: Damage \u2014 add secondary spell's damage dice. Defense \u2014 add one AC, resistance, or temp HP effect. Movement \u2014 add one movement/teleport/forced movement. Condition \u2014 add one condition. Utility \u2014 add one non-damaging utility effect (e.g. invisibility, silence).\nHARD LIMITS: No second save. No second attack roll. No extra targets. No extra area. No summons. No created objects. No ongoing zones unless primary already creates one. Must be two different spells.\nCreature must be affected by primary spell to be affected by secondary property.\n\nRUNIC INTERFERENCE \u2014 Reaction.\nTrigger: visible creature within 150 ft takes an action. Roll 1d6:\n1 \u2014 Reaction Break: creature cannot take reactions until start of Syric's next turn.\n2 \u2014 Arcane Trap: creature takes 3d8 + spell save DC force damage if it moves before Syric's next turn.\n3 \u2014 Attack Distortion: all enemy's next d20 roll made with disadvantage.\n4 \u2014 Save Distortion: Syric and all allies gain advantage on next d20 roll.\n5 \u2014 Arcane Snare: enemy movement speed reduced to 0 until start of Syric's next turn.\n6 \u2014 Runic Fatigue: enemy can only take 1 Action OR Bonus Action OR use movement until Syric's next turn.",
+        "codex_page": 8,
+        "display_name": "Hybrid Sigil"
+      }
+    ],
+    "item_charges": [
+      {
+        "name": "Resonance Points (Codex P8)",
+        "current": 12,
+        "max": 12,
+        "recharge_type": "long",
+        "recharge_amount": "",
+        "sync_source": "codex_sync",
+        "description": "Advanced Inscription \u2014 Resonance Points (Page 8).\n\nPOOL: 12 points at L13 (half wizard level rounded up + INT mod = 7+5). Regain all after long rest.\n\nOnly one Resonance Technique per spell. Codex Surge can stack with one.\n\nTECHNIQUES:\nSplit Rune \u2014 Cost: spell level (cantrip=1). Target second creature with same single-target spell.\nSculpted Rune \u2014 Cost: spell level. Choose up to PB creatures in area to auto-succeed and take no damage.\nTransmuted Rune \u2014 Cost: spell level. Change damage type to DM-approved type.\nWeighted Rune \u2014 Cost: 1 RP per die. Reroll damage dice up to INT mod, must use new rolls.\nSilent Ledger \u2014 Cost: spell level. Remove verbal and somatic components from one rune spell.",
+        "codex_page": 8,
+        "force_counter": true,
+        "display_name": "Resonance Points"
+      }
+    ]
+  },
+  "9": {
+    "title": "Arcane Devouring \u2014 Embodied Relic",
+    "migrates_from": [],
+    "features": [
+      {
+        "name": "Arcane Devouring (Codex P9)",
+        "current": 0,
+        "max": 0,
+        "rest_type": "long",
+        "action": "Ritual",
+        "sync_source": "codex_sync",
+        "description": "Arcane Devouring \u2014 Embodied Relic (Page 9). RITUAL \u2014 tap to reference.\n\nREQUIREMENT: Level 15+ or Codex page unlocked. Must possess and be attuned (if required) to the item.\n\nRITUAL TIME: 8 hours uninterrupted. Item is destroyed at the end regardless of outcome.\n\nEFFECT ON SUCCESS: Syric absorbs all magical properties as Living Rune functions. Powers keep original activation type, action cost, charges, recharge timing, and restrictions unless DM modifies them. Body and runes replace the item as point of use. Save DC/attack bonus: use the better of item's or Syric's.\n\nINTERNAL ATTUNEMENT SLOTS: Syric gains 1 bonus internal attunement slot (RAW slots +1). If devoured item required attunement, it occupies 1 Internal Attunement Slot. No-attunement items do not occupy a slot \u2014 Syric may devour any number, but normal stacking rules apply. Consumables (potions, scrolls, single-use charms) are not valid targets unless DM allows.\n\nARCANA CHECK DC: Common 10 | Uncommon 12 | Rare 14 | Very Rare 16 | Legendary 20 | Artifact 28.\n+2 DC if sentient. +2 DC if cursed. +3 DC if charged.\nAdvantage: attuned 7+ days, OR used in major story moment. Disadvantage: never used.\n\nOUTCOMES:\nSUCCESS: Absorb all properties. Attunement items use 1 Internal Attunement Slot.\nFAILURE: No benefit. Take force/psychic damage = 5x rarity tier (Common 5, Uncommon 10, Rare 15, Very Rare 20, Legendary 25, Artifact 30).\nFAILURE BY 5+: As failure + 1 exhaustion + one devoured property unavailable until long rest.\nNAT 1: As failure + one devoured no-attunement property permanently expelled. If none, one Internal Attunement Slot power unavailable for 7 days.\n\nCAST TO THE NETHER (1-hour ritual): Permanently release one absorbed relic pattern. Power is lost forever \u2014 original item does not reform. Syric takes force damage = 10x rarity tier in a 20-ft radius. No save DC and no immunities negate this damage. Internal Attunement Slot freed at end of ritual.\n\nEXAMPLES:\nStaff of the Magi: Destroyed, occupies 1 Internal Attunement Slot. Spells, charges, spell absorption, and all properties become internal rune functions using normal charge rules.\nRing of the Twilight Mind: Destroyed, dual concentration property becomes internal. If released later, the ability is gone and the ring does not return.",
+        "codex_page": 9,
+        "display_name": "Arcane Devouring"
+      }
+    ]
+  },
+  "10": {
+    "title": "Ascension \u2014 Ascendant Rune Casting",
+    "migrates_from": [],
+    "features": [
+      {
+        "name": "Rune Mastery (Codex P10)",
+        "current": 1,
+        "max": 1,
+        "rest_type": "long",
+        "action": "Passive",
+        "sync_source": "codex_sync",
+        "description": "Ascension \u2014 Rune Mastery (Page 10). Daily pick \u2014 mark used when today's choice has been made.\n\nChoose ONE option each long rest:\nOPTION A: Pick THREE spells of level 3 or lower \u2014 treat as cantrips for the day.\nOPTION B: Pick ONE spell of level 4-7 \u2014 treat as a cantrip for the day.",
+        "codex_page": 10,
+        "display_name": "Rune Mastery"
+      },
+      {
+        "name": "Ascendant Rune Casting (Codex P10)",
+        "current": 0,
+        "max": 0,
+        "rest_type": "long",
+        "action": "Passive",
+        "sync_source": "codex_sync",
+        "description": "Ascension \u2014 Ascendant Rune Casting (Page 10). PASSIVE \u2014 always active once page is found.\n\nCOMPONENT RULE: Inscribed rune spells require no verbal, somatic, or non-costly material components. Costly or consumed components still required.\n\nRUNE VISIBILITY: Runes muted by default. Only visible via Truesight, True Seeing, or features that specifically reveal hidden magical markings. Detect Magic can sense them with a successful Arcana check vs Syric's spell save DC.\n\nEXHAUSTION: No longer gains exhaustion from normal Codex spellcasting strain. Can still gain from Hybrid Sigil failures, Overload, failed rituals, and normal adventuring.\n\nSOCIAL PENALTY: Disadvantage on Charisma checks with common mundane NPCs if deathless/rune nature is obvious. No penalty if runes are muted and Syric appears normal.\n\nRUNE MASTERY (daily pick \u2014 mark used when today's choice has been made):\nOPTION A: Pick THREE spells of level 3 or lower \u2014 treat as cantrips for the day.\nOPTION B: Pick ONE spell of level 4-7 \u2014 treat as a cantrip for the day.\n\nCodex DIE UPGRADE:\nCodex Dice become d8. Any 1 or 2 rolled becomes a 3.\nMAXIMIZED DICE: One damage die per spell level is maximized. Example: 5th-level spell with 10 Codex Dice \u2014 5 dice are automatically 8s, remainder rolled normally.",
+        "codex_page": 10,
+        "display_name": "Ascendant Rune Casting"
+      }
+    ]
+  }
+}

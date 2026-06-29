@@ -1,0 +1,268 @@
+{
+  "_description": "Action Economy reference. Static rows are supplemented by live tracker features in action_economy_subtab.py so synced Codex/Shadow/racial abilities do not disappear. tracker_key should match the tracker entry; tracker_aliases handles old names.",
+  "character_name": "Syric Nightbloom",
+  "syric": {
+    "Action": [
+      {
+        "name": "Cast a Spell",
+        "source": "Core 5e",
+        "source_type": "static",
+        "description": "Choose from Syric's currently prepared spells, pick an available slot level, spend that slot, and add Arcane Charge equal to the slot level. Cantrips do not spend slots or add Arcane Charge.",
+        "cost_type": "cast_spell",
+        "tracker_key": null
+      },
+      {
+        "name": "Basic Actions",
+        "source": "Core 5e",
+        "source_type": "static",
+        "description": "Attack, Cast a Spell, Dash, Disengage, Dodge, Help, Hide, Ready, Search, Use an Object, Improvise",
+        "cost_type": "action",
+        "tracker_key": null
+      }
+    ],
+    "Bonus Action": [
+      {
+        "name": "Arcane Venting",
+        "source": "Overload System (Codex P2)",
+        "source_type": "codex",
+        "description": "Reduce Arcane Charge by rolling the Vent Die (2d6 at L11-16). Minimum charge 0.\n\nVENT DIE SCALING: L5-10 = 1d6 | L11-16 = 2d6 | L17-20 = 3d6",
+        "cost_type": "bonus_action",
+        "tracker_key": null
+      },
+      {
+        "name": "Echoed Rune",
+        "source": "Codex P5",
+        "source_type": "codex",
+        "description": "TRIGGER: After Syric casts an inscribed rune spell that damages at least one creature.\n\nACTIVATION: Bonus action after original spell resolves.\n\nCOST: Spend one slot equal to half the original slot level rounded down (min 1st) PLUS Codex Dice equal to the original spell's level. Cantrip original = no slot cost.\n\nEFFECT: No new save. No new attack roll. Auto-deals half the original spell's rolled damage (rounded down) to same targets. Uses original damage type.\n\nUSES: 1/long rest at L13. (2 at L15. 3 at L17.)\n\nEXAMPLE: Spell deals 40 damage \u2192 Echo deals 20 damage automatically.",
+        "cost_type": "slot_and_resource",
+        "tracker_key": "Echoed Rune (Codex P5)"
+      },
+      {
+        "name": "Codex Surge (d10 mode)",
+        "source": "Codex P5",
+        "source_type": "codex",
+        "description": "BONUS ACTION MODE: Spend any number of Codex Dice as d10s. No limit on dice used.\n\nTRIGGER: After casting an inscribed rune spell that damages one or more creatures.\n\nDamage type matches the spell. Does not work with scrolls.\n\nPOOL: 10 Codex Dice at L13 (regain all after long rest).",
+        "cost_type": "resource",
+        "tracker_key": "Codex Dice (Codex P5)",
+        "tracker_aliases": [
+          "Burn Dice (Codex P5)"
+        ]
+      },
+      {
+        "name": "Hybrid Sigil",
+        "source": "Codex P8",
+        "source_type": "codex",
+        "description": "TRIGGER: When Syric casts a spell using a spell slot.\n\nARCANA CHECK: DC = 10 + slot level. Success: works. Failure: spell casts normally, Variant fails. Failure by 5+: also deals force damage = 2x slot level to Syric.\n\nHYBRID VARIANTS: Runic Ward | Runic Momentum | Spell Fusion | Runic Interference (reaction)\n\nUSES: 1/long rest at L13. (2 at L15. 3 at L18.)",
+        "cost_type": "bonus_action",
+        "tracker_key": "Hybrid Sigil (Codex P8)"
+      }
+    ],
+    "Reaction": [
+      {
+        "name": "Deathline Reflex",
+        "source": "Codex P7",
+        "source_type": "codex",
+        "description": "TRIGGER: When Syric drops below half HP from damage.\n\nRoll 1d4: 1=Runic Guard (temp HP = 2d6+level) | 2=Shadow Reposition (teleport 60ft + resist all damage 1 turn) | 3=Pain Conversion (resist trigger damage type 1 min) | 4=Spell Clutch (advantage on saves vs trigger type 1 min)\n\nUSES: 1/long rest at L13. (2 at L15. 3 at L17.)",
+        "cost_type": "reaction",
+        "tracker_key": "Deathline Reflex (Codex P7)"
+      },
+      {
+        "name": "Runic Interference",
+        "source": "Codex P8",
+        "source_type": "codex",
+        "description": "TRIGGER: Visible creature within 150 ft takes an action. Uses Hybrid Sigil charge.\n\nRoll 1d6: 1=Reaction Break | 2=Arcane Trap (3d8+DC force if moves) | 3=Attack Distortion (enemy disadv) | 4=Save Distortion (ally adv) | 5=Arcane Snare (speed 0) | 6=Runic Fatigue (1 action OR bonus OR move)",
+        "cost_type": "reaction",
+        "tracker_key": "Hybrid Sigil (Codex P8)"
+      },
+      {
+        "name": "Reactive Link",
+        "source": "Shadar-kai / Shadow Bond",
+        "source_type": "static",
+        "description": "TRIGGER: Syric takes damage.\n\nShadow intercepts the hit. Syric takes half damage; Shadow takes the other half (rounded down). No action required from either.\n\nLIMITS: Shadow must be conscious and within 60 ft. Shadow cannot intercept if he is at 0 HP or incapacitated.",
+        "cost_type": "reaction",
+        "tracker_key": null,
+        "static": true
+      }
+    ],
+    "Free Action": [
+      {
+        "name": "Codex Surge (d6 mode)",
+        "source": "Codex P5",
+        "source_type": "codex",
+        "description": "FREE ACTION MODE: Spend up to proficiency bonus Codex Dice (5 at L13) as d6s. No action cost.\n\nTRIGGER: After casting an inscribed rune spell that damages one or more creatures.\n\nDamage type matches the spell. Does not work with scrolls.\n\nPOOL: 10 Codex Dice at L13 (regain all after long rest).",
+        "cost_type": "free",
+        "tracker_key": "Codex Dice (Codex P5)",
+        "tracker_aliases": [
+          "Burn Dice (Codex P5)"
+        ]
+      },
+      {
+        "name": "Free Upcast",
+        "source": "Codex P3",
+        "source_type": "codex",
+        "description": "Upcast any spell by one level for free. Original non-upcast slot is consumed.\n\nCannot exceed a slot level Syric has available.\n\nUSES: 2/long rest at L11-16.\n\nEXAMPLE: Cast Fireball at 4th level for free \u2014 a 3rd-level slot is consumed.",
+        "cost_type": "free",
+        "tracker_key": "Free Upcast (Codex P3)"
+      },
+      {
+        "name": "Seamless Casting",
+        "source": "Codex P4",
+        "source_type": "codex",
+        "description": "Cast one inscribed rune spell without verbal or somatic components. Material components remain normal.\n\nDoes not change slot economy. Can share a round with other actions.\n\nUSES: 2/long rest at L11-16.",
+        "cost_type": "free",
+        "tracker_key": "Seamless Casting (Codex P4 NO V/S)"
+      },
+      {
+        "name": "Veil",
+        "source": "Codex P6",
+        "source_type": "codex",
+        "description": "Hide rune glow. Cost: 1d12 psychic damage. Duration: 4 hours.\n\nEFFECT: No visible glow, +10 Stealth (Pass Without Trace), advantage on first spell attack OR impose disadvantage on first save vs Syric's DC.\n\nUSES: 2/long rest (half PB rounded down at L13).",
+        "cost_type": "free",
+        "tracker_key": "Veil (Codex P6)"
+      },
+      {
+        "name": "Reveal",
+        "source": "Codex P6",
+        "source_type": "codex",
+        "description": "Intentionally reveal hidden runes causing them to glow.\n\nEFFECT: Use Arcana as modifier for one Intimidation or Persuasion check.\n\nUSES: 1/short rest.",
+        "cost_type": "free",
+        "tracker_key": "Reveal (Codex P6)"
+      },
+      {
+        "name": "Nyx Blessing",
+        "source": "Shadar-kai",
+        "source_type": "racial",
+        "description": "Teleport up to 30 ft to an unoccupied space Syric can see as a bonus action (PHB Shadar-kai).\n\nUSES: 1/long rest. Syric may bring one willing Small or Medium creature within 5 ft along.",
+        "cost_type": "free",
+        "tracker_key": "Nyx Blessing",
+        "tracker_aliases": [
+          "Shadar-kai Blessing of the Raven Queen"
+        ]
+      }
+    ],
+    "No Action": [
+      {
+        "name": "Spell Recall",
+        "source": "Codex P7",
+        "source_type": "codex",
+        "description": "Recall a known, unprepared spell (must have a slot available of that level or higher).\n\nNo action to recall. Recalled spell cast using normal casting time. Recalled spell does NOT become prepared.\n\nCOST: Slot spent normally. Syric takes psychic damage equal to spell level.\n\nUSES: 1/long rest at L13. (2 at L15. 3 at L17.)\n\nEXAMPLE: Syric knows Forcecage but did not prepare it. Uses Spell Recall, spends L7 slot, takes 7 psychic damage.",
+        "cost_type": "no_action",
+        "tracker_key": "Spell Recall (Codex P7)"
+      },
+      {
+        "name": "Cartomancer (Tucked Spell)",
+        "source": "Feat",
+        "source_type": "feat",
+        "description": "One spell tucked in Cartomancer deck each day. Cast tucked spell without expending a spell slot.\n\nTucked spell persists across rests (homebrew ruling \u2014 no wipe on long rest).\n\nUSES: 1/day.",
+        "cost_type": "no_action",
+        "tracker_key": "Cartomancer"
+      }
+    ],
+    "Passive": [
+      {
+        "name": "Arcane Charge",
+        "source": "Overload System (Codex P2)",
+        "source_type": "codex",
+        "description": "COUNTER \u2014 gains charge equal to spell levels cast. Shadow-cast spells using Syric's slots count. Overload State triggers when charge equals or exceeds Arcana Bonus (10 at L13). Manage in Tracker tab.",
+        "cost_type": "passive",
+        "tracker_key": null
+      }
+    ]
+  },
+  "shadow": {
+    "Action": [
+      {
+        "name": "Void Rend",
+        "source": "Shadow",
+        "source_type": "shadow",
+        "description": "Shadow tears a rift using his action. Consumes 1 Void Rend use (2/long rest at L13).\n\nRange: 60 ft. On hit: 3d8 force damage + 1d6 necrotic. Target must make a STR save (DC = Syric's spell save DC) or be pulled 10 ft toward Shadow.\n\nUSES: 2/long rest.",
+        "cost_type": "action",
+        "tracker_key": "Shadow: Void Rend"
+      },
+      {
+        "name": "Nightbound Shadowcast",
+        "source": "Shadow",
+        "source_type": "shadow",
+        "description": "During meditative preparation, Syric stores one known wizard spell in Shadow (does not need to be prepared). Syric spends the slot during preparation. Shadow releases it later as a Bonus Action.\n\nCAP: 3rd-level at L13. Uses Syric's spell attack bonus and save DC.\n\nSTORE: Press STORE to pick a spell and spend the slot now. Shadow holds it until released. 1/long rest.\n\nRELEASE: Shadow uses Bonus Action \u2014 see Bonus Action section.",
+        "cost_type": "store",
+        "tracker_key": "Shadow: Nightbound Shadowcast",
+        "slot_levels": [1, 2, 3]
+      }
+    ],
+    "Bonus Action": [
+      {
+        "name": "Umbral Shift",
+        "source": "Shadow",
+        "source_type": "shadow",
+        "description": "Shadow teleports up to 30 ft to an unoccupied space Syric can see.\n\nAt L13 Shadow may bring one willing creature (size Medium or smaller) along if they are within 5 ft.\n\nUSES: 3/short rest.",
+        "cost_type": "bonus_action",
+        "tracker_key": "Shadow: Shadowmeld"
+      },
+      {
+        "name": "Shadowmeld",
+        "source": "Shadow",
+        "source_type": "shadow",
+        "description": "Shadow merges into Syric's shadow or a nearby large shadow. While merged: Shadow cannot be targeted; Syric gains +1 AC and advantage on Dexterity saving throws. Requires concentration from Shadow.\n\nEmergence costs Shadow a bonus action.\n\nUSES: Concentration, no use limit.",
+        "cost_type": "bonus_action",
+        "tracker_key": null
+      },
+      {
+        "name": "Nightbound Shadowcast",
+        "source": "Shadow",
+        "source_type": "shadow",
+        "description": "Shadow releases the spell stored during preparation. Shadow uses Bonus Action.\n\nUses Syric's spell attack bonus and save DC. Range and LoS originate from Shadow.\n\nRELEASE: Press RELEASE when Shadow delivers the stored spell.\n\nUses: 1/long rest (shared with Store).",
+        "cost_type": "release_shadow",
+        "tracker_key": "Shadow: Nightbound Shadowcast",
+        "slot_levels": [1, 2, 3]
+      }
+    ],
+    "Reaction": [
+      {
+        "name": "Party Warding",
+        "source": "Shadow",
+        "source_type": "shadow",
+        "description": "TRIGGER: An ally within 30 ft. of Shadow is hit by an attack or targeted by a spell attack.\n\nShadow casts a warding Shield on that ally only. The ally gains +5 AC until the end of Shadow's next turn.\n\nUSES: 2/long rest.",
+        "cost_type": "reaction",
+        "tracker_key": null,
+        "static": true
+      }
+    ],
+    "Passive": [
+      {
+        "name": "Extension of Will",
+        "source": "Shadow",
+        "source_type": "shadow",
+        "description": "Shadow is the extension of Syric's will. Shadow acts on Syric's initiative and shares Syric's concentration checks. Shadow does not require commands \u2014 he acts as Syric would in the same situation.",
+        "cost_type": "passive",
+        "tracker_key": null,
+        "static": true
+      },
+      {
+        "name": "Reactive Link",
+        "source": "Shadow Bond",
+        "source_type": "shadow",
+        "description": "Passive damage split. When Syric takes damage, Shadow intercepts: Syric takes half (rounded up), Shadow takes the other half (rounded down). No action required. Shadow must be conscious and within 60 ft.",
+        "cost_type": "passive",
+        "tracker_key": null,
+        "static": true
+      },
+      {
+        "name": "Voidcasting / Echo Conduit",
+        "source": "Shadow",
+        "source_type": "shadow",
+        "description": "Shadow channels Syric's spell energy. When Syric casts a spell through Shadow's position, the spell originates from Shadow rather than Syric for LoS and range purposes.\n\nEcho Conduit: Shadow can repeat the effect of a spell Syric cast last turn as a bonus action (once per long rest, 3rd level or lower).",
+        "cost_type": "passive",
+        "tracker_key": "Shadow: Voidcasting / Echo Conduit"
+      },
+      {
+        "name": "Shadow Stat Block Reference",
+        "source": "Shadow",
+        "source_type": "shadow",
+        "description": "Shadow is Syric's will, senses, magic, and survival instinct given form. Shadow amplifies Syric; Voidshape grants appearance only \u2014 no monster traits, spellcasting, or legendary actions.",
+        "cost_type": "passive",
+        "tracker_key": null,
+        "static": true
+      }
+    ]
+  }
+}
