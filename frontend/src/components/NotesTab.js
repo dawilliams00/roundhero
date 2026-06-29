@@ -23,8 +23,17 @@ export default function NotesTab() {
     setResyncing(true);
     setResyncMsg('');
     try {
-      await resyncCharacter();
-      setResyncMsg('Re-synced! Structural data (features, spells, items) refreshed — your HP, charges, and custom additions were preserved.');
+      const r = await resyncCharacter();
+      const s = r.import_summary;
+      const findings = s ? [
+        ...(s.unmatched_items.length ? [`${s.unmatched_items.length} item(s) still not matched to the database`] : []),
+        ...(s.unmatched_spells.length ? [`${s.unmatched_spells.length} spell(s) still not matched to the database`] : []),
+        ...s.missing_fields,
+      ] : [];
+      setResyncMsg(
+        'Re-synced! Structural data (features, spells, items) refreshed — your HP, charges, and custom additions were preserved.'
+        + (findings.length ? ` Still worth checking: ${findings.join('; ')}.` : '')
+      );
     } catch (err) {
       setResyncMsg(err?.response?.data?.error || 'Re-sync failed.');
     } finally {

@@ -19,6 +19,7 @@ export default function CharacterSelect() {
   const [inviteCode, setInviteCode] = useState('');
   const [campaignError, setCampaignError] = useState('');
   const [campaignBusy, setCampaignBusy] = useState(false);
+  const [importSummary, setImportSummary] = useState(null); // { name, id, summary } | null
 
   useEffect(() => {
     fetchCharacters();
@@ -53,7 +54,15 @@ export default function CharacterSelect() {
     setImportError('');
     try {
       const created = await importCharacter(file);
-      nav(`/play/${created.id}`);
+      const summary = created.import_summary;
+      const hasFindings = summary && (
+        summary.unmatched_items.length || summary.unmatched_spells.length || summary.missing_fields.length
+      );
+      if (hasFindings) {
+        setImportSummary({ id: created.id, name: created.name, summary });
+      } else {
+        nav(`/play/${created.id}`);
+      }
     } catch (err) {
       setImportError(err?.response?.data?.error || 'Import failed. Make sure this is a D&D Beyond character sheet PDF.');
     } finally {
@@ -207,6 +216,52 @@ export default function CharacterSelect() {
           </div>
         </div>
       </div>
+
+      {importSummary && (
+        <div className="modal-overlay" onClick={() => { setImportSummary(null); nav(`/play/${importSummary.id}`); }}>
+          <div className="modal" style={{maxWidth:440}} onClick={e => e.stopPropagation()}>
+            <h2>Imported {importSummary.name}</h2>
+            <p style={{color:'var(--text-secondary)',fontSize:12,lineHeight:1.6,marginBottom:10}}>
+              The PDF parsed successfully, but a few things below are worth a quick check before you start playing.
+            </p>
+            {importSummary.summary.missing_fields.length > 0 && (
+              <div style={{marginBottom:10}}>
+                <div style={{color:'var(--warning)',fontSize:12,fontWeight:700,marginBottom:4}}>Not found in the PDF</div>
+                <ul style={{margin:0,paddingLeft:18,color:'var(--text-secondary)',fontSize:12}}>
+                  {importSummary.summary.missing_fields.map(f => <li key={f}>{f}</li>)}
+                </ul>
+              </div>
+            )}
+            {importSummary.summary.unmatched_items.length > 0 && (
+              <div style={{marginBottom:10}}>
+                <div style={{color:'var(--warning)',fontSize:12,fontWeight:700,marginBottom:4}}>
+                  Items not matched to the database ({importSummary.summary.unmatched_items.length})
+                </div>
+                <div style={{color:'var(--text-secondary)',fontSize:12}}>
+                  These kept their printed name/weight but have no charges, buffs, or description auto-filled: {importSummary.summary.unmatched_items.join(', ')}
+                </div>
+              </div>
+            )}
+            {importSummary.summary.unmatched_spells.length > 0 && (
+              <div style={{marginBottom:10}}>
+                <div style={{color:'var(--warning)',fontSize:12,fontWeight:700,marginBottom:4}}>
+                  Spells not matched to the database ({importSummary.summary.unmatched_spells.length})
+                </div>
+                <div style={{color:'var(--text-secondary)',fontSize:12}}>
+                  These will display, but won't have structured damage/save data: {importSummary.summary.unmatched_spells.join(', ')}
+                </div>
+              </div>
+            )}
+            <div style={{color:'var(--text-dim)',fontSize:11,marginTop:8}}>
+              Parsed {importSummary.summary.features_found} features, {importSummary.summary.spells_found} spells, {importSummary.summary.items_found} items.
+            </div>
+            <button className="btn btn-primary" style={{width:'100%',marginTop:16}}
+              onClick={() => { const id = importSummary.id; setImportSummary(null); nav(`/play/${id}`); }}>
+              Continue
+            </button>
+          </div>
+        </div>
+      )}
 
       {confirmDelete && (
         <div className="modal-overlay" onClick={() => !deleting && setConfirmDelete(null)}>

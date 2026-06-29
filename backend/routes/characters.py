@@ -71,7 +71,7 @@ def import_character():
     char.source_pdf     = file_bytes
     db.session.add(char)
     db.session.commit()
-    return jsonify(char.to_dict()), 201
+    return jsonify({**char.to_dict(), "import_summary": parsed["import_summary"]}), 201
 
 @characters_bp.route("/<int:char_id>/resync", methods=["POST"])
 @jwt_required()
@@ -81,7 +81,7 @@ def resync_character_route(char_id):
     if not char.source_pdf:
         return jsonify({"error": "This character wasn't created from a PDF import, so there's nothing to re-sync from."}), 400
     try:
-        merged_td, merged_sd, merged_ae = resync_character(
+        merged_td, merged_sd, merged_ae, import_summary = resync_character(
             char.tracker_data, char.spell_data, char.source_pdf, char.class_name,
             spell_db_by_name=_SPELL_DB_BY_NAME,
         )
@@ -91,7 +91,7 @@ def resync_character_route(char_id):
     char.spell_data   = merged_sd
     char.ae_data      = merged_ae
     db.session.commit()
-    return jsonify(char.to_dict()), 200
+    return jsonify({**char.to_dict(), "import_summary": import_summary}), 200
 
 @characters_bp.route("/<int:char_id>/class_status", methods=["GET"])
 @jwt_required()

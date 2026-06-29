@@ -386,11 +386,40 @@ def parse_character_pdf(file_bytes, spell_db_by_name=None):
     }
 
     ae_data = build_ae_data_from_features(features, class_level_raw)
+
+    # A surfaced, post-import summary of parsing gaps - so they're caught immediately
+    # instead of discovered mid-session, weeks later, by accident. Only flags things a
+    # player can actually act on (re-typing a name, re-checking a field); doesn't try to
+    # guess at fixes itself.
+    unmatched_items = sorted(it["name"] for it in items if it["name"] not in canonical_items)
+    unmatched_spells = sorted({
+        e["name"] for e in known_spells
+        if not spell_db_by_name.get(e["name"].lower()) and not e.get("granted_by")
+    })
+    missing_fields = []
+    if not race:
+        missing_fields.append("Race")
+    if not save_proficiencies:
+        missing_fields.append("Saving throw proficiencies")
+    if not skill_proficiencies:
+        missing_fields.append("Skill proficiencies")
+    if known_spells and not spell_slots:
+        missing_fields.append("Spell slots (spells were found, but no slot table parsed)")
+    import_summary = {
+        "unmatched_items": unmatched_items,
+        "unmatched_spells": unmatched_spells,
+        "missing_fields": missing_fields,
+        "features_found": len(features),
+        "spells_found": len(known_spells),
+        "items_found": len(items),
+        "is_multiclass": "/" in class_level_raw,
+    }
+
     return {
         "name": name, "class_name": class_level_raw, "subclass": None, "race": race,
         "level": total_level, "ability_scores": ability_scores,
         "tracker_data": tracker_data, "spell_data": spell_data, "ae_data": ae_data,
-        "notes": {"general": notes_text},
+        "notes": {"general": notes_text}, "import_summary": import_summary,
     }
 
 
@@ -522,4 +551,4 @@ def resync_character(old_tracker_data, old_spell_data, source_pdf_bytes, class_l
 
     merged_ae = build_ae_data_from_features(merged_features, class_level_raw)
 
-    return merged_td, merged_sd, merged_ae
+    return merged_td, merged_sd, merged_ae, fresh["import_summary"]
