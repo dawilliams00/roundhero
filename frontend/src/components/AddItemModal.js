@@ -23,6 +23,7 @@ export default function AddItemModal({ item, onSave, onClose }) {
     charges_current: item.charges?.current ?? 0,
     charges_max: item.charges?.max ?? 0,
     recharge: item.charges?.recharge || 'none',
+    recharge_mode: item.charges?.recharge_amount ? 'roll' : 'full',
     recharge_amount: item.charges?.recharge_amount || '',
     granted_spells: item.granted_spells || [],
     is_weapon: !!item.is_weapon,
@@ -49,7 +50,7 @@ export default function AddItemModal({ item, onSave, onClose }) {
   } : {
     name: '', quantity: 1, weight: 0, rarity: 'Common',
     equipped: false, attunement: false, attuned: false,
-    has_charges: false, charges_current: 0, charges_max: 0, recharge: 'none', recharge_amount: '',
+    has_charges: false, charges_current: 0, charges_max: 0, recharge: 'none', recharge_mode: 'full', recharge_amount: '',
     description: '', granted_spells: [],
     is_weapon: false, weapon_category: 'Simple', weapon_range: 'Melee',
     damage_dice: '', damage_type: 'Slashing', properties: [],
@@ -97,8 +98,10 @@ export default function AddItemModal({ item, onSave, onClose }) {
       description: form.description,
       // recharge_amount (e.g. "2d4+2" for a partial recharge like Staff of the Magi) must be
       // carried through explicitly - omitting it here previously meant editing a partial-
-      // recharge item silently turned it into a full-recharge item on every save.
-      charges: form.has_charges ? { current: parseInt(form.charges_current)||0, max: parseInt(form.charges_max)||0, recharge: form.recharge, ...(form.recharge_amount.trim() ? { recharge_amount: form.recharge_amount.trim() } : {}) } : null,
+      // recharge item silently turned it into a full-recharge item on every save. Gated on
+      // recharge_mode==='roll' (not just whether the text box happens to be non-empty) so
+      // switching the dropdown back to "Full Recharge" reliably clears a stale roll formula.
+      charges: form.has_charges ? { current: parseInt(form.charges_current)||0, max: parseInt(form.charges_max)||0, recharge: form.recharge, ...(form.recharge_mode === 'roll' && form.recharge_amount.trim() ? { recharge_amount: form.recharge_amount.trim() } : {}) } : null,
       granted_spells: form.granted_spells.filter(s => s.name.trim()).map(s => ({ name: s.name.trim(), level_int: parseInt(s.level_int)||0, charge_cost: parseInt(s.charge_cost)||1 })),
       buffs: form.buffs || [],
       item_type: form.item_type,
@@ -204,8 +207,20 @@ export default function AddItemModal({ item, onSave, onClose }) {
         {form.has_charges && (
           <div className="form-row">
             <div className="form-group"><label>Max Charges</label><input type="number" min={0} value={form.charges_max} onChange={e=>{set('charges_max',e.target.value); set('charges_current',e.target.value);}} /></div>
-            <div className="form-group"><label>Recharges On</label><select value={form.recharge} onChange={e=>set('recharge',e.target.value)}>{RECHARGES.map(r=><option key={r} value={r}>{r.replace('_',' ')}</option>)}</select></div>
-            <div className="form-group"><label>Recharge Amount</label><input value={form.recharge_amount} onChange={e=>set('recharge_amount',e.target.value)} placeholder="e.g. 2d4+2 (blank = full)" /></div>
+            <div className="form-group">
+              <label>Recharge</label>
+              <select value={form.recharge_mode} onChange={e=>set('recharge_mode',e.target.value)}>
+                <option value="full">Full Recharge</option>
+                <option value="roll">Roll to Recharge</option>
+              </select>
+            </div>
+            <div className="form-group">
+              <label>{form.recharge_mode === 'roll' ? 'Rolls At' : 'Recharges On'}</label>
+              <select value={form.recharge} onChange={e=>set('recharge',e.target.value)}>{RECHARGES.map(r=><option key={r} value={r}>{r.replace('_',' ')}</option>)}</select>
+            </div>
+            {form.recharge_mode === 'roll' && (
+              <div className="form-group"><label>Roll Amount</label><input value={form.recharge_amount} onChange={e=>set('recharge_amount',e.target.value)} placeholder="e.g. 2d4+2" /></div>
+            )}
           </div>
         )}
         <div className="form-group"><label>Item Type</label><select value={form.item_type} onChange={e=>set('item_type',e.target.value)}>{ITEM_TYPES.map(t=><option key={t}>{t}</option>)}</select></div>
