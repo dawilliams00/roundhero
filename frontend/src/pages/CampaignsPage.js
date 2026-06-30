@@ -352,10 +352,10 @@ function EffectRow({ effect, onStatus }) {
   );
 }
 
-function EncounterRow({ encounter, selected, isDm, onStatus, onDelete, onSelect, onRun }) {
+function EncounterRow({ encounter, selected, isDm, onStatus, onDelete, onSetup, onRun }) {
   const nextActions = {
     planned: [['Start', 'running']],
-    running: [['Pause', 'paused'], ['Complete', 'complete']],
+    running: [['Stop', 'paused'], ['Complete', 'complete']],
     paused: [['Resume', 'running'], ['Complete', 'complete']],
     complete: [],
   }[encounter.status] || [];
@@ -375,7 +375,9 @@ function EncounterRow({ encounter, selected, isDm, onStatus, onDelete, onSelect,
       </div>
       {isDm && (
         <div style={{display:'flex',gap:6}}>
-          <button className="btn btn-secondary btn-sm" onClick={() => onSelect(encounter.id)}>Setup</button>
+          <button className={selected ? 'btn btn-primary btn-sm' : 'btn btn-secondary btn-sm'} onClick={() => onSetup(encounter.id)}>
+            {selected ? 'Minimize Setup' : 'Setup'}
+          </button>
           <button className="btn btn-primary btn-sm" onClick={() => onRun(encounter.id)}>Open</button>
           {nextActions.map(([label, status]) => (
             <button key={status} className="btn btn-secondary btn-sm" onClick={() => onStatus(encounter.id, status)}>{label}</button>
@@ -497,7 +499,8 @@ function EncounterBuilder({
       </div>
 
       {campaign.is_dm && (
-        <div style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) minmax(0,1.3fr)',gap:12}}>
+        <div style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) 340px',gap:12,alignItems:'start'}}>
+          <div style={{display:'flex',flexDirection:'column',gap:12,minWidth:0}}>
           <div style={{border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',padding:10}}>
             <div style={{color:'var(--text-secondary)',fontSize:11,fontWeight:800,textTransform:'uppercase',marginBottom:8}}>Add Players</div>
             <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
@@ -509,78 +512,85 @@ function EncounterBuilder({
             </div>
           </div>
 
-          <div style={{border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',padding:10}}>
+          <div style={{overflowX:'auto',border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',background:'var(--bg-secondary)'}}>
+            <div style={{minWidth:860}}>
+              <div style={{position:'sticky',top:0,zIndex:2,display:'grid',gridTemplateColumns:'64px 1.3fr 130px 110px 1.1fr 1fr 110px 86px',gap:6,color:'var(--text-secondary)',fontSize:11,fontWeight:800,textTransform:'uppercase',padding:'8px 10px',background:'var(--bg-primary)',borderBottom:'1px solid var(--border)'}}>
+                <div>Init</div>
+                <div>Name</div>
+                <div>HP / Temp</div>
+                <div>AC / Type</div>
+                <div>Conditions</div>
+                <div>Concentration</div>
+                <div>Death Saves</div>
+                <div />
+              </div>
+              {combatants.length === 0 ? (
+                <div style={{color:'var(--text-secondary)',fontSize:13,padding:20}}>No combatants yet.</div>
+              ) : combatants.map(row => (
+                <div key={row.id} style={{display:'grid',gridTemplateColumns:'64px 1.3fr 130px 110px 1.1fr 1fr 110px 86px',gap:6,alignItems:'center',padding:'8px 10px',borderTop:'1px solid var(--border)'}}>
+                  <input value={row.initiative} onChange={e => updateCombatant(row.id, { initiative: e.target.value })} />
+                  <div>
+                    <input value={row.name} onChange={e => updateCombatant(row.id, { name: e.target.value })} />
+                    <div style={{color:'var(--text-dim)',fontSize:11,marginTop:2}}>
+                      {row.group_key ? `Group: ${row.group_key.split('_')[0]}` : row.type}
+                    </div>
+                  </div>
+                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:4}}>
+                    <input value={row.hp_current} onChange={e => updateCombatant(row.id, { hp_current: e.target.value })} placeholder="HP" />
+                    <input value={row.temp_hp} onChange={e => updateCombatant(row.id, { temp_hp: e.target.value })} placeholder="Temp" />
+                    <button className="btn btn-secondary btn-sm" onClick={() => updateCombatant(row.id, { hp_current: Math.max(0, toNumber(row.hp_current) - 1) })}>-1</button>
+                    <button className="btn btn-secondary btn-sm" onClick={() => updateCombatant(row.id, { hp_current: toNumber(row.hp_current) + 1 })}>+1</button>
+                  </div>
+                  <div>
+                    <input value={row.ac} onChange={e => updateCombatant(row.id, { ac: e.target.value })} placeholder="AC" />
+                    <div style={{color:row.type === 'player' ? 'var(--accent-light)' : 'var(--warning)',fontSize:11,marginTop:3}}>{row.type}</div>
+                  </div>
+                  <input value={(row.conditions || []).join(', ')} onChange={e => updateConditionText(row, e.target.value)} placeholder="poisoned, hexed" />
+                  <input value={row.concentration} onChange={e => updateCombatant(row.id, { concentration: e.target.value })} placeholder="Spell or effect" />
+                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:4}}>
+                    <button className="btn btn-secondary btn-sm" onClick={() => setDeathSave(row, 'successes', 1)}>S {row.death_saves?.successes || 0}</button>
+                    <button className="btn btn-secondary btn-sm" onClick={() => setDeathSave(row, 'failures', 1)}>F {row.death_saves?.failures || 0}</button>
+                    <button className="btn btn-secondary btn-sm" onClick={() => updateCombatant(row.id, { death_saves: { successes: 0, failures: 0 } })} style={{gridColumn:'1 / -1'}}>Reset</button>
+                  </div>
+                  <div style={{display:'flex',gap:4}}>
+                    {row.monster && <button className="btn btn-secondary btn-sm" onClick={() => onViewMonster(row.monster)}>Stats</button>}
+                    {campaign.is_dm && <button className="btn btn-danger btn-sm" onClick={() => removeCombatant(row.id)}>X</button>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          </div>
+
+          <aside style={{border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',padding:10,position:'sticky',top:12,alignSelf:'start',background:'var(--bg-secondary)'}}>
             <div style={{color:'var(--text-secondary)',fontSize:11,fontWeight:800,textTransform:'uppercase',marginBottom:8}}>Pull Enemy</div>
-            <div style={{display:'grid',gridTemplateColumns:'1fr 32px 64px 32px 88px',gap:6,marginBottom:8}}>
+            <div style={{display:'grid',gridTemplateColumns:'1fr',gap:6,marginBottom:8}}>
               <input value={monsterSearch} onChange={e => setMonsterSearch(e.target.value)} placeholder="Search bestiary" />
+              <div style={{display:'grid',gridTemplateColumns:'32px 1fr 32px 78px',gap:6}}>
               <button type="button" className="btn btn-secondary btn-sm" onClick={() => setAddMonsterQuantity(String(Math.max(1, toNumber(addMonsterQuantity, 1) - 1)))}>-</button>
               <input value={addMonsterQuantity} onChange={e => setAddMonsterQuantity(e.target.value)} placeholder="Qty" style={{textAlign:'center'}} />
               <button type="button" className="btn btn-secondary btn-sm" onClick={() => setAddMonsterQuantity(String(Math.min(30, toNumber(addMonsterQuantity, 1) + 1)))}>+</button>
               <input value={addMonsterInitiative} onChange={e => setAddMonsterInitiative(e.target.value)} placeholder="Init" />
+              </div>
             </div>
             <label style={{display:'flex',alignItems:'center',gap:8,color:'var(--text-secondary)',fontSize:12,marginBottom:8}}>
               <input type="checkbox" checked={sharedInitiative} onChange={e => setSharedInitiative(e.target.checked)} style={{width:'auto'}} />
               Shared initiative for this group
             </label>
-            <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))',gap:6}}>
+            <div style={{display:'flex',flexDirection:'column',gap:6,maxHeight:430,overflowY:'auto'}}>
               {filteredMonsters.map(monster => (
-                <button key={monster._custom_id ? `custom_${monster._custom_id}` : monster.name} className="btn btn-secondary btn-sm" onClick={() => addMonster(monster)} style={{textAlign:'left'}}>
-                  {monster.name} <span style={{color:'var(--text-dim)'}}>CR {monster.challenge_rating}</span>
-                </button>
+                <div key={monster._custom_id ? `custom_${monster._custom_id}` : monster.name} style={{display:'grid',gridTemplateColumns:'1fr auto auto',gap:5}}>
+                  <div style={{border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',padding:'6px 8px',background:'var(--bg-card)',color:'var(--text-primary)',fontSize:12,fontWeight:800,minWidth:0}}>
+                    {monster.name} <span style={{color:'var(--text-dim)'}}>CR {monster.challenge_rating}</span>
+                  </div>
+                  <button type="button" className="btn btn-primary btn-sm" onClick={() => addMonster(monster)}>Add</button>
+                  <button type="button" className="btn btn-secondary btn-sm" onClick={() => onViewMonster(monster)}>Stat</button>
+                </div>
               ))}
             </div>
-          </div>
+          </aside>
         </div>
       )}
-
-      <div style={{overflowX:'auto',border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',background:'var(--bg-secondary)'}}>
-        <div style={{minWidth:860}}>
-          <div style={{position:'sticky',top:0,zIndex:2,display:'grid',gridTemplateColumns:'64px 1.3fr 130px 110px 1.1fr 1fr 110px 86px',gap:6,color:'var(--text-secondary)',fontSize:11,fontWeight:800,textTransform:'uppercase',padding:'8px 10px',background:'var(--bg-primary)',borderBottom:'1px solid var(--border)'}}>
-            <div>Init</div>
-            <div>Name</div>
-            <div>HP / Temp</div>
-            <div>AC / Type</div>
-            <div>Conditions</div>
-            <div>Concentration</div>
-            <div>Death Saves</div>
-            <div />
-          </div>
-          {combatants.length === 0 ? (
-            <div style={{color:'var(--text-secondary)',fontSize:13,padding:20}}>No combatants yet.</div>
-          ) : combatants.map(row => (
-            <div key={row.id} style={{display:'grid',gridTemplateColumns:'64px 1.3fr 130px 110px 1.1fr 1fr 110px 86px',gap:6,alignItems:'center',padding:'8px 10px',borderTop:'1px solid var(--border)'}}>
-              <input value={row.initiative} onChange={e => updateCombatant(row.id, { initiative: e.target.value })} />
-              <div>
-                <input value={row.name} onChange={e => updateCombatant(row.id, { name: e.target.value })} />
-                <div style={{color:'var(--text-dim)',fontSize:11,marginTop:2}}>
-                  {row.group_key ? `Group: ${row.group_key.split('_')[0]}` : row.type}
-                </div>
-              </div>
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:4}}>
-                <input value={row.hp_current} onChange={e => updateCombatant(row.id, { hp_current: e.target.value })} placeholder="HP" />
-                <input value={row.temp_hp} onChange={e => updateCombatant(row.id, { temp_hp: e.target.value })} placeholder="Temp" />
-                <button className="btn btn-secondary btn-sm" onClick={() => updateCombatant(row.id, { hp_current: Math.max(0, toNumber(row.hp_current) - 1) })}>-1</button>
-                <button className="btn btn-secondary btn-sm" onClick={() => updateCombatant(row.id, { hp_current: toNumber(row.hp_current) + 1 })}>+1</button>
-              </div>
-              <div>
-                <input value={row.ac} onChange={e => updateCombatant(row.id, { ac: e.target.value })} placeholder="AC" />
-                <div style={{color:row.type === 'player' ? 'var(--accent-light)' : 'var(--warning)',fontSize:11,marginTop:3}}>{row.type}</div>
-              </div>
-              <input value={(row.conditions || []).join(', ')} onChange={e => updateConditionText(row, e.target.value)} placeholder="poisoned, hexed" />
-              <input value={row.concentration} onChange={e => updateCombatant(row.id, { concentration: e.target.value })} placeholder="Spell or effect" />
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:4}}>
-                <button className="btn btn-secondary btn-sm" onClick={() => setDeathSave(row, 'successes', 1)}>S {row.death_saves?.successes || 0}</button>
-                <button className="btn btn-secondary btn-sm" onClick={() => setDeathSave(row, 'failures', 1)}>F {row.death_saves?.failures || 0}</button>
-                <button className="btn btn-secondary btn-sm" onClick={() => updateCombatant(row.id, { death_saves: { successes: 0, failures: 0 } })} style={{gridColumn:'1 / -1'}}>Reset</button>
-              </div>
-              <div style={{display:'flex',gap:4}}>
-                {row.monster && <button className="btn btn-secondary btn-sm" onClick={() => onViewMonster(row.monster)}>Stats</button>}
-                {campaign.is_dm && <button className="btn btn-danger btn-sm" onClick={() => removeCombatant(row.id)}>X</button>}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }
@@ -706,8 +716,11 @@ export default function CampaignsPage() {
   const inactiveRoster = allRoster.filter(entry => !entry.active);
   const activeEffects = (campaign?.effects || []).filter(effect => effect.status !== 'removed');
   const encounters = campaign?.encounters || [];
-  const selectedEncounter = encounters.find(entry => entry.id === selectedEncounterId) || encounters[0] || null;
+  const selectedEncounter = selectedEncounterId
+    ? encounters.find(entry => entry.id === selectedEncounterId) || null
+    : null;
   const runningEncounter = encounters.find(entry => entry.id === runningEncounterId) || null;
+  const encounterSetupMode = activeTab === 'Encounters' && campaign?.is_dm && !!selectedEncounter;
   const attached = useMemo(
     () => new Set(activeRoster.map(entry => entry.character_id)),
     [activeRoster]
@@ -885,7 +898,7 @@ export default function CampaignsPage() {
 
   return (
     <div style={{minHeight:'100vh',background:'var(--bg-primary)',padding:24}}>
-      <div style={{maxWidth:1100,margin:'0 auto'}}>
+      <div style={{maxWidth:encounterSetupMode ? 'none' : 1100,margin:'0 auto'}}>
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:24,gap:12}}>
           <div>
             <div style={{fontFamily:"'Cinzel',serif",fontSize:22,color:'var(--accent-light)'}}>RoundHero</div>
@@ -905,7 +918,8 @@ export default function CampaignsPage() {
           </div>
         )}
 
-        <div style={{display:'grid',gridTemplateColumns:'320px minmax(0,1fr)',gap:16,alignItems:'start'}}>
+        <div style={{display:'grid',gridTemplateColumns:encounterSetupMode ? 'minmax(0,1fr)' : '320px minmax(0,1fr)',gap:16,alignItems:'start'}}>
+          {!encounterSetupMode && (
           <div style={{display:'flex',flexDirection:'column',gap:12}}>
             <div className="card">
               <form onSubmit={submitCreate}>
@@ -942,6 +956,7 @@ export default function CampaignsPage() {
               ))}
             </div>
           </div>
+          )}
 
           <div className="card" style={{minHeight:540}}>
             {!campaign ? (
@@ -1148,7 +1163,7 @@ export default function CampaignsPage() {
                         isDm={campaign.is_dm}
                         onStatus={setEncounterStatus}
                         onDelete={removeEncounter}
-                        onSelect={setSelectedEncounterId}
+                        onSetup={id => setSelectedEncounterId(current => current === id ? null : id)}
                         onRun={setRunningEncounterId}
                       />
                     ))}
