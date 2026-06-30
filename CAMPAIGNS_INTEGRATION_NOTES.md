@@ -72,11 +72,51 @@ Navigation/dashboard hook:
 
 ## Next Slice
 
-Effects are intentionally a ledger first. The next step is connecting selected party effects to character sheets with explicit confirmation/permission:
+Effects are intentionally a ledger first. The next step is connecting selected party effects to character sheets with explicit confirmation/permission.
 
-- Haste: add active effect to target; track concentration on caster.
-- Polymorph: apply a special target state without destroying original character data.
-- Bless/Bane: add visible roll modifiers.
-- Remove effect: clean up target sheet state.
+### Claude's half is done: `frontend/src/utils/effectApply.js`
 
-Encounter builder is still v1. Next tracker improvements: round/turn advancement, active-turn highlighting, richer enemy grouping controls, bulk damage/healing, condition pickers, concentration break prompts, enemy death-state handling, and live updates/permissions for connected players.
+New shared utility, no backend changes needed (it reuses the existing ownership-gated
+`GET`/`PUT /characters/<id>` routes - they already do a full `tracker_data` replace and
+already check `user_id == character.user_id`, so there's no new auth surface to build).
+
+```js
+import { applyNamedEffectToCharacterId, removeNamedEffectFromCharacterId, KNOWN_MECHANICAL_EFFECTS } from '../utils/effectApply';
+
+await applyNamedEffectToCharacterId(characterId, 'Hasted');   // adds to active_effects, no-op if already present
+await removeNamedEffectFromCharacterId(characterId, 'Hasted'); // removes it; for Haste specifically also applies Lethargic
+```
+
+**Design: the target's owner applies it, not the DM/caster.** A spell like Haste cast on
+an ally targets a DIFFERENT user's character - rather than build new cross-user backend
+permissions, the intended flow is: the campaign Effects tab shows a player any pending/
+applied effect *targeting a character they own*, with an "Apply to My Sheet" / "Remove
+from My Sheet" button that calls these functions against their own character ID. Since
+the caller already owns that character, the existing endpoints just work - the hand-off
+from DM/caster to target IS the "explicit confirmation" already called for here.
+
+`effectName` is a plain string added to/removed from `tracker_data.active_effects` -
+the same array `CharacterContext.js`'s own `addActiveEffect`/Haste cast flow already
+uses, so anything that already reacts to that array (AC+2, double speed, etc. in
+`CharacterHeader.js`) picks it up automatically. `KNOWN_MECHANICAL_EFFECTS` currently
+only lists `'Hasted'` - that's the one effect with real mechanical side-effects modeled
+anywhere in this app today. Bless/Bane have no mechanical model anywhere (not even on a
+caster's own sheet) - applying them via this utility just shows as a plain header chip,
+same "track it, the player applies the rule" philosophy used for conditions/exhaustion
+everywhere else in this app. Don't build Bless/Bane-specific roll math without that
+being asked for separately.
+
+**Polymorph is deliberately NOT covered by this utility.** It needs a whole creature/
+temp-form state system (HP override using the new form's HP, reversion handling, etc.)
+that doesn't exist yet - see the Polymorph TODO and the `project-creature-tracking-spec`
+memory (not in this repo) for the agreed design before building that. Applying it as a
+plain `active_effects` string would be misleading, not just incomplete.
+
+What's left for the campaign side: the actual button/UI in `CampaignsPage.js`'s Effects
+tab (or wherever a player views effects targeting their own characters), calling these
+two functions, and updating the effect's ledger status (`pending` -> `applied` /
+`removed`) via the existing `update_effect_status` route the same way it already does.
+
+### Other open items
+
+- Encounter builder is still v1. Next tracker improvements: round/turn advancement, active-turn highlighting, richer enemy grouping controls, bulk damage/healing, condition pickers, concentration break prompts, enemy death-state handling, and live updates/permissions for connected players.
