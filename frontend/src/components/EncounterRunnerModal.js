@@ -8,6 +8,12 @@ const COMMON_CONDITIONS = [
   'Restrained', 'Stunned', 'Unconscious', 'Hexed', 'Blessed', 'Baned', 'Hasted', 'Slowed'
 ];
 
+const COMMON_SPELL_EFFECTS = [
+  'Bane', 'Bless', 'Charm Person', 'Command', 'Confusion', 'Dominate Person',
+  'Faerie Fire', 'Fear', 'Hold Monster', 'Hold Person', 'Hex', 'Haste',
+  'Hunter\'s Mark', 'Polymorph', 'Protection from Energy', 'Slow', 'Web'
+];
+
 const KNOWN_CONCENTRATION_EFFECTS = new Set([
   'bane', 'bless', 'blur', 'darkness', 'detect magic', 'enlarge/reduce',
   'faerie fire', 'fly', 'greater invisibility', 'haste', 'hex', 'hold person',
@@ -157,8 +163,8 @@ function makeEffectOptions(roster) {
   });
   return {
     condition: COMMON_CONDITIONS,
-    spell: spells.sort((a, b) => a.localeCompare(b)),
-    effect: effects.sort((a, b) => a.localeCompare(b)),
+    spell: [...new Set([...COMMON_SPELL_EFFECTS, ...spells])].sort((a, b) => a.localeCompare(b)),
+    effect: [...new Set([...COMMON_CONDITIONS, ...COMMON_SPELL_EFFECTS, ...effects])].sort((a, b) => a.localeCompare(b)),
     note: [],
   };
 }
@@ -192,10 +198,10 @@ function HpControls({ row, onUpdate }) {
     onUpdate(row.id, { temp_hp: Math.max(0, toNumber(row.temp_hp, 0) + delta) });
   };
   return (
-    <div style={{display:'grid',gridTemplateColumns:'30px minmax(92px,1fr) 30px',gap:6,alignItems:'center',position:'relative',minWidth:0}}>
+    <div style={{display:'grid',gridTemplateColumns:'26px minmax(82px,1fr) 26px',gap:5,alignItems:'center',position:'relative',minWidth:0}}>
       <MiniButton onClick={() => applyDelta(-1)} variant="danger">-</MiniButton>
       <div style={{textAlign:'center'}}>
-        <button type="button" onClick={() => setOpenCalc(openCalc === 'current' ? null : 'current')} style={{background:'transparent',border:0,color:'var(--accent-light)',fontWeight:900,fontSize:18,cursor:'pointer',padding:0}}>
+        <button type="button" onClick={() => setOpenCalc(openCalc === 'current' ? null : 'current')} style={{background:'transparent',border:0,color:'var(--accent-light)',fontWeight:900,fontSize:16,cursor:'pointer',padding:0}}>
           {row.hp_current || 0}/{row.hp_max || '?'}
         </button>
         <button type="button" onClick={() => setOpenCalc(openCalc === 'temp' ? null : 'temp')} style={{display:'block',margin:'2px auto 0',background:'transparent',border:0,color:'var(--text-dim)',fontSize:11,cursor:'pointer',padding:0}}>
@@ -213,15 +219,6 @@ function HpControls({ row, onUpdate }) {
   );
 }
 
-// Rebuilt as stacked, full-width sections (not a dense multi-column grid) - the previous
-// version's nested fixed-width sub-grid for INIT/AC/[STAT] could overflow its parent
-// column once the outer 4-column grid compressed below the sub-grid's natural content
-// width, which is exactly the overlap the owner reported (STAT button colliding with the
-// HP display in the next column). Each section below is now its own full-width row with
-// an explicit min-height, so nothing can collide regardless of container width, long
-// monster names, or long condition/effect text - matches the fix direction already
-// documented in CAMPAIGNS_INTEGRATION_NOTES.md after the previous compact-grid attempt
-// didn't hold up under live testing.
 function CombatantCard({ row, active, onUpdate, onRemove, onViewMonster, onAddCondition, onRemoveCondition, onRemoveEffect, onDeathSave, rowRef }) {
   return (
     <div ref={rowRef} style={{
@@ -229,42 +226,40 @@ function CombatantCard({ row, active, onUpdate, onRemove, onViewMonster, onAddCo
       borderRadius:'var(--radius-sm)',
       background:active ? 'linear-gradient(90deg, rgba(124,92,252,0.24), rgba(30,41,78,0.92))' : 'var(--bg-secondary)',
       boxShadow:active ? '0 0 0 2px rgba(124,92,252,0.18), 0 0 24px rgba(124,92,252,0.2)' : 'none',
-      padding:12,
-      display:'flex',
-      flexDirection:'column',
-      gap:10,
+      padding:8,
+      display:'grid',
+      gridTemplateColumns:'minmax(260px,1.25fr) 150px minmax(300px,1.2fr) minmax(170px,0.65fr) auto',
+      gridTemplateAreas:'"identity hp status effects actions"',
+      gap:8,
+      alignItems:'start',
       minWidth:0,
       scrollMarginTop:72,
     }}>
-      {/* Identity row: name + type badge + group, full width */}
-      <div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap',minWidth:0}}>
+      <div style={{gridArea:'identity',display:'grid',gap:5,minWidth:0}}>
         <input value={row.name} onChange={e => onUpdate(row.id, { name: e.target.value })} style={{fontWeight:800,flex:'1 1 200px',minWidth:120}} />
-        <span style={{color:row.type === 'player' ? 'var(--success)' : 'var(--warning)',fontSize:11,fontWeight:900,textTransform:'uppercase',whiteSpace:'nowrap'}}>{row.type}</span>
-        <span style={{color:'var(--text-dim)',fontSize:11,whiteSpace:'nowrap'}}>{row.group_key ? `Group: ${enemyGroupLabel(row)}` : 'No group'}</span>
+        <div style={{display:'grid',gridTemplateColumns:'58px 58px auto',gap:6,alignItems:'end'}}>
+          <label style={{display:'grid',gap:2,fontSize:10,color:'var(--text-dim)'}}>
+            INIT
+            <input value={row.initiative} onChange={e => onUpdate(row.id, { initiative: e.target.value })} style={{textAlign:'center',fontWeight:800}} />
+          </label>
+          <label style={{display:'grid',gap:2,fontSize:10,color:'var(--text-dim)'}}>
+            AC
+            <input value={row.ac} onChange={e => onUpdate(row.id, { ac: e.target.value })} style={{textAlign:'center',fontWeight:800}} />
+          </label>
+          <div style={{display:'flex',gap:6,alignItems:'center',flexWrap:'wrap',minWidth:0}}>
+            {row.monster && <MiniButton onClick={() => onViewMonster(row.monster)}>Stat</MiniButton>}
+            <span style={{color:row.type === 'player' ? 'var(--success)' : 'var(--warning)',fontSize:11,fontWeight:900,textTransform:'uppercase'}}>{row.type}</span>
+          </div>
+        </div>
+        <div style={{color:'var(--text-dim)',fontSize:11,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{row.group_key ? `Group: ${enemyGroupLabel(row)}` : 'No group'}</div>
       </div>
 
-      {/* Stats row: INIT, AC, stat-block button - own full-width row, never shares space
-          with HP/conditions/effects, so it can't collide with anything below it. */}
-      <div style={{display:'flex',gap:10,alignItems:'flex-end',flexWrap:'wrap',minHeight:48}}>
-        <label style={{display:'grid',gap:3,fontSize:10,color:'var(--text-dim)'}}>
-          INIT
-          <input value={row.initiative} onChange={e => onUpdate(row.id, { initiative: e.target.value })} style={{textAlign:'center',fontWeight:800,width:64}} />
-        </label>
-        <label style={{display:'grid',gap:3,fontSize:10,color:'var(--text-dim)'}}>
-          AC
-          <input value={row.ac} onChange={e => onUpdate(row.id, { ac: e.target.value })} style={{textAlign:'center',fontWeight:800,width:64}} />
-        </label>
-        {row.monster && <MiniButton onClick={() => onViewMonster(row.monster)}>Stat Block</MiniButton>}
-      </div>
-
-      {/* HP row - own full-width row */}
-      <div style={{minWidth:0}}>
+      <div style={{gridArea:'hp',alignSelf:'center',minWidth:0}}>
         <HpControls row={row} onUpdate={onUpdate} />
       </div>
 
-      {/* Conditions + concentration - own full-width row */}
-      <div style={{minWidth:0}}>
-        <div style={{display:'flex',gap:6,marginBottom:7,flexWrap:'wrap'}}>
+      <div style={{gridArea:'status',minWidth:0}}>
+        <div style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) auto',gap:6,marginBottom:5}}>
           <select onChange={e => { if (e.target.value) onAddCondition(row, e.target.value); e.target.value = ''; }} defaultValue="" style={{flex:'1 1 160px'}}>
             <option value="">Add condition</option>
             {COMMON_CONDITIONS.map(name => <option key={name} value={name}>{name}</option>)}
@@ -279,16 +274,15 @@ function CombatantCard({ row, active, onUpdate, onRemove, onViewMonster, onAddCo
             </button>
           ))}
         </div>
-        <div style={{marginTop:8}}>
+        <div style={{marginTop:5,display:'grid',gridTemplateColumns:'82px minmax(0,1fr)',gap:5,alignItems:'center'}}>
           <label style={{fontSize:10,color:'var(--text-dim)'}}>CONCENTRATION</label>
           <input value={row.concentration} onChange={e => onUpdate(row.id, { concentration: e.target.value })} placeholder="Spell or effect" />
         </div>
       </div>
 
-      {/* Effects + death saves + remove - own full-width row */}
-      <div style={{minWidth:0}}>
-        <div style={{color:'var(--text-secondary)',fontSize:11,fontWeight:800,marginBottom:5}}>EFFECTS</div>
-        <div style={{display:'flex',flexDirection:'column',gap:4,maxHeight:98,overflowY:'auto'}}>
+      <div style={{gridArea:'effects',minWidth:0}}>
+        <div style={{color:'var(--text-secondary)',fontSize:10,fontWeight:800,marginBottom:4}}>EFFECTS</div>
+        <div style={{display:'flex',flexDirection:'column',gap:4,maxHeight:54,overflowY:'auto'}}>
           {cleanList(row.effects).length === 0 && <span style={{color:'var(--text-dim)',fontSize:12}}>None</span>}
           {cleanList(row.effects).map(effect => (
             <button key={effect.id || effect.name} type="button" onClick={() => onRemoveEffect(row, effect)} style={{textAlign:'left',border:'1px solid rgba(230,57,70,0.55)',background:'rgba(230,57,70,0.18)',color:'var(--text-primary)',borderRadius:4,padding:5,cursor:'pointer'}}>
@@ -297,15 +291,19 @@ function CombatantCard({ row, active, onUpdate, onRemove, onViewMonster, onAddCo
             </button>
           ))}
         </div>
-        <div style={{display:'flex',gap:8,marginTop:7,flexWrap:'wrap',alignItems:'center'}}>
+      </div>
+
+      <div style={{gridArea:'actions',display:'flex',gap:5,flexDirection:'column',alignItems:'stretch',minWidth:94}}>
           {row.type === 'player' && (
             <>
-              <MiniButton onClick={() => onDeathSave(row, 'successes', 1)}>Secret Save {row.death_saves?.successes || 0}</MiniButton>
-              <MiniButton onClick={() => onDeathSave(row, 'failures', 1)}>Secret Fail {row.death_saves?.failures || 0}</MiniButton>
+            <div style={{color:'var(--text-secondary)',fontSize:10,fontWeight:800,textTransform:'uppercase'}}>Death Saves</div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:5}}>
+              <MiniButton onClick={() => onDeathSave(row, 'successes', 1)}>Pass {row.death_saves?.successes || 0}</MiniButton>
+              <MiniButton onClick={() => onDeathSave(row, 'failures', 1)}>Fail {row.death_saves?.failures || 0}</MiniButton>
+            </div>
             </>
           )}
           <MiniButton onClick={() => onRemove(row.id)} variant="danger">Remove</MiniButton>
-        </div>
       </div>
     </div>
   );
@@ -330,44 +328,52 @@ export default function EncounterRunnerModal({
   const [sharedInitiative, setSharedInitiative] = useState(true);
   const [selectedTurnId, setSelectedTurnId] = useState(combatants[0]?.id || null);
   const [viewingMonster, setViewingMonster] = useState(null);
-  const [effectForm, setEffectForm] = useState({ type: 'condition', name: '', custom: '', source_id: '', target_id: '', duration: '1 min', concentration: false });
+  const [effectForm, setEffectForm] = useState({ type: 'condition', name: '', custom: '', source_id: '', target_ids: [], duration: '1 min', concentration: false });
   const rowRefs = useRef({});
+  const dataRef = useRef(data);
+  dataRef.current = data;
 
   const activeRoster = roster.filter(entry => entry.active);
   const filteredMonsters = monsters
-    .filter(monster => !monsterSearch.trim() || monster.name.toLowerCase().includes(monsterSearch.toLowerCase()))
-    .slice(0, 10);
+    .filter(monster => !monsterSearch.trim() || monster.name.toLowerCase().includes(monsterSearch.toLowerCase()));
   const effectOptions = useMemo(() => makeEffectOptions(activeRoster), [activeRoster]);
   const effectNames = effectOptions[effectForm.type] || [];
 
   const patchCombatants = nextCombatants => {
+    const baseData = dataRef.current || {};
     const normalized = nextCombatants.map(normalizeCombatant);
-    onPatchData(encounter.id, {
-      ...data,
+    const nextData = {
+      ...baseData,
       combatants: normalized,
       initiative_order: normalized
         .sort((a, b) => initiativeValue(b.initiative) - initiativeValue(a.initiative))
         .map(row => row.id),
-    });
+    };
+    dataRef.current = nextData;
+    onPatchData(encounter.id, nextData);
   };
 
   const updateCombatant = (id, patch) => {
-    patchCombatants((data.combatants || []).map(row => row.id === id ? normalizeCombatant({ ...row, ...patch }) : normalizeCombatant(row)));
+    const currentRows = dataRef.current?.combatants || [];
+    patchCombatants(currentRows.map(row => row.id === id ? normalizeCombatant({ ...row, ...patch }) : normalizeCombatant(row)));
   };
 
   const removeCombatant = id => {
-    patchCombatants((data.combatants || []).filter(row => row.id !== id));
+    const currentRows = dataRef.current?.combatants || [];
+    patchCombatants(currentRows.filter(row => row.id !== id));
   };
 
   const addPartyMember = entry => {
-    if ((data.combatants || []).some(row => sameId(row.character_id, entry.character_id))) return;
-    patchCombatants([...(data.combatants || []), combatantFromRoster(entry)]);
+    const currentRows = dataRef.current?.combatants || [];
+    if (currentRows.some(row => sameId(row.character_id, entry.character_id))) return;
+    patchCombatants([...currentRows, combatantFromRoster(entry)]);
   };
 
   const syncPartyStats = async () => {
     const freshCampaign = reloadCampaign ? await reloadCampaign(campaign.id) : null;
     const sourceRoster = (freshCampaign?.characters || roster || []).filter(entry => entry.active);
-    const next = (data.combatants || []).map(row => {
+    const currentRows = dataRef.current?.combatants || [];
+    const next = currentRows.map(row => {
       if (row.type !== 'player' || !row.character_id) return normalizeCombatant(row);
       const entry = sourceRoster.find(candidate => sameId(candidate.character_id, row.character_id));
       if (!entry) return normalizeCombatant(row);
@@ -393,8 +399,9 @@ export default function EncounterRunnerModal({
   };
 
   const addMonster = monster => {
+    const currentRows = dataRef.current?.combatants || [];
     const qty = Math.max(1, Math.min(30, toNumber(quantity, 1)));
-    const existingCount = (data.combatants || []).filter(row => row.monster_name === monster.name).length;
+    const existingCount = currentRows.filter(row => row.monster_name === monster.name).length;
     const groupKey = `${monster.name}_${Date.now()}`;
     const added = Array.from({ length: qty }, (_, index) => normalizeCombatant({
       type: 'enemy',
@@ -408,14 +415,15 @@ export default function EncounterRunnerModal({
       temp_hp: 0,
       ac: monster.armor_class || '',
     }));
-    patchCombatants([...(data.combatants || []), ...added]);
+    patchCombatants([...currentRows, ...added]);
   };
 
   const addEnemyToGroup = sample => {
     if (!sample?.monster) return;
-    const groupRows = (data.combatants || []).filter(row => row.group_key === sample.group_key);
+    const currentRows = dataRef.current?.combatants || [];
+    const groupRows = currentRows.filter(row => row.group_key === sample.group_key);
     const nextIndex = groupRows.length + 1;
-    patchCombatants([...(data.combatants || []), normalizeCombatant({
+    patchCombatants([...currentRows, normalizeCombatant({
       ...sample,
       id: combatantId(),
       name: `${sample.monster_name || sample.name} #${nextIndex}`,
@@ -429,7 +437,7 @@ export default function EncounterRunnerModal({
   };
 
   const removeEnemyFromGroup = sample => {
-    const rows = data.combatants || [];
+    const rows = dataRef.current?.combatants || [];
     const groupRows = rows.filter(row => row.group_key === sample.group_key);
     const last = groupRows[groupRows.length - 1];
     if (last) removeCombatant(last.id);
@@ -445,7 +453,8 @@ export default function EncounterRunnerModal({
   };
 
   const removeEffect = (row, effect) => {
-    const next = (data.combatants || []).map(entry => {
+    const currentRows = dataRef.current?.combatants || [];
+    const next = currentRows.map(entry => {
       const normalized = normalizeCombatant(entry);
       if (normalized.id === row.id) {
         return normalizeCombatant({
@@ -466,9 +475,21 @@ export default function EncounterRunnerModal({
     updateCombatant(row.id, { death_saves: { ...current, [key]: Math.max(0, Math.min(3, toNumber(current[key], 0) + delta)) } });
   };
 
+  const toggleEffectTarget = id => {
+    setEffectForm(form => {
+      const targets = cleanList(form.target_ids);
+      return {
+        ...form,
+        target_ids: targets.includes(id)
+          ? targets.filter(targetId => targetId !== id)
+          : [...targets, id],
+      };
+    });
+  };
+
   const addEffectToTarget = () => {
-    const target = combatants.find(row => row.id === effectForm.target_id);
-    if (!target) return;
+    const targets = combatants.filter(row => cleanList(effectForm.target_ids).includes(row.id));
+    if (!targets.length) return;
     const source = combatants.find(row => row.id === effectForm.source_id);
     const name = (effectForm.custom || effectForm.name || '').trim();
     if (!name) return;
@@ -482,18 +503,21 @@ export default function EncounterRunnerModal({
       duration: effectForm.duration,
       concentration,
     };
-    const patch = { effects: [...cleanList(target.effects), effect] };
-    if (effectForm.type === 'condition') {
-      patch.conditions = cleanList(target.conditions).includes(name) ? cleanList(target.conditions) : [...cleanList(target.conditions), name];
-    }
-    const next = (data.combatants || []).map(row => {
+    const currentRows = dataRef.current?.combatants || [];
+    const next = currentRows.map(row => {
       let nextRow = normalizeCombatant(row);
-      if (nextRow.id === target.id) nextRow = normalizeCombatant({ ...nextRow, ...patch });
+      if (targets.some(target => target.id === nextRow.id)) {
+        const patch = { effects: [...cleanList(nextRow.effects), effect] };
+        if (effectForm.type === 'condition') {
+          patch.conditions = cleanList(nextRow.conditions).includes(name) ? cleanList(nextRow.conditions) : [...cleanList(nextRow.conditions), name];
+        }
+        nextRow = normalizeCombatant({ ...nextRow, ...patch });
+      }
       if (concentration && source && nextRow.id === source.id) nextRow = normalizeCombatant({ ...nextRow, concentration: name });
       return nextRow;
     });
     patchCombatants(next);
-    setEffectForm(form => ({ ...form, name: '', custom: '', target_id: '', concentration: false }));
+    setEffectForm(form => ({ ...form, name: '', custom: '', target_ids: [], concentration: false }));
   };
 
   const groups = combatants
@@ -519,7 +543,7 @@ export default function EncounterRunnerModal({
           </div>
           <div style={{display:'flex',gap:6,flexWrap:'wrap',justifyContent:'flex-end'}}>
             <MiniButton onClick={() => onStatus(encounter.id, primaryStatusAction.status)} variant={primaryStatusAction.variant}>{primaryStatusAction.label}</MiniButton>
-            <MiniButton onClick={() => onStatus(encounter.id, 'complete')}>Complete</MiniButton>
+            <MiniButton onClick={() => onStatus(encounter.id, 'complete')}>Conclude Encounter</MiniButton>
             <MiniButton onClick={syncPartyStats}>Sync PCs</MiniButton>
             <MiniButton onClick={() => onDelete(encounter.id)} variant="danger">Delete</MiniButton>
             <MiniButton onClick={onClose}>Close</MiniButton>
@@ -545,7 +569,7 @@ export default function EncounterRunnerModal({
           marginTop:12,
           overflow:'auto',
         }}>
-          <aside style={{display:'flex',flexDirection:'column',gap:10,minHeight:0,overflowY:'auto',paddingRight:4}}>
+          <aside style={{display:'flex',flexDirection:'column',gap:8,minHeight:0,overflow:'hidden',paddingRight:4}}>
             <section style={{border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',padding:10}}>
               <div style={{color:'var(--accent-light)',fontWeight:800,marginBottom:8}}>Add Characters</div>
               <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
@@ -555,7 +579,7 @@ export default function EncounterRunnerModal({
               </div>
             </section>
 
-            <section style={{border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',padding:10}}>
+            <section style={{border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',padding:8,display:'flex',flexDirection:'column',minHeight:0,flex:'1 1 320px',overflow:'hidden'}}>
               <div style={{color:'var(--accent-light)',fontWeight:800,marginBottom:8}}>Add Enemies</div>
               <input value={monsterSearch} onChange={e => setMonsterSearch(e.target.value)} placeholder="Search bestiary" />
               <div style={{display:'grid',gridTemplateColumns:'32px 1fr 32px 1fr',gap:6,marginTop:6}}>
@@ -568,16 +592,18 @@ export default function EncounterRunnerModal({
                 <input type="checkbox" checked={sharedInitiative} onChange={e => setSharedInitiative(e.target.checked)} style={{width:'auto'}} />
                 Shared initiative
               </label>
-              <div style={{display:'flex',flexDirection:'column',gap:5,maxHeight:190,overflowY:'auto'}}>
+              <div style={{color:'var(--text-dim)',fontSize:11,marginBottom:5}}>{filteredMonsters.length} monster{filteredMonsters.length === 1 ? '' : 's'}</div>
+              <div style={{flex:1,minHeight:120,overflowY:'auto',paddingRight:3,border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',background:'rgba(0,0,0,0.12)'}}>
                 {filteredMonsters.map(monster => (
-                  <button key={monster._custom_id ? `custom_${monster._custom_id}` : monster.name} type="button" className="btn btn-secondary btn-sm" onClick={() => addMonster(monster)} style={{textAlign:'left'}}>
-                    {monster.name} <span style={{color:'var(--text-dim)'}}>CR {monster.challenge_rating}</span>
+                  <button key={monster._custom_id ? `custom_${monster._custom_id}` : monster.name} type="button" onClick={() => addMonster(monster)} style={{display:'flex',justifyContent:'space-between',gap:8,width:'100%',textAlign:'left',border:0,borderBottom:'1px solid var(--border)',background:'transparent',color:'var(--text-primary)',padding:'7px 8px',cursor:'pointer',fontWeight:700}}>
+                    <span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{monster.name}</span>
+                    <span style={{color:'var(--text-dim)',whiteSpace:'nowrap'}}>CR {monster.challenge_rating}</span>
                   </button>
                 ))}
               </div>
             </section>
 
-            <section style={{border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',padding:10}}>
+            <section style={{border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',padding:8,flex:'0 0 auto'}}>
               <div style={{color:'var(--accent-light)',fontWeight:800,marginBottom:8}}>Enemy Groups</div>
               {Object.keys(groups).length === 0 ? <div style={{color:'var(--text-dim)',fontSize:12}}>No grouped enemies yet.</div> : Object.entries(groups).map(([key, group]) => (
                 <div key={key} style={{display:'grid',gridTemplateColumns:'1fr auto auto',gap:6,alignItems:'center',padding:'5px 0',borderBottom:'1px solid var(--border)'}}>
@@ -588,15 +614,11 @@ export default function EncounterRunnerModal({
               ))}
             </section>
 
-            <section style={{border:'1px solid rgba(230,57,70,0.38)',borderRadius:'var(--radius-sm)',padding:10,background:'rgba(230,57,70,0.08)'}}>
+            <section style={{border:'1px solid rgba(230,57,70,0.38)',borderRadius:'var(--radius-sm)',padding:8,background:'rgba(230,57,70,0.08)',flex:'0 0 auto'}}>
               <div style={{color:'var(--accent-light)',fontWeight:800,marginBottom:8}}>Add Effect</div>
               <div style={{display:'grid',gap:6}}>
                 <select value={effectForm.source_id} onChange={e => setEffectForm(f => ({ ...f, source_id: e.target.value }))}>
                   <option value="">Source</option>
-                  {combatants.map(row => <option key={row.id} value={row.id}>{row.name}</option>)}
-                </select>
-                <select value={effectForm.target_id} onChange={e => setEffectForm(f => ({ ...f, target_id: e.target.value }))}>
-                  <option value="">Target</option>
                   {combatants.map(row => <option key={row.id} value={row.id}>{row.name}</option>)}
                 </select>
                 <select value={effectForm.type} onChange={e => setEffectForm(f => ({ ...f, type: e.target.value, name: '', custom: '' }))}>
@@ -617,7 +639,17 @@ export default function EncounterRunnerModal({
                   <input type="checkbox" checked={effectForm.concentration} onChange={e => setEffectForm(f => ({ ...f, concentration: e.target.checked }))} style={{width:'auto'}} />
                   Concentration
                 </label>
-                <MiniButton onClick={addEffectToTarget} variant="primary" disabled={!effectForm.target_id || !(effectForm.name || effectForm.custom).trim()}>Add Effect</MiniButton>
+                <div style={{border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',padding:6,display:'flex',gap:5,flexWrap:'wrap',maxHeight:86,overflowY:'auto'}}>
+                  {combatants.map(row => {
+                    const selected = cleanList(effectForm.target_ids).includes(row.id);
+                    return (
+                      <button key={row.id} type="button" className={selected ? 'btn btn-primary btn-sm' : 'btn btn-secondary btn-sm'} onClick={() => toggleEffectTarget(row.id)}>
+                        {row.name}
+                      </button>
+                    );
+                  })}
+                </div>
+                <MiniButton onClick={addEffectToTarget} variant="primary" disabled={!cleanList(effectForm.target_ids).length || !(effectForm.name || effectForm.custom).trim()}>Add Effect</MiniButton>
               </div>
             </section>
           </aside>

@@ -11,7 +11,6 @@ import api from '../utils/api';
 import { fetchSyricReferences } from '../utils/characterModules';
 
 const TABS = ['Party', 'Effects', 'Encounters', 'DM References'];
-const ENCOUNTER_STATUSES = ['planned', 'running', 'paused', 'complete'];
 const EFFECT_PRESETS = [
   {
     id: 'heroes_feast',
@@ -596,8 +595,8 @@ function EffectRow({ effect, roster, onStatus }) {
 function EncounterRow({ encounter, selected, isDm, onStatus, onDelete, onSetup, onRun }) {
   const nextActions = {
     planned: [['Start', 'running']],
-    running: [['Stop', 'paused'], ['Complete', 'complete']],
-    paused: [['Resume', 'running'], ['Complete', 'complete']],
+    running: [['Stop', 'paused'], ['Conclude', 'complete']],
+    paused: [['Resume', 'running'], ['Conclude', 'complete']],
     complete: [],
   }[encounter.status] || [];
   return (
@@ -645,16 +644,15 @@ function EncounterBuilder({
   sharedInitiative,
   setSharedInitiative,
   onPatchData,
-  onStatus,
   onEffectStatus,
   onDelete,
   onViewMonster,
+  onCloseSetup,
 }) {
   const data = encounter?.data || {};
   const combatants = sortedCombatants(encounter);
   const filteredMonsters = monsters
-    .filter(monster => !monsterSearch.trim() || monster.name.toLowerCase().includes(monsterSearch.toLowerCase()))
-    .slice(0, 8);
+    .filter(monster => !monsterSearch.trim() || monster.name.toLowerCase().includes(monsterSearch.toLowerCase()));
 
   const patchCombatants = nextCombatants => {
     onPatchData(encounter.id, {
@@ -742,11 +740,7 @@ function EncounterBuilder({
         </div>
         {campaign.is_dm && (
           <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
-            {ENCOUNTER_STATUSES.filter(status => status !== encounter.status).map(status => (
-              <button key={status} className="btn btn-secondary btn-sm" onClick={() => onStatus(encounter.id, status)}>
-                {status[0].toUpperCase() + status.slice(1)}
-              </button>
-            ))}
+            <button className="btn btn-primary btn-sm" onClick={onCloseSetup}>Complete Setup</button>
             <button className="btn btn-danger btn-sm" onClick={() => onDelete(encounter.id)}>Delete</button>
           </div>
         )}
@@ -766,61 +760,55 @@ function EncounterBuilder({
             </div>
           </div>
 
-          <div style={{overflowX:'auto',border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',background:'var(--bg-secondary)',padding:10}}>
+          <div style={{overflowX:'auto',border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',background:'var(--bg-secondary)',padding:8}}>
             {combatants.length === 0 ? (
               <div style={{color:'var(--text-secondary)',fontSize:13,padding:20}}>No combatants yet.</div>
             ) : (
-              <div style={{display:'grid',gap:10}}>
-                {/* Stacked full-width sections per combatant, not a dense multi-column
-                    grid - the previous fixed-width-column layout could overlap (e.g. the
-                    Stats button colliding with HP) once a long monster name or condition
-                    list pushed a column past its allotted width. Each section below has
-                    its own row, so nothing can collide regardless of content length. */}
+              <div style={{display:'grid',gap:7,minWidth:900}}>
                 {combatants.map(row => (
-                  <div key={row.id} style={{display:'flex',flexDirection:'column',gap:8,padding:10,border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',background:'var(--bg-card)'}}>
-                    <div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}>
-                      <input value={row.name} onChange={e => updateCombatant(row.id, { name: e.target.value })} style={{fontWeight:800,flex:'1 1 200px',minWidth:120}} />
-                      <span style={{color:row.type === 'player' ? 'var(--accent-light)' : 'var(--warning)',fontSize:11,fontWeight:900,textTransform:'uppercase'}}>{row.type}</span>
-                      <span style={{color:'var(--text-dim)',fontSize:11}}>
-                        {row.group_key ? `Group: ${row.group_key.split('_')[0]}` : 'No group'}
-                      </span>
+                  <div key={row.id} style={{display:'grid',gridTemplateColumns:'minmax(220px,1fr) 214px minmax(260px,1.1fr) auto',gap:8,padding:8,border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',background:'var(--bg-card)',alignItems:'start'}}>
+                    <div style={{display:'grid',gap:5,minWidth:0}}>
+                      <input value={row.name} onChange={e => updateCombatant(row.id, { name: e.target.value })} style={{fontWeight:800,minWidth:0}} />
+                      <div style={{display:'flex',gap:6,alignItems:'center',minWidth:0}}>
+                        <span style={{color:row.type === 'player' ? 'var(--accent-light)' : 'var(--warning)',fontSize:11,fontWeight:900,textTransform:'uppercase'}}>{row.type}</span>
+                        <span style={{color:'var(--text-dim)',fontSize:11,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
+                          {row.group_key ? `Group: ${row.group_key.split('_')[0]}` : 'No group'}
+                        </span>
+                      </div>
                     </div>
-                    <div style={{display:'flex',gap:16,flexWrap:'wrap',alignItems:'flex-end'}}>
+                    <div style={{display:'grid',gridTemplateColumns:'48px 48px 54px 54px',gap:5,alignItems:'end'}}>
                       <label style={setupFieldLabel}>
                         Init
-                        <input value={row.initiative} onChange={e => updateCombatant(row.id, { initiative: e.target.value })} style={{textAlign:'center',fontWeight:800,width:60}} />
+                        <input value={row.initiative} onChange={e => updateCombatant(row.id, { initiative: e.target.value })} style={{textAlign:'center',fontWeight:800}} />
                       </label>
                       <label style={setupFieldLabel}>
                         AC
-                        <input value={row.ac} onChange={e => updateCombatant(row.id, { ac: e.target.value })} style={{textAlign:'center',fontWeight:800,width:60}} />
+                        <input value={row.ac} onChange={e => updateCombatant(row.id, { ac: e.target.value })} style={{textAlign:'center',fontWeight:800}} />
                       </label>
                       <label style={setupFieldLabel}>
                         HP
-                        <input value={row.hp_current} onChange={e => updateCombatant(row.id, { hp_current: e.target.value })} style={{width:70}} />
+                        <input value={row.hp_current} onChange={e => updateCombatant(row.id, { hp_current: e.target.value })} />
                       </label>
                       <label style={setupFieldLabel}>
                         Temp
-                        <input value={row.temp_hp} onChange={e => updateCombatant(row.id, { temp_hp: e.target.value })} style={{width:70}} />
+                        <input value={row.temp_hp} onChange={e => updateCombatant(row.id, { temp_hp: e.target.value })} />
                       </label>
-                      <button className="btn btn-secondary btn-sm" onClick={() => updateCombatant(row.id, { hp_current: Math.max(0, toNumber(row.hp_current) - 1) })}>-1 HP</button>
-                      <button className="btn btn-secondary btn-sm" onClick={() => updateCombatant(row.id, { hp_current: toNumber(row.hp_current) + 1 })}>+1 HP</button>
                     </div>
-                    <div style={{display:'flex',gap:16,flexWrap:'wrap',alignItems:'flex-end'}}>
-                      <label style={{...setupFieldLabel,flex:'1 1 200px'}}>
+                    <div style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) minmax(0,1fr)',gap:6}}>
+                      <label style={setupFieldLabel}>
                         Conditions
                         <input value={(row.conditions || []).join(', ')} onChange={e => updateConditionText(row, e.target.value)} placeholder="poisoned, hexed" />
                       </label>
-                      <label style={{...setupFieldLabel,flex:'1 1 200px'}}>
+                      <label style={setupFieldLabel}>
                         Concentration
                         <input value={row.concentration} onChange={e => updateCombatant(row.id, { concentration: e.target.value })} placeholder="Spell or effect" />
                       </label>
                     </div>
-                    <div style={{display:'flex',gap:8,flexWrap:'wrap',alignItems:'center'}}>
-                      <button className="btn btn-secondary btn-sm" onClick={() => setDeathSave(row, 'successes', 1)}>Death Save Success {row.death_saves?.successes || 0}</button>
-                      <button className="btn btn-secondary btn-sm" onClick={() => setDeathSave(row, 'failures', 1)}>Death Save Fail {row.death_saves?.failures || 0}</button>
-                      <button className="btn btn-secondary btn-sm" onClick={() => updateCombatant(row.id, { death_saves: { successes: 0, failures: 0 } })}>Reset Saves</button>
+                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:5,minWidth:124}}>
+                      <button className="btn btn-secondary btn-sm" onClick={() => setDeathSave(row, 'successes', 1)}>Pass {row.death_saves?.successes || 0}</button>
+                      <button className="btn btn-secondary btn-sm" onClick={() => setDeathSave(row, 'failures', 1)}>Fail {row.death_saves?.failures || 0}</button>
                       {row.monster && <button className="btn btn-secondary btn-sm" onClick={() => onViewMonster(row.monster)}>Stats</button>}
-                      {campaign.is_dm && <button className="btn btn-danger btn-sm" onClick={() => removeCombatant(row.id)} style={{marginLeft:'auto'}}>Remove</button>}
+                      {campaign.is_dm && <button className="btn btn-danger btn-sm" onClick={() => removeCombatant(row.id)}>Remove</button>}
                     </div>
                   </div>
                 ))}
@@ -829,7 +817,7 @@ function EncounterBuilder({
           </div>
           </div>
 
-          <aside style={{border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',padding:10,position:'sticky',top:12,alignSelf:'start',background:'var(--bg-secondary)'}}>
+          <aside style={{border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',padding:10,position:'sticky',top:12,alignSelf:'start',background:'var(--bg-secondary)',maxHeight:'calc(100vh - 170px)',display:'flex',flexDirection:'column',minHeight:0}}>
             <div style={{borderBottom:'1px solid var(--border)',paddingBottom:10,marginBottom:10}}>
               <div style={{color:'var(--text-secondary)',fontSize:11,fontWeight:800,textTransform:'uppercase',marginBottom:8}}>Prepared Effects</div>
               {(activeEffects || []).filter(effect => effect.status === 'pending').length === 0 ? (
@@ -858,7 +846,8 @@ function EncounterBuilder({
               <input type="checkbox" checked={sharedInitiative} onChange={e => setSharedInitiative(e.target.checked)} style={{width:'auto'}} />
               Shared initiative for this group
             </label>
-            <div style={{display:'flex',flexDirection:'column',gap:6,maxHeight:430,overflowY:'auto'}}>
+            <div style={{color:'var(--text-dim)',fontSize:11,marginBottom:5}}>{filteredMonsters.length} monster{filteredMonsters.length === 1 ? '' : 's'}</div>
+            <div style={{flex:'1 1 240px',minHeight:160,overflowY:'auto',paddingRight:3,border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',background:'rgba(0,0,0,0.12)'}}>
               {filteredMonsters.map(monster => (
                 <div key={monster._custom_id ? `custom_${monster._custom_id}` : monster.name} style={{display:'grid',gridTemplateColumns:'1fr auto auto',gap:5}}>
                   <div style={{border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',padding:'6px 8px',background:'var(--bg-card)',color:'var(--text-primary)',fontSize:12,fontWeight:800,minWidth:0}}>
@@ -1258,9 +1247,34 @@ export default function CampaignsPage() {
     await loadCampaign(campaign.id);
   };
 
-  const setEncounterStatus = async (encounterId, status) => {
+  const applyEncounterStatus = async (encounterId, status) => {
     if (!campaign) return;
     await updateEncounter(campaign.id, encounterId, { status });
+  };
+
+  const setEncounterStatus = async (encounterId, status) => {
+    if (!campaign) return;
+    if (status === 'complete') {
+      const target = encounters.find(entry => entry.id === encounterId);
+      setConfirmAction({
+        title: 'Conclude Encounter?',
+        message: `Conclude ${target?.name || 'this encounter'}? This archives the encounter and removes it from active combat flow. You can keep the saved record, but this should mean the scene is finished.`,
+        confirmLabel: 'Conclude',
+        onConfirm: async () => {
+          setConfirmAction(null);
+          setError('');
+          try {
+            await applyEncounterStatus(encounterId, status);
+            setSelectedEncounterId(current => current === encounterId ? null : current);
+            setRunningEncounterId(current => current === encounterId ? null : current);
+          } catch (err) {
+            setError(err.response?.data?.error || 'Could not conclude encounter');
+          }
+        },
+      });
+      return;
+    }
+    await applyEncounterStatus(encounterId, status);
   };
 
   const patchEncounterData = async (encounterId, data) => {
@@ -1651,10 +1665,10 @@ export default function CampaignsPage() {
                         sharedInitiative={sharedInitiative}
                         setSharedInitiative={setSharedInitiative}
                         onPatchData={patchEncounterData}
-                        onStatus={setEncounterStatus}
                         onEffectStatus={setEffectStatus}
                         onDelete={removeEncounter}
                         onViewMonster={setViewingMonster}
+                        onCloseSetup={() => setSelectedEncounterId(null)}
                       />
                     )}
                   </div>
