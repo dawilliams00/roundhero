@@ -385,7 +385,11 @@ export default function CharacterEditorModal({ onClose }) {
                     </div>
                     {isContaminated && (
                       <div style={{fontSize:10,color:'var(--warning)',marginTop:6,lineHeight:1.3}}>
-                        ⚠ Base matches "{contamination[k]}"'s Set-To — likely includes that item's bonus. Lower to your true unmodified score.
+                        ⚠ Base matches "{contamination[k]}"'s Set-To — likely includes that item's bonus.
+                        <button type="button" className="btn btn-sm" style={{display:'block',marginTop:4,padding:'2px 6px',fontSize:10,background:'var(--warning)',color:'#1a1a1a'}}
+                          onClick={() => setScores(s => ({...s,[k]:'10'}))}>
+                          Reset Base to 10 (best guess)
+                        </button>
                       </div>
                     )}
                   </div>
