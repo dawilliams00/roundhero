@@ -56,8 +56,10 @@ export default function FeatureEditModal({ name, feature, onClose }) {
   return (
     <div className="modal-overlay">
       <div className="modal" onClick={e => e.stopPropagation()}>
-        <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
-        <h2>Edit Feature</h2>
+        <div className="modal-sticky-header">
+          <h2>Edit Feature</h2>
+          <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
+        </div>
         <div className="form-group"><label>Name</label><input value={form.name} onChange={e=>set('name',e.target.value)} autoFocus /></div>
         <div className="form-row">
           <div className="form-group"><label>Uses (0 = unlimited/passive)</label><input type="number" min={0} value={form.max} onChange={e=>set('max',e.target.value)} /></div>

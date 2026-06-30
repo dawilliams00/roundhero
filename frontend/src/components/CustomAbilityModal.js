@@ -139,8 +139,10 @@ export default function CustomAbilityModal({ onClose, editingFeat, editMode = 'c
   return (
     <div className="modal-overlay">
       <div className="modal" onClick={e => e.stopPropagation()}>
-        <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
-        <h2>{isLibraryEdit ? titles[editMode] : 'Add Custom Ability'}</h2>
+        <div className="modal-sticky-header">
+          <h2>{isLibraryEdit ? titles[editMode] : 'Add Custom Ability'}</h2>
+          <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
+        </div>
         <div style={{color:'var(--text-dim)',fontSize:11,marginBottom:12}}>
           {isLibraryEdit ? descriptions[editMode] : 'Saved to your feat library too — searchable to add to any future character.'}
         </div>

@@ -223,8 +223,10 @@ export default function CharacterEditorModal({ onClose }) {
   return (
     <div className="modal-overlay">
       <div className="modal modal-lg" onClick={e => e.stopPropagation()}>
-        <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
-        <h2>Edit Character</h2>
+        <div className="modal-sticky-header">
+          <h2>Edit Character</h2>
+          <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
+        </div>
 
         <div style={{fontSize:12,color:'var(--text-dim)',textTransform:'uppercase',letterSpacing:1,marginBottom:8}}>Identity</div>
         <div className="form-row">

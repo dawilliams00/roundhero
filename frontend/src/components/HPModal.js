@@ -93,8 +93,10 @@ export default function HPModal({ onClose }) {
   return (
     <div className="modal-overlay">
       <div className="modal" style={{maxWidth:420}} onClick={e => e.stopPropagation()}>
-        <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
-        <h2>D&D 5e HP Management</h2>
+        <div className="modal-sticky-header">
+          <h2>D&D 5e HP Management</h2>
+          <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
+        </div>
 
         <div style={{display:'flex',flexDirection:'column',gap:18,marginBottom:16}}>
           <HPRow label="Current HP" value={current} color="var(--accent-light)" onApply={applyCurrentDelta}

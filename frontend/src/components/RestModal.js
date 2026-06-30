@@ -81,8 +81,10 @@ export default function RestModal({ onClose, onRest }) {
     return (
       <div className="modal-overlay">
         <div className="modal" onClick={e => e.stopPropagation()} style={{maxWidth:360}}>
-          <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
-          <h2>🌙 Before You Rest...</h2>
+          <div className="modal-sticky-header">
+            <h2>🌙 Before You Rest...</h2>
+            <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
+          </div>
           <div style={{marginBottom:16}}>
             {names.map(n => (
               <div key={n} style={{display:'flex',alignItems:'center',gap:8,padding:'8px 10px',marginBottom:6,background:'rgba(245,158,11,0.1)',border:'1px solid var(--warning)',borderRadius:'var(--radius-sm)'}}>
@@ -109,8 +111,10 @@ export default function RestModal({ onClose, onRest }) {
     return (
       <div className="modal-overlay">
         <div className="modal" onClick={e => e.stopPropagation()} style={{maxWidth:380}}>
-          <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
-          <h2>Short Rest — Hit Dice</h2>
+          <div className="modal-sticky-header">
+            <h2>Short Rest — Hit Dice</h2>
+            <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
+          </div>
           <p style={{color:'var(--text-secondary)',fontSize:13,marginBottom:12}}>
             Spend Hit Dice to heal. Each die rolls a d{hd.die_size} + your CON modifier ({conMod >= 0 ? `+${conMod}` : conMod}).
           </p>
@@ -151,8 +155,10 @@ export default function RestModal({ onClose, onRest }) {
   return (
     <div className="modal-overlay">
       <div className="modal" onClick={e => e.stopPropagation()} style={{maxWidth:320,textAlign:'center'}}>
-        <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
-        <h2>Take a Rest</h2>
+        <div className="modal-sticky-header">
+          <h2>Take a Rest</h2>
+          <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
+        </div>
         <p style={{color:'var(--text-secondary)',marginBottom:24,fontSize:13}}>Choose rest type. All matching features and slots will reset.</p>
         <div style={{display:'flex',gap:12}}>
           <button className="btn btn-secondary" style={{flex:1,padding:'12px'}} onClick={() => beginRest('short')}>

@@ -35,8 +35,10 @@ export default function ItemSpellsModal({ item, onCast, onClose }) {
   return (
     <div className="modal-overlay">
       <div className="modal" style={{maxWidth:420,maxHeight:'80vh',display:'flex',flexDirection:'column'}} onClick={e => e.stopPropagation()}>
-        <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
-        <h2>{item.name}</h2>
+        <div className="modal-sticky-header">
+          <h2>{item.name}</h2>
+          <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
+        </div>
         <div style={{color:'var(--text-dim)',fontSize:12,marginBottom:12}}>{charges.current}/{charges.max} charges</div>
         {loading ? (
           <div style={{color:'var(--text-dim)',textAlign:'center',padding:24}}>Loading spells...</div>

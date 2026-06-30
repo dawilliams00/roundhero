@@ -33,8 +33,10 @@ export default function ConcentrationModal({ onClose }) {
   return (
     <div className="modal-overlay">
       <div className="modal" onClick={e => e.stopPropagation()} style={{maxWidth:340}}>
-        <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
-        <h2>Concentration</h2>
+        <div className="modal-sticky-header">
+          <h2>Concentration</h2>
+          <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
+        </div>
         {[0, 1].map(idx => {
           const active = idx < maxSlots;
           const slot = slots[idx] || {};

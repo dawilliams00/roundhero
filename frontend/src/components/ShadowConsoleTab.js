@@ -72,8 +72,10 @@ function ShadowHPModal({ currentHp, maxHp, tempHp, onSave, onClose }) {
   return (
     <div className="modal-overlay">
       <div className="modal" style={{maxWidth:420}} onClick={e => e.stopPropagation()}>
-        <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
-        <h2>Shadow HP</h2>
+        <div className="modal-sticky-header">
+          <h2>Shadow HP</h2>
+          <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
+        </div>
         <div style={{display:'flex',flexDirection:'column',gap:18,marginBottom:16}}>
           <ShadowHPRow label="Current HP" value={current} color="var(--accent-light)" onApply={applyCurrentDelta}
             open={openCalc === 'current'} onOpen={() => setOpenCalc('current')} onCloseCalc={() => setOpenCalc(null)} />

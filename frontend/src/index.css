@@ -52,8 +52,16 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 /* Explicit close control - popups no longer close on an accidental click outside their
    bounds (see modal-overlay's onClick removal in every modal component), so this is the
    one consistent way to dismiss any of them without scrolling to a Cancel/Close button. */
-.modal-close-x { position: absolute; top: 14px; right: 14px; width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border-light); background: var(--bg-hover); color: var(--text-secondary); font-size: 15px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 5; }
+.modal-close-x { position: absolute; top: 14px; right: 14px; width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border-light); background: var(--bg-hover); color: var(--text-secondary); font-size: 15px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 5; flex-shrink: 0; }
 .modal-close-x:hover { background: var(--bg-card); color: var(--text-primary); }
+/* Plain (non-flex) modals scroll their title + close button along with everything else,
+   so a long item/character edit screen scrolls the title (and the only way to close)
+   out of view. .modal-flex modals already avoid this via a real flex header/body split
+   (see above) - this wraps the title+close-x pair in a sticky bar for everything else,
+   so the title and an always-reachable close button stay pinned while the rest scrolls. */
+.modal-sticky-header { position: sticky; top: -24px; margin: -24px -24px 20px; padding: 16px 24px; background: var(--bg-secondary); z-index: 6; border-bottom: 1px solid var(--border-light); border-radius: var(--radius-lg) var(--radius-lg) 0 0; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.modal-sticky-header h2 { margin-bottom: 0; padding-right: 0; }
+.modal-sticky-header .modal-close-x { position: static; }
 
 /* Wide popups with a static header/footer and a scrolling body only (spell/ability/item detail, etc) */
 .modal-lg { max-width: 920px; }

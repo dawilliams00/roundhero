@@ -13,8 +13,10 @@ export default function RestSummaryModal({ summary, restType, onClose }) {
   return (
     <div className="modal-overlay">
       <div className="modal" style={{maxWidth:360}} onClick={e => e.stopPropagation()}>
-        <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
-        <h2>{restType === 'long' ? 'Long Rest Complete' : 'Short Rest Complete'}</h2>
+        <div className="modal-sticky-header">
+          <h2>{restType === 'long' ? 'Long Rest Complete' : 'Short Rest Complete'}</h2>
+          <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
+        </div>
         {afterReminders.length > 0 && (
           <div style={{marginBottom:12}}>
             {afterReminders.map(n => (

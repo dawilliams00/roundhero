@@ -75,10 +75,12 @@ export default function TraitsModal({ onClose }) {
   return (
     <div className="modal-overlay">
       <div className="modal" style={{maxWidth:440}} onClick={e => e.stopPropagation()}>
-        <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
         {!pickerCat ? (
           <>
-            <h2>Traits</h2>
+            <div className="modal-sticky-header">
+              <h2>Traits</h2>
+              <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
+            </div>
             {CATEGORIES.map(({key,label}) => (
               <div key={key} style={{marginBottom:14}}>
                 <div style={{color:'var(--text-secondary)',fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:1,marginBottom:6}}>{label}</div>
@@ -97,7 +99,10 @@ export default function TraitsModal({ onClose }) {
           </>
         ) : !customMode ? (
           <>
-            <h2>Add {CATEGORIES.find(c=>c.key===pickerCat)?.label}</h2>
+            <div className="modal-sticky-header">
+              <h2>Add {CATEGORIES.find(c=>c.key===pickerCat)?.label}</h2>
+              <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
+            </div>
             <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search..." style={{width:'100%',marginBottom:12}} autoFocus />
             <div style={{maxHeight:280,overflowY:'auto',marginBottom:12}}>
               {options.length === 0 ? (
@@ -118,7 +123,10 @@ export default function TraitsModal({ onClose }) {
           </>
         ) : (
           <>
-            <h2>Add Custom Trait</h2>
+            <div className="modal-sticky-header">
+              <h2>Add Custom Trait</h2>
+              <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
+            </div>
             <div className="form-group">
               <label>Name</label>
               <input value={customForm.name} onChange={e => setCustomForm(f=>({...f,name:e.target.value}))} placeholder="e.g. Sunlight Sensitivity" autoFocus />

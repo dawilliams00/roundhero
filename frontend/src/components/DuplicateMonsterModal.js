@@ -14,8 +14,10 @@ export default function DuplicateMonsterModal({ monster, onDuplicate, onClose })
   return (
     <div className="modal-overlay">
       <div className="modal" onClick={e => e.stopPropagation()} style={{maxWidth:360}}>
-        <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
-        <h2>Duplicate Creature</h2>
+        <div className="modal-sticky-header">
+          <h2>Duplicate Creature</h2>
+          <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
+        </div>
         <p style={{color:'var(--text-secondary)',fontSize:13,marginBottom:10}}>
           Copies {monster.name}'s full stat block under a new name. The copy is yours to edit; the original stays as-is.
         </p>

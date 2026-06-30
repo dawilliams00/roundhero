@@ -20,8 +20,10 @@ export default function SavesModal({ onClose }) {
   return (
     <div className="modal-overlay">
       <div className="modal" onClick={e => e.stopPropagation()} style={{maxWidth:320}}>
-        <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
-        <h2>Saving Throws</h2>
+        <div className="modal-sticky-header">
+          <h2>Saving Throws</h2>
+          <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
+        </div>
         {lastRoll && (
           <div style={{background:'var(--bg-primary)',borderRadius:'var(--radius-sm)',padding:'8px 10px',marginBottom:10,textAlign:'center'}}>
             <span style={{color:'var(--text-secondary)',fontSize:12}}>{lastRoll.label}: </span>

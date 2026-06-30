@@ -55,8 +55,10 @@ export default function SpellListManagerModal({ knownSpells, spellLists, activeL
     return (
       <div className="modal-overlay">
         <div className="modal" style={{maxWidth:420,maxHeight:'80vh',display:'flex',flexDirection:'column'}} onClick={e => e.stopPropagation()}>
-          <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
-          <h2>{editing === '__new__' ? 'New Spell List' : `Edit "${editing}"`}</h2>
+          <div className="modal-sticky-header">
+            <h2>{editing === '__new__' ? 'New Spell List' : `Edit "${editing}"`}</h2>
+            <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
+          </div>
           <div className="form-group"><label>List Name</label><input value={editName} onChange={e=>setEditName(e.target.value)} placeholder="e.g. Balanced Outdoors" autoFocus /></div>
           <div style={{color:'var(--text-dim)',fontSize:11,margin:'8px 0'}}>
             Select spells to prepare{maxPrepared != null && ` (${selectedCount} / ${maxPrepared})`}:
@@ -101,8 +103,10 @@ export default function SpellListManagerModal({ knownSpells, spellLists, activeL
   return (
     <div className="modal-overlay">
       <div className="modal" style={{maxWidth:420}} onClick={e => e.stopPropagation()}>
-        <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
-        <h2>Spell Lists</h2>
+        <div className="modal-sticky-header">
+          <h2>Spell Lists</h2>
+          <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
+        </div>
         <div style={{color:'var(--text-dim)',fontSize:12,marginBottom:10}}>Switch quickly between prepared-spell loadouts. Changes here save immediately.</div>
         <div style={{display:'flex',alignItems:'center',gap:8,padding:'8px 10px',borderRadius:'var(--radius-sm)',border:`1px solid ${activeList===null?'var(--accent)':'var(--border)'}`,marginBottom:6}}>
           <div onClick={() => setActiveList(null)} style={{flex:1,cursor:'pointer'}}>

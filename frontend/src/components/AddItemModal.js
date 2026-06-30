@@ -198,8 +198,10 @@ export default function AddItemModal({ item, onSave, onClose }) {
   return (
     <div className="modal-overlay">
       <div className="modal" style={{maxWidth:960}} onClick={e => e.stopPropagation()}>
-        <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
-        <h2>{item ? 'Edit Item' : 'Add Item'}</h2>
+        <div className="modal-sticky-header">
+          <h2>{item ? 'Edit Item' : 'Add Item'}</h2>
+          <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
+        </div>
         <div className="form-group"><label>Name</label><input value={form.name} onChange={e=>set('name',e.target.value)} placeholder="Item name" autoFocus /></div>
         <div className="form-row">
           <div className="form-group"><label>Quantity</label><input type="number" min={1} value={form.quantity} onChange={e=>set('quantity',e.target.value)} /></div>

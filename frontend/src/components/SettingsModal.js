@@ -92,8 +92,10 @@ export default function SettingsModal({ onClose }) {
   return (
     <div className="modal-overlay">
       <div className="modal" style={{maxWidth:1500}} onClick={e => e.stopPropagation()}>
-        <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
-        <h2>Settings</h2>
+        <div className="modal-sticky-header">
+          <h2>Settings</h2>
+          <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
+        </div>
         {/* 3-column grid so the taller sections (Companion/Exhaustion when their sub-
             options are expanded) don't force the whole modal into one long scrolling
             list - alignItems:start keeps each cell sized to its own content instead of

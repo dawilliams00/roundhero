@@ -61,8 +61,10 @@ export default function SpellBrowserModal({ character, knownSpells, onAdd, onRem
   return (
     <div className="modal-overlay">
       <div className="modal" style={{maxWidth:480,maxHeight:'80vh',display:'flex',flexDirection:'column'}} onClick={e => e.stopPropagation()}>
-        <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
-        <h2>Add Spells</h2>
+        <div className="modal-sticky-header">
+          <h2>Add Spells</h2>
+          <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
+        </div>
         <div style={{color:'var(--text-dim)',fontSize:11,marginBottom:10}}>Click Remove to take a spell out of your known spells.</div>
         <div style={{display:'flex',gap:8,marginBottom:8}}>
           <button className="btn btn-secondary btn-sm" style={!allClasses ? {background:'var(--accent)',color:'#fff',borderColor:'var(--accent)'} : undefined} onClick={() => setAllClasses(false)}>My Class</button>

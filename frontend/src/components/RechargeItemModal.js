@@ -26,8 +26,10 @@ export default function RechargeItemModal({ item, onApply, onClose }) {
   return (
     <div className="modal-overlay">
       <div className="modal" onClick={e => e.stopPropagation()} style={{maxWidth:320}}>
-        <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
-        <h2>Recharge — {item.name}</h2>
+        <div className="modal-sticky-header">
+          <h2>Recharge — {item.name}</h2>
+          <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
+        </div>
         <div style={{textAlign:'center',color:'var(--success)',fontWeight:700,fontSize:20,marginBottom:14}}>{current} / {max} charges</div>
 
         {dice && (
