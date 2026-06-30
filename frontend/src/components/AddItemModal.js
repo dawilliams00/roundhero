@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../utils/api';
 import ModifiersEditor from './ModifiersEditor';
+import DiceInput from './DiceInput';
 
 const RARITIES = ['Common','Uncommon','Rare','Very Rare','Legendary','Artifact'];
 // Mundane + magic item categories (5e SRD-ish grouping) - what TYPE of item this is
@@ -231,7 +232,7 @@ export default function AddItemModal({ item, onSave, onClose }) {
               <select value={form.recharge} onChange={e=>set('recharge',e.target.value)}>{RECHARGES.map(r=><option key={r} value={r}>{r.replace('_',' ')}</option>)}</select>
             </div>
             {form.recharge_mode === 'roll' && (
-              <div className="form-group"><label>Roll Amount</label><input value={form.recharge_amount} onChange={e=>set('recharge_amount',e.target.value)} placeholder="e.g. 2d4+2" /></div>
+              <div className="form-group"><label>Roll Amount</label><DiceInput value={form.recharge_amount} onChange={v=>set('recharge_amount',v)} allowFlatBonus /></div>
             )}
           </div>
         )}
@@ -246,7 +247,7 @@ export default function AddItemModal({ item, onSave, onClose }) {
               <div className="form-group"><label>Range</label><select value={form.weapon_range} onChange={e=>set('weapon_range',e.target.value)}>{WEAPON_RANGES.map(r=><option key={r}>{r}</option>)}</select></div>
             </div>
             <div className="form-row">
-              <div className="form-group"><label>Damage Dice</label><input value={form.damage_dice} onChange={e=>set('damage_dice',e.target.value)} placeholder="e.g. 1d8" /></div>
+              <div className="form-group"><label>Damage Dice</label><DiceInput value={form.damage_dice} onChange={v=>set('damage_dice',v)} /></div>
               <div className="form-group"><label>Damage Type</label><select value={form.damage_type} onChange={e=>set('damage_type',e.target.value)}>{DAMAGE_TYPES.map(t=><option key={t}>{t}</option>)}</select></div>
             </div>
             <div className="form-row">
@@ -263,13 +264,13 @@ export default function AddItemModal({ item, onSave, onClose }) {
             </div>
             {form.properties.includes('Versatile') && (
               <div className="form-row">
-                <div className="form-group"><label>Two-Handed Damage Dice</label><input value={form.two_handed_damage_dice} onChange={e=>set('two_handed_damage_dice',e.target.value)} placeholder="e.g. 1d10" /></div>
+                <div className="form-group"><label>Two-Handed Damage Dice</label><DiceInput value={form.two_handed_damage_dice} onChange={v=>set('two_handed_damage_dice',v)} /></div>
                 <div className="form-group"><label>Two-Handed Damage Type</label><select value={form.two_handed_damage_type} onChange={e=>set('two_handed_damage_type',e.target.value)}><option value="">(same as above)</option>{DAMAGE_TYPES.map(t=><option key={t}>{t}</option>)}</select></div>
               </div>
             )}
             <label style={{display:'flex',alignItems:'center',gap:6}}><input type="checkbox" checked={form.proficient} onChange={e=>set('proficient',e.target.checked)} /> Proficient</label>
             <div className="form-row" style={{marginTop:8}}>
-              <div className="form-group"><label>Bonus Damage Dice (optional)</label><input value={form.bonus_damage_dice} onChange={e=>set('bonus_damage_dice',e.target.value)} placeholder="e.g. 2d6 (Vicious)" /></div>
+              <div className="form-group"><label>Bonus Damage Dice (optional)</label><DiceInput value={form.bonus_damage_dice} onChange={v=>set('bonus_damage_dice',v)} /></div>
               <div className="form-group"><label>Bonus Damage Type</label><select value={form.bonus_damage_type} onChange={e=>set('bonus_damage_type',e.target.value)}><option value="">(same as weapon)</option>{DAMAGE_TYPES.concat(['Acid','Cold','Fire','Force','Lightning','Necrotic','Poison','Psychic','Radiant','Thunder']).map(t=><option key={t}>{t}</option>)}</select></div>
             </div>
             <div style={{color:'var(--text-dim)',fontSize:11,marginBottom:8}}>An extra damage component rolled alongside the base damage - e.g. Vicious's +2d6, or a different-typed bonus die like Flame Tongue's fire damage.</div>
@@ -288,7 +289,7 @@ export default function AddItemModal({ item, onSave, onClose }) {
         {form.grants_unarmed_bonus && (
           <div style={{border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',padding:10,marginBottom:8}}>
             <div className="form-row">
-              <div className="form-group"><label>Bonus Damage Dice</label><input value={form.unarmed_bonus_damage_dice} onChange={e=>set('unarmed_bonus_damage_dice',e.target.value)} placeholder="e.g. 2d10" /></div>
+              <div className="form-group"><label>Bonus Damage Dice</label><DiceInput value={form.unarmed_bonus_damage_dice} onChange={v=>set('unarmed_bonus_damage_dice',v)} /></div>
               <div className="form-group"><label>Bonus Damage Type</label><select value={form.unarmed_bonus_damage_type} onChange={e=>set('unarmed_bonus_damage_type',e.target.value)}><option value="">(Bludgeoning)</option>{FULL_DAMAGE_TYPES.map(t=><option key={t}>{t}</option>)}</select></div>
             </div>
             <label style={{display:'flex',alignItems:'center',gap:6}}>

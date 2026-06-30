@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import InfoModal from './InfoModal';
+import DiceInput from './DiceInput';
 
 const SCHOOLS = ['Abjuration','Conjuration','Divination','Enchantment','Evocation','Illusion','Necromancy','Transmutation'];
 const DAMAGE_TYPES = ['Acid','Bludgeoning','Cold','Fire','Force','Lightning','Necrotic','Piercing','Poison','Psychic','Radiant','Slashing','Thunder'];
@@ -136,7 +137,7 @@ export default function SpellEditModal({ spell, mode, onSave, onDelete, onClose 
               </select>
             </Row>
             <Row label="Damage Dice">
-              <input value={fields.damage_dice} onChange={e => set('damage_dice', e.target.value)} placeholder="2d6, 8d6, etc." />
+              <DiceInput value={fields.damage_dice} onChange={v => set('damage_dice', v)} />
             </Row>
             <Row label="Damage Type">
               <select value={fields.damage_type} onChange={e => set('damage_type', e.target.value)}>
@@ -145,7 +146,7 @@ export default function SpellEditModal({ spell, mode, onSave, onDelete, onClose 
               </select>
             </Row>
             <Row label="2nd Damage Dice">
-              <input value={fields.secondary_damage_dice} onChange={e => set('secondary_damage_dice', e.target.value)} placeholder="e.g. 2d8 for Ice Storm's bludgeoning" />
+              <DiceInput value={fields.secondary_damage_dice} onChange={v => set('secondary_damage_dice', v)} />
             </Row>
             <Row label="2nd Damage Type">
               <select value={fields.secondary_damage_type} onChange={e => set('secondary_damage_type', e.target.value)}>
