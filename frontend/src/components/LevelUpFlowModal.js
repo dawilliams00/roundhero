@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useCharacter } from '../context/CharacterContext';
 import api from '../utils/api';
-import { ABILITY_KEYS, ABILITY_LABELS, modifier, rollDie, spellLevelUpNote, featBuffItems, raceBuffItems } from '../utils/dnd';
+import { ABILITY_KEYS, ABILITY_LABELS, modifier, rollDie, spellLevelUpNote, featBuffItems, raceBuffItems, formatItemBuff } from '../utils/dnd';
 
 // Drives the full multi-step level-up flow for ANY character (single-class manually-
 // created, or multiclass/PDF-imported once classes are confirmed) - POST /level_up is
@@ -17,7 +17,7 @@ import { ABILITY_KEYS, ABILITY_LABELS, modifier, rollDie, spellLevelUpNote, feat
 // the editor's structured Class 1/Class 2 rows), since the backend never needs to ask
 // when leveling_class is already provided on the very first attempt.
 export default function LevelUpFlowModal({ onClose, mode = 'level_up', initialLevelingClass }) {
-  const { character, setCharacter, saveTrackerData, rollbackLevelUp } = useCharacter();
+  const { character, setCharacter, saveTrackerData, rollbackLevelUp, updateCharacter } = useCharacter();
   const [step, setStep] = useState('loading'); // loading | confirm_classes | choose_leveling_class | choose_subclass | choose_hp | choose_asi | done | error
   const [rolledHp, setRolledHp] = useState(null);
   const [manualHp, setManualHp] = useState('');
@@ -30,14 +30,27 @@ export default function LevelUpFlowModal({ onClose, mode = 'level_up', initialLe
   const [subclassOptions, setSubclassOptions] = useState([]);
   const [pickedSubclass, setPickedSubclass] = useState('');
   const [needsAsi, setNeedsAsi] = useState(false);
-  const [asiMode, setAsiMode] = useState('two'); // 'two' = +1/+1, 'one' = +2
+  const [asiChoice, setAsiChoice] = useState('two'); // 'two' = +1/+1, 'one' = +2, 'feat' = pick a feat instead
   const [asiAbilities, setAsiAbilities] = useState(['STR', 'DEX']);
   const [summary, setSummary] = useState(null);
   const [rollingBack, setRollingBack] = useState(false);
+  const [feats, setFeats] = useState([]);
+  const [featsLoading, setFeatsLoading] = useState(false);
+  const [featSearch, setFeatSearch] = useState('');
+  const [pickedFeat, setPickedFeat] = useState(null);
+  const [featError, setFeatError] = useState(null);
 
   useEffect(() => {
     api.get('/content/classes').then(r => setClassList(r.data || []));
   }, []);
+
+  // Lazily loads the feat library the first time the ASI step is reached - no point
+  // fetching it for level-ups that never grant an ASI at all.
+  useEffect(() => {
+    if (step !== 'choose_asi' || feats.length || featsLoading) return;
+    setFeatsLoading(true);
+    api.get('/content/feats').then(r => setFeats(r.data || [])).finally(() => setFeatsLoading(false));
+  }, [step]);
 
   // Whatever comes after HP is settled - same destination the choose_hp step's
   // "Continue"/"Apply" button lands on once it's done adjusting HP.
@@ -170,11 +183,61 @@ export default function LevelUpFlowModal({ onClose, mode = 'level_up', initialLe
   };
 
   const submitAsi = async () => {
-    const increases = asiMode === 'one'
+    const increases = asiChoice === 'one'
       ? { [asiAbilities[0]]: 2 }
       : { [asiAbilities[0]]: 1, [asiAbilities[1]]: 1 };
     const r = await api.post(`/characters/${character.id}/asi`, { increases });
     setCharacter(r.data);
+    setStep('done');
+  };
+
+  // Same attach shape TrackerTab.js's addFeatFromLibrary uses (feature charges, tuck-&-
+  // release/granted-spell tags, buffs) so a feat picked here behaves identically to one
+  // added later via Browse Feats - this is just a more convenient entry point at the
+  // exact moment the player has an ASI-or-feat choice to make.
+  const submitFeat = async () => {
+    if (!pickedFeat) return;
+    setFeatError(null);
+    const ae = character.ae_data || {};
+    const td = character.tracker_data || {};
+    const key = pickedFeat.name;
+    const alreadyHas = Object.values(ae).some(arr => (arr || []).some(a => a.tracker_key === key));
+    if (alreadyHas) {
+      setFeatError(`"${pickedFeat.name}" is already on this character.`);
+      return;
+    }
+    const newAbility = { name: pickedFeat.name, source: pickedFeat.source, source_type: 'custom', cost_type: pickedFeat.cost_type, tracker_key: key, description: pickedFeat.description };
+    const newAe = { ...ae };
+    if (!newAe[pickedFeat.section]) newAe[pickedFeat.section] = [];
+    newAe[pickedFeat.section] = [...newAe[pickedFeat.section], newAbility];
+    const newTd = { ...td };
+    if (pickedFeat.max_uses > 0 || pickedFeat.isTuck || pickedFeat.grantsSpell || pickedFeat.buffs?.length > 0) {
+      newTd.features = {
+        ...newTd.features,
+        [key]: {
+          current: pickedFeat.max_uses || 0, max: pickedFeat.max_uses || 0,
+          rest_type: pickedFeat.rest_type, action: pickedFeat.section, description: pickedFeat.description,
+          ...(pickedFeat.isTuck ? { spell_picker: true, tucked_spell: '', tucked_level: '' } : {}),
+          ...(pickedFeat.grantsSpell ? { granted_spell: pickedFeat.grantedSpellName, ability_override: pickedFeat.abilityOverride || null } : {}),
+          ...(pickedFeat.buffs?.length ? { buffs: pickedFeat.buffs } : {}),
+        },
+      };
+    }
+    let newSd = null;
+    if (pickedFeat.grantsSpell && pickedFeat.grantedSpellName) {
+      try {
+        const r = await api.get('/content/spells');
+        const master = r.data.find(s => s.name.toLowerCase() === pickedFeat.grantedSpellName.toLowerCase());
+        const sd = character.spell_data || {};
+        const known = sd.known_spells || [];
+        if (master && !known.some(s => s.name.toLowerCase() === master.name.toLowerCase())) {
+          newSd = { ...sd, known_spells: [...known, { ...master, granted_by: pickedFeat.name, ability_override: pickedFeat.abilityOverride || null, free_use_feature: key }] };
+        }
+      } catch {
+        // Non-fatal - the feature/charge still gets attached even if the spell lookup failed.
+      }
+    }
+    await updateCharacter(character.id, { ae_data: newAe, tracker_data: newTd, ...(newSd ? { spell_data: newSd } : {}) });
     setStep('done');
   };
 
@@ -286,37 +349,78 @@ export default function LevelUpFlowModal({ onClose, mode = 'level_up', initialLe
           </>
         )}
 
-        {step === 'choose_asi' && (
+        {step === 'choose_asi' && (() => {
+          const filteredFeats = feats.filter(f => !featSearch || f.name.toLowerCase().includes(featSearch.toLowerCase()))
+            .sort((a, b) => a.name.localeCompare(b.name));
+          return (
           <>
             <div style={{color:'var(--text-dim)',fontSize:12,marginBottom:12}}>
-              This level grants an Ability Score Improvement. Increase two abilities by 1, or one ability by 2 (max 20) - or skip this and add a Feat instead via "Browse Feats" on the Feats/Attunement tab.
+              This level grants an Ability Score Improvement. Increase two abilities by 1, increase one ability by 2 (max 20), or take a Feat instead.
             </div>
             <div className="form-row" style={{marginBottom:8}}>
-              <label style={{display:'flex',alignItems:'center',gap:6}}><input type="radio" checked={asiMode==='two'} onChange={() => setAsiMode('two')} /> +1 / +1</label>
-              <label style={{display:'flex',alignItems:'center',gap:6}}><input type="radio" checked={asiMode==='one'} onChange={() => setAsiMode('one')} /> +2 to one</label>
+              <label style={{display:'flex',alignItems:'center',gap:6}}><input type="radio" checked={asiChoice==='two'} onChange={() => setAsiChoice('two')} /> +1 / +1</label>
+              <label style={{display:'flex',alignItems:'center',gap:6}}><input type="radio" checked={asiChoice==='one'} onChange={() => setAsiChoice('one')} /> +2 to one</label>
+              <label style={{display:'flex',alignItems:'center',gap:6}}><input type="radio" checked={asiChoice==='feat'} onChange={() => setAsiChoice('feat')} /> Take a Feat</label>
             </div>
-            <div className="form-row">
-              <div className="form-group">
-                <label>{asiMode === 'one' ? 'Ability' : 'Ability 1'}</label>
-                <select value={asiAbilities[0]} onChange={e => setAsiAbilities(a => [e.target.value, a[1]])}>
-                  {ABILITY_KEYS.map(k => <option key={k} value={k}>{ABILITY_LABELS[k]}</option>)}
-                </select>
-              </div>
-              {asiMode === 'two' && (
+
+            {asiChoice !== 'feat' && (
+              <div className="form-row">
                 <div className="form-group">
-                  <label>Ability 2</label>
-                  <select value={asiAbilities[1]} onChange={e => setAsiAbilities(a => [a[0], e.target.value])}>
+                  <label>{asiChoice === 'one' ? 'Ability' : 'Ability 1'}</label>
+                  <select value={asiAbilities[0]} onChange={e => setAsiAbilities(a => [e.target.value, a[1]])}>
                     {ABILITY_KEYS.map(k => <option key={k} value={k}>{ABILITY_LABELS[k]}</option>)}
                   </select>
                 </div>
+                {asiChoice === 'two' && (
+                  <div className="form-group">
+                    <label>Ability 2</label>
+                    <select value={asiAbilities[1]} onChange={e => setAsiAbilities(a => [a[0], e.target.value])}>
+                      {ABILITY_KEYS.map(k => <option key={k} value={k}>{ABILITY_LABELS[k]}</option>)}
+                    </select>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {asiChoice === 'feat' && (
+              <>
+                <input value={featSearch} onChange={e => setFeatSearch(e.target.value)} placeholder="Search feats..." style={{marginBottom:8}} autoFocus />
+                {featError && <div style={{color:'var(--danger)',fontSize:11,marginBottom:8}}>{featError}</div>}
+                <div style={{maxHeight:260,overflowY:'auto',border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',marginBottom:12}}>
+                  {featsLoading ? (
+                    <div style={{color:'var(--text-dim)',textAlign:'center',padding:16,fontSize:12}}>Loading feats...</div>
+                  ) : filteredFeats.length === 0 ? (
+                    <div style={{color:'var(--text-dim)',textAlign:'center',padding:16,fontSize:12}}>No matching feats.</div>
+                  ) : filteredFeats.map((f,i) => (
+                    <label key={i} style={{display:'flex',gap:8,alignItems:'flex-start',padding:'8px 10px',borderBottom:'1px solid var(--border)',cursor:'pointer',background: pickedFeat?.name===f.name ? 'rgba(124,92,252,0.12)' : 'none'}}>
+                      <input type="radio" style={{marginTop:3}} checked={pickedFeat?.name===f.name} onChange={() => { setPickedFeat(f); setFeatError(null); }} />
+                      <div style={{flex:1}}>
+                        <div style={{color:'var(--text-primary)',fontWeight:500,fontSize:13}}>{f.name}</div>
+                        <div style={{color:'var(--text-dim)',fontSize:11,marginBottom:2}}>{f.source}{f.max_uses ? ` · ${f.max_uses}/${f.rest_type} rest` : ''}</div>
+                        {f.description && <div style={{color:'var(--text-secondary)',fontSize:11,lineHeight:1.5}}>{f.description}</div>}
+                        {f.buffs?.length > 0 && (
+                          <div style={{marginTop:4}}>
+                            {f.buffs.map((b,bi) => <div key={bi} style={{fontSize:10,color:'var(--accent-light)'}}>{formatItemBuff(b)}</div>)}
+                          </div>
+                        )}
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </>
+            )}
+
+            <div style={{display:'flex',gap:8,marginTop:12}}>
+              <button className="btn btn-secondary" style={{flex:1}} onClick={() => setStep('done')}>Skip</button>
+              {asiChoice === 'feat' ? (
+                <button className="btn btn-primary" style={{flex:2}} disabled={!pickedFeat} onClick={submitFeat}>Take Feat</button>
+              ) : (
+                <button className="btn btn-primary" style={{flex:2}} disabled={asiChoice==='two' && asiAbilities[0]===asiAbilities[1]} onClick={submitAsi}>Apply</button>
               )}
             </div>
-            <div style={{display:'flex',gap:8,marginTop:12}}>
-              <button className="btn btn-secondary" style={{flex:1}} onClick={() => setStep('done')}>Skip (I'll take a Feat)</button>
-              <button className="btn btn-primary" style={{flex:2}} disabled={asiMode==='two' && asiAbilities[0]===asiAbilities[1]} onClick={submitAsi}>Apply</button>
-            </div>
           </>
-        )}
+          );
+        })()}
 
         {step === 'done' && (() => {
           const buffItems = [...(character?.tracker_data?.inventory?.items || []), ...featBuffItems(character?.tracker_data?.features), ...raceBuffItems(character?.race)];
