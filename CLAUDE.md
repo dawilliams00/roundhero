@@ -79,6 +79,23 @@ Use this exact handoff flow when the owner says to deploy the encounter/campaign
 
 Do not deploy by clicking Render redeploy alone. Render only deploys what is on `origin/main`; if the campaign branch is not merged and pushed, the live site will not change.
 
+
+### Current Syric/Campaign Encounter TODOs From Live Testing
+
+The owner wants to stay focused on Syric and the campaign encounter tracker for a bit. Capture these as active follow-up work, not distant backlog:
+
+- Encounter tracker should poll/sync player-character sheet status about every 15 seconds while open so the DM sees current PC HP, temp HP, conditions, concentration, active effects, and Haste/other spell changes without manually pressing Sync PCs. Avoid syncing monster HP from player-visible data; only PC sheet state should auto-refresh.
+- Encounter tracker layout is usable but messy. Refine it into a cleaner run-combat screen with stable columns, less wasted space, and better visual grouping. The setup/builder table also has formatting issues; either polish it as a setup screen or replace it with the full tracker flow if it becomes redundant.
+- All parties in the encounter need the same HP modifier popup/calculator pattern used by character HP management, not just small +/- buttons and a plain amount field. Damage should drain temp HP first, healing should cap at max, and temp HP should be separately addable.
+- Effects added to a combatant should be highly visible, using a highlighted red/alert style instead of a dark/black block that blends into the modal. Applied effects should be obvious at a glance on the target row/card.
+- Initiative order/header should remain sticky/visible while scrolling down long encounter lists.
+- Players need some way to see enemy public statuses/conditions so they do not forget things like Hex, Bane, restrained, prone, etc. Do not expose enemy HP. Consider a player-facing encounter status strip/list that shows enemy names plus public conditions/effects only.
+- The monster/creature stat block currently opens behind the encounter tracker modal. Fix z-index/modal layering so clicking Stats opens the stat sheet on top of the encounter tracker.
+- Rename the encounter tracker launch button: the button that opens the full tracker should be `Open`, not `Run`. The current `Open`/builder action is confusing and appears to do little; make setup vs tracker actions clear.
+- Casting Haste with Syric did not reflect in the encounter tracker. The 15-second sync should pick this up, and the PC snapshot should include active effects and concentration changes. Verify Haste specifically updates Syric's encounter row/status.
+- Effects workflow should eventually use proper dropdowns and shared effect UI where possible. Example: `Hex` from Syric to Dragon #1, duration 1 minute. `Add Effect` should let the DM choose an effect/spell/condition from an appropriate list and then show it clearly on that target in the tracker.
+- Keep Syric-specific work moving alongside this: private Syric console, Arcane Charge/Overload/Venting automation, Codex Dice, Shadow status/actions, and encounter reflection of Syric/Shadow states.
+
 ## Architecture
 
 ### Two parallel character-build paths feed one shared shape

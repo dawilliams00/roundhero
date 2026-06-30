@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
 import { schoolColor, getSpellcastingBlocks, getAbilityOverrideBlock, scaleSpellDamage, rollDamageDetailed, concentrationSlotCount, maxAttacksForCharacter, HASTED_EFFECT, METAMAGIC_OPTIONS, metamagicCost, featBuffItems } from '../utils/dnd';
 import InfoModal from './InfoModal';
@@ -23,6 +23,7 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
   // weapon damage + the cantrip's bonus together, not the spell alone.
   const [awaitingWeapon, setAwaitingWeapon] = useState(false);
   const [pickedWeaponIdx, setPickedWeaponIdx] = useState(null);
+  const castMetaRef = useRef(null);
 
   if (!character) return null;
   const slots = character.tracker_data?.spell_slots || {};
@@ -66,7 +67,7 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
   // a level for them is a pointless choice that just wastes a bigger slot for nothing.
   const canMeaningfullyUpcast = !!spell.higher_level;
 
-  const finish = () => { onClose(); if (onCastSuccess) onCastSuccess(); };
+  const finish = () => { onClose(); if (onCastSuccess) onCastSuccess(castMetaRef.current || { spell, level: spell.level_int, chargeMode }); };
 
   const rollNow = () => setDamageResult({
     ...pendingDamage,
@@ -156,6 +157,7 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
         setCast(`Cast at level ${castLevel}!${metaNote}`);
         levelUsed = castLevel;
       }
+      castMetaRef.current = { spell, level: levelUsed, chargeMode };
       const tracked = await tryTrackConcentration(levelUsed);
       if (tracked) continueAfterCast(levelUsed);
     } finally { setCasting(false); }
@@ -168,6 +170,7 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
     try {
       await useFeature(freeUseFeature);
       setCast(`Cast free (${freeUseFeature})!`);
+      castMetaRef.current = { spell, level: spell.level_int, freeUseFeature };
       const tracked = await tryTrackConcentration(spell.level_int);
       if (tracked) continueAfterCast(spell.level_int);
     } finally { setCasting(false); }

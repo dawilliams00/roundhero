@@ -10,6 +10,8 @@ import NotesTab from '../components/NotesTab';
 import BestiaryTab from '../components/BestiaryTab';
 import CompanionTab from '../components/CompanionTab';
 import SyricConsoleTab from '../components/SyricConsoleTab';
+import SyricActionsTab from '../components/SyricActionsTab';
+import ShadowConsoleTab from '../components/ShadowConsoleTab';
 import { fetchCharacterModules } from '../utils/characterModules';
 import { activeCompanionKey } from '../utils/dnd';
 
@@ -44,9 +46,14 @@ export default function GameView() {
   // Hybrid Transformation) without having to open the tab first.
   const activeKey = activeCompanionKey(td);
   const activeCompanion = activeKey === 'companion2' ? companion2 : companion;
+  const hasSyricModule = modules.some(module => module.id === 'syric_arcane');
   const tabs = [
     { label: '⚔️ Actions', Component: ActionEconomyTab },
-    ...(modules.some(module => module.id === 'syric_arcane') ? [{ label: '🔮 Syric', Component: SyricConsoleTab }] : []),
+    ...(hasSyricModule ? [
+      { label: '🔮 Syric', Component: SyricConsoleTab },
+      { label: '⚡ Syric AE', Component: SyricActionsTab },
+      { label: '🌑 Shadow', Component: ShadowConsoleTab },
+    ] : []),
     { label: '📋 Feats/Attunement', Component: TrackerTab },
     { label: '✨ Spells', Component: SpellsTab },
     { label: '🎒 Inventory', Component: InventoryTab },
