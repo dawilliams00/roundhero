@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
-import { SECTION_ORDER, SECTION_COLORS, slotBadgeTextColor, concentrationSlotCount, isCharacterCaster, HASTED_EFFECT, LETHARGIC_CONDITION, maxAttacksForCharacter, isItemActive, formatItemBuff, martialArtsDie, sorceryDisplayName, activeCompanionKey } from '../utils/dnd';
+import { SECTION_ORDER, SECTION_COLORS, slotBadgeTextColor, concentrationSlotCount, isCharacterCaster, HASTED_EFFECT, LETHARGIC_CONDITION, maxAttacksForCharacter, isItemActive, formatItemBuff, martialArtsDie, sorceryDisplayName, activeCompanionKey, HYBRID_FORM_EFFECT, hybridFormStats } from '../utils/dnd';
 import AbilityDetailModal from './AbilityDetailModal';
 import CastSpellPickerModal from './CastSpellPickerModal';
 import ItemSpellsModal from './ItemSpellsModal';
@@ -65,14 +65,30 @@ export default function ActionEconomyTab() {
   // reusing Finesse's existing "better of STR/DEX" logic in weaponAbilityMod rather than
   // adding a parallel ability-choice path.
   const monkDie = martialArtsDie(character.class_name, character.level);
+  // Order of the Lycan's Hybrid Transformation does the same thing to Unarmed Strike that
+  // Martial Arts does (scaling die, DEX-or-STR via Finesse), plus a flat attack/damage
+  // bonus (Predatory Strikes/Stalker's Prowess) only while the form is actually active -
+  // computed live from Blood Hunter class level, not hardcoded. Takes priority over Monk's
+  // die if somehow both apply, since the active form is the one actually swinging right now.
+  const hybridStats = hybridFormStats(character.class_name, character.level);
+  const isHybridForm = (td.active_effects || []).includes(HYBRID_FORM_EFFECT);
+  const hybridActive = isHybridForm && hybridStats;
   const unarmedStrike = {
     name: 'Unarmed Strike', weapon_category: 'Simple', weapon_range: 'Melee',
-    damage_dice: monkDie ? `1d${monkDie}` : '1', damage_type: 'Bludgeoning', proficient: true, is_weapon: true,
-    properties: monkDie ? ['Finesse'] : [],
+    damage_dice: hybridActive ? `1d${hybridStats.unarmedDie}` : (monkDie ? `1d${monkDie}` : '1'),
+    damage_type: 'Bludgeoning', proficient: true, is_weapon: true,
+    properties: (hybridActive || monkDie) ? ['Finesse'] : [],
     bonus_damage_dice: unarmedBonusItem?.unarmed_bonus_damage_dice || '',
     bonus_damage_type: unarmedBonusItem?.unarmed_bonus_damage_type || '',
     unarmed_heal_or_advantage: !!unarmedBonusItem?.unarmed_heal_or_advantage,
     boostedBy: unarmedBonusItem?.name,
+    ...(hybridActive ? {
+      equipped: true,
+      buffs: [
+        { stat: 'weapon_attack_modifier', value: hybridStats.unarmedAttackBonus },
+        { stat: 'weapon_damage_modifier', value: hybridStats.meleeDamageBonus },
+      ],
+    } : {}),
   };
   // Companion's own hardcoded ability list (Settings > "Track a Companion") - split into
   // a second column below, with its own turn-bucket state (companionTurnUsed) so e.g.
@@ -96,6 +112,15 @@ export default function ActionEconomyTab() {
   // so it works whether the feature is the engine's exact name or a PDF-imported variant.
   const sorceryFeatureName = Object.keys(features).find(n => n.toLowerCase().includes('font of magic'));
   const knownMetamagic = td.metamagic_known || [];
+  // Hybrid Transformation's toggle button only shows up at all if the character actually
+  // has the feature (same substring-detection convention as Sorcery Points above). Uses
+  // are only gated/decremented if the feature has a real tracked max - a PDF-imported
+  // sheet that printed "Hybrid Transformation" with no numeric Uses still gets a working
+  // toggle, same "no charge to spend" precedent as a passive feature's USE button.
+  const hybridFeatureName = Object.keys(features).find(n => n.toLowerCase().includes('hybrid transformation'));
+  const hybridCanActivate = isHybridForm || !hybridFeatureName
+    || (features[hybridFeatureName].max || 0) === 0
+    || (features[hybridFeatureName].current || 0) > 0;
   const baseMaxAttacks = maxAttacksForCharacter(features);
   // A hasted melee character gets their normal attacks (Extra Attack) PLUS one more via
   // Haste's bonus action - RAW lets that extra action be used to Attack specifically, not
@@ -165,6 +190,30 @@ export default function ActionEconomyTab() {
   };
 
   const isBucketUsed = (bucket) => inInitiative && bucket && turnUsed[bucket];
+
+  // Hybrid Transformation is a bonus action that toggles HYBRID_FORM_EFFECT on/off -
+  // everything it mechanically grants (AC, resistances, STR-save advantage, melee/unarmed
+  // damage and unarmed attack bonuses) is computed live from that one flag elsewhere
+  // (CharacterHeader.js, ActionEconomyTab's own unarmedStrike construction,
+  // WeaponAttackModal.js), so flipping it here is the single source of truth for the
+  // whole form. Also auto-switches the active companion slot to the Hybrid one (if the
+  // player set one up via Settings > Track a Companion) so the separate ability list
+  // toggles in sync with the mechanical state instead of needing two manual clicks.
+  const toggleHybridForm = () => {
+    const turningOn = !isHybridForm;
+    const newEffects = turningOn
+      ? [...(td.active_effects || []), HYBRID_FORM_EFFECT]
+      : (td.active_effects || []).filter(e => e !== HYBRID_FORM_EFFECT);
+    let newFeatures = features;
+    if (turningOn && hybridFeatureName && (features[hybridFeatureName].max || 0) > 0) {
+      newFeatures = { ...features, [hybridFeatureName]: { ...features[hybridFeatureName], current: Math.max(0, (features[hybridFeatureName].current || 0) - 1) } };
+    }
+    saveTrackerData({
+      ...td, active_effects: newEffects, features: newFeatures,
+      ...(td.companion2?.enabled ? { active_companion: turningOn ? 'companion2' : 'companion' } : {}),
+    });
+    markBucket('Bonus Action');
+  };
 
   // Companion abilities only ever live in Action/Bonus Action/Reaction/Free Action/Passive
   // (same SECTION_ORDER the main column uses) - Free Action/Passive aren't turn-limited,
@@ -253,6 +302,13 @@ export default function ActionEconomyTab() {
             );
           })}
         </div>
+        {hybridFeatureName && (
+          <button className="btn btn-sm" onClick={toggleHybridForm} disabled={!hybridCanActivate}
+            title={isHybridForm ? 'Revert to normal form (bonus action)' : 'Transform into Hybrid Form (bonus action)'}
+            style={{background: isHybridForm ? 'var(--danger)' : 'var(--border)', color: isHybridForm ? '#fff' : 'var(--text-secondary)', fontWeight:600, opacity: hybridCanActivate ? 1 : 0.5}}>
+            🐺 {isHybridForm ? 'Revert' : 'Transform'}
+          </button>
+        )}
         {inInitiative && (
           <div style={{display:'flex',gap:4}}>
             {(isHasted ? ['Action','Bonus Action','Reaction','Haste'] : ['Action','Bonus Action','Reaction']).map(s => (

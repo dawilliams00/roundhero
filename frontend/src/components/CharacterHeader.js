@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useCharacter } from '../context/CharacterContext';
 import api from '../utils/api';
-import { modifier, modStr, hpColor, profBonus, ABILITY_KEYS, getSpellcastingBlocks, computeItemBonuses, effectiveAbilityScores, suspectedAbilityContamination, featBuffItems, raceBuffItems, HASTED_EFFECT, HARDCODED_CONDITION_INFO, EXHAUSTION_RAW_TEXT, unarmoredAC, cappedModifier } from '../utils/dnd';
+import { modifier, modStr, hpColor, profBonus, ABILITY_KEYS, getSpellcastingBlocks, computeItemBonuses, effectiveAbilityScores, suspectedAbilityContamination, featBuffItems, raceBuffItems, HASTED_EFFECT, HARDCODED_CONDITION_INFO, EXHAUSTION_RAW_TEXT, unarmoredAC, cappedModifier, HYBRID_FORM_EFFECT, hybridFormBuffItems } from '../utils/dnd';
 import SavesModal from './SavesModal';
 import SkillsModal from './SkillsModal';
 import TraitsModal from './TraitsModal';
@@ -22,6 +22,10 @@ import FeedbackModal from './FeedbackModal';
 // effects here rather than hardcoding a new one-off chip elsewhere.
 const EFFECT_MECHANICAL_NOTES = {
   [HASTED_EFFECT]: [{ t: 'ADV on DEX saves', d: 'From Haste', type: 'advantage' }],
+  // AC/resistance/STR-advantage are already applied numerically via hybridFormBuffItems
+  // below (same synthesized-item trick feats use) - this note is just the visible
+  // reminder, same role Haste's DEX-save note plays for a numeric-but-easy-to-forget bonus.
+  [HYBRID_FORM_EFFECT]: [{ t: 'Bonus melee dmg (Feral Might)', d: 'Order of the Lycan - see Weapons tab for the exact number', type: 'bonus' }],
 };
 
 // Single-letter, color-coded prefix for trait chips so a long row of resistances/
@@ -241,7 +245,7 @@ export default function CharacterHeader({ onBack }) {
   // always-on - no equip/attune step - so they're folded into every AC/save/spell-mod
   // calculation as synthetic always-equipped "items" rather than duplicating the whole
   // aggregation a second time for feats specifically.
-  const buffItems = [...invItems, ...featBuffItems(td?.features), ...raceBuffItems(character.race)];
+  const buffItems = [...invItems, ...featBuffItems(td?.features), ...raceBuffItems(character.race), ...hybridFormBuffItems(td)];
   const itemBonuses = computeItemBonuses(buffItems);
   const effAbBase  = effectiveAbilityScores(ab, buffItems);
   // ability_score_misc: per-ability misc adjustments stored in tracker_data (spells like
@@ -483,6 +487,15 @@ export default function CharacterHeader({ onBack }) {
                       {e} ×
                     </div>
                   ))}
+                </div>
+              )}
+              {/* Bloodlust isn't auto-rolled (same "track it, the player applies it"
+                  philosophy as conditions/exhaustion) - just a hard-to-miss reminder at
+                  exactly the moment it matters (transformed + at/under half HP), instead
+                  of relying on the player to remember a sub-feature's trigger condition. */}
+              {activeEffects.includes(HYBRID_FORM_EFFECT) && curHp <= maxHp / 2 && (
+                <div style={{background:'rgba(230,57,70,0.15)',border:'1px solid var(--danger)',color:'var(--danger)',borderRadius:8,padding:'3px 8px',fontSize:11,fontWeight:600}}>
+                  ⚠ Bloodlust: DC 8 WIS save or attack nearest creature (start of turn)
                 </div>
               )}
             </div>

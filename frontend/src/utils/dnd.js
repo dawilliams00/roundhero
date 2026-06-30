@@ -810,6 +810,65 @@ export const martialArtsDie = (classNameRaw, totalLevel) => {
   return 4;
 };
 
+// Blood Hunter Order of the Lycan's Hybrid Transformation - same "compute from class
+// level, never hardcode to one character" rule martialArtsDie above established.
+export const HYBRID_FORM_EFFECT = 'Hybrid Form';
+
+export const bloodHunterLevel = (classNameRaw, totalLevel) => {
+  const parts = parseClassLevels(classNameRaw);
+  if (parts.length) {
+    const bh = parts.find(p => p.className.toLowerCase().includes('blood hunter'));
+    return bh ? bh.level : null;
+  }
+  return (classNameRaw || '').toLowerCase().includes('blood hunter') ? totalLevel : null;
+};
+
+// Level-scaled numbers straight from Hybrid Transformation/Stalker's Prowess/Advanced
+// Transformation/Hybrid Transformation Mastery's text in class_features.json. Returns
+// null if the character has no Blood Hunter levels at all.
+export const hybridFormStats = (classNameRaw, totalLevel) => {
+  const lvl = bloodHunterLevel(classNameRaw, totalLevel);
+  if (lvl == null) return null;
+  return {
+    level: lvl,
+    meleeDamageBonus: lvl >= 18 ? 3 : lvl >= 11 ? 2 : 1,
+    unarmedDie: lvl >= 11 ? 8 : 6,
+    unarmedAttackBonus: lvl >= 18 ? 3 : lvl >= 11 ? 2 : lvl >= 7 ? 1 : 0,
+    maxUses: lvl >= 18 ? Infinity : lvl >= 11 ? 2 : 1,
+  };
+};
+
+// Synthesized into the items array the same way featBuffItems/raceBuffItems already are
+// (see "Generalized item stat buffs" precedent) so AC, resistance, and advantage-on-saves
+// header chips all pick this up for free with no parallel aggregation path - only
+// included while HYBRID_FORM_EFFECT is an active effect. equipped:true is required since
+// computeItemBonuses gates every consumer through isItemActive.
+export const hybridFormBuffItems = (td) => {
+  if (!(td?.active_effects || []).includes(HYBRID_FORM_EFFECT)) return [];
+  return [{
+    name: 'Hybrid Form (Resilient Hide)', equipped: true, attunement: false,
+    buffs: [
+      { stat: 'ac_base', value: 1, mode: 'add' },
+      { stat: 'damage_resistance', damage_type: 'Bludgeoning (nonmagical/nonsilvered)' },
+      { stat: 'damage_resistance', damage_type: 'Piercing (nonmagical/nonsilvered)' },
+      { stat: 'damage_resistance', damage_type: 'Slashing (nonmagical/nonsilvered)' },
+      { stat: 'advantage_save', ability: 'STR' },
+    ],
+  }];
+};
+
+// Feral Might's melee damage bonus applies to ANY melee weapon while Hybrid Form is
+// active, not just Unarmed Strike (unlike the unarmed-only attack-roll bonus, which is
+// already baked directly into the virtual Unarmed Strike weapon's own buffs in
+// ActionEconomyTab.js - this is the separate hook for a REAL wielded melee weapon).
+// Ranged weapons get nothing, matching RAW ("melee damage rolls").
+export const hybridFormWeaponBonus = (td, classNameRaw, totalLevel, weapon) => {
+  if (weapon?.weapon_range === 'Ranged') return { attack: 0, damage: 0 };
+  if (!(td?.active_effects || []).includes(HYBRID_FORM_EFFECT)) return { attack: 0, damage: 0 };
+  const stats = hybridFormStats(classNameRaw, totalLevel);
+  return { attack: 0, damage: stats ? stats.meleeDamageBonus : 0 };
+};
+
 // Extra Attack (Fighter/Paladin/etc.) grants a second attack - detected by feature name
 // substring, same approach as the Sorcery Points/Divine Smite name-based detection
 // elsewhere, so it works for both engine-built and PDF-imported characters regardless of
