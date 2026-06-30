@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useCharacter } from '../context/CharacterContext';
 import api from '../utils/api';
 import { ABILITY_KEYS, ABILITY_LABELS, modifier, rollDie, spellLevelUpNote, featBuffItems, raceBuffItems, formatItemBuff } from '../utils/dnd';
+import { resolveFeatChoice } from '../utils/featChoices';
+import FeatChoiceModal from './FeatChoiceModal';
 
 // Drives the full multi-step level-up flow for ANY character (single-class manually-
 // created, or multiclass/PDF-imported once classes are confirmed) - POST /level_up is
@@ -39,6 +41,7 @@ export default function LevelUpFlowModal({ onClose, mode = 'level_up', initialLe
   const [featSearch, setFeatSearch] = useState('');
   const [pickedFeat, setPickedFeat] = useState(null);
   const [featError, setFeatError] = useState(null);
+  const [showFeatChoice, setShowFeatChoice] = useState(false);
 
   useEffect(() => {
     api.get('/content/classes').then(r => setClassList(r.data || []));
@@ -195,49 +198,92 @@ export default function LevelUpFlowModal({ onClose, mode = 'level_up', initialLe
   // release/granted-spell tags, buffs) so a feat picked here behaves identically to one
   // added later via Browse Feats - this is just a more convenient entry point at the
   // exact moment the player has an ASI-or-feat choice to make.
-  const submitFeat = async () => {
-    if (!pickedFeat) return;
-    setFeatError(null);
+  // Pure builder, no commit - mirrors TrackerTab.js's buildFeatAttachPatch, split out so
+  // a choice-feat (Resilient/Magic Initiate) can fold its extra patches into the SAME
+  // single updateCharacter call, not two sequential saves.
+  const buildFeatAttachPatch = async (feat) => {
     const ae = character.ae_data || {};
     const td = character.tracker_data || {};
-    const key = pickedFeat.name;
+    const key = feat.name;
     const alreadyHas = Object.values(ae).some(arr => (arr || []).some(a => a.tracker_key === key));
-    if (alreadyHas) {
-      setFeatError(`"${pickedFeat.name}" is already on this character.`);
-      return;
-    }
-    const newAbility = { name: pickedFeat.name, source: pickedFeat.source, source_type: 'custom', cost_type: pickedFeat.cost_type, tracker_key: key, description: pickedFeat.description };
+    if (alreadyHas) return 'duplicate';
+    const newAbility = { name: feat.name, source: feat.source, source_type: 'custom', cost_type: feat.cost_type, tracker_key: key, description: feat.description };
     const newAe = { ...ae };
-    if (!newAe[pickedFeat.section]) newAe[pickedFeat.section] = [];
-    newAe[pickedFeat.section] = [...newAe[pickedFeat.section], newAbility];
+    if (!newAe[feat.section]) newAe[feat.section] = [];
+    newAe[feat.section] = [...newAe[feat.section], newAbility];
     const newTd = { ...td };
-    if (pickedFeat.max_uses > 0 || pickedFeat.isTuck || pickedFeat.grantsSpell || pickedFeat.buffs?.length > 0) {
+    if (feat.max_uses > 0 || feat.isTuck || feat.grantsSpell || feat.buffs?.length > 0) {
       newTd.features = {
         ...newTd.features,
         [key]: {
-          current: pickedFeat.max_uses || 0, max: pickedFeat.max_uses || 0,
-          rest_type: pickedFeat.rest_type, action: pickedFeat.section, description: pickedFeat.description,
-          ...(pickedFeat.isTuck ? { spell_picker: true, tucked_spell: '', tucked_level: '' } : {}),
-          ...(pickedFeat.grantsSpell ? { granted_spell: pickedFeat.grantedSpellName, ability_override: pickedFeat.abilityOverride || null } : {}),
-          ...(pickedFeat.buffs?.length ? { buffs: pickedFeat.buffs } : {}),
+          current: feat.max_uses || 0, max: feat.max_uses || 0,
+          rest_type: feat.rest_type, action: feat.section, description: feat.description,
+          ...(feat.isTuck ? { spell_picker: true, tucked_spell: '', tucked_level: '' } : {}),
+          ...(feat.grantsSpell ? { granted_spell: feat.grantedSpellName, ability_override: feat.abilityOverride || null } : {}),
+          ...(feat.buffs?.length ? { buffs: feat.buffs } : {}),
         },
       };
     }
     let newSd = null;
-    if (pickedFeat.grantsSpell && pickedFeat.grantedSpellName) {
+    if (feat.grantsSpell && feat.grantedSpellName) {
       try {
         const r = await api.get('/content/spells');
-        const master = r.data.find(s => s.name.toLowerCase() === pickedFeat.grantedSpellName.toLowerCase());
+        const master = r.data.find(s => s.name.toLowerCase() === feat.grantedSpellName.toLowerCase());
         const sd = character.spell_data || {};
         const known = sd.known_spells || [];
         if (master && !known.some(s => s.name.toLowerCase() === master.name.toLowerCase())) {
-          newSd = { ...sd, known_spells: [...known, { ...master, granted_by: pickedFeat.name, ability_override: pickedFeat.abilityOverride || null, free_use_feature: key }] };
+          newSd = { ...sd, known_spells: [...known, { ...master, granted_by: feat.name, ability_override: feat.abilityOverride || null, free_use_feature: key }] };
         }
       } catch {
         // Non-fatal - the feature/charge still gets attached even if the spell lookup failed.
       }
     }
-    await updateCharacter(character.id, { ae_data: newAe, tracker_data: newTd, ...(newSd ? { spell_data: newSd } : {}) });
+    return { newAe, newTd, newSd };
+  };
+
+  const submitFeat = async () => {
+    if (!pickedFeat) return;
+    setFeatError(null);
+    if (pickedFeat.choice_type) { setShowFeatChoice(true); return; }
+    const patch = await buildFeatAttachPatch(pickedFeat);
+    if (patch === 'duplicate') { setFeatError(`"${pickedFeat.name}" is already on this character.`); return; }
+    await updateCharacter(character.id, { ae_data: patch.newAe, tracker_data: patch.newTd, ...(patch.newSd ? { spell_data: patch.newSd } : {}) });
+    setStep('done');
+  };
+
+  // Resilient/Magic Initiate-style feats need a choice made at the moment they're taken -
+  // FeatChoiceModal gathers it, resolveFeatChoice (utils/featChoices.js) turns it into
+  // patches, folded into the SAME commit as the normal feat attach.
+  const confirmFeatChoice = async (choiceData) => {
+    setShowFeatChoice(false);
+    const patch = await buildFeatAttachPatch(pickedFeat);
+    if (patch === 'duplicate') { setFeatError(`"${pickedFeat.name}" is already on this character.`); return; }
+    let { newAe, newTd, newSd } = patch;
+    const choice = await resolveFeatChoice(pickedFeat, choiceData);
+    if (choice) {
+      if (choice.saveProficiencyAdd) {
+        const td = character.tracker_data || {};
+        const existing = newTd.save_proficiencies || td.save_proficiencies || [];
+        if (!existing.includes(choice.saveProficiencyAdd)) newTd.save_proficiencies = [...existing, choice.saveProficiencyAdd];
+      }
+      if (choice.newFeature) {
+        const { key: fKey, ...fData } = choice.newFeature;
+        newTd.features = { ...newTd.features, [fKey]: fData };
+      }
+      if (choice.newKnownSpells?.length) {
+        const sd = newSd || character.spell_data || {};
+        newSd = { ...sd, known_spells: [...(sd.known_spells || []), ...choice.newKnownSpells] };
+      }
+    }
+    const updates = { ae_data: newAe, tracker_data: newTd, ...(newSd ? { spell_data: newSd } : {}) };
+    if (choice?.abilityScoreIncrease) {
+      const ab = character.ability_scores || {};
+      updates.ability_scores = { ...ab };
+      Object.entries(choice.abilityScoreIncrease).forEach(([k, v]) => {
+        updates.ability_scores[k] = Math.min(20, (parseInt(ab[k]) || 10) + v);
+      });
+    }
+    await updateCharacter(character.id, updates);
     setStep('done');
   };
 
@@ -245,6 +291,7 @@ export default function LevelUpFlowModal({ onClose, mode = 'level_up', initialLe
   const removeDraftClass = (idx) => setDraftClasses(d => d.filter((_, i) => i !== idx));
 
   return (
+    <>
     <div className="modal-overlay">
       <div className="modal" onClick={e => e.stopPropagation()}>
         {step !== 'loading' && <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>}
@@ -455,5 +502,9 @@ export default function LevelUpFlowModal({ onClose, mode = 'level_up', initialLe
         })()}
       </div>
     </div>
+    {showFeatChoice && pickedFeat && (
+      <FeatChoiceModal feat={pickedFeat} onConfirm={confirmFeatChoice} onCancel={() => setShowFeatChoice(false)} />
+    )}
+    </>
   );
 }

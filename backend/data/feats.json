@@ -306,7 +306,13 @@
       "source": "SRD",
       "official": true,
       "description": "You gain the following benefits.\nTwo Cantrips. You learn two cantrips of your choice from the Cleric, Druid, or Wizard spell list. Intelligence, Wisdom, or Charisma is your spellcasting ability for this feat's spells (choose when you select this feat).\nLevel 1 Spell. Choose a level 1 spell from the same list you selected for this feat's cantrips. You always have that spell prepared. You can cast it once without a spell slot, and you regain the ability to cast it in that way when you finish a Long Rest. You can also cast the spell using any spell slots you have.\nSpell Change. Whenever you gain a new level, you can replace one of the spells you chose for this feat with a different spell of the same level from the chosen spell list.\n\nYou can take this feat more than once, but you must choose a different spell list each time.",
-      "edition": "2014"
+      "edition": "2014",
+      "choice_type": "magic_initiate",
+      "magic_initiate_lists": [
+        "Cleric",
+        "Druid",
+        "Wizard"
+      ]
     },
     {
       "name": "Savage Attacker",
@@ -372,7 +378,8 @@
       "source": "PHB",
       "official": true,
       "edition": "2014",
-      "description": "Choose one ability score. You gain proficiency in saving throws using the chosen ability, and the chosen ability score increases by 1 (to a maximum of 20). This is a one-time choice made when you take the feat - apply it yourself via Settings -> Edit Character: check the matching Saving Throw Proficiency box, and bump that ability score up by 1."
+      "description": "Choose one ability score. You gain proficiency in saving throws using the chosen ability, and the chosen ability score increases by 1 (to a maximum of 20). This is a one-time choice made when you take the feat - apply it yourself via Settings -> Edit Character: check the matching Saving Throw Proficiency box, and bump that ability score up by 1.",
+      "choice_type": "ability_save_increase"
     },
     {
       "name": "War Caster",

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
 import api from '../utils/api';
 import { sorceryDisplayName } from '../utils/dnd';
+import { resolveFeatChoice } from '../utils/featChoices';
 import AbilityDetailModal from './AbilityDetailModal';
 import ConfirmModal from './ConfirmModal';
 import CustomAbilityModal from './CustomAbilityModal';
@@ -10,6 +11,7 @@ import ClassFeatureBrowserModal from './ClassFeatureBrowserModal';
 import FeatureEditModal from './FeatureEditModal';
 import SorceryPointsModal from './SorceryPointsModal';
 import InfoModal from './InfoModal';
+import FeatChoiceModal from './FeatChoiceModal';
 
 const SECTION_COST_TYPE = { 'Action':'action', 'Bonus Action':'bonus_action', 'Reaction':'reaction', 'Free Action':'free_action', 'Passive':'passive' };
 
@@ -23,6 +25,7 @@ export default function TrackerTab() {
   const [infoMessage, setInfoMessage] = useState(null);
   const [editingFeature, setEditingFeature] = useState(null);
   const [showSorceryPoints, setShowSorceryPoints] = useState(false);
+  const [choiceFeat, setChoiceFeat] = useState(null);
 
   if (!character) return null;
   const td       = character.tracker_data || {};
@@ -59,16 +62,17 @@ export default function TrackerTab() {
     saveTrackerData({ ...td, inventory: { ...td.inventory, items: newItems } });
   };
 
-  const addFeatFromLibrary = async (feat) => {
+  // Pure builder, no commit - split out so a choice-feat (Resilient/Magic Initiate) can
+  // fold its extra patches into the SAME single updateCharacter call below, rather than
+  // two separate sequential saves (the exact stale-closure-overwrite bug class this app
+  // has hit more than once - see CharacterContext.js's characterRef notes).
+  const buildFeatAttachPatch = async (feat) => {
     const key = feat.name;
     // Guards against the exact "doubled Cartomancer" bug - adding a feat that's already
     // on this character (by tracker_key) used to just push a second ae_data entry with
     // nothing to stop it, since features is keyed by name but ae_data's sections are arrays.
     const alreadyHas = Object.values(ae).some(arr => (arr||[]).some(a => a.tracker_key === key));
-    if (alreadyHas) {
-      setInfoMessage(`"${feat.name}" is already on this character.`);
-      return;
-    }
+    if (alreadyHas) return 'duplicate';
     const newAbility = { name: feat.name, source: feat.source, source_type: 'custom', cost_type: feat.cost_type, tracker_key: key, description: feat.description };
     const newAe = { ...ae };
     if (!newAe[feat.section]) newAe[feat.section] = [];
@@ -103,7 +107,49 @@ export default function TrackerTab() {
         // Non-fatal - the feature/charge still gets attached even if the spell lookup failed.
       }
     }
-    await updateCharacter(character.id, { ae_data: newAe, tracker_data: newTd, ...(newSd ? { spell_data: newSd } : {}) });
+    return { newAe, newTd, newSd };
+  };
+
+  const addFeatFromLibrary = async (feat) => {
+    if (feat.choice_type) { setChoiceFeat(feat); return; }
+    const patch = await buildFeatAttachPatch(feat);
+    if (patch === 'duplicate') { setInfoMessage(`"${feat.name}" is already on this character.`); return; }
+    await updateCharacter(character.id, { ae_data: patch.newAe, tracker_data: patch.newTd, ...(patch.newSd ? { spell_data: patch.newSd } : {}) });
+  };
+
+  // Resilient/Magic Initiate-style feats need a choice made at the moment they're taken -
+  // FeatChoiceModal gathers it, resolveFeatChoice (utils/featChoices.js) turns it into
+  // patches, folded into the SAME commit as the normal feat attach.
+  const confirmFeatChoice = async (choiceData) => {
+    const feat = choiceFeat;
+    setChoiceFeat(null);
+    const patch = await buildFeatAttachPatch(feat);
+    if (patch === 'duplicate') { setInfoMessage(`"${feat.name}" is already on this character.`); return; }
+    let { newAe, newTd, newSd } = patch;
+    const choice = await resolveFeatChoice(feat, choiceData);
+    if (choice) {
+      if (choice.saveProficiencyAdd) {
+        const existing = newTd.save_proficiencies || td.save_proficiencies || [];
+        if (!existing.includes(choice.saveProficiencyAdd)) newTd.save_proficiencies = [...existing, choice.saveProficiencyAdd];
+      }
+      if (choice.newFeature) {
+        const { key: fKey, ...fData } = choice.newFeature;
+        newTd.features = { ...newTd.features, [fKey]: fData };
+      }
+      if (choice.newKnownSpells?.length) {
+        const sd = newSd || character.spell_data || {};
+        newSd = { ...sd, known_spells: [...(sd.known_spells || []), ...choice.newKnownSpells] };
+      }
+    }
+    const updates = { ae_data: newAe, tracker_data: newTd, ...(newSd ? { spell_data: newSd } : {}) };
+    if (choice?.abilityScoreIncrease) {
+      const ab = character.ability_scores || {};
+      updates.ability_scores = { ...ab };
+      Object.entries(choice.abilityScoreIncrease).forEach(([k, v]) => {
+        updates.ability_scores[k] = Math.min(20, (parseInt(ab[k]) || 10) + v);
+      });
+    }
+    await updateCharacter(character.id, updates);
   };
 
   // Same shape as addFeatFromLibrary above, but for a class/subclass feature from the
@@ -257,6 +303,7 @@ export default function TrackerTab() {
       {detail && <AbilityDetailModal ability={detail} onClose={() => setDetail(null)} />}
       {showCustom && <CustomAbilityModal onClose={() => setCustom(false)} />}
       {showFeatBrowser && <FeatBrowserModal onAdd={addFeatFromLibrary} onClose={() => setShowFeatBrowser(false)} />}
+      {choiceFeat && <FeatChoiceModal feat={choiceFeat} onConfirm={confirmFeatChoice} onCancel={() => setChoiceFeat(null)} />}
       {showClassFeatureBrowser && <ClassFeatureBrowserModal onAdd={addClassFeatureFromLibrary} onClose={() => setShowClassFeatureBrowser(false)} />}
       {infoMessage && <InfoModal title="Feats" message={infoMessage} onClose={() => setInfoMessage(null)} />}
       {editingFeature && (
