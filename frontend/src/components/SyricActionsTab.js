@@ -1,12 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
 import { SECTION_COLORS, HASTED_EFFECT, concentrationSlotCount, formatItemBuff, isItemActive, slotBadgeTextColor, availableSpellsForBucket } from '../utils/dnd';
-import { fetchCharacterModule, findTrackerCounter, runSyricAction, syncSyricCodexPages, updateTrackerCounter } from '../utils/characterModules';
+import { fetchCharacterModule, fetchSyricReferences, findTrackerCounter, runSyricAction, syncSyricCodexPages, updateTrackerCounter } from '../utils/characterModules';
 import AbilityDetailModal from './AbilityDetailModal';
 import CastSpellPickerModal from './CastSpellPickerModal';
 import ConcentrationModal from './ConcentrationModal';
 import ItemDetailModal from './ItemDetailModal';
 import ItemSpellsModal from './ItemSpellsModal';
+import ReferenceLibraryModal from './ReferenceLibrary';
 
 const BUCKET_LABELS = ['Action', 'Haste', 'Bonus Action', 'Reaction', 'Movement'];
 const SHADOW_BUCKET_LABELS = ['Action', 'Bonus Action', 'Reaction', 'Movement'];
@@ -46,21 +47,31 @@ const sourceBadgeColor = (sourceType) => {
   return 'var(--text-dim)';
 };
 
-function PageRail({ pages = [], pendingPages, setPendingPages, onSync }) {
+function PageRail({ pages = [], pendingPages, setPendingPages, onSync, onReadPage }) {
   return (
     <div style={{display:'flex',gap:5,flexWrap:'wrap',alignItems:'center'}}>
       <span style={{fontSize:11,color:'var(--text-dim)',fontWeight:700,textTransform:'uppercase'}}>Codex</span>
       {pages.map(page => (
-        <button key={page.page} title={page.title} className="btn btn-secondary btn-sm"
-          onClick={() => setPendingPages(prev => prev.includes(page.page) ? prev.filter(p => p !== page.page) : [...prev, page.page].sort((a,b) => a-b))}
-          style={{
-            minWidth:26,textAlign:'center',padding:'3px 6px',fontSize:11,fontWeight:900,
-            background: pendingPages.includes(page.page) ? 'rgba(0,200,120,0.2)' : 'rgba(255,255,255,0.05)',
-            color: pendingPages.includes(page.page) ? 'var(--success)' : 'var(--text-dim)',
-            borderColor: pendingPages.includes(page.page) ? 'var(--success)' : 'var(--border)',
-          }}>
-          P{page.page}
-        </button>
+        <span key={page.page} style={{display:'inline-flex',border:'1px solid var(--border)',borderColor:pendingPages.includes(page.page) ? 'var(--success)' : 'var(--border)',borderRadius:'var(--radius-sm)',overflow:'hidden'}}>
+          <button title={`Read ${page.title}`} className="btn btn-secondary btn-sm"
+            onClick={() => onReadPage(page.page)}
+            style={{
+              minWidth:28,textAlign:'center',padding:'3px 6px',fontSize:11,fontWeight:900,border:0,borderRadius:0,
+              background: pendingPages.includes(page.page) ? 'rgba(0,200,120,0.12)' : 'rgba(255,255,255,0.05)',
+              color: pendingPages.includes(page.page) ? 'var(--success)' : 'var(--text-dim)',
+            }}>
+            P{page.page}
+          </button>
+          <button title={pendingPages.includes(page.page) ? 'Mark page unavailable' : 'Mark page found'} className="btn btn-secondary btn-sm"
+            onClick={() => setPendingPages(prev => prev.includes(page.page) ? prev.filter(p => p !== page.page) : [...prev, page.page].sort((a,b) => a-b))}
+            style={{
+              minWidth:20,padding:'3px 4px',fontSize:10,fontWeight:900,border:0,borderLeft:'1px solid var(--border)',borderRadius:0,
+              background: pendingPages.includes(page.page) ? 'var(--success)' : 'var(--bg-primary)',
+              color: pendingPages.includes(page.page) ? '#fff' : 'var(--text-dim)',
+            }}>
+            {pendingPages.includes(page.page) ? 'ON' : '+'}
+          </button>
+        </span>
       ))}
       <button className="btn btn-secondary btn-sm" onClick={onSync}>Sync</button>
     </div>
@@ -396,7 +407,7 @@ function OverloadModal({ event, onClose, onResolve }) {
   );
 }
 
-function DischargeResultModal({ event, onClose }) {
+function DischargeResultModal({ event, onClose, onOpenRebound }) {
   if (!event) return null;
   const stored = event.previousCharge ?? event.before?.arcane?.current ?? event.before?.overload_dc ?? 0;
   return (
@@ -428,7 +439,8 @@ function DischargeResultModal({ event, onClose }) {
           </div>
         </div>
         <div className="modal-footer">
-          <button className="btn" onClick={onClose} style={{background:'var(--accent)',color:'#fff',width:'100%'}}>Got it</button>
+          <button className="btn btn-secondary" onClick={onOpenRebound}>Arcane Rebound Table</button>
+          <button className="btn" onClick={onClose} style={{background:'var(--accent)',color:'#fff',flex:1}}>Got it</button>
         </div>
       </div>
     </div>
@@ -507,6 +519,8 @@ export default function SyricActionsTab() {
   const [viewingItemSpells, setViewingItemSpells] = useState(null);
   const [viewingItemDetail, setViewingItemDetail] = useState(null);
   const [dismissedReminders, setDismissedReminders] = useState({});
+  const [references, setReferences] = useState(null);
+  const [referenceView, setReferenceView] = useState(null);
 
   useEffect(() => {
     if (!character?.id) return;
@@ -521,6 +535,10 @@ export default function SyricActionsTab() {
   useEffect(() => {
     setPendingPages(module?.unlocked_codex_pages || []);
   }, [module?.unlocked_codex_pages]);
+
+  useEffect(() => {
+    fetchSyricReferences().then(setReferences).catch(() => {});
+  }, []);
 
   const trackerData = character?.tracker_data || {};
   const features = trackerData.features || {};
@@ -689,7 +707,7 @@ export default function SyricActionsTab() {
             Arcane Charge <span style={{color:'var(--accent-light)'}}>{arcaneValue.current ?? 0}/{arcaneValue.max ?? '-'}</span>
           </div>
         )}
-        <PageRail pages={module.codex_pages || []} pendingPages={pendingPages} setPendingPages={setPendingPages} onSync={syncPages} />
+        <PageRail pages={module.codex_pages || []} pendingPages={pendingPages} setPendingPages={setPendingPages} onSync={syncPages} onReadPage={(page) => setReferenceView({ docId: 'codex_mechanics', page })} />
       </div>
 
       {slotLevels.length > 0 && (
@@ -782,7 +800,11 @@ export default function SyricActionsTab() {
           setOverload(null);
         }}
       />
-      <DischargeResultModal event={discharge} onClose={() => setDischarge(null)} />
+      <DischargeResultModal
+        event={discharge}
+        onClose={() => setDischarge(null)}
+        onOpenRebound={() => setReferenceView({ docId: 'arcane_rebound' })}
+      />
       <RollAmountModal
         config={numberAction}
         onClose={() => setNumberAction(null)}
@@ -831,6 +853,14 @@ export default function SyricActionsTab() {
             await runAction('record_spell_cast', { spell_name: spell.name, level: meta?.level || spell.level_int || 0 });
           }}
           onClose={() => setCastingBucket(null)}
+        />
+      )}
+      {referenceView && references && (
+        <ReferenceLibraryModal
+          docsPayload={references}
+          initialDocId={referenceView.docId}
+          initialPage={referenceView.page || 1}
+          onClose={() => setReferenceView(null)}
         />
       )}
     </div>

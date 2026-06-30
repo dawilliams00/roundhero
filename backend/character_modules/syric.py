@@ -34,6 +34,10 @@ def _load_json(filename, fallback):
         return json.load(handle)
 
 
+def syric_reference_docs():
+    return _load_json("reference_docs.json", {"version": 1, "docs": []})
+
+
 def _allowed_emails():
     raw = os.environ.get("SYRIC_MODULE_EMAILS", "")
     if not raw.strip():

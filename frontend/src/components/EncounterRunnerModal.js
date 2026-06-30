@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { MonsterStatBlockContent } from './MonsterDetailModal';
 
 const COMMON_CONDITIONS = [
   'Blinded', 'Charmed', 'Deafened', 'Exhaustion', 'Frightened', 'Grappled',
@@ -174,8 +175,7 @@ function CombatantCard({ row, active, onUpdate, onRemove, onViewMonster, onAddCo
         <div style={{display:'flex',gap:6,alignItems:'center',marginTop:6,flexWrap:'wrap'}}>
           <span style={{color:'var(--text-secondary)',fontSize:12}}>AC</span>
           <input value={row.ac} onChange={e => onUpdate(row.id, { ac: e.target.value })} style={{width:58,textAlign:'center'}} />
-          {row.monster && <MiniButton onClick={() => onViewMonster(row.monster)}>Stats</MiniButton>}
-          {row.monster && <button type="button" onClick={() => onViewMonster(row.monster)} style={{background:'transparent',border:0,color:'var(--accent-light)',fontSize:12,cursor:'pointer',padding:0}}>open stat block</button>}
+          {row.monster && <MiniButton onClick={() => onViewMonster(row.monster)}>[STAT]</MiniButton>}
         </div>
         <div style={{color:'var(--text-dim)',fontSize:11,marginTop:6}}>{row.group_key ? `Group: ${enemyGroupLabel(row)}` : 'No group'}</div>
       </div>
@@ -233,7 +233,6 @@ export default function EncounterRunnerModal({
   onPatchData,
   onStatus,
   onDelete,
-  onViewMonster,
   reloadCampaign,
 }) {
   const data = encounter?.data || {};
@@ -243,6 +242,7 @@ export default function EncounterRunnerModal({
   const [initiative, setInitiative] = useState('');
   const [sharedInitiative, setSharedInitiative] = useState(true);
   const [selectedTurnId, setSelectedTurnId] = useState(combatants[0]?.id || null);
+  const [viewingMonster, setViewingMonster] = useState(null);
   const [effectForm, setEffectForm] = useState({ type: 'condition', name: '', custom: '', source_id: '', target_id: '', duration: '1 min', concentration: false });
 
   const activeRoster = roster.filter(entry => entry.active);
@@ -405,7 +405,14 @@ export default function EncounterRunnerModal({
           </div>
         </div>
 
-        <div style={{display:'grid',gridTemplateColumns:'320px minmax(0,1fr)',gap:12,minHeight:0,flex:1,marginTop:12}}>
+        <div style={{
+          display:'grid',
+          gridTemplateColumns:viewingMonster ? '300px minmax(0,1fr) minmax(360px,0.82fr)' : '320px minmax(0,1fr)',
+          gap:12,
+          minHeight:0,
+          flex:1,
+          marginTop:12,
+        }}>
           <aside style={{display:'flex',flexDirection:'column',gap:10,minHeight:0,overflowY:'auto',paddingRight:4}}>
             <section style={{border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',padding:10}}>
               <div style={{color:'var(--accent-light)',fontWeight:800,marginBottom:8}}>Add Characters</div>
@@ -499,7 +506,10 @@ export default function EncounterRunnerModal({
                 active={sameId(activeId, row.id)}
                 onUpdate={updateCombatant}
                 onRemove={removeCombatant}
-                onViewMonster={onViewMonster}
+                onViewMonster={(monster) => {
+                  setSelectedTurnId(row.id);
+                  setViewingMonster(monster);
+                }}
                 onAddCondition={addCondition}
                 onRemoveCondition={removeCondition}
                 onRemoveEffect={removeEffect}
@@ -507,6 +517,27 @@ export default function EncounterRunnerModal({
               />
             ))}
           </main>
+
+          {viewingMonster && (
+            <aside style={{border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',background:'var(--bg-secondary)',minHeight:0,display:'flex',flexDirection:'column',overflow:'hidden'}}>
+              <div style={{display:'flex',justifyContent:'space-between',gap:10,alignItems:'flex-start',padding:'10px 12px',borderBottom:'1px solid var(--border)',background:'rgba(0,0,0,0.18)'}}>
+                <div style={{minWidth:0}}>
+                  <h3 style={{color:'var(--accent-light)',fontSize:17,margin:0,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{viewingMonster.name}</h3>
+                  <div style={{color:'var(--text-dim)',fontSize:12,fontStyle:'italic'}}>
+                    {viewingMonster.size} {viewingMonster.type}{viewingMonster.subtype ? ` (${viewingMonster.subtype})` : ''}, {viewingMonster.alignment}
+                  </div>
+                  <div style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:5}}>
+                    <span style={{color:'var(--warning)',fontSize:11,fontWeight:800}}>CR {viewingMonster.challenge_rating}</span>
+                    {viewingMonster.source && <span style={{color:'var(--text-dim)',fontSize:11}}>{viewingMonster.source}</span>}
+                  </div>
+                </div>
+                <button className="btn btn-secondary btn-sm" type="button" onClick={() => setViewingMonster(null)}>X</button>
+              </div>
+              <div style={{padding:12,overflowY:'auto',minHeight:0}}>
+                <MonsterStatBlockContent monster={viewingMonster} />
+              </div>
+            </aside>
+          )}
         </div>
       </div>
     </div>

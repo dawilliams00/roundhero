@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
-import { fetchCharacterModule, findTrackerCounter, syncSyricCodexPages, updateTrackerCounter } from '../utils/characterModules';
+import { fetchCharacterModule, fetchSyricReferences, findTrackerCounter, syncSyricCodexPages, updateTrackerCounter } from '../utils/characterModules';
+import ReferenceLibraryModal from './ReferenceLibrary';
 
 function CounterCard({ counter, trackerData, onAdjust }) {
   const match = findTrackerCounter(trackerData, counter);
@@ -83,6 +84,8 @@ export default function SyricConsoleTab() {
   const [error, setError] = useState('');
   const [pendingPages, setPendingPages] = useState([]);
   const [notice, setNotice] = useState('');
+  const [references, setReferences] = useState(null);
+  const [referenceView, setReferenceView] = useState(null);
 
   useEffect(() => {
     if (!character?.id) return;
@@ -98,12 +101,15 @@ export default function SyricConsoleTab() {
     setPendingPages(module?.unlocked_codex_pages || []);
   }, [module?.unlocked_codex_pages]);
 
+  useEffect(() => {
+    fetchSyricReferences().then(setReferences).catch(() => {});
+  }, []);
+
   const trackerData = character?.tracker_data || {};
   const counters = useMemo(() => module?.counters || [], [module]);
   const primaryCounters = counters.filter(counter => (
     /arcane charge|codex dice|resonance|burn dice/i.test(counter.name || '')
   ));
-  const otherCounters = counters.filter(counter => !primaryCounters.includes(counter));
 
   const adjustCounter = async (match, delta) => {
     if (!match) return;
@@ -170,40 +176,55 @@ export default function SyricConsoleTab() {
         <section className="card">
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8,marginBottom:8}}>
             <h3 style={{color:'var(--accent-light)',fontSize:15,margin:0}}>Codex Pages</h3>
-            <button className="btn btn-secondary btn-sm" onClick={syncPages}>Sync</button>
+            <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+              <button className="btn btn-secondary btn-sm" onClick={() => setReferenceView({ docId: 'arcane_rebound' })}>Rebound</button>
+              <button className="btn btn-secondary btn-sm" onClick={() => setReferenceView({ docId: 'codex_nyx_teachings', page: 1 })}>Teachings</button>
+              <button className="btn btn-secondary btn-sm" onClick={syncPages}>Sync</button>
+            </div>
           </div>
           {notice && <div style={{color:'var(--accent-light)',fontSize:11,marginBottom:8}}>{notice}</div>}
           <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(92px,1fr))',gap:6}}>
             {(module.codex_pages || []).map(page => (
-              <button key={page.page} className="btn btn-secondary btn-sm" onClick={() => togglePage(page.page)}
-                title={page.title}
+              <div key={page.page}
                 style={{
-                  display:'block',textAlign:'left',borderColor:pendingPages.includes(page.page) ? 'var(--success)' : 'var(--border)',
-                  background:pendingPages.includes(page.page) ? 'rgba(0,200,120,0.16)' : 'var(--bg-secondary)',padding:7,
+                  display:'grid',gridTemplateColumns:'1fr auto',gap:4,alignItems:'stretch',border:'1px solid var(--border)',
+                  borderColor:pendingPages.includes(page.page) ? 'var(--success)' : 'var(--border)',
+                  background:pendingPages.includes(page.page) ? 'rgba(0,200,120,0.16)' : 'var(--bg-secondary)',
+                  borderRadius:'var(--radius-sm)',padding:5,
                 }}>
-                <div style={{color:pendingPages.includes(page.page) ? 'var(--success)' : 'var(--text-dim)',fontWeight:900,fontSize:11}}>P{page.page}</div>
-                <div style={{color:'var(--text-primary)',fontWeight:700,fontSize:11,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{page.title}</div>
-                <div style={{color:'var(--text-dim)',fontSize:9}}>{page.feature_count}+{page.counter_count}</div>
-              </button>
+                <button className="btn btn-secondary btn-sm" onClick={() => setReferenceView({ docId: 'codex_mechanics', page: page.page })}
+                  title={`Read ${page.title}`}
+                  style={{textAlign:'left',display:'block',background:'transparent',border:0,padding:2,minWidth:0}}>
+                  <div style={{color:pendingPages.includes(page.page) ? 'var(--success)' : 'var(--text-dim)',fontWeight:900,fontSize:11}}>P{page.page}</div>
+                  <div style={{color:'var(--text-primary)',fontWeight:700,fontSize:11,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{page.title}</div>
+                  <div style={{color:'var(--text-dim)',fontSize:9}}>{page.feature_count}+{page.counter_count}</div>
+                </button>
+                <button className="btn btn-secondary btn-sm" onClick={() => togglePage(page.page)}
+                  title={pendingPages.includes(page.page) ? 'Mark page unavailable' : 'Mark page found'}
+                  style={{
+                    minWidth:26,padding:'2px 5px',fontWeight:900,
+                    background:pendingPages.includes(page.page) ? 'var(--success)' : 'var(--bg-primary)',
+                    color:pendingPages.includes(page.page) ? '#fff' : 'var(--text-dim)',
+                  }}>
+                  {pendingPages.includes(page.page) ? 'ON' : '+'}
+                </button>
+              </div>
             ))}
           </div>
         </section>
       </div>
 
-      {otherCounters.length > 0 && (
-        <section className="card">
-          <h3 style={{color:'var(--accent-light)',fontSize:15,marginBottom:10}}>Other Counters</h3>
-          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(160px,1fr))',gap:8}}>
-            {otherCounters.map(counter => (
-              <CounterCard key={counter.tracker_key || counter.name} counter={counter} trackerData={trackerData} onAdjust={adjustCounter} />
-            ))}
-          </div>
-        </section>
-      )}
-
       <ActionSections sections={module.action_sections || []} />
       <FeatureList title="Syric Features" features={module.features || []} />
       <FeatureList title="Shadow Full Reference" features={module.shadow?.features || []} limit={8} />
+      {referenceView && references && (
+        <ReferenceLibraryModal
+          docsPayload={references}
+          initialDocId={referenceView.docId}
+          initialPage={referenceView.page || 1}
+          onClose={() => setReferenceView(null)}
+        />
+      )}
     </div>
   );
 }
