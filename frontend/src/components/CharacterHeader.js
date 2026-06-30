@@ -390,6 +390,7 @@ export default function CharacterHeader({ onBack }) {
               <div>
                 <div style={{fontFamily:"'Cinzel',serif",color:'var(--accent-light)',fontSize:16,lineHeight:1.2}}>{name}</div>
                 <div style={{color:'var(--text-dim)',fontSize:11}}>L{level} {race} {class_name}</div>
+                {td?.alignment && <div style={{color:'var(--text-dim)',fontSize:10,fontStyle:'italic'}}>{td.alignment}</div>}
               </div>
               <button className="btn-icon" title="Settings" onClick={() => setShowSettings(true)} style={{fontSize:14,padding:'4px 7px'}}>⚙️</button>
               <button className="btn-icon" title="Send Feedback / Suggest a Feature" onClick={() => setShowFeedback(true)} style={{fontSize:14,padding:'4px 7px'}}>💬</button>

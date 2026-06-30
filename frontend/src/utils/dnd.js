@@ -81,6 +81,10 @@ export const SAVE_PROFS = {
   Sorcerer:['CON','CHA'], Warlock:['WIS','CHA'], Wizard:['INT','WIS'],
 };
 export const PROF_BONUS = {1:2,2:2,3:2,4:2,5:3,6:3,7:3,8:3,9:4,10:4,11:4,12:4,13:5,14:5,15:5,16:5,17:6,18:6,19:6,20:6};
+// Purely descriptive - no mechanical effect anywhere in this app (same "track it, don't
+// enforce it" philosophy as conditions/exhaustion), so it lives in tracker_data.alignment
+// rather than needing a Character model column.
+export const ALIGNMENTS = ['Lawful Good','Neutral Good','Chaotic Good','Lawful Neutral','True Neutral','Chaotic Neutral','Lawful Evil','Neutral Evil','Chaotic Evil'];
 export const HIT_DIE = { Barbarian:12, Fighter:10, Paladin:10, Ranger:10, Monk:8, Rogue:8, Bard:8, Cleric:8, Druid:8, Warlock:8, Sorcerer:6, Wizard:6 };
 
 export const modifier = score => Math.floor((score - 10) / 2);

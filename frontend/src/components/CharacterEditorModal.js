@@ -5,7 +5,7 @@ import LevelUpFlowModal from './LevelUpFlowModal';
 import ClassFeatureBrowserModal from './ClassFeatureBrowserModal';
 import RaceInfoModal from './RaceInfoModal';
 import BackgroundSelectModal from './BackgroundSelectModal';
-import { ABILITY_KEYS, ABILITY_LABELS, SAVE_PROFS, SKILL_MAP, suspectedAbilityContamination, featBuffItems, parseClassLevels, raceBuffItems, computeItemBonuses, RACE_ABILITY_BONUSES, matchSrdRace, modifier, unarmoredAC, cappedModifier } from '../utils/dnd';
+import { ABILITY_KEYS, ABILITY_LABELS, SAVE_PROFS, SKILL_MAP, suspectedAbilityContamination, featBuffItems, parseClassLevels, raceBuffItems, computeItemBonuses, RACE_ABILITY_BONUSES, matchSrdRace, modifier, unarmoredAC, cappedModifier, ALIGNMENTS } from '../utils/dnd';
 
 // Full base-stat editor - identity, ability scores, and save/skill proficiencies, on top
 // of the original v1 level-up-only framework. This is the one place all of the
@@ -32,8 +32,12 @@ export default function CharacterEditorModal({ onClose }) {
   const [preservedBlankRows, setPreservedBlankRows] = useState([]);
 
   const td = character?.tracker_data || {};
+  // Alignment has no mechanical effect anywhere in this app (nothing computational reads
+  // it), so it lives in tracker_data like Notes does rather than needing a new Character
+  // model column/migration - same "tracker_data is a single free-form JSON blob, no
+  // migration needed for a new key" precedent everything else flavor-only already uses.
   const [identity, setIdentity] = useState(character ? {
-    name: character.name || '', race: character.race || '',
+    name: character.name || '', race: character.race || '', alignment: td.alignment || '',
   } : null);
   // The structured Class 1/Class 2 rows are now the only way to edit class/subclass/level
   // - no more free-text fallback view or a "set this up" gate. Bootstraps a best-effort
@@ -241,6 +245,7 @@ export default function CharacterEditorModal({ onClose }) {
         skill_expertise: skillExpertise,
         ability_score_misc: Object.fromEntries(ABILITY_KEYS.map(k => [k, parseInt(abMisc[k]) || 0])),
         ac_misc: parseInt(acMisc) || 0,
+        alignment: identity.alignment,
       });
       onClose();
     } catch (err) {
@@ -291,6 +296,13 @@ export default function CharacterEditorModal({ onClose }) {
               onClick={() => setShowBackgroundSelect(true)}>
               {character.background ? 'Change Background' : '+ Choose Background'}
             </button>
+          </div>
+          <div className="form-group">
+            <label>Alignment</label>
+            <select value={identity.alignment} onChange={e=>setIdentity(f=>({...f,alignment:e.target.value}))}>
+              <option value="">—</option>
+              {ALIGNMENTS.map(a => <option key={a} value={a}>{a}</option>)}
+            </select>
           </div>
         </div>
         <div style={{display:'flex',alignItems:'baseline',gap:8,marginBottom:8,marginTop:8}}>
