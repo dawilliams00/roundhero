@@ -318,6 +318,164 @@
           }
         }
       ]
+    },
+    {
+      "name": "Artisan",
+      "ability_scores": [
+        "STR",
+        "DEX",
+        "INT"
+      ],
+      "feat": "Crafter",
+      "proficiencies": [
+        "Skill: Investigation",
+        "Skill: Persuasion",
+        "Tool: Artisan's Tools (choice)"
+      ]
+    },
+    {
+      "name": "Charlatan",
+      "ability_scores": [
+        "DEX",
+        "CON",
+        "CHA"
+      ],
+      "feat": "Skilled",
+      "proficiencies": [
+        "Skill: Deception",
+        "Skill: Sleight of Hand",
+        "Tool: Forgery Kit"
+      ]
+    },
+    {
+      "name": "Entertainer",
+      "ability_scores": [
+        "STR",
+        "DEX",
+        "CHA"
+      ],
+      "feat": "Musician",
+      "proficiencies": [
+        "Skill: Acrobatics",
+        "Skill: Performance",
+        "Tool: Disguise Kit"
+      ]
+    },
+    {
+      "name": "Farmer",
+      "ability_scores": [
+        "STR",
+        "CON",
+        "WIS"
+      ],
+      "feat": "Tough",
+      "proficiencies": [
+        "Skill: Animal Handling",
+        "Skill: Nature",
+        "Tool: Carpenter's Tools"
+      ]
+    },
+    {
+      "name": "Guard",
+      "ability_scores": [
+        "STR",
+        "INT",
+        "WIS"
+      ],
+      "feat": "Alert",
+      "proficiencies": [
+        "Skill: Athletics",
+        "Skill: Perception",
+        "Tool: Gaming Set (choice)"
+      ]
+    },
+    {
+      "name": "Guide",
+      "ability_scores": [
+        "DEX",
+        "CON",
+        "WIS"
+      ],
+      "feat": {
+        "index": "magic-initiate",
+        "name": "Magic Initiate",
+        "note": "Druid"
+      },
+      "proficiencies": [
+        "Skill: Stealth",
+        "Skill: Survival",
+        "Tool: Cartographer's Tools"
+      ]
+    },
+    {
+      "name": "Hermit",
+      "ability_scores": [
+        "CON",
+        "WIS",
+        "CHA"
+      ],
+      "feat": "Healer",
+      "proficiencies": [
+        "Skill: Medicine",
+        "Skill: Religion",
+        "Tool: Herbalism Kit"
+      ]
+    },
+    {
+      "name": "Merchant",
+      "ability_scores": [
+        "CON",
+        "INT",
+        "CHA"
+      ],
+      "feat": "Lucky",
+      "proficiencies": [
+        "Skill: Animal Handling",
+        "Skill: Persuasion",
+        "Tool: Navigator's Tools"
+      ]
+    },
+    {
+      "name": "Noble",
+      "ability_scores": [
+        "STR",
+        "INT",
+        "CHA"
+      ],
+      "feat": "Skilled",
+      "proficiencies": [
+        "Skill: History",
+        "Skill: Persuasion",
+        "Tool: Gaming Set (choice)"
+      ]
+    },
+    {
+      "name": "Sailor",
+      "ability_scores": [
+        "STR",
+        "DEX",
+        "WIS"
+      ],
+      "feat": "Tavern Brawler",
+      "proficiencies": [
+        "Skill: Acrobatics",
+        "Skill: Perception",
+        "Tool: Navigator's Tools"
+      ]
+    },
+    {
+      "name": "Wayfarer",
+      "ability_scores": [
+        "DEX",
+        "WIS",
+        "CHA"
+      ],
+      "feat": "Lucky",
+      "proficiencies": [
+        "Skill: Insight",
+        "Skill: Stealth",
+        "Tool: Thieves' Tools"
+      ]
     }
   ]
 }

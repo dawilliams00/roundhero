@@ -411,6 +411,50 @@
       "official": true,
       "edition": "2014",
       "description": "While you are wielding a glaive, halberd, pike, quarterstaff, or spear, other creatures provoke an opportunity attack from you when they enter your reach. You can also use a bonus action to make a melee attack with the opposite end of the weapon - it deals 1d4 bludgeoning damage (plus your Strength modifier), and is treated as a separate attack roll, not a flat bonus to your existing attack(s). Roll this manually via the weapon's normal attack flow, picking 1d4 bludgeoning as the damage die for that swing."
+    },
+    {
+      "name": "Crafter",
+      "section": "Passive",
+      "cost_type": "passive",
+      "max_uses": 0,
+      "rest_type": "none",
+      "source": "PHB 2024",
+      "official": true,
+      "edition": "2024",
+      "description": "You gain proficiency with three different Artisan's Tools of your choice. Whenever you craft a nonmagical item using tools you're proficient with, you spend only half the usual gold on raw materials, and you spend only 20 days crafting a normal item (instead of the usual time based on price) for an item costing up to 500 gp. Buying nonmagical goods costs you 20% less than normal. This app doesn't track crafting time/cost or shopping discounts - apply this yourself when it comes up."
+    },
+    {
+      "name": "Musician",
+      "section": "Passive",
+      "cost_type": "passive",
+      "max_uses": 0,
+      "rest_type": "long",
+      "source": "PHB 2024",
+      "official": true,
+      "edition": "2024",
+      "description": "You gain proficiency with three Musical Instruments of your choice. As a Short Rest activity, you can play one of those instruments and give Heroic Inspiration to a number of allies (not including yourself) up to your proficiency bonus, who can hear you play for the whole rest. You regain the ability to do this when you finish a Long Rest. This app tracks Inspiration as a single on/off flag per character, not multi-target grants - apply this to the relevant allies yourself."
+    },
+    {
+      "name": "Healer",
+      "section": "Passive",
+      "cost_type": "passive",
+      "max_uses": 0,
+      "rest_type": "none",
+      "source": "PHB 2024",
+      "official": true,
+      "edition": "2024",
+      "description": "You gain proficiency with Healer's Kits. As a Utilize action with a Healer's Kit, you can spend one use to tend to a creature within 5 feet of you (including yourself) and restore 1d6 plus your proficiency bonus Hit Points to it, plus extra Hit Points equal to the creature's maximum number of Hit Dice (once per short or long rest per creature). Stabilizing a dying creature with the kit also restores 1 Hit Point to them, with no kit use spent. This app doesn't model Healer's Kit charges - apply the healing/charge-spend yourself when it comes up."
+    },
+    {
+      "name": "Tavern Brawler",
+      "section": "Passive",
+      "cost_type": "passive",
+      "max_uses": 0,
+      "rest_type": "none",
+      "source": "PHB 2024",
+      "official": true,
+      "edition": "2024",
+      "description": "You're proficient with Improvised Weapons. Your Unarmed Strike uses a d4 for damage (instead of the normal flat 1), and on a hit with an Unarmed Strike or an Improvised Weapon you can deal damage equal to that roll plus your STR modifier. Once per turn, when you hit a creature with an Unarmed Strike or Improvised Weapon, you can push them 5 feet or knock them Prone (no save). This app's Unarmed Strike row doesn't read a generic 'this feat changes my unarmed die' flag yet - if you have this feat, manually note your unarmed damage as 1d4 + STR when rolling."
     }
   ]
 }
