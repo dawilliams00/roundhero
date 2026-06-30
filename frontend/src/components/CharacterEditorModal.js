@@ -3,7 +3,8 @@ import { useCharacter } from '../context/CharacterContext';
 import api from '../utils/api';
 import LevelUpFlowModal from './LevelUpFlowModal';
 import ClassFeatureBrowserModal from './ClassFeatureBrowserModal';
-import { ABILITY_KEYS, ABILITY_LABELS, SAVE_PROFS, SKILL_MAP, suspectedAbilityContamination, featBuffItems, parseClassLevels, raceBuffItems, computeItemBonuses, RACE_ABILITY_BONUSES, modifier, unarmoredAC, cappedModifier } from '../utils/dnd';
+import RaceInfoModal from './RaceInfoModal';
+import { ABILITY_KEYS, ABILITY_LABELS, SAVE_PROFS, SKILL_MAP, suspectedAbilityContamination, featBuffItems, parseClassLevels, raceBuffItems, computeItemBonuses, RACE_ABILITY_BONUSES, matchSrdRace, modifier, unarmoredAC, cappedModifier } from '../utils/dnd';
 
 // Full base-stat editor - identity, ability scores, and save/skill proficiencies, on top
 // of the original v1 level-up-only framework. This is the one place all of the
@@ -72,6 +73,12 @@ export default function CharacterEditorModal({ onClose }) {
   // character creation already uses - a custom/homebrew race falls back to free text.
   const [raceList, setRaceList] = useState([]);
   const [raceMode, setRaceMode] = useState('custom');
+  // Richer SRD race writeup (alignment/age/size/languages/traits) - pre-existing data
+  // (engine/race_data.py) that nothing in the frontend read until now. Only covers 9 core
+  // races + 4 subraces, so showRaceInfo's button is hidden entirely when there's no match.
+  const [srdRaces, setSrdRaces] = useState([]);
+  const [srdSubraces, setSrdSubraces] = useState([]);
+  const [showRaceInfo, setShowRaceInfo] = useState(false);
 
   // Intentionally runs once on mount only - this modal remounts fresh every time it's
   // opened (SettingsModal renders it behind `showEditor &&`), so `character` here is
@@ -82,6 +89,10 @@ export default function CharacterEditorModal({ onClose }) {
       const list = r.data || [];
       setRaceList(list);
       if (character && list.includes(character.race)) setRaceMode('known');
+    });
+    api.get('/content/srd-races').then(r => {
+      setSrdRaces(r.data?.races || []);
+      setSrdSubraces(r.data?.subraces || []);
     });
   }, []);
 
@@ -258,11 +269,17 @@ export default function CharacterEditorModal({ onClose }) {
             ) : (
               <input value={identity.race} onChange={e=>setIdentity(f=>({...f,race:e.target.value}))} placeholder="e.g. Dwarf (Hill), or a homebrew race" />
             )}
-            <div style={{marginTop:4}}>
+            <div style={{marginTop:4,display:'flex',gap:10,flexWrap:'wrap'}}>
               <button type="button" className="btn-link" style={{fontSize:11,color:'var(--text-dim)',background:'none',border:'none',padding:0,cursor:'pointer',textDecoration:'underline'}}
                 onClick={() => setRaceMode(m => m === 'known' ? 'custom' : 'known')}>
                 {raceMode === 'known' ? 'Use free text instead (homebrew)' : 'Pick from list instead'}
               </button>
+              {matchSrdRace(identity.race, srdRaces, srdSubraces) && (
+                <button type="button" className="btn-link" style={{fontSize:11,color:'var(--accent-light)',background:'none',border:'none',padding:0,cursor:'pointer',textDecoration:'underline'}}
+                  onClick={() => setShowRaceInfo(true)}>
+                  ℹ️ Race Info
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -524,6 +541,10 @@ export default function CharacterEditorModal({ onClose }) {
           onClose={() => setPreviewing(null)}
         />
       )}
+      {showRaceInfo && (() => {
+        const match = matchSrdRace(identity.race, srdRaces, srdSubraces);
+        return match ? <RaceInfoModal baseRace={match.baseRace} subrace={match.subrace} onClose={() => setShowRaceInfo(false)} /> : null;
+      })()}
     </div>
   );
 }

@@ -481,6 +481,25 @@ export const RACE_ABILITY_BONUSES = {
   'Shadar-kai': [{ stat: 'DEX', value: 2 }, { stat: 'WIS', value: 1 }],
 };
 
+// Matches this app's decorated race string (e.g. "Dwarf (Hill)") against the richer SRD
+// races.json dataset (GET /content/srd-races) - separate from RACE_ABILITY_BONUSES above
+// since races.json only covers the 9 SRD core races + 4 subraces, a much smaller set than
+// this app's 29-entry race dropdown. Returns {baseRace, subrace} or null if no SRD match
+// exists (most non-core races - Aasimar, Firbolg, Tabaxi, etc. - won't match anything).
+export const matchSrdRace = (raceName, srdRaces, srdSubraces) => {
+  if (!raceName) return null;
+  const m = String(raceName).match(/^(.+?)\s*\((.+?)\)\s*$/);
+  const base = (m ? m[1] : raceName).trim().toLowerCase();
+  const variant = m ? m[2].trim().toLowerCase() : null;
+  const baseRace = (srdRaces || []).find(r => r.name.toLowerCase() === base);
+  if (!baseRace) return null;
+  let subrace = null;
+  if (variant) {
+    subrace = (srdSubraces || []).find(s => s.race.toLowerCase() === base && s.name.toLowerCase().includes(variant));
+  }
+  return { baseRace, subrace };
+};
+
 // Synthesizes a race's ability bonuses into the same always-equipped, no-attunement
 // "item" shape featBuffItems already uses for feats - every existing buff consumer
 // (computeItemBonuses, effectiveAbilityScores, calcSaves, calcSkills,
