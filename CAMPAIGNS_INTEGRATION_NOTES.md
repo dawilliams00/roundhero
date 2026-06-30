@@ -120,6 +120,7 @@ Do not make death saves public. Encounter death-save handling should become a pr
 ## Encounter/Campaign TODO Kept Intentionally Pending
 
 - Add 15-second campaign/encounter refresh loop for DM-side live sync.
+- **Live-test blocker:** encounter setup rows and the full encounter tracker rows still have overlapping fields/controls. The last attempted compact-grid fix did not solve it. Rebuild combatant rows as stacked panels or named CSS grid areas with explicit min heights for identity, HP/temp, AC, conditions, concentration, death saves, and stat/delete actions. Test both setup and runner screens with long monster names and condition text.
 - Make PC status updates from character sheets reliably refresh encounter HP, temp HP, conditions, concentration, Haste, and active effects.
 - Improve the full running encounter layout beyond the current modal/docked-panel V1.
 - Polish death saves into a secret player/DM workflow instead of simple visible counters.
