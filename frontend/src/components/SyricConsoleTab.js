@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
-import { fetchCharacterModule, findTrackerCounter, updateTrackerCounter } from '../utils/characterModules';
+import { fetchCharacterModule, findTrackerCounter, syncSyricCodexPages, updateTrackerCounter } from '../utils/characterModules';
 
 function CounterCard({ counter, trackerData, onAdjust }) {
   const match = findTrackerCounter(trackerData, counter);
@@ -9,19 +9,19 @@ function CounterCard({ counter, trackerData, onAdjust }) {
   const max = value?.max ?? counter.max ?? 0;
   const disabled = !match;
   return (
-    <div style={{border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',background:'var(--bg-secondary)',padding:10}}>
-      <div style={{display:'flex',justifyContent:'space-between',gap:8,alignItems:'flex-start'}}>
-        <div>
-          <div style={{color:'var(--text-primary)',fontWeight:800,fontSize:13}}>{counter.name}</div>
+    <div style={{border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',background:'var(--bg-secondary)',padding:'6px 8px',minWidth:0}}>
+      <div style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) auto',gap:6,alignItems:'center'}}>
+        <div style={{minWidth:0}}>
+          <div style={{color:'var(--text-primary)',fontWeight:800,fontSize:11,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{counter.name}</div>
           <div style={{color:'var(--text-dim)',fontSize:10,textTransform:'uppercase',marginTop:2}}>{counter.source || 'module'}</div>
         </div>
-        <div style={{color:'var(--accent-light)',fontWeight:900,fontSize:18}}>{current}/{max || '-'}</div>
+        <div style={{color:'var(--accent-light)',fontWeight:900,fontSize:15,whiteSpace:'nowrap'}}>{current}/{max || '-'}</div>
       </div>
-      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6,marginTop:10}}>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:4,marginTop:6}}>
         <button className="btn btn-secondary btn-sm" disabled={disabled} onClick={() => onAdjust(match, -1)}>-</button>
         <button className="btn btn-secondary btn-sm" disabled={disabled} onClick={() => onAdjust(match, 1)}>+</button>
       </div>
-      {disabled && <div style={{color:'var(--warning)',fontSize:11,marginTop:8}}>Reference only until matched to live tracker data.</div>}
+      {disabled && <div style={{color:'var(--warning)',fontSize:10,marginTop:5}}>Reference only.</div>}
     </div>
   );
 }
@@ -77,10 +77,12 @@ function ActionSections({ sections }) {
 }
 
 export default function SyricConsoleTab() {
-  const { character, saveTrackerData } = useCharacter();
+  const { character, saveTrackerData, setCharacter } = useCharacter();
   const [module, setModule] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [pendingPages, setPendingPages] = useState([]);
+  const [notice, setNotice] = useState('');
 
   useEffect(() => {
     if (!character?.id) return;
@@ -92,6 +94,10 @@ export default function SyricConsoleTab() {
       .finally(() => setLoading(false));
   }, [character?.id]);
 
+  useEffect(() => {
+    setPendingPages(module?.unlocked_codex_pages || []);
+  }, [module?.unlocked_codex_pages]);
+
   const trackerData = character?.tracker_data || {};
   const counters = useMemo(() => module?.counters || [], [module]);
   const primaryCounters = counters.filter(counter => (
@@ -102,6 +108,21 @@ export default function SyricConsoleTab() {
   const adjustCounter = async (match, delta) => {
     if (!match) return;
     await saveTrackerData(updateTrackerCounter(trackerData, match, delta));
+  };
+
+  const togglePage = (pageNum) => {
+    setPendingPages(prev => (
+      prev.includes(pageNum)
+        ? prev.filter(page => page !== pageNum)
+        : [...prev, pageNum].sort((a, b) => a - b)
+    ));
+  };
+
+  const syncPages = async () => {
+    const data = await syncSyricCodexPages(character.id, pendingPages);
+    if (data.tracker_data) setCharacter(prev => ({ ...prev, tracker_data: data.tracker_data }));
+    if (data.module) setModule(data.module);
+    setNotice(`Synced Codex pages: ${pendingPages.join(', ') || 'none'}.`);
   };
 
   if (loading) {
@@ -126,7 +147,7 @@ export default function SyricConsoleTab() {
         </div>
       </div>
 
-      <section style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))',gap:10}}>
+      <section style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(118px,150px))',gap:6,alignItems:'start'}}>
         {primaryCounters.map(counter => (
           <CounterCard key={counter.tracker_key || counter.name} counter={counter} trackerData={trackerData} onAdjust={adjustCounter} />
         ))}
@@ -147,14 +168,23 @@ export default function SyricConsoleTab() {
         </section>
 
         <section className="card">
-          <h3 style={{color:'var(--accent-light)',fontSize:15,marginBottom:8}}>Codex Pages</h3>
-          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(150px,1fr))',gap:6}}>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8,marginBottom:8}}>
+            <h3 style={{color:'var(--accent-light)',fontSize:15,margin:0}}>Codex Pages</h3>
+            <button className="btn btn-secondary btn-sm" onClick={syncPages}>Sync</button>
+          </div>
+          {notice && <div style={{color:'var(--accent-light)',fontSize:11,marginBottom:8}}>{notice}</div>}
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(92px,1fr))',gap:6}}>
             {(module.codex_pages || []).map(page => (
-              <div key={page.page} style={{border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',padding:7,background:'var(--bg-secondary)'}}>
-                <div style={{color:'var(--warning)',fontWeight:900,fontSize:11}}>Page {page.page}</div>
-                <div style={{color:'var(--text-primary)',fontWeight:700,fontSize:12}}>{page.title}</div>
-                <div style={{color:'var(--text-dim)',fontSize:10}}>{page.feature_count} features · {page.counter_count} counters</div>
-              </div>
+              <button key={page.page} className="btn btn-secondary btn-sm" onClick={() => togglePage(page.page)}
+                title={page.title}
+                style={{
+                  display:'block',textAlign:'left',borderColor:pendingPages.includes(page.page) ? 'var(--success)' : 'var(--border)',
+                  background:pendingPages.includes(page.page) ? 'rgba(0,200,120,0.16)' : 'var(--bg-secondary)',padding:7,
+                }}>
+                <div style={{color:pendingPages.includes(page.page) ? 'var(--success)' : 'var(--text-dim)',fontWeight:900,fontSize:11}}>P{page.page}</div>
+                <div style={{color:'var(--text-primary)',fontWeight:700,fontSize:11,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{page.title}</div>
+                <div style={{color:'var(--text-dim)',fontSize:9}}>{page.feature_count}+{page.counter_count}</div>
+              </button>
             ))}
           </div>
         </section>

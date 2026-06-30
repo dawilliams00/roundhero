@@ -1,12 +1,23 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
-import { SECTION_COLORS, HASTED_EFFECT } from '../utils/dnd';
+import { SECTION_COLORS, HASTED_EFFECT, concentrationSlotCount, formatItemBuff, isItemActive, slotBadgeTextColor } from '../utils/dnd';
 import { fetchCharacterModule, findTrackerCounter, runSyricAction, syncSyricCodexPages, updateTrackerCounter } from '../utils/characterModules';
 import AbilityDetailModal from './AbilityDetailModal';
 import CastSpellPickerModal from './CastSpellPickerModal';
+import ConcentrationModal from './ConcentrationModal';
+import ItemDetailModal from './ItemDetailModal';
+import ItemSpellsModal from './ItemSpellsModal';
 
 const BUCKET_LABELS = ['Action', 'Haste', 'Bonus Action', 'Reaction', 'Movement'];
 const SHADOW_BUCKET_LABELS = ['Action', 'Bonus Action', 'Reaction', 'Movement'];
+const ITEM_BUCKET = { action: 'Action', bonus_action: 'Bonus Action', reaction: 'Reaction' };
+const ITEM_COST_OPTIONS = [
+  { value: '', label: 'No bucket' },
+  { value: 'action', label: 'Action' },
+  { value: 'bonus_action', label: 'Bonus' },
+  { value: 'reaction', label: 'Reaction' },
+  { value: 'free_action', label: 'Free' },
+];
 
 const sectionColor = (section) => {
   if (section === 'Haste Action') return SECTION_COLORS.Haste;
@@ -154,7 +165,7 @@ function ActionRow({ action, section, ownerKey, trackerData, inInitiative, used,
   );
 }
 
-function OwnerPanel({ title, ownerKey, sections, trackerData, inInitiative, used, setUsed, isHasted, onSpend, onDetail, onCast, onSpecial }) {
+function OwnerPanel({ title, ownerKey, sections, trackerData, inInitiative, used, setUsed, isHasted, onSpend, onDetail, onCast, onSpecial, beforeSections = null }) {
   const labels = ownerKey === 'shadow' ? SHADOW_BUCKET_LABELS : BUCKET_LABELS;
   const markBucket = (bucket) => {
     if (!bucket) return;
@@ -169,6 +180,7 @@ function OwnerPanel({ title, ownerKey, sections, trackerData, inInitiative, used
         <BucketBar owner={ownerKey} labels={labels} used={used} onToggle={toggleBucket} inInitiative={inInitiative} isHasted={isHasted} />
       </div>
       <div style={{flex:1,overflowY:'auto'}}>
+        {beforeSections}
         {(sections || []).map(section => (
           <div key={`${ownerKey}-${section.name}`}>
             <div style={{position:'sticky',top:0,zIndex:2,padding:'6px 10px',background:sectionColor(section.name),color:'#fff',fontSize:11,fontWeight:900,letterSpacing:1,textTransform:'uppercase'}}>
@@ -197,10 +209,100 @@ function OwnerPanel({ title, ownerKey, sections, trackerData, inInitiative, used
   );
 }
 
-function NumberActionModal({ config, onClose, onConfirm }) {
+function RemindersSection({ inInitiative, features, dismissed, onDismiss }) {
+  const reminders = Object.entries(features || {}).filter(([name, feature]) => feature.reminder && !dismissed[name]);
+  if (!inInitiative || reminders.length === 0) return null;
+  return (
+    <div>
+      <div style={{position:'sticky',top:0,zIndex:2,padding:'6px 10px',background:'var(--warning)',color:'#000',fontSize:11,fontWeight:900,letterSpacing:1,textTransform:'uppercase'}}>
+        Reminders
+      </div>
+      {reminders.map(([name]) => (
+        <div key={name} style={{display:'flex',alignItems:'center',gap:8,padding:'8px 10px',borderBottom:'1px solid var(--border)',background:'rgba(255,152,0,0.1)'}}>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{color:'var(--text-primary)',fontWeight:700,fontSize:13,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+              Don't forget: {name}
+            </div>
+          </div>
+          <button className="btn btn-sm" onClick={() => onDismiss(name)} style={{background:'var(--bg-hover)',color:'var(--text-dim)'}}>
+            Got it
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ItemsSection({ items, turnUsed, inInitiative, onSetCostType, onUseCharge, onRestoreCharge, onOpenItemSpells, onOpenItemDetail }) {
+  const chargeItems = items.map((it, idx) => ({ it, idx })).filter(({ it }) => it.charges);
+  const passiveItems = items.map((it, idx) => ({ it, idx }))
+    .filter(({ it }) => !it.charges && isItemActive(it) && ((it.buffs || []).length > 0 || it.grants_unarmed_bonus));
+
+  if (chargeItems.length === 0 && passiveItems.length === 0) return null;
+
+  return (
+    <div>
+      <div style={{position:'sticky',top:0,zIndex:2,padding:'6px 10px',background:'#5d4037',color:'#fff',fontSize:11,fontWeight:900,letterSpacing:1,textTransform:'uppercase'}}>
+        Items
+      </div>
+      {chargeItems.map(({ it, idx }) => {
+        const itemBucket = ITEM_BUCKET[it.cost_type] || null;
+        const bucketUsed = inInitiative && itemBucket && turnUsed[itemBucket];
+        const depleted = (it.charges.current || 0) <= 0;
+        return (
+          <div key={idx} style={{display:'grid',gridTemplateColumns:'56px minmax(0,1fr) 78px auto auto',gap:8,alignItems:'center',padding:'8px 10px',borderBottom:'1px solid var(--border)',background: bucketUsed ? 'var(--bg-primary)' : 'var(--bg-card)',opacity: bucketUsed ? 0.55 : 1}}>
+            <button className="btn btn-sm"
+              disabled={bucketUsed || (!it.granted_spells?.length && depleted)}
+              onClick={() => it.granted_spells?.length ? onOpenItemSpells(idx) : onUseCharge(idx, itemBucket)}
+              style={{background: bucketUsed || depleted ? 'var(--border)' : 'var(--accent)',color:'#fff',minWidth:44}}>
+              {it.granted_spells?.length ? 'CAST' : 'USE'}
+            </button>
+            <div onClick={() => onOpenItemDetail(idx)} style={{minWidth:0,cursor:'pointer'}}>
+              <div style={{color:'var(--text-primary)',fontWeight:700,fontSize:13,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{it.name}</div>
+              <div style={{color:'var(--text-dim)',fontSize:10}}>
+                recharges {it.charges.recharge?.replace('_', ' ') || 'tracked'}
+              </div>
+              {bucketUsed && <div style={{color:'var(--warning)',fontSize:10}}>Already used this turn</div>}
+            </div>
+            <select value={it.cost_type || ''} onChange={e => onSetCostType(idx, e.target.value)} title="Action economy cost" style={{fontSize:11,padding:'2px 4px'}}>
+              {ITEM_COST_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+            </select>
+            <div style={{color: depleted ? 'var(--danger)' : 'var(--success)',fontWeight:900,fontSize:13,minWidth:44,textAlign:'right'}}>
+              {it.charges.current}/{it.charges.max}
+            </div>
+            <button className="btn btn-secondary btn-sm" disabled={(it.charges.current || 0) >= (it.charges.max || 0)} onClick={() => onRestoreCharge(idx)}>+</button>
+          </div>
+        );
+      })}
+      {passiveItems.map(({ it, idx }) => (
+        <div key={`passive-${idx}`} style={{display:'grid',gridTemplateColumns:'56px minmax(0,1fr)',gap:8,alignItems:'center',padding:'8px 10px',borderBottom:'1px solid var(--border)'}}>
+          <span style={{fontSize:11,color:'var(--success)',border:'1px solid var(--success)',borderRadius:8,padding:'1px 6px',textAlign:'center'}}>Active</span>
+          <div onClick={() => onOpenItemDetail(idx)} style={{minWidth:0,cursor:'pointer'}}>
+            <div style={{color:'var(--text-primary)',fontWeight:700,fontSize:13,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{it.name}</div>
+            <div style={{color:'var(--text-dim)',fontSize:10,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+              {(it.buffs || []).map(buff => formatItemBuff(buff)).join(', ')}
+              {it.grants_unarmed_bonus ? `${(it.buffs || []).length ? ' · ' : ''}boosts Unarmed Strike${it.unarmed_bonus_damage_dice ? ` (+${it.unarmed_bonus_damage_dice} ${it.unarmed_bonus_damage_type || 'Bludgeoning'})` : ''}` : ''}
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function RollAmountModal({ config, onClose, onConfirm }) {
   const [value, setValue] = useState(config?.initial ?? 1);
+  const [rollResult, setRollResult] = useState(null);
   if (!config) return null;
   const numeric = Math.max(0, Number(value || 0));
+  const rollDice = () => {
+    const dice = config.dice || { count: 1, sides: 6, bonus: 0 };
+    const rolls = [];
+    for (let i = 0; i < dice.count; i++) rolls.push(1 + Math.floor(Math.random() * dice.sides));
+    const total = rolls.reduce((sum, roll) => sum + roll, 0) + (dice.bonus || 0);
+    setRollResult({ rolls, total, bonus: dice.bonus || 0, label: `${dice.count}d${dice.sides}${dice.bonus ? `+${dice.bonus}` : ''}` });
+    setValue(total);
+  };
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={e => e.stopPropagation()}>
@@ -227,6 +329,21 @@ function NumberActionModal({ config, onClose, onConfirm }) {
           {config.helper && (
             <div style={{color:'var(--text-secondary)',fontSize:12,lineHeight:1.5,marginTop:12}}>
               {config.helper}
+            </div>
+          )}
+          {config.dice && (
+            <div style={{marginTop:12,padding:10,border:'1px solid var(--border)',borderRadius:8,background:'var(--bg-primary)',textAlign:'center'}}>
+              <button className="btn btn-primary" style={{width:'100%'}} onClick={rollDice}>
+                Roll {config.dice.count}d{config.dice.sides}
+              </button>
+              {rollResult && (
+                <div style={{marginTop:8}}>
+                  <div style={{color:'var(--accent-light)',fontWeight:900,fontSize:26}}>{rollResult.total}</div>
+                  <div style={{color:'var(--text-dim)',fontSize:11}}>
+                    {rollResult.label} · [{rollResult.rolls.join(', ')}]{rollResult.bonus ? ` + ${rollResult.bonus}` : ''}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -361,7 +478,7 @@ function ShadowStoreModal({ maxLevel, onStore, onClose }) {
 }
 
 export default function SyricActionsTab() {
-  const { character, saveTrackerData, setCharacter, turnUsed, setTurnUsed, companionTurnUsed, setCompanionTurnUsed } = useCharacter();
+  const { character, saveTrackerData, setCharacter, useItemCharge, useSlot, restoreSlot, turnUsed, setTurnUsed, companionTurnUsed, setCompanionTurnUsed } = useCharacter();
   const [module, setModule] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -374,6 +491,10 @@ export default function SyricActionsTab() {
   const [shadowStore, setShadowStore] = useState(null);
   const [ventAmount, setVentAmount] = useState(2);
   const [numberAction, setNumberAction] = useState(null);
+  const [showConcentration, setShowConcentration] = useState(false);
+  const [viewingItemSpells, setViewingItemSpells] = useState(null);
+  const [viewingItemDetail, setViewingItemDetail] = useState(null);
+  const [dismissedReminders, setDismissedReminders] = useState({});
 
   useEffect(() => {
     if (!character?.id) return;
@@ -390,42 +511,28 @@ export default function SyricActionsTab() {
   }, [module?.unlocked_codex_pages]);
 
   const trackerData = character?.tracker_data || {};
+  const features = trackerData.features || {};
+  const slots = trackerData.spell_slots || {};
+  const items = trackerData.inventory?.items || [];
   const inInitiative = !!trackerData.in_initiative;
   const isHasted = (trackerData.active_effects || []).includes(HASTED_EFFECT);
+  const concSlots = trackerData.concentration?.slots || [];
+  const concMaxSlots = concentrationSlotCount(items);
+  const slotLevels = Object.entries(slots).filter(([, slot]) => (slot.max || 0) > 0);
   const arcaneCharge = useMemo(() => (module?.counters || []).find(counter => /arcane charge/i.test(counter.name || '')), [module]);
   const arcaneMatch = findTrackerCounter(trackerData, arcaneCharge);
   const arcaneValue = arcaneMatch?.value || arcaneCharge;
-  const syricSections = useMemo(() => {
-    const sections = [...(module?.action_sections || [])];
-    const items = trackerData?.inventory?.items || [];
-    const magicItems = items.map((item, index) => ({ item, index })).filter(({ item }) => item.charges);
-    if (!magicItems.length) return sections;
-    const itemSection = {
-      name: 'Magic Items',
-      actions: magicItems.map(({ item, index }) => ({
-        name: item.name,
-        source: item.rarity || 'Magic Item',
-        source_type: 'item',
-        cost_type: item.cost_type || 'action',
-        item_index: index,
-        description: item.description || item.notes || 'Charged magic item.',
-      })),
-    };
-    const insertAt = sections.findIndex(section => section.name === 'No Action' || section.name === 'Passive');
-    if (insertAt >= 0) {
-      return [...sections.slice(0, insertAt), itemSection, ...sections.slice(insertAt)];
-    }
-    return [...sections, itemSection];
-  }, [module?.action_sections, trackerData]);
 
   const resetRound = () => {
     setTurnUsed({ Action: false, 'Bonus Action': false, Reaction: false, Haste: false, Movement: false, Attacks: 0 });
     setCompanionTurnUsed({ Action: false, 'Bonus Action': false, Reaction: false, Movement: false });
+    setDismissedReminders({});
   };
 
   const toggleInitiative = async () => {
     const entering = !inInitiative;
     await saveTrackerData({ ...trackerData, in_initiative: entering });
+    if (entering) setDismissedReminders({});
     resetRound();
   };
 
@@ -463,6 +570,7 @@ export default function SyricActionsTab() {
         label: 'Vent die result',
         initial: ventAmount || 2,
         confirmText: 'Vent',
+        dice: { count: 2, sides: 6 },
         helper: 'At Syric level 13, Vent Die is 2d6. This subtracts the amount from Arcane Charge.',
         onConfirm: async (amount) => {
           setVentAmount(amount);
@@ -503,6 +611,21 @@ export default function SyricActionsTab() {
   const startCast = (section) => setCastingBucket(section);
   const castBucket = bucketForSection(castingBucket || 'Action', { cost_type: 'cast_spell' });
 
+  const setItemCostType = (idx, value) => {
+    const newItems = items.map((item, itemIdx) => itemIdx === idx ? { ...item, cost_type: value || null } : item);
+    saveTrackerData({ ...trackerData, inventory: { ...trackerData.inventory, items: newItems } });
+  };
+
+  const markCharacterBucket = (bucket) => {
+    if (!inInitiative || !bucket) return;
+    setTurnUsed(prev => ({ ...prev, [bucket]: true }));
+  };
+
+  const handleItemUse = async (idx, itemBucket) => {
+    await useItemCharge(idx, -1);
+    markCharacterBucket(itemBucket);
+  };
+
   if (loading) return <div style={{padding:16,color:'var(--text-secondary)'}}>Loading Syric actions...</div>;
   if (error) return <div style={{padding:16,color:'var(--danger)'}}>{error}</div>;
   if (!module) return <div style={{padding:16,color:'var(--text-secondary)'}}>Syric action module is not available for this character.</div>;
@@ -514,10 +637,35 @@ export default function SyricActionsTab() {
           {inInitiative ? 'Stop Initiative' : 'Start Initiative'}
         </button>
         <button className="btn btn-secondary btn-sm" onClick={resetRound}>Reset Round</button>
-        <button className="btn btn-secondary btn-sm" onClick={() => runAction('end_turn', { vent_amount: ventAmount })}>End Turn</button>
-        <button className="btn btn-secondary btn-sm" onClick={() => setVentAmount(v => Math.max(0, Number(v || 0) - 1))}>-</button>
-        <input value={ventAmount} onChange={e => setVentAmount(e.target.value)} type="number" min="0" style={{width:54}} />
-        <button className="btn btn-secondary btn-sm" onClick={() => setVentAmount(v => Number(v || 0) + 1)}>+</button>
+        <button className="btn btn-secondary btn-sm" onClick={() => setNumberAction({
+          title: 'End Turn Vent',
+          subtitle: 'Roll the end-turn vent die and apply the result.',
+          label: 'Vent die result',
+          initial: ventAmount || 2,
+          confirmText: 'End Turn',
+          dice: { count: 2, sides: 6 },
+          helper: "This applies the entered result as Syric's end-turn Arcane Charge reduction.",
+          onConfirm: async (amount) => {
+            setVentAmount(amount);
+            await runAction('end_turn', { vent_amount: amount });
+          },
+        })}>End Turn</button>
+        <div style={{display:'flex',gap:4,flexWrap:'wrap'}}>
+          {Array.from({ length: concMaxSlots }, (_, idx) => {
+            const spell = (concSlots[idx]?.spell || '').trim();
+            return (
+              <button key={idx} className="btn btn-secondary btn-sm" onClick={() => setShowConcentration(true)} title="Concentration - click to manage"
+                style={{
+                  fontSize:11,padding:'3px 8px',borderRadius:12,fontWeight:800,
+                  background: spell ? 'var(--success)' : 'var(--border)',
+                  color: spell ? '#fff' : 'var(--text-dim)',
+                  maxWidth:130,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',
+                }}>
+                CON{concMaxSlots > 1 ? ` ${idx + 1}` : ''}: {spell || '--'}
+              </button>
+            );
+          })}
+        </div>
         <div style={{color:'var(--text-dim)',fontSize:11}}>
           {isHasted ? 'Haste action online' : 'Haste action hidden until Hasted'}
         </div>
@@ -531,11 +679,32 @@ export default function SyricActionsTab() {
         <PageRail pages={module.codex_pages || []} pendingPages={pendingPages} setPendingPages={setPendingPages} onSync={syncPages} />
       </div>
 
+      {slotLevels.length > 0 && (
+        <div style={{padding:'8px 10px',borderBottom:'1px solid var(--border)',display:'flex',gap:8,flexWrap:'wrap',alignItems:'center',flexShrink:0}}>
+          <span style={{color:'var(--text-dim)',fontSize:11,minWidth:40}}>Slots:</span>
+          {slotLevels.map(([level, slot]) => (
+            <div key={level} style={{display:'flex',alignItems:'center',gap:2}}>
+              <button onClick={() => useSlot(parseInt(level, 10))} disabled={slot.current <= 0}
+                style={{display:'flex',alignItems:'center',gap:4,padding:'3px 8px',borderRadius:'12px 0 0 12px',
+                  background: slot.current > 0 ? `var(--slot-${level})` : 'var(--border)',
+                  color: slot.current > 0 ? slotBadgeTextColor(parseInt(level, 10)) : 'var(--text-dim)',
+                  border:'none',fontSize:12,fontWeight:700,opacity: slot.current <= 0 ? 0.5 : 1}}>
+                L{level} {slot.current}/{slot.max}
+              </button>
+              <button onClick={() => restoreSlot(parseInt(level, 10))} disabled={slot.current >= slot.max} title="Restore 1 slot"
+                style={{padding:'3px 6px',borderRadius:'0 12px 12px 0',background:'var(--bg-hover)',color:'var(--text-dim)',border:'none',fontSize:12,opacity: slot.current >= slot.max ? 0.4 : 1}}>
+                ↺
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
       <div style={{flex:1,overflow:'hidden',display:'flex'}}>
         <OwnerPanel
           title="Syric"
           ownerKey="syric"
-          sections={syricSections}
+          sections={module.action_sections || []}
           trackerData={trackerData}
           inInitiative={inInitiative}
           used={turnUsed || {}}
@@ -545,6 +714,26 @@ export default function SyricActionsTab() {
           onDetail={setDetail}
           onCast={startCast}
           onSpecial={handleSpecial}
+          beforeSections={(
+            <>
+              <RemindersSection
+                inInitiative={inInitiative}
+                features={features}
+                dismissed={dismissedReminders}
+                onDismiss={(name) => setDismissedReminders(prev => ({ ...prev, [name]: true }))}
+              />
+              <ItemsSection
+                items={items}
+                turnUsed={turnUsed || {}}
+                inInitiative={inInitiative}
+                onSetCostType={setItemCostType}
+                onUseCharge={handleItemUse}
+                onRestoreCharge={(idx) => useItemCharge(idx, 1)}
+                onOpenItemSpells={setViewingItemSpells}
+                onOpenItemDetail={setViewingItemDetail}
+              />
+            </>
+          )}
         />
         <div style={{width:2,background:'var(--border)',flexShrink:0}} />
         <OwnerPanel
@@ -579,7 +768,7 @@ export default function SyricActionsTab() {
         }}
       />
       <DischargeResultModal event={discharge} onClose={() => setDischarge(null)} />
-      <NumberActionModal
+      <RollAmountModal
         config={numberAction}
         onClose={() => setNumberAction(null)}
         onConfirm={async (value) => {
@@ -602,6 +791,20 @@ export default function SyricActionsTab() {
             setShadowStore(null);
           }}
           onClose={() => setShadowStore(null)}
+        />
+      )}
+      {showConcentration && <ConcentrationModal onClose={() => setShowConcentration(false)} />}
+      {viewingItemDetail !== null && (
+        <ItemDetailModal item={items[viewingItemDetail]} onClose={() => setViewingItemDetail(null)} />
+      )}
+      {viewingItemSpells !== null && (
+        <ItemSpellsModal
+          item={items[viewingItemSpells]}
+          onCast={(chargeCost) => {
+            useItemCharge(viewingItemSpells, -chargeCost);
+            markCharacterBucket(ITEM_BUCKET[items[viewingItemSpells]?.cost_type] || null);
+          }}
+          onClose={() => setViewingItemSpells(null)}
         />
       )}
       {castingBucket && (
