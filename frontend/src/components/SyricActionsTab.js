@@ -72,7 +72,7 @@ function BucketBar({ owner, labels, used, onToggle, inInitiative, isHasted }) {
   return (
     <div style={{display:'flex',gap:4,flexWrap:'wrap'}}>
       {visible.map(label => {
-        const isUsed = !!used[label];
+        const isUsed = inInitiative && !!used[label];
         return (
           <button key={`${owner}-${label}`} className="btn btn-secondary btn-sm"
             onClick={() => onToggle(label)}
@@ -102,7 +102,7 @@ function ActionRow({ action, section, ownerKey, trackerData, inInitiative, used,
   const hasCounter = !!match && (max || 0) > 0;
   const depleted = hasCounter && (current || 0) <= 0;
   const bucket = bucketForSection(section, action);
-  const bucketUsed = bucket && used[bucket];
+  const bucketUsed = inInitiative && bucket && used[bucket];
   const isCastSpell = action.cost_type === 'cast_spell';
   const unavailable = depleted || bucketUsed;
 
@@ -168,10 +168,13 @@ function ActionRow({ action, section, ownerKey, trackerData, inInitiative, used,
 function OwnerPanel({ title, ownerKey, sections, trackerData, inInitiative, used, setUsed, isHasted, onSpend, onDetail, onCast, onSpecial, beforeSections = null }) {
   const labels = ownerKey === 'shadow' ? SHADOW_BUCKET_LABELS : BUCKET_LABELS;
   const markBucket = (bucket) => {
-    if (!bucket) return;
+    if (!inInitiative || !bucket) return;
     setUsed(prev => ({ ...prev, [bucket]: true }));
   };
-  const toggleBucket = (bucket) => setUsed(prev => ({ ...prev, [bucket]: !prev[bucket] }));
+  const toggleBucket = (bucket) => {
+    if (!inInitiative || !bucket) return;
+    setUsed(prev => ({ ...prev, [bucket]: !prev[bucket] }));
+  };
 
   return (
     <div style={{flex:1,minWidth:0,display:'flex',flexDirection:'column',border:'1px solid var(--border)',background:'var(--bg-secondary)'}}>
@@ -249,12 +252,13 @@ function ItemsSection({ items, turnUsed, inInitiative, onSetCostType, onUseCharg
         const itemBucket = ITEM_BUCKET[it.cost_type] || null;
         const bucketUsed = inInitiative && itemBucket && turnUsed[itemBucket];
         const depleted = (it.charges.current || 0) <= 0;
+        const buttonUnavailable = bucketUsed || (!it.granted_spells?.length && depleted);
         return (
           <div key={idx} style={{display:'grid',gridTemplateColumns:'56px minmax(0,1fr) 78px auto auto',gap:8,alignItems:'center',padding:'8px 10px',borderBottom:'1px solid var(--border)',background: bucketUsed ? 'var(--bg-primary)' : 'var(--bg-card)',opacity: bucketUsed ? 0.55 : 1}}>
             <button className="btn btn-sm"
-              disabled={bucketUsed || (!it.granted_spells?.length && depleted)}
+              disabled={buttonUnavailable}
               onClick={() => it.granted_spells?.length ? onOpenItemSpells(idx) : onUseCharge(idx, itemBucket)}
-              style={{background: bucketUsed || depleted ? 'var(--border)' : 'var(--accent)',color:'#fff',minWidth:44}}>
+              style={{background: buttonUnavailable ? 'var(--border)' : 'var(--accent)',color:'#fff',minWidth:44}}>
               {it.granted_spells?.length ? 'CAST' : 'USE'}
             </button>
             <div onClick={() => onOpenItemDetail(idx)} style={{minWidth:0,cursor:'pointer'}}>
@@ -575,7 +579,7 @@ export default function SyricActionsTab() {
         onConfirm: async (amount) => {
           setVentAmount(amount);
           await runAction('vent', { amount });
-          if (bucket) setTurnUsed(prev => ({ ...prev, [bucket]: true }));
+          if (bucket && inInitiative) setTurnUsed(prev => ({ ...prev, [bucket]: true }));
         },
       });
       return;
@@ -593,7 +597,7 @@ export default function SyricActionsTab() {
         onConfirm: async (amount) => {
           if (!amount) return;
           const result = await runAction('spend', { tracker_key: action.tracker_key, tracker_aliases: action.tracker_aliases || [], amount });
-          if (result.spent && bucket) setTurnUsed(prev => ({ ...prev, [bucket]: true }));
+          if (result.spent && bucket && inInitiative) setTurnUsed(prev => ({ ...prev, [bucket]: true }));
         },
       });
       return;
@@ -604,7 +608,7 @@ export default function SyricActionsTab() {
     }
     if (action.cost_type === 'release_shadow') {
       const result = await runAction('shadow_release');
-      if (result.spent) setCompanionTurnUsed(prev => ({ ...prev, 'Bonus Action': true }));
+      if (result.spent && inInitiative) setCompanionTurnUsed(prev => ({ ...prev, 'Bonus Action': true }));
     }
   };
 
@@ -787,7 +791,7 @@ export default function SyricActionsTab() {
               tracker_key: shadowStore.tracker_key,
               tracker_aliases: shadowStore.tracker_aliases || [],
             });
-            setCompanionTurnUsed(prev => ({ ...prev, Action: true }));
+            if (inInitiative) setCompanionTurnUsed(prev => ({ ...prev, Action: true }));
             setShadowStore(null);
           }}
           onClose={() => setShadowStore(null)}
@@ -811,7 +815,7 @@ export default function SyricActionsTab() {
         <CastSpellPickerModal
           bucket={castingBucket}
           onCast={async (meta) => {
-            if (castBucket) setTurnUsed(prev => ({ ...prev, [castBucket]: true }));
+            markCharacterBucket(castBucket);
             const spell = meta?.spell || {};
             await runAction('record_spell_cast', { spell_name: spell.name, level: meta?.level || spell.level_int || 0 });
           }}
