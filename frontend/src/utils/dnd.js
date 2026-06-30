@@ -298,6 +298,21 @@ export const isCharacterCaster = (character) => {
   return Object.values(slots).some(s => (s?.max || 0) > 0);
 };
 
+// Stricter than isCharacterCaster above - a Monk with one feat-granted Cure Wounds isn't
+// "a caster" in any meaningful sense (no spell list to manage, no prepared-spell concept,
+// nothing to browse/add), even though isCharacterCaster correctly says they CAN
+// concentrate on that one spell. Used by SpellsTab to decide whether to show the full
+// caster UI (slots, Manage Lists, Browse/Add, search/filter) or just a flat list of
+// whatever granted spells the character has. True if there's a real spell slot, or any
+// known spell that isn't purely item/feat-granted (a genuine class-known spell, cantrip,
+// or ritual).
+export const hasOwnSpellcasting = (character) => {
+  const slots = character?.tracker_data?.spell_slots || {};
+  if (Object.values(slots).some(s => (s?.max || 0) > 0)) return true;
+  const known = character?.spell_data?.known_spells || [];
+  return known.some(s => !s.granted_by);
+};
+
 // Most characters can only concentrate on one spell at a time; a small number of items
 // (e.g. a ring that lets you concentrate on a second spell) grant an extra slot via the
 // explicit grants_concentration_slot flag (set in AddItemModal), not a fuzzy description

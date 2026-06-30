@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useCharacter } from '../context/CharacterContext';
 import api from '../utils/api';
-import { maxPreparedSpells, schoolColor, slotBadgeTextColor, getSpellcastingBlocks, featBuffItems, raceBuffItems, fullListCasterClassNames, maxCastableSpellLevel } from '../utils/dnd';
+import { maxPreparedSpells, schoolColor, slotBadgeTextColor, getSpellcastingBlocks, featBuffItems, raceBuffItems, fullListCasterClassNames, maxCastableSpellLevel, hasOwnSpellcasting } from '../utils/dnd';
 import SpellBrowserModal from './SpellBrowserModal';
 import SpellDetailModal from './SpellDetailModal';
 import CustomSpellModal from './CustomSpellModal';
@@ -64,6 +64,81 @@ export default function SpellsTab() {
 
   if (!character) return null;
   const buffItems = [...(character.tracker_data?.inventory?.items || []), ...featBuffItems(character.tracker_data?.features), ...raceBuffItems(character.race)];
+
+  // A character with no real spellcasting of their own (no slots, no genuinely-known
+  // spells) but who happens to have one or two item/feat-granted spells isn't "a caster"
+  // in any meaningful sense - there's no spell list to manage, nothing to prepare,
+  // nothing to browse/add from a class list. Showing the full caster UI (Spell Slots
+  // card, Manage Lists, Browse/Add, search/filter, category pills) for a Monk with one
+  // granted Cure Wounds was confusing and implied capabilities that don't exist. Just
+  // show the granted spells directly, nothing else - applies to any class, not just Monk.
+  if (!hasOwnSpellcasting(character)) {
+    const grantedSpells = (sd.known_spells || [])
+      .filter(s => !!s.granted_by)
+      .sort((a,b) => (a.level_int - b.level_int) || a.name.localeCompare(b.name));
+    const hasAvailableSlotNC = () => false;
+    const hasFreeUseNC = (spell) => spell.free_use_feature && (character.tracker_data?.features?.[spell.free_use_feature]?.current || 0) > 0;
+    const findOrphanFixNC = (spell) => {
+      if (!spell.granted_by || spell.free_use_feature) return null;
+      const features = character.tracker_data?.features || {};
+      const match = Object.keys(features).find(n => n.toLowerCase() === spell.granted_by.toLowerCase())
+        || Object.keys(features).find(n => n.toLowerCase().includes(spell.granted_by.toLowerCase()) || spell.granted_by.toLowerCase().includes(n.toLowerCase()));
+      return match || null;
+    };
+    const fixOrphanSpellNC = (spell, featureKey) => {
+      const newKnown = (sd.known_spells || []).map(s => s.name === spell.name ? { ...s, free_use_feature: featureKey } : s);
+      saveSpellData({ ...sd, known_spells: newKnown });
+    };
+    return (
+      <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
+        <div style={{flex:1,overflowY:'auto',padding:12}}>
+          {grantedSpells.length === 0 ? (
+            <div className="card" style={{textAlign:'center',padding:32}}>
+              <div style={{fontSize:32,marginBottom:8}}>✨</div>
+              <div style={{color:'var(--text-secondary)'}}>No spells.</div>
+            </div>
+          ) : (
+            <div className="card">
+              {grantedSpells.map((spell,i) => {
+                const castable = spell.level_int === 0 || hasFreeUseNC(spell) || spell.ritual || hasAvailableSlotNC();
+                const orphanFix = findOrphanFixNC(spell);
+                return (
+                  <div key={i} style={{display:'flex',alignItems:'center',gap:8,padding:'8px 0',borderBottom:'1px solid var(--border)'}}>
+                    <div style={{flex:1,cursor:'pointer'}} onClick={() => setViewing(spell)}>
+                      <div style={{display:'flex',alignItems:'center',gap:8}}>
+                        <div style={{background: spell.level_int===0 ? 'var(--text-dim)' : `var(--slot-${spell.level_int})`,color: spell.level_int===0 ? '#fff' : slotBadgeTextColor(spell.level_int),borderRadius:4,padding:'1px 6px',fontSize:10,fontWeight:600,minWidth:24,textAlign:'center'}}>
+                          {spell.level_int===0?'C':spell.level_int}
+                        </div>
+                        <div style={{flex:1}}>
+                          <div style={{color: schoolColor(spell.school),fontWeight:500,fontSize:13}}>{spell.name}</div>
+                          <div style={{color:'var(--text-dim)',fontSize:11}}>{spell.school} · Granted by {spell.granted_by}</div>
+                          {orphanFix && (
+                            <div style={{color:'var(--warning)',fontSize:11,marginTop:2}}>
+                              Not linked to {orphanFix}'s free-cast charge yet.{' '}
+                              <button className="btn btn-secondary btn-sm" style={{padding:'1px 8px',fontSize:11}} onClick={(e) => { e.stopPropagation(); fixOrphanSpellNC(spell, orphanFix); }}>
+                                🔧 Fix
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <button className="btn btn-sm" disabled={!castable} onClick={() => setViewing(spell)} style={{background: castable ? 'var(--accent)' : 'var(--border)',color:'#fff',minWidth:48}}>
+                      Cast
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+        {viewing && (
+          <SpellDetailModal spell={viewing} prepared onClose={() => setViewing(null)} />
+        )}
+      </div>
+    );
+  }
+
   const maxPrepared = maxPreparedSpells(character.class_name, character.ability_scores, buffItems, character.level);
   const isAlwaysVisible = s => s.ritual || !!s.granted_by || s.level_int === 0;
   // A spell auto-synced from a full-list class's complete spell list (see the sync effect
