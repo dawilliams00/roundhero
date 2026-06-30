@@ -770,59 +770,57 @@ function EncounterBuilder({
             {combatants.length === 0 ? (
               <div style={{color:'var(--text-secondary)',fontSize:13,padding:20}}>No combatants yet.</div>
             ) : (
-              <div style={{display:'grid',gap:10,minWidth:1040}}>
+              <div style={{display:'grid',gap:10}}>
+                {/* Stacked full-width sections per combatant, not a dense multi-column
+                    grid - the previous fixed-width-column layout could overlap (e.g. the
+                    Stats button colliding with HP) once a long monster name or condition
+                    list pushed a column past its allotted width. Each section below has
+                    its own row, so nothing can collide regardless of content length. */}
                 {combatants.map(row => (
-                  <div key={row.id} style={{display:'grid',gridTemplateColumns:'84px minmax(210px,1fr) minmax(190px,0.82fr) minmax(300px,1.25fr) minmax(126px,0.5fr) 88px',gap:10,alignItems:'start',padding:10,border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',background:'var(--bg-card)'}}>
-                    <label style={setupFieldLabel}>
-                      Init
-                      <input value={row.initiative} onChange={e => updateCombatant(row.id, { initiative: e.target.value })} style={{textAlign:'center',fontWeight:800}} />
-                    </label>
-                    <div style={{display:'grid',gap:5,minWidth:0}}>
-                      <label style={setupFieldLabel}>
-                        Name
-                        <input value={row.name} onChange={e => updateCombatant(row.id, { name: e.target.value })} style={{fontWeight:800}} />
-                      </label>
-                      <div style={{display:'flex',gap:6,alignItems:'center',flexWrap:'wrap'}}>
-                        <span style={{color:row.type === 'player' ? 'var(--accent-light)' : 'var(--warning)',fontSize:11,fontWeight:900,textTransform:'uppercase'}}>{row.type}</span>
-                        <span style={{color:'var(--text-dim)',fontSize:11}}>
-                          {row.group_key ? `Group: ${row.group_key.split('_')[0]}` : 'No group'}
-                        </span>
-                      </div>
+                  <div key={row.id} style={{display:'flex',flexDirection:'column',gap:8,padding:10,border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',background:'var(--bg-card)'}}>
+                    <div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}>
+                      <input value={row.name} onChange={e => updateCombatant(row.id, { name: e.target.value })} style={{fontWeight:800,flex:'1 1 200px',minWidth:120}} />
+                      <span style={{color:row.type === 'player' ? 'var(--accent-light)' : 'var(--warning)',fontSize:11,fontWeight:900,textTransform:'uppercase'}}>{row.type}</span>
+                      <span style={{color:'var(--text-dim)',fontSize:11}}>
+                        {row.group_key ? `Group: ${row.group_key.split('_')[0]}` : 'No group'}
+                      </span>
                     </div>
-                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6}}>
+                    <div style={{display:'flex',gap:16,flexWrap:'wrap',alignItems:'flex-end'}}>
+                      <label style={setupFieldLabel}>
+                        Init
+                        <input value={row.initiative} onChange={e => updateCombatant(row.id, { initiative: e.target.value })} style={{textAlign:'center',fontWeight:800,width:60}} />
+                      </label>
+                      <label style={setupFieldLabel}>
+                        AC
+                        <input value={row.ac} onChange={e => updateCombatant(row.id, { ac: e.target.value })} style={{textAlign:'center',fontWeight:800,width:60}} />
+                      </label>
                       <label style={setupFieldLabel}>
                         HP
-                        <input value={row.hp_current} onChange={e => updateCombatant(row.id, { hp_current: e.target.value })} />
+                        <input value={row.hp_current} onChange={e => updateCombatant(row.id, { hp_current: e.target.value })} style={{width:70}} />
                       </label>
                       <label style={setupFieldLabel}>
                         Temp
-                        <input value={row.temp_hp} onChange={e => updateCombatant(row.id, { temp_hp: e.target.value })} />
+                        <input value={row.temp_hp} onChange={e => updateCombatant(row.id, { temp_hp: e.target.value })} style={{width:70}} />
                       </label>
                       <button className="btn btn-secondary btn-sm" onClick={() => updateCombatant(row.id, { hp_current: Math.max(0, toNumber(row.hp_current) - 1) })}>-1 HP</button>
                       <button className="btn btn-secondary btn-sm" onClick={() => updateCombatant(row.id, { hp_current: toNumber(row.hp_current) + 1 })}>+1 HP</button>
                     </div>
-                    <div style={{display:'grid',gridTemplateColumns:'80px minmax(0,1fr)',gap:6}}>
-                      <label style={setupFieldLabel}>
-                        AC
-                        <input value={row.ac} onChange={e => updateCombatant(row.id, { ac: e.target.value })} style={{textAlign:'center',fontWeight:800}} />
-                      </label>
-                      <label style={setupFieldLabel}>
+                    <div style={{display:'flex',gap:16,flexWrap:'wrap',alignItems:'flex-end'}}>
+                      <label style={{...setupFieldLabel,flex:'1 1 200px'}}>
                         Conditions
                         <input value={(row.conditions || []).join(', ')} onChange={e => updateConditionText(row, e.target.value)} placeholder="poisoned, hexed" />
                       </label>
-                      <label style={{...setupFieldLabel,gridColumn:'1 / -1'}}>
+                      <label style={{...setupFieldLabel,flex:'1 1 200px'}}>
                         Concentration
                         <input value={row.concentration} onChange={e => updateCombatant(row.id, { concentration: e.target.value })} placeholder="Spell or effect" />
                       </label>
                     </div>
-                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:5}}>
-                      <button className="btn btn-secondary btn-sm" onClick={() => setDeathSave(row, 'successes', 1)}>S {row.death_saves?.successes || 0}</button>
-                      <button className="btn btn-secondary btn-sm" onClick={() => setDeathSave(row, 'failures', 1)}>F {row.death_saves?.failures || 0}</button>
-                      <button className="btn btn-secondary btn-sm" onClick={() => updateCombatant(row.id, { death_saves: { successes: 0, failures: 0 } })} style={{gridColumn:'1 / -1'}}>Reset</button>
-                    </div>
-                    <div style={{display:'grid',gap:5}}>
+                    <div style={{display:'flex',gap:8,flexWrap:'wrap',alignItems:'center'}}>
+                      <button className="btn btn-secondary btn-sm" onClick={() => setDeathSave(row, 'successes', 1)}>Death Save Success {row.death_saves?.successes || 0}</button>
+                      <button className="btn btn-secondary btn-sm" onClick={() => setDeathSave(row, 'failures', 1)}>Death Save Fail {row.death_saves?.failures || 0}</button>
+                      <button className="btn btn-secondary btn-sm" onClick={() => updateCombatant(row.id, { death_saves: { successes: 0, failures: 0 } })}>Reset Saves</button>
                       {row.monster && <button className="btn btn-secondary btn-sm" onClick={() => onViewMonster(row.monster)}>Stats</button>}
-                      {campaign.is_dm && <button className="btn btn-danger btn-sm" onClick={() => removeCombatant(row.id)}>X</button>}
+                      {campaign.is_dm && <button className="btn btn-danger btn-sm" onClick={() => removeCombatant(row.id)} style={{marginLeft:'auto'}}>Remove</button>}
                     </div>
                   </div>
                 ))}
