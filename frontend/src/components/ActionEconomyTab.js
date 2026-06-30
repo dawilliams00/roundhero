@@ -35,6 +35,7 @@ export default function ActionEconomyTab() {
   // resets on New Turn / re-entering combat, same lifecycle as the turn-bucket state.
   const [dismissedReminders, setDismissedReminders] = useState({});
   const [showSorceryPoints, setShowSorceryPoints] = useState(false);
+  const [standardActionChoice, setStandardActionChoice] = useState('Dash');
 
   if (!character) return null;
 
@@ -414,14 +415,21 @@ export default function ActionEconomyTab() {
           // has some 1-action spell option via cantrips/rituals/etc. often enough that
           // hiding it there risked more confusion than it solved).
           const hasSpellForBucket = (bucket) => knownSpells.some(s => spellCastBucket(s.casting_time) === bucket);
-          const abilities = (ae[section] || []).filter((a, i, arr) =>
+          const allAbilities = (ae[section] || []).filter((a, i, arr) =>
             arr.findIndex(b => (b.tracker_key || b.name) === (a.tracker_key || a.name)) === i
           ).filter(a => {
             if (a.cost_type !== 'cast_spell') return true;
             if (section !== 'Bonus Action' && section !== 'Reaction') return true;
             return hasSpellForBucket(section);
           });
-          if (!abilities || abilities.length === 0) return null;
+          // Dash/Disengage/Dodge/Help/Hide/Ready/Search/Use an Object are all raw core
+          // 5e actions that don't need individual AE rows each - collapse them into one
+          // "Other Actions" picker row instead. Attack is handled separately in the
+          // WEAPONS section; Cast a Spell and class features keep their individual rows.
+          const COLLAPSIBLE_NAMES = new Set(['Dash','Disengage','Dodge','Help','Hide','Ready','Search','Use an Object']);
+          const standardActions = section === 'Action' ? allAbilities.filter(a => a.source_type === 'raw' && a.cost_type === 'action' && COLLAPSIBLE_NAMES.has(a.name)) : [];
+          const abilities = allAbilities.filter(a => !standardActions.includes(a));
+          if (!abilities.length && !standardActions.length) return null;
           return (
             <div key={section}>
               <div style={{padding:'6px 12px',background:SECTION_COLORS[section],fontSize:11,fontWeight:600,color:'#fff',letterSpacing:1,position:'sticky',top:0,zIndex:1}}>
@@ -439,6 +447,28 @@ export default function ActionEconomyTab() {
                     <div style={{flex:1}}>
                       <div style={{color: bucketUsed ? 'var(--text-dim)' : 'var(--text-primary)',fontWeight:500,fontSize:13}}>Haste Action</div>
                       <div style={{color:'var(--text-dim)',fontSize:11}}>Haste · Attack, Dash, Disengage, Hide, or Use an Object only</div>
+                      {bucketUsed && <div style={{color:'var(--warning)',fontSize:10}}>Already used this turn</div>}
+                    </div>
+                  </div>
+                );
+              })()}
+              {standardActions.length > 0 && (() => {
+                const bucketUsed = isBucketUsed('Action');
+                const selectedDesc = standardActions.find(a => a.name === standardActionChoice)?.description || '';
+                return (
+                  <div style={{display:'flex',alignItems:'center',padding:'8px 12px',borderBottom:'1px solid var(--border)',background: bucketUsed ? 'var(--bg-primary)' : 'var(--bg-card)',opacity: bucketUsed ? 0.5 : 1,gap:8}}>
+                    <div style={{width:60,flexShrink:0,display:'flex',justifyContent:'center'}}>
+                      <button className="btn btn-sm" onClick={() => markBucket('Action')} disabled={bucketUsed}
+                        style={{background: bucketUsed ? 'var(--border)' : 'var(--accent)',color:'#fff',minWidth:36}}>
+                        USE
+                      </button>
+                    </div>
+                    <div style={{flex:1}}>
+                      <select value={standardActionChoice} onChange={e => setStandardActionChoice(e.target.value)}
+                        style={{fontWeight:500,fontSize:13,color:'var(--text-primary)',background:'transparent',border:'none',padding:0,cursor:'pointer',width:'100%'}}>
+                        {standardActions.map(a => <option key={a.name} value={a.name}>{a.name}</option>)}
+                      </select>
+                      {selectedDesc && <div style={{color:'var(--text-dim)',fontSize:11,marginTop:2}}>{selectedDesc}</div>}
                       {bucketUsed && <div style={{color:'var(--warning)',fontSize:10}}>Already used this turn</div>}
                     </div>
                   </div>

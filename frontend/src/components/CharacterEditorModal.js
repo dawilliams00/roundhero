@@ -3,7 +3,7 @@ import { useCharacter } from '../context/CharacterContext';
 import api from '../utils/api';
 import LevelUpFlowModal from './LevelUpFlowModal';
 import ClassFeatureBrowserModal from './ClassFeatureBrowserModal';
-import { ABILITY_KEYS, ABILITY_LABELS, SAVE_PROFS, SKILL_MAP, suspectedAbilityContamination, featBuffItems, parseClassLevels } from '../utils/dnd';
+import { ABILITY_KEYS, ABILITY_LABELS, SAVE_PROFS, SKILL_MAP, suspectedAbilityContamination, featBuffItems, parseClassLevels, raceBuffItems, computeItemBonuses, RACE_ABILITY_BONUSES, modifier } from '../utils/dnd';
 
 // Full base-stat editor - identity, ability scores, and save/skill proficiencies, on top
 // of the original v1 level-up-only framework. This is the one place all of the
@@ -314,20 +314,72 @@ export default function CharacterEditorModal({ onClose }) {
         )}
 
         <div style={{fontSize:12,color:'var(--text-dim)',textTransform:'uppercase',letterSpacing:1,marginBottom:8}}>Ability Scores</div>
-        <div className="form-row" style={{flexWrap:'wrap'}}>
-          {ABILITY_KEYS.map(k => (
-            <div className="form-group" key={k} style={{maxWidth:120}}>
-              <label>{k}{contamination[k] ? ' ⚠' : ''}</label>
-              <input type="number" min={1} max={30} value={scores[k] ?? 10} onChange={e=>setScores(s=>({...s,[k]:e.target.value}))}
-                style={contamination[k] ? {borderColor:'var(--warning)'} : undefined} />
-              {contamination[k] && (
-                <div style={{fontSize:10,color:'var(--warning)',marginTop:3,lineHeight:1.3}}>
-                  Matches "{contamination[k]}"'s Set-To value - if this already includes that item's bonus, lower it to the true base.
-                </div>
-              )}
-            </div>
-          ))}
+        <div style={{fontSize:11,color:'var(--text-dim)',marginBottom:10,lineHeight:1.5}}>
+          Enter the <b>base score</b> (point buy / rolled + ASIs, before any race or item bonuses). Race and item bonuses are shown below the input for reference — they apply live on top of whatever you enter here.
         </div>
+        {(() => {
+          // Compute per-ability breakdowns for display - race and items/feats each separately
+          // so the player can see exactly what's stacking on their base score.
+          const raceBonuses = Object.fromEntries(ABILITY_KEYS.map(k => [k, 0]));
+          (RACE_ABILITY_BONUSES[character.race] || []).forEach(b => { raceBonuses[b.stat] = (raceBonuses[b.stat] || 0) + b.value; });
+          const { abilityAdds: itemFeatAdds, abilityOverrides: itemFeatOverrides } = computeItemBonuses(buffItems);
+          return (
+            <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))',gap:10,marginBottom:16}}>
+              {ABILITY_KEYS.map(k => {
+                const base = parseInt(scores[k]) || 10;
+                const raceBonus = raceBonuses[k] || 0;
+                const itemAdd = itemFeatAdds[k] || 0;
+                const setOverride = itemFeatOverrides[k] ?? null;
+                let total = base + raceBonus + itemAdd;
+                if (setOverride !== null) total = Math.max(total, setOverride);
+                const mod = modifier(total);
+                const isContaminated = !!contamination[k];
+                return (
+                  <div key={k} style={{background:'var(--bg-primary)',borderRadius:'var(--radius-md)',padding:10,border:`1px solid ${isContaminated ? 'var(--warning)' : 'var(--border)'}`}}>
+                    <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:8}}>
+                      <span style={{fontSize:11,color:'var(--text-dim)',fontWeight:700,textTransform:'uppercase',letterSpacing:1}}>{k}</span>
+                      <div style={{textAlign:'right'}}>
+                        <div style={{fontSize:22,fontWeight:700,color:'var(--accent-light)',lineHeight:1}}>{total}</div>
+                        <div style={{fontSize:11,color:'var(--text-secondary)'}}>{mod >= 0 ? '+' : ''}{mod}</div>
+                      </div>
+                    </div>
+                    <div style={{borderTop:'1px solid var(--border)',paddingTop:8,display:'flex',flexDirection:'column',gap:4}}>
+                      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                        <span style={{fontSize:11,color:'var(--text-secondary)'}}>Base</span>
+                        <input type="number" min={1} max={30} value={scores[k] ?? 10}
+                          onChange={e => setScores(s => ({...s,[k]:e.target.value}))}
+                          style={{width:48,textAlign:'center',padding:'2px 4px',fontSize:12,border:`1px solid ${isContaminated ? 'var(--warning)' : 'var(--border)'}`,borderRadius:'var(--radius-sm)',background:'var(--bg-card)',color:'var(--text-primary)'}} />
+                      </div>
+                      {raceBonus !== 0 && (
+                        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                          <span style={{fontSize:10,color:'var(--text-dim)'}}>{character.race}</span>
+                          <span style={{fontSize:11,color: raceBonus > 0 ? 'var(--success)' : 'var(--danger)'}}>{raceBonus > 0 ? '+' : ''}{raceBonus}</span>
+                        </div>
+                      )}
+                      {itemAdd !== 0 && (
+                        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                          <span style={{fontSize:10,color:'var(--text-dim)'}}>Items / Feats</span>
+                          <span style={{fontSize:11,color:'var(--success)'}}>+{itemAdd}</span>
+                        </div>
+                      )}
+                      {setOverride !== null && (
+                        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                          <span style={{fontSize:10,color:'var(--text-dim)'}}>Set override</span>
+                          <span style={{fontSize:11,color:'var(--accent-light)'}}>{setOverride}</span>
+                        </div>
+                      )}
+                    </div>
+                    {isContaminated && (
+                      <div style={{fontSize:10,color:'var(--warning)',marginTop:6,lineHeight:1.3}}>
+                        ⚠ Base matches "{contamination[k]}"'s Set-To — likely includes that item's bonus. Lower to your true unmodified score.
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
 
         <div style={{fontSize:12,color:'var(--text-dim)',textTransform:'uppercase',letterSpacing:1,marginBottom:8,marginTop:8}}>Saving Throw Proficiencies</div>
         <div style={{display:'flex',flexWrap:'wrap',gap:10,marginBottom:16}}>

@@ -46,6 +46,12 @@ export default function SpellBrowserModal({ character, knownSpells, onAdd, onRem
 
   const knownNames = new Set(knownSpells.map(s => s.name));
   const levels = [...new Set(allSpells.map(s => s.level_int))].sort((a, b) => a - b);
+  // Highest spell level this character actually has access to (based on real spell slots,
+  // not class/level formulas) - spells above this are still searchable for reading their
+  // description, but the Add button is disabled for ones the character can't yet learn.
+  const slots = character?.tracker_data?.spell_slots || {};
+  const maxAccessibleLevel = Object.entries(slots).reduce((max, [lvl, s]) => s?.max > 0 ? Math.max(max, parseInt(lvl)) : max, 0);
+  const canAdd = (spell) => knownNames.has(spell.name) || spell.level_int === 0 || maxAccessibleLevel === 0 || spell.level_int <= maxAccessibleLevel;
   const spells = allSpells.filter(s => {
     const matchSearch = !search || s.name.toLowerCase().includes(search.toLowerCase());
     const matchFilter = filter === 'all' || (filter === 'cantrip' ? s.level_int === 0 : s.level_int === parseInt(filter));
@@ -96,6 +102,8 @@ export default function SpellBrowserModal({ character, knownSpells, onAdd, onRem
                 <button
                   className={isKnown ? 'btn btn-danger' : 'btn btn-primary'}
                   onClick={() => isKnown ? onRemove(spell) : onAdd(spell)}
+                  disabled={!isKnown && !canAdd(spell)}
+                  title={!isKnown && !canAdd(spell) ? `No level ${spell.level_int} spell slots yet — can still read the spell description` : undefined}
                   style={{fontSize:11,padding:'4px 10px'}}
                 >
                   {isKnown ? 'Remove' : 'Add'}

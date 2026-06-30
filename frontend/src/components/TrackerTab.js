@@ -48,7 +48,14 @@ export default function TrackerTab() {
   const attunableItems = items.map((it,i) => ({ it, idx: i })).filter(({it}) => it.attunement);
   const attunedCount = attunableItems.filter(({it}) => it.attuned).length;
   const toggleAttuned = (idx) => {
-    const newItems = items.map((it,i) => i===idx ? { ...it, attuned: !it.attuned } : it);
+    const newItems = items.map((it,i) => {
+      if (i !== idx) return it;
+      const nowAttuned = !it.attuned;
+      // Auto-equip when attuning - an item can't be attuned without being equipped first
+      // per RAW, and having it not equipped would make its buffs silently inactive via the
+      // isItemActive gating even though it shows as attuned, which has confused players.
+      return { ...it, attuned: nowAttuned, ...(nowAttuned && !it.equipped ? { equipped: true } : {}) };
+    });
     saveTrackerData({ ...td, inventory: { ...td.inventory, items: newItems } });
   };
 
