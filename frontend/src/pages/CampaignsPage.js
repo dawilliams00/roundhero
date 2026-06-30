@@ -6,9 +6,11 @@ import { useCharacter } from '../context/CharacterContext';
 import FeedbackModal from '../components/FeedbackModal';
 import EncounterRunnerModal from '../components/EncounterRunnerModal';
 import MonsterDetailModal from '../components/MonsterDetailModal';
+import { ReferenceLibraryContent } from '../components/ReferenceLibrary';
 import api from '../utils/api';
+import { fetchSyricReferences } from '../utils/characterModules';
 
-const TABS = ['Party', 'Effects', 'Encounters'];
+const TABS = ['Party', 'Effects', 'Encounters', 'DM References'];
 const ENCOUNTER_STATUSES = ['planned', 'running', 'paused', 'complete'];
 
 function sameId(left, right) {
@@ -530,6 +532,7 @@ export default function CampaignsPage() {
   const [sharedInitiative, setSharedInitiative] = useState(true);
   const [viewingMonster, setViewingMonster] = useState(null);
   const [showFeedback, setShowFeedback] = useState(false);
+  const [referenceDocs, setReferenceDocs] = useState(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -548,6 +551,10 @@ export default function CampaignsPage() {
     api.get('/content/monsters')
       .then(r => setMonsters(r.data))
       .catch(() => setMonsters([]));
+  }, []);
+
+  useEffect(() => {
+    fetchSyricReferences().then(setReferenceDocs).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -947,6 +954,23 @@ export default function CampaignsPage() {
                     )}
                   </div>
                 )}
+
+                {activeTab === 'DM References' && (
+                  <div style={{height:620,minHeight:0,display:'flex',flexDirection:'column',gap:10}}>
+                    <div style={{display:'flex',justifyContent:'space-between',gap:12,alignItems:'flex-start'}}>
+                      <div>
+                        <h3 style={{color:'var(--accent-light)',fontSize:14,marginBottom:4}}>Reference Library</h3>
+                        <div style={{color:'var(--text-secondary)',fontSize:12}}>
+                          Codex mechanics, Nyx teachings, and Arcane Rebound table for campaign/DM lookup.
+                        </div>
+                      </div>
+                      <button className="btn btn-secondary btn-sm" onClick={() => setShowFeedback(true)}>Reference Feedback</button>
+                    </div>
+                    <div style={{flex:1,minHeight:0,border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',padding:10,background:'var(--bg-secondary)'}}>
+                      <ReferenceLibraryContent docsPayload={referenceDocs} initialDocId="codex_mechanics" initialPage={1} />
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -962,7 +986,6 @@ export default function CampaignsPage() {
           onPatchData={patchEncounterData}
           onStatus={setEncounterStatus}
           onDelete={removeEncounter}
-          onViewMonster={setViewingMonster}
           reloadCampaign={loadCampaign}
         />
       )}

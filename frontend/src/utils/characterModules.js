@@ -25,6 +25,11 @@ export async function runSyricAction(characterId, action, payload = {}) {
   return r.data;
 }
 
+export async function fetchSyricReferences() {
+  const r = await api.get('/character-modules/syric_arcane/references');
+  return r.data;
+}
+
 export function findTrackerCounter(trackerData, moduleCounter) {
   const key = moduleCounter?.tracker_key || moduleCounter?.name;
   const aliases = moduleCounter?.tracker_aliases || [];

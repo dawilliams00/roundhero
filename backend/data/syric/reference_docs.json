@@ -1,0 +1,2139 @@
+{
+  "version": 1,
+  "generated_from": [
+    "Codex_Core_Pages_1-10_Mechanics_MASTER COPY (2).docx",
+    "Codex_Pure_Nyx_Teachings (1).docx",
+    "Arcane_Rebound_Table_Shuffled (1).docx"
+  ],
+  "docs": [
+    {
+      "id": "codex_mechanics",
+      "title": "Codex Mechanics",
+      "subtitle": "Core Pages 1-10 Mechanics",
+      "kind": "codex",
+      "scope": [
+        "syric",
+        "dm"
+      ],
+      "source_file": "Codex_Core_Pages_1-10_Mechanics_MASTER COPY (2).docx",
+      "intro": {
+        "title": "Mechanics Notes",
+        "blocks": [
+          {
+            "type": "heading",
+            "text": "Syric Nightbloom"
+          },
+          {
+            "type": "heading",
+            "text": "Codex of Embodied Arcana"
+          },
+          {
+            "type": "heading",
+            "text": "Core Pages 1-10 Mechanics - Uniform Revision"
+          },
+          {
+            "type": "table",
+            "section": "Core Pages 1-10 Mechanics - Uniform Revision",
+            "rows": [
+              [
+                "Format: Each page uses the same structure: feature title, trigger/use/cost, mechanical effect, scaling, limits, and examples where the original draft included them."
+              ]
+            ]
+          },
+          {
+            "type": "table",
+            "section": "Core Pages 1-10 Mechanics - Uniform Revision",
+            "rows": [
+              [
+                "Source Handling: Pages 2 and 5-10 were reformatted from the v7 mechanics draft. Pages 1, 3, and 4 were restored from the Codex master page materials and reduced to mechanics-facing entries."
+              ]
+            ]
+          }
+        ]
+      },
+      "pages": [
+        {
+          "page": 1,
+          "title": "The First Rune",
+          "subtitle": "Awakening the Arcane Flesh",
+          "blocks": [
+            {
+              "type": "heading",
+              "text": "Core Feature: First Rune Binding"
+            },
+            {
+              "type": "table",
+              "section": "Core Feature: First Rune Binding",
+              "rows": [
+                [
+                  "Rule",
+                  "Mechanic"
+                ],
+                [
+                  "Rune Selection",
+                  "Choose a 1st-level spell to inscribe as Syric's first rune."
+                ],
+                [
+                  "Component Change",
+                  "The rune replaces non-costly material components. Verbal and somatic components remain required."
+                ],
+                [
+                  "Binding Attempt",
+                  "Make an Arcana check. DC = 10 + spell level."
+                ],
+                [
+                  "Success",
+                  "The rune permanently links to Syric's essence."
+                ],
+                [
+                  "Failure",
+                  "The rune becomes Dormant for 24 hours."
+                ],
+                [
+                  "Forcing a Dormant Rune",
+                  "Syric may attempt to cast from a Dormant rune before the 24 hours end."
+                ],
+                [
+                  "Dormant Rune Save",
+                  "Constitution save. DC = 10 + spell level."
+                ],
+                [
+                  "Dormant Save Failure",
+                  "Syric takes 1d6 force damage per spell level and the spell fails."
+                ],
+                [
+                  "Dormant Save Success",
+                  "The spell resolves normally, but the rune remains Dormant until the 24 hours end."
+                ]
+              ]
+            }
+          ],
+          "search_text": "The First Rune\nAwakening the Arcane Flesh\nCore Feature: First Rune Binding\nRule\nMechanic\nRune Selection\nChoose a 1st-level spell to inscribe as Syric's first rune.\nComponent Change\nThe rune replaces non-costly material components. Verbal and somatic components remain required.\nBinding Attempt\nMake an Arcana check. DC = 10 + spell level.\nSuccess\nThe rune permanently links to Syric's essence.\nFailure\nThe rune becomes Dormant for 24 hours.\nForcing a Dormant Rune\nSyric may attempt to cast from a Dormant rune before the 24 hours end.\nDormant Rune Save\nConstitution save. DC = 10 + spell level.\nDormant Save Failure\nSyric takes 1d6 force damage per spell level and the spell fails.\nDormant Save Success\nThe spell resolves normally, but the rune remains Dormant until the 24 hours end."
+        },
+        {
+          "page": 2,
+          "title": "Inscription",
+          "subtitle": "Binding Magic to Flesh",
+          "blocks": [
+            {
+              "type": "heading",
+              "text": "Inscribing a Rune"
+            },
+            {
+              "type": "table",
+              "section": "Inscribing a Rune",
+              "rows": [
+                [
+                  "Rule",
+                  "Mechanic"
+                ],
+                [
+                  "Time Required",
+                  "1 hour per spell level."
+                ],
+                [
+                  "Minimum Time",
+                  "Cantrips require 30 minutes."
+                ],
+                [
+                  "Required Check",
+                  "Arcana check."
+                ],
+                [
+                  "DC",
+                  "10 + spell level."
+                ],
+                [
+                  "Success",
+                  "The spell is successfully inscribed as a rune."
+                ],
+                [
+                  "Failure",
+                  "The rune is unstable and cannot be used until Syric completes a long rest."
+                ]
+              ]
+            },
+            {
+              "type": "heading",
+              "text": "Arcane Charge"
+            },
+            {
+              "type": "table",
+              "section": "Arcane Charge",
+              "rows": [
+                [
+                  "Rule",
+                  "Mechanic"
+                ],
+                [
+                  "Charge Gain",
+                  "Each time Syric casts a leveled spell, he gains Arcane Charge equal to the spell's level."
+                ],
+                [
+                  "Tracking",
+                  "Arcane Charge is tracked as a running total."
+                ],
+                [
+                  "Reset",
+                  "Arcane Charge resets to 0 when it naturally dissipates, is fully vented, or Arcane Discharge occurs."
+                ]
+              ]
+            },
+            {
+              "type": "heading",
+              "text": "Overload - Arcane Threshold"
+            },
+            {
+              "type": "paragraph",
+              "section": "Overload - Arcane Threshold",
+              "text": "Overload occurs when Syric channels more arcane energy than his runes and body can safely contain."
+            },
+            {
+              "type": "table",
+              "section": "Overload - Arcane Threshold",
+              "rows": [
+                [
+                  "Rule",
+                  "Mechanic"
+                ],
+                [
+                  "Overload State Trigger",
+                  "Syric enters Overload when the total spell levels he casts in a single round equals or exceeds his Arcana Bonus. Shadow-cast spells using Syric’s slots count toward this total."
+                ],
+                [
+                  "Overload Check Trigger",
+                  "If Syric casts another leveled spell while in the Overload State, he must immediately make an Overload check."
+                ],
+                [
+                  "Required Check",
+                  "Arcana check."
+                ],
+                [
+                  "DC",
+                  "10 + total of spell levels."
+                ],
+                [
+                  "Minimum DC",
+                  "10."
+                ]
+              ]
+            },
+            {
+              "type": "heading",
+              "text": "Overload Outcomes"
+            },
+            {
+              "type": "table",
+              "section": "Overload Outcomes",
+              "rows": [
+                [
+                  "Result",
+                  "Outcome"
+                ],
+                [
+                  "Success",
+                  "Syric maintains control. He remains in the Overload State."
+                ],
+                [
+                  "Failure",
+                  "Arcane Discharge occurs."
+                ]
+              ]
+            },
+            {
+              "type": "heading",
+              "text": "Arcane Discharge"
+            },
+            {
+              "type": "table",
+              "section": "Arcane Discharge",
+              "rows": [
+                [
+                  "Rule",
+                  "Mechanic"
+                ],
+                [
+                  "Trigger",
+                  "Arcane Discharge occurs when Syric fails an Overload check."
+                ],
+                [
+                  "Area",
+                  "20-foot radius centered on Syric."
+                ],
+                [
+                  "Damage",
+                  "2 x spell levels stored force damage."
+                ],
+                [
+                  "Saving Throw",
+                  "Dexterity save for half damage."
+                ],
+                [
+                  "Save DC",
+                  "Syric's spell save DC."
+                ],
+                [
+                  "Syric's Save",
+                  "Syric automatically fails this saving throw and takes full damage."
+                ],
+                [
+                  "After Effect",
+                  "Arcane Rebound is triggered."
+                ],
+                [
+                  "Charge Reset",
+                  "Arcane Charge resets to 0 after Arcane Discharge."
+                ]
+              ]
+            },
+            {
+              "type": "heading",
+              "text": "Arcane Venting"
+            },
+            {
+              "type": "paragraph",
+              "section": "Arcane Venting",
+              "text": "Syric can actively vent stored arcane energy to reduce the risk of Overload."
+            },
+            {
+              "type": "table",
+              "section": "Arcane Venting",
+              "rows": [
+                [
+                  "Rule",
+                  "Mechanic"
+                ],
+                [
+                  "Activation",
+                  "Bonus action."
+                ],
+                [
+                  "Effect",
+                  "Syric rolls his Vent Die and reduces Arcane Charge by the result."
+                ],
+                [
+                  "Minimum Charge",
+                  "Arcane Charge cannot be reduced below 0."
+                ]
+              ]
+            },
+            {
+              "type": "heading",
+              "text": "Vent Die Scaling"
+            },
+            {
+              "type": "table",
+              "section": "Vent Die Scaling",
+              "rows": [
+                [
+                  "Syric Level",
+                  "Vent Die"
+                ],
+                [
+                  "5-10",
+                  "1d6"
+                ],
+                [
+                  "11-16",
+                  "2d6"
+                ],
+                [
+                  "17-20",
+                  "3d6"
+                ]
+              ]
+            },
+            {
+              "type": "heading",
+              "text": "Charge Dissipation"
+            },
+            {
+              "type": "table",
+              "section": "Charge Dissipation",
+              "rows": [
+                [
+                  "Rule",
+                  "Mechanic"
+                ],
+                [
+                  "Natural Dissipation",
+                  "Syric automatically dissipates charges equal to half his Vent Die result at the end of his turn. If Syric does not cast a leveled spell during a round, his Arcane Charge discharges at max Vent Die value."
+                ],
+                [
+                  "Charge State End",
+                  "When Arcane Charge resets to 0, the Charge State ends."
+                ]
+              ]
+            },
+            {
+              "type": "heading",
+              "text": "Quick Reference"
+            },
+            {
+              "type": "table",
+              "section": "Quick Reference",
+              "rows": [
+                [
+                  "Event",
+                  "Result"
+                ],
+                [
+                  "Arcane Charge builds",
+                  "Syric gains Charge equal to spell level when casting leveled spells."
+                ],
+                [
+                  "Overload State reached",
+                  "Syric becomes unstable but does not roll yet."
+                ],
+                [
+                  "Additional spell while overloaded",
+                  "Syric makes an Overload check."
+                ],
+                [
+                  "Overload success",
+                  "Syric maintains control."
+                ],
+                [
+                  "Overload failure",
+                  "Arcane Discharge + Arcane Rebound: roll on Arcane Rebound d100 table."
+                ]
+              ]
+            }
+          ],
+          "search_text": "Inscription\nBinding Magic to Flesh\nInscribing a Rune\nRule\nMechanic\nTime Required\n1 hour per spell level.\nMinimum Time\nCantrips require 30 minutes.\nRequired Check\nArcana check.\nDC\n10 + spell level.\nSuccess\nThe spell is successfully inscribed as a rune.\nFailure\nThe rune is unstable and cannot be used until Syric completes a long rest.\nArcane Charge\nRule\nMechanic\nCharge Gain\nEach time Syric casts a leveled spell, he gains Arcane Charge equal to the spell's level.\nTracking\nArcane Charge is tracked as a running total.\nReset\nArcane Charge resets to 0 when it naturally dissipates, is fully vented, or Arcane Discharge occurs.\nOverload - Arcane Threshold\nOverload occurs when Syric channels more arcane energy than his runes and body can safely contain.\nRule\nMechanic\nOverload State Trigger\nSyric enters Overload when the total spell levels he casts in a single round equals or exceeds his Arcana Bonus. Shadow-cast spells using Syric’s slots count toward this total.\nOverload Check Trigger\nIf Syric casts another leveled spell while in the Overload State, he must immediately make an Overload check.\nRequired Check\nArcana check.\nDC\n10 + total of spell levels.\nMinimum DC\n10.\nOverload Outcomes\nResult\nOutcome\nSuccess\nSyric maintains control. He remains in the Overload State.\nFailure\nArcane Discharge occurs.\nArcane Discharge\nRule\nMechanic\nTrigger\nArcane Discharge occurs when Syric fails an Overload check.\nArea\n20-foot radius centered on Syric.\nDamage\n2 x spell levels stored force damage.\nSaving Throw\nDexterity save for half damage.\nSave DC\nSyric's spell save DC.\nSyric's Save\nSyric automatically fails this saving throw and takes full damage.\nAfter Effect\nArcane Rebound is triggered.\nCharge Reset\nArcane Charge resets to 0 after Arcane Discharge.\nArcane Venting\nSyric can actively vent stored arcane energy to reduce the risk of Overload.\nRule\nMechanic\nActivation\nBonus action.\nEffect\nSyric rolls his Vent Die and reduces Arcane Charge by the result.\nMinimum Charge\nArcane Charge cannot be reduced below 0.\nVent Die Scaling\nSyric Level\nVent Die\n5-10\n1d6\n11-16\n2d6\n17-20\n3d6\nCharge Dissipation\nRule\nMechanic\nNatural Dissipation\nSyric automatically dissipates charges equal to half his Vent Die result at the end of his turn. If Syric does not cast a leveled spell during a round, his Arcane Charge discharges at max Vent Die value.\nCharge State End\nWhen Arcane Charge resets to 0, the Charge State ends.\nQuick Reference\nEvent\nResult\nArcane Charge builds\nSyric gains Charge equal to spell level when casting leveled spells.\nOverload State reached\nSyric becomes unstable but does not roll yet.\nAdditional spell while overloaded\nSyric makes an Overload check.\nOverload success\nSyric maintains control.\nOverload failure\nArcane Discharge + Arcane Rebound: roll on Arcane Rebound d100 table."
+        },
+        {
+          "page": 3,
+          "title": "Mastery",
+          "subtitle": "Deepening the Connection",
+          "blocks": [
+            {
+              "type": "heading",
+              "text": "Core Feature: Free Upcast"
+            },
+            {
+              "type": "table",
+              "section": "Core Feature: Free Upcast",
+              "rows": [
+                [
+                  "Rule",
+                  "Mechanic"
+                ],
+                [
+                  "Use",
+                  "Once per long rest, Syric may cast a spell using a spell slot one level higher than the slot he actually spends. The spell cannot be upcast beyond a spell level Syric is normally able to cast.\n\nAt levels 11–16, Syric may use this feature twice per long rest.\n\nAt levels 17–20, each use may upcast the spell by up to 2 levels instead of 1."
+                ],
+                [
+                  "Effect",
+                  "Syric can upcast any spell by one level for free."
+                ],
+                [
+                  "Slot Ceiling",
+                  "The upcast spell level cannot exceed a spell level for which Syric has slots."
+                ],
+                [
+                  "Required Slot",
+                  "Syric must have a spell slot available at the spell's original non-upcast level."
+                ],
+                [
+                  "Slot Spent",
+                  "The original non-upcast spell slot is consumed normally."
+                ],
+                [
+                  "Example",
+                  "Syric can cast Fireball at 4th level even if all 4th-level spell slots are used, but he must have a 3rd-level slot available, and that 3rd-level slot is consumed."
+                ]
+              ]
+            }
+          ],
+          "search_text": "Mastery\nDeepening the Connection\nCore Feature: Free Upcast\nRule\nMechanic\nUse\nOnce per long rest, Syric may cast a spell using a spell slot one level higher than the slot he actually spends. The spell cannot be upcast beyond a spell level Syric is normally able to cast.\n\nAt levels 11–16, Syric may use this feature twice per long rest.\n\nAt levels 17–20, each use may upcast the spell by up to 2 levels instead of 1.\nEffect\nSyric can upcast any spell by one level for free.\nSlot Ceiling\nThe upcast spell level cannot exceed a spell level for which Syric has slots.\nRequired Slot\nSyric must have a spell slot available at the spell's original non-upcast level.\nSlot Spent\nThe original non-upcast spell slot is consumed normally.\nExample\nSyric can cast Fireball at 4th level even if all 4th-level spell slots are used, but he must have a 3rd-level slot available, and that 3rd-level slot is consumed."
+        },
+        {
+          "page": 4,
+          "title": "Runic Flow",
+          "subtitle": "Magic as Natural Extension",
+          "blocks": [
+            {
+              "type": "heading",
+              "text": "Core Feature: Seamless Casting"
+            },
+            {
+              "type": "table",
+              "section": "Core Feature: Seamless Casting",
+              "rows": [
+                [
+                  "Rule",
+                  "Mechanic"
+                ],
+                [
+                  "Use",
+                  "Once per long rest, Syric may cast one inscribed rune spell without verbal or somatic components. The spell otherwise resolves normally.\n\nAt levels 11–16, Syric may use this feature twice per long rest. \n\nAt levels 17–20, Syric may use this feature three times per long rest."
+                ],
+                [
+                  "Effect",
+                  "Syric may cast one spell from one of his inscribed runes without verbal or somatic components."
+                ],
+                [
+                  "Material Components",
+                  "Material components remain normal per table rules."
+                ],
+                [
+                  "Resolution",
+                  "The spell otherwise resolves normally."
+                ],
+                [
+                  "Strain",
+                  "This seamless cast does not count as a strain effect. It does not change spell slot economy."
+                ],
+                [
+                  "Normal Limits",
+                  "It can share a round with other actions so long as Syric obeys all normal limits."
+                ]
+              ]
+            }
+          ],
+          "search_text": "Runic Flow\nMagic as Natural Extension\nCore Feature: Seamless Casting\nRule\nMechanic\nUse\nOnce per long rest, Syric may cast one inscribed rune spell without verbal or somatic components. The spell otherwise resolves normally.\n\nAt levels 11–16, Syric may use this feature twice per long rest. \n\nAt levels 17–20, Syric may use this feature three times per long rest.\nEffect\nSyric may cast one spell from one of his inscribed runes without verbal or somatic components.\nMaterial Components\nMaterial components remain normal per table rules.\nResolution\nThe spell otherwise resolves normally.\nStrain\nThis seamless cast does not count as a strain effect. It does not change spell slot economy.\nNormal Limits\nIt can share a round with other actions so long as Syric obeys all normal limits."
+        },
+        {
+          "page": 5,
+          "title": "The Price of Power",
+          "subtitle": "Codex Surge",
+          "blocks": [
+            {
+              "type": "table",
+              "section": "",
+              "rows": [
+                [
+                  "Design Goal: Page 5 is Syric's damage engine. It converts successful rune spell damage into extra damage after the spell connects, giving Syric a wizard-shaped answer to smite-style burst without using weapon attacks."
+                ]
+              ]
+            },
+            {
+              "type": "heading",
+              "text": "5A. Codex Dice"
+            },
+            {
+              "type": "paragraph",
+              "section": "5A. Codex Dice",
+              "text": "Feature: Syric gains a pool of Codex Dice. Each Codex Die is a d6; d10 with bonus action. Codex Dice regain after a long rest."
+            },
+            {
+              "type": "table",
+              "section": "5A. Codex Dice",
+              "rows": [
+                [
+                  "Syric Level",
+                  "Codex Dice per Long Rest"
+                ],
+                [
+                  "5-8",
+                  "6"
+                ],
+                [
+                  "9-12",
+                  "8"
+                ],
+                [
+                  "13-16",
+                  "10"
+                ],
+                [
+                  "17-19",
+                  "12"
+                ],
+                [
+                  "20",
+                  "14"
+                ]
+              ]
+            },
+            {
+              "type": "table",
+              "section": "5A. Codex Dice",
+              "rows": [
+                [
+                  "Rule",
+                  "Mechanic"
+                ],
+                [
+                  "Trigger",
+                  "When Syric casts an inscribed rune spell and the spell damages one or more creatures, he may spend Codex Dice to add extra damage to damaged creatures. Syric decides after he knows the spell damaged the target."
+                ],
+                [
+                  "Action Economy - Free Action",
+                  "No action, bonus action, or reaction required for d6. Limited to proficiency bonus dice per use."
+                ],
+                [
+                  "Action Economy - Bonus Action",
+                  "If Syric uses his Bonus Action instead, the damage dice become d10s and there is no limit on Codex Dice used."
+                ],
+                [
+                  "Damage Type",
+                  "The Codex Dice deal the same damage type as the spell. If the spell deals more than one damage type, Syric chooses one of those spell damage types for the Codex Dice."
+                ],
+                [
+                  "Scroll Rule",
+                  "Codex Surge does not work with scrolls."
+                ],
+                [
+                  "Example",
+                  "Syric casts Fireball at level 13. Syric spends 5 Codex Dice. Each enemy who failed the DC takes 5d6 additional damage, half as much on a success (as per the spell rules)."
+                ]
+              ]
+            },
+            {
+              "type": "heading",
+              "text": "5B. Echoed Rune"
+            },
+            {
+              "type": "table",
+              "section": "5B. Echoed Rune",
+              "rows": [
+                [
+                  "Rule",
+                  "Mechanic"
+                ],
+                [
+                  "Feature",
+                  "After Syric casts an inscribed rune spell that damages at least one creature, he may echo part of the spell into damaged creatures."
+                ],
+                [
+                  "Activation",
+                  "Bonus action, used after the original spell resolves."
+                ],
+                [
+                  "Cost",
+                  "Spend one spell slot that is half the level of the original spell slot used, rounded down, or higher, minimum 1st-level slot, and Codex Dice equal to the original spell's level.  If the original spell was a cantrip, Syric may use Echoed Rune without spending a spell slot."
+                ],
+                [
+                  "Uses",
+                  "Once per long rest. Two times at level 15. Three times at level 17."
+                ],
+                [
+                  "No New Roll",
+                  "Echoed Rune requires no new saving throw and no new attack roll."
+                ],
+                [
+                  "Damage",
+                  "If the original spell damaged the target(s), the echo automatically damages that same target(s). Echo damage equals half the original spell's rolled damage dice, rounded down. The echo uses the original spell's damage type."
+                ],
+                [
+                  "Example",
+                  "Syric casts a spell that deals 40 damage and pushes the target 10 feet. Echoed Rune deals 20 damage."
+                ]
+              ]
+            }
+          ],
+          "search_text": "The Price of Power\nCodex Surge\nDesign Goal: Page 5 is Syric's damage engine. It converts successful rune spell damage into extra damage after the spell connects, giving Syric a wizard-shaped answer to smite-style burst without using weapon attacks.\n5A. Codex Dice\nFeature: Syric gains a pool of Codex Dice. Each Codex Die is a d6; d10 with bonus action. Codex Dice regain after a long rest.\nSyric Level\nCodex Dice per Long Rest\n5-8\n6\n9-12\n8\n13-16\n10\n17-19\n12\n20\n14\nRule\nMechanic\nTrigger\nWhen Syric casts an inscribed rune spell and the spell damages one or more creatures, he may spend Codex Dice to add extra damage to damaged creatures. Syric decides after he knows the spell damaged the target.\nAction Economy - Free Action\nNo action, bonus action, or reaction required for d6. Limited to proficiency bonus dice per use.\nAction Economy - Bonus Action\nIf Syric uses his Bonus Action instead, the damage dice become d10s and there is no limit on Codex Dice used.\nDamage Type\nThe Codex Dice deal the same damage type as the spell. If the spell deals more than one damage type, Syric chooses one of those spell damage types for the Codex Dice.\nScroll Rule\nCodex Surge does not work with scrolls.\nExample\nSyric casts Fireball at level 13. Syric spends 5 Codex Dice. Each enemy who failed the DC takes 5d6 additional damage, half as much on a success (as per the spell rules).\n5B. Echoed Rune\nRule\nMechanic\nFeature\nAfter Syric casts an inscribed rune spell that damages at least one creature, he may echo part of the spell into damaged creatures.\nActivation\nBonus action, used after the original spell resolves.\nCost\nSpend one spell slot that is half the level of the original spell slot used, rounded down, or higher, minimum 1st-level slot, and Codex Dice equal to the original spell's level.  If the original spell was a cantrip, Syric may use Echoed Rune without spending a spell slot.\nUses\nOnce per long rest. Two times at level 15. Three times at level 17.\nNo New Roll\nEchoed Rune requires no new saving throw and no new attack roll.\nDamage\nIf the original spell damaged the target(s), the echo automatically damages that same target(s). Echo damage equals half the original spell's rolled damage dice, rounded down. The echo uses the original spell's damage type.\nExample\nSyric casts a spell that deals 40 damage and pushes the target 10 feet. Echoed Rune deals 20 damage."
+        },
+        {
+          "page": 6,
+          "title": "Duality of Runes",
+          "subtitle": "Veil and Reveal",
+          "blocks": [
+            {
+              "type": "heading",
+              "text": "Core Feature: Veil and Reveal"
+            },
+            {
+              "type": "table",
+              "section": "Core Feature: Veil and Reveal",
+              "rows": [
+                [
+                  "Rule",
+                  "Mechanic"
+                ],
+                [
+                  "Activation",
+                  "Free action."
+                ],
+                [
+                  "Effect",
+                  "Syric can hide or reveal his runes."
+                ],
+                [
+                  "Cost to Hide",
+                  "Syric takes 1d12 psychic damage each time he hides his runes."
+                ],
+                [
+                  "Duration",
+                  "Hidden runes last for 4 hours, then reveal again unless Syric chooses to hide them longer."
+                ],
+                [
+                  "Extension Cost",
+                  "If Syric keeps them hidden longer, he takes 1d12 psychic damage again per 4 hours."
+                ],
+                [
+                  "Uses",
+                  "Half proficiency bonus rounded down per long rest."
+                ]
+              ]
+            },
+            {
+              "type": "heading",
+              "text": "Veiled Runes"
+            },
+            {
+              "type": "table",
+              "section": "Veiled Runes",
+              "rows": [
+                [
+                  "Rule",
+                  "Mechanic"
+                ],
+                [
+                  "Visibility",
+                  "Runes do not visibly glow. Normal sight cannot see active rune flare from casting of magic."
+                ],
+                [
+                  "Detect Magic",
+                  "Detect Magic senses magic on Syric but does not show exact rune locations."
+                ],
+                [
+                  "Truesight",
+                  "Truesight, True Seeing, or similar features can still see the runes."
+                ],
+                [
+                  "Stealth Bonus",
+                  "Syric gains +10 to Stealth checks as if under Pass Without Trace spell."
+                ],
+                [
+                  "First Offensive Spell",
+                  "Syric gains advantage on his first spell attack roll, or he may impose disadvantage on the first saving throw against one of his spell save DCs."
+                ]
+              ]
+            },
+            {
+              "type": "heading",
+              "text": "Revealed Runes"
+            },
+            {
+              "type": "table",
+              "section": "Revealed Runes",
+              "rows": [
+                [
+                  "Rule",
+                  "Mechanic"
+                ],
+                [
+                  "Use",
+                  "Once per short rest."
+                ],
+                [
+                  "Effect",
+                  "Syric may intentionally reveal his hidden runes, causing them to visibly glow."
+                ],
+                [
+                  "Social Check",
+                  "When he does, he may use his Arcana skill as the modifier for one Intimidation or Persuasion check as the sudden display unsettles, impresses, or unnerves the target."
+                ]
+              ]
+            }
+          ],
+          "search_text": "Duality of Runes\nVeil and Reveal\nCore Feature: Veil and Reveal\nRule\nMechanic\nActivation\nFree action.\nEffect\nSyric can hide or reveal his runes.\nCost to Hide\nSyric takes 1d12 psychic damage each time he hides his runes.\nDuration\nHidden runes last for 4 hours, then reveal again unless Syric chooses to hide them longer.\nExtension Cost\nIf Syric keeps them hidden longer, he takes 1d12 psychic damage again per 4 hours.\nUses\nHalf proficiency bonus rounded down per long rest.\nVeiled Runes\nRule\nMechanic\nVisibility\nRunes do not visibly glow. Normal sight cannot see active rune flare from casting of magic.\nDetect Magic\nDetect Magic senses magic on Syric but does not show exact rune locations.\nTruesight\nTruesight, True Seeing, or similar features can still see the runes.\nStealth Bonus\nSyric gains +10 to Stealth checks as if under Pass Without Trace spell.\nFirst Offensive Spell\nSyric gains advantage on his first spell attack roll, or he may impose disadvantage on the first saving throw against one of his spell save DCs.\nRevealed Runes\nRule\nMechanic\nUse\nOnce per short rest.\nEffect\nSyric may intentionally reveal his hidden runes, causing them to visibly glow.\nSocial Check\nWhen he does, he may use his Arcana skill as the modifier for one Intimidation or Persuasion check as the sudden display unsettles, impresses, or unnerves the target."
+        },
+        {
+          "page": 7,
+          "title": "Runic Resurgence",
+          "subtitle": "Deathline Reflex and Spell Recall",
+          "blocks": [
+            {
+              "type": "heading",
+              "text": "7A. Deathline Reflex"
+            },
+            {
+              "type": "table",
+              "section": "7A. Deathline Reflex",
+              "rows": [
+                [
+                  "Rule",
+                  "Mechanic"
+                ],
+                [
+                  "Feature",
+                  "When Syric drops below half HP from damage, he may trigger one defensive reflex."
+                ],
+                [
+                  "Use",
+                  "Once per long rest. Two times at level 15. Three times at level 17."
+                ],
+                [
+                  "Activation",
+                  "Reaction. Roll 1d4 to see what the effect is."
+                ]
+              ]
+            },
+            {
+              "type": "table",
+              "section": "7A. Deathline Reflex",
+              "rows": [
+                [
+                  "d4",
+                  "Reflex Option",
+                  "Effect"
+                ],
+                [
+                  "1",
+                  "Runic Guard",
+                  "Gain temporary HP equal to 2d6 + Syric's wizard level."
+                ],
+                [
+                  "2",
+                  "Shadow Reposition",
+                  "Teleport up to 60 feet to a space Syric can see. Gain resistance to all damage types until the start of Syric's next turn."
+                ],
+                [
+                  "3",
+                  "Pain Conversion",
+                  "Gain resistance to the triggering damage type for 1 minute, including the triggering damage."
+                ],
+                [
+                  "4",
+                  "Spell Clutch",
+                  "Gains advantage on the saving throw against the triggering effect type for one minute. e.g. Spells, Piercing, Radiant, Etc."
+                ]
+              ]
+            },
+            {
+              "type": "heading",
+              "text": "7B. Spell Recall"
+            },
+            {
+              "type": "table",
+              "section": "7B. Spell Recall",
+              "rows": [
+                [
+                  "Rule",
+                  "Mechanic"
+                ],
+                [
+                  "Feature",
+                  "Syric can recall a known spell that he did not prepare for the day."
+                ],
+                [
+                  "Use",
+                  "Once per long rest. At level 15, Syric may use this feature twice per long rest. At level 17 or higher, Syric may use this feature three times per long rest. But the spell does NOT become a prepared spell."
+                ],
+                [
+                  "Activation",
+                  "No action required to recall the spell. The recalled spell is cast using its normal casting time."
+                ],
+                [
+                  "Requirements",
+                  "The spell must be a spell Syric knows, must be a spell level Syric can cast, must not have been prepared for that day, and Syric must have an available spell slot of that spell's level or higher."
+                ],
+                [
+                  "Cost",
+                  "The spell slot is spent normally. Syric takes psychic damage equal to the spell level as his mind strains to pull the unprepared spell into place."
+                ],
+                [
+                  "Preparation",
+                  "The recalled spell does not become prepared after casting."
+                ],
+                [
+                  "Example",
+                  "Syric knows Forcecage, but did not prepare it. He uses Spell Recall to cast it anyway, spends the 7th-level slot, and takes 7 psychic damage."
+                ]
+              ]
+            }
+          ],
+          "search_text": "Runic Resurgence\nDeathline Reflex and Spell Recall\n7A. Deathline Reflex\nRule\nMechanic\nFeature\nWhen Syric drops below half HP from damage, he may trigger one defensive reflex.\nUse\nOnce per long rest. Two times at level 15. Three times at level 17.\nActivation\nReaction. Roll 1d4 to see what the effect is.\nd4\nReflex Option\nEffect\n1\nRunic Guard\nGain temporary HP equal to 2d6 + Syric's wizard level.\n2\nShadow Reposition\nTeleport up to 60 feet to a space Syric can see. Gain resistance to all damage types until the start of Syric's next turn.\n3\nPain Conversion\nGain resistance to the triggering damage type for 1 minute, including the triggering damage.\n4\nSpell Clutch\nGains advantage on the saving throw against the triggering effect type for one minute. e.g. Spells, Piercing, Radiant, Etc.\n7B. Spell Recall\nRule\nMechanic\nFeature\nSyric can recall a known spell that he did not prepare for the day.\nUse\nOnce per long rest. At level 15, Syric may use this feature twice per long rest. At level 17 or higher, Syric may use this feature three times per long rest. But the spell does NOT become a prepared spell.\nActivation\nNo action required to recall the spell. The recalled spell is cast using its normal casting time.\nRequirements\nThe spell must be a spell Syric knows, must be a spell level Syric can cast, must not have been prepared for that day, and Syric must have an available spell slot of that spell's level or higher.\nCost\nThe spell slot is spent normally. Syric takes psychic damage equal to the spell level as his mind strains to pull the unprepared spell into place.\nPreparation\nThe recalled spell does not become prepared after casting.\nExample\nSyric knows Forcecage, but did not prepare it. He uses Spell Recall to cast it anyway, spends the 7th-level slot, and takes 7 psychic damage."
+        },
+        {
+          "page": 8,
+          "title": "Advanced Inscription",
+          "subtitle": "Hybrid Sigils and Resonance Shaping",
+          "blocks": [
+            {
+              "type": "heading",
+              "text": "8A. Resonance Points"
+            },
+            {
+              "type": "table",
+              "section": "8A. Resonance Points",
+              "rows": [
+                [
+                  "Rule",
+                  "Mechanic"
+                ],
+                [
+                  "Feature",
+                  "Syric gains Resonance Points equal to half his wizard level rounded up + his Intelligence modifier. Minimum 1."
+                ],
+                [
+                  "Recovery",
+                  "Syric regains all Resonance Points after a long rest."
+                ],
+                [
+                  "Example",
+                  "At wizard level 13 with Intelligence 20, Syric has 12 Resonance Points."
+                ],
+                [
+                  "Stacking Rule",
+                  "Syric may apply only one Resonance Technique to a spell unless a feature says otherwise. Codex Surge is not a Resonance Technique and can be added to the same spell."
+                ]
+              ]
+            },
+            {
+              "type": "heading",
+              "text": "8B. Resonance Techniques"
+            },
+            {
+              "type": "table",
+              "section": "8B. Resonance Techniques",
+              "rows": [
+                [
+                  "Technique",
+                  "Cost",
+                  "Mechanic"
+                ],
+                [
+                  "Split Rune",
+                  "Spell level in Resonance Points; cantrip costs 1.",
+                  "When Syric casts a spell that targets only one creature and does not have a range of self, he may target a second creature in range with the same spell."
+                ],
+                [
+                  "Sculpted Rune",
+                  "Spell level in Resonance Points; cantrip costs 1.",
+                  "When Syric casts an area spell, choose creatures Syric can see in the area up to proficiency bonus. Chosen creatures automatically succeed and take no damage if the spell normally deals half damage on a successful save."
+                ],
+                [
+                  "Transmuted Rune",
+                  "Spell level in Resonance Points; cantrip costs 1.",
+                  "When Syric casts a spell, he may change the damage type to another damage type approved by the DM for the spell pattern."
+                ],
+                [
+                  "Weighted Rune",
+                  "1 Resonance Point per die.",
+                  "When Syric rolls damage for a spell, he may reroll damage dice up to his Intelligence modifier. He must use the new rolls."
+                ],
+                [
+                  "Silent Ledger",
+                  "Spell level in Resonance Points; cantrip costs 1.",
+                  "Remove verbal and somatic components from one rune spell. Costly or consumed material components remain required."
+                ]
+              ]
+            },
+            {
+              "type": "heading",
+              "text": "8C. Hybrid Sigil"
+            },
+            {
+              "type": "table",
+              "section": "8C. Hybrid Sigil",
+              "rows": [
+                [
+                  "Rule",
+                  "Mechanic"
+                ],
+                [
+                  "Core Feature",
+                  "Syric can fuse two magical patterns into a single advanced effect."
+                ],
+                [
+                  "Trigger",
+                  "When Syric casts a spell using a spell slot, he may activate Hybrid Sigil and choose one Hybrid Variant below. Runic Interference is the exception and uses its own reaction trigger."
+                ],
+                [
+                  "Use",
+                  "Once per long rest. At level 15, Syric may use Hybrid Sigil twice per long rest. At level 18, Syric may use Hybrid Sigil three times per long rest."
+                ],
+                [
+                  "Arcana Check",
+                  "DC = 10 + the spell slot level used. On success, the Hybrid Variant works. On failure, the spell still casts normally but the Hybrid Variant fails. Failure by 5 or more also deals force damage to Syric equal to 2 x the spell slot level used."
+                ]
+              ]
+            },
+            {
+              "type": "table",
+              "section": "8C. Hybrid Sigil",
+              "rows": [
+                [
+                  "Hybrid Variant",
+                  "Activation",
+                  "Effect"
+                ],
+                [
+                  "Runic Ward",
+                  "As part of casting.",
+                  "Choose one ally Syric can see within 30 feet, or 60 feet at level 17. The ally gains +2 AC for 1d4 rounds, temporary HP equal to 2d6 + Syric's wizard level, and advantage on one d20 roll made within the next minute."
+                ],
+                [
+                  "Runic Momentum",
+                  "As part of casting.",
+                  "After the spell resolves, Syric teleports up to 60 feet to an unoccupied space he can see, or one willing ally Syric can see within 60 feet moves up to 15 feet without provoking opportunity attacks."
+                ],
+                [
+                  "Spell Fusion",
+                  "As part of casting.",
+                  "See Spell Fusion below."
+                ],
+                [
+                  "Runic Interference",
+                  "Reaction.",
+                  "When a visible creature within 150 feet takes an action. Roll 1d6."
+                ]
+              ]
+            },
+            {
+              "type": "heading",
+              "text": "Runic Interference Options (REACTION)"
+            },
+            {
+              "type": "table",
+              "section": "Runic Interference Options (REACTION)",
+              "rows": [
+                [
+                  "d6",
+                  "Option",
+                  "Effect"
+                ],
+                [
+                  "1",
+                  "Reaction Break",
+                  "The creature cannot take reactions until the start of Syric's next turn."
+                ],
+                [
+                  "2",
+                  "Arcane Trap",
+                  "Creatures take 3d8 + spell save DC force damage if they move prior to the start of Syric's next turn."
+                ],
+                [
+                  "3",
+                  "Attack Distortion",
+                  "All enemy's next d20 roll is made with disadvantage."
+                ],
+                [
+                  "4",
+                  "Save Distortion",
+                  "Syric and all allies gain advantage on the next d20 roll."
+                ],
+                [
+                  "5",
+                  "Arcane Snare",
+                  "Enemy's movement speed is reduced to 0 until the start of Syric's next turn."
+                ],
+                [
+                  "6",
+                  "Runic Fatigue",
+                  "Enemy suffers from lethargy until the start of Syric's next turn. It can only take 1 Action, a Bonus Action, or use movement."
+                ]
+              ]
+            },
+            {
+              "type": "heading",
+              "text": "Spell Fusion"
+            },
+            {
+              "type": "table",
+              "section": "Spell Fusion",
+              "rows": [
+                [
+                  "Rule",
+                  "Mechanic"
+                ],
+                [
+                  "Trigger",
+                  "When Syric casts an inscribed rune spell, he may fuse a second inscribed spell into the casting."
+                ],
+                [
+                  "Timing",
+                  "This can be added after the outcome is known of the spell save or attack roll."
+                ],
+                [
+                  "Cost",
+                  "Resonance Points equal to the combined levels of both spells."
+                ],
+                [
+                  "Primary Spell",
+                  "The first spell is the primary spell and resolves normally. It must be the higher-level of the two spells."
+                ],
+                [
+                  "Secondary Spell",
+                  "The second spell is the secondary spell and contributes one chosen property only from the spell's list of effects. Must be two different spells."
+                ],
+                [
+                  "Control",
+                  "The primary spell controls the spell's range, targets, attack roll, saving throw, and affected area."
+                ],
+                [
+                  "No Separate Effect",
+                  "The secondary spell does not create its own separate targeting, area, save, attack roll, or full spell effect."
+                ],
+                [
+                  "Affected Requirement",
+                  "A creature or object must be affected by the primary spell to be affected by the secondary property."
+                ]
+              ]
+            },
+            {
+              "type": "heading",
+              "text": "Secondary Property Options"
+            },
+            {
+              "type": "table",
+              "section": "Secondary Property Options",
+              "rows": [
+                [
+                  "Property",
+                  "Effect"
+                ],
+                [
+                  "Damage",
+                  "Add the secondary spell's damage dice."
+                ],
+                [
+                  "Defense",
+                  "Add one AC, resistance, or temporary HP effect."
+                ],
+                [
+                  "Movement",
+                  "Add one movement, teleport, or forced movement effect."
+                ],
+                [
+                  "Condition",
+                  "Add one condition from the secondary spell."
+                ],
+                [
+                  "Utility",
+                  "Add one non-damaging utility effect, such as invisibility or silence."
+                ]
+              ]
+            },
+            {
+              "type": "heading",
+              "text": "Hard Limits"
+            },
+            {
+              "type": "paragraph",
+              "section": "Hard Limits",
+              "text": "No second saving throw."
+            },
+            {
+              "type": "paragraph",
+              "section": "Hard Limits",
+              "text": "No second attack roll."
+            },
+            {
+              "type": "paragraph",
+              "section": "Hard Limits",
+              "text": "No extra targets."
+            },
+            {
+              "type": "paragraph",
+              "section": "Hard Limits",
+              "text": "No extra area."
+            },
+            {
+              "type": "paragraph",
+              "section": "Hard Limits",
+              "text": "No summons."
+            },
+            {
+              "type": "paragraph",
+              "section": "Hard Limits",
+              "text": "No created objects."
+            },
+            {
+              "type": "paragraph",
+              "section": "Hard Limits",
+              "text": "No ongoing spell zones unless the primary spell already creates one."
+            },
+            {
+              "type": "heading",
+              "text": "Examples"
+            },
+            {
+              "type": "table",
+              "section": "Examples",
+              "rows": [
+                [
+                  "Rule",
+                  "Mechanic"
+                ],
+                [
+                  "Misty Step + Invisibility",
+                  "Syric casts Misty Step as the primary spell and fuses Invisibility as the secondary spell. He spends 4 Resonance Points total. Syric teleports normally, then gains invisibility as the chosen secondary property. Result: Syric teleports and vanishes."
+                ],
+                [
+                  "Fireball + Lightning Bolt",
+                  "Syric casts Fireball as the primary spell and fuses Lightning Bolt as the secondary spell. He spends 6 Resonance Points total. Fireball controls the area, targets, and Dexterity saving throw. Any creature damaged by Fireball also takes Lightning Bolt damage as the chosen secondary property. Lightning Bolt does not create a line, does not use its own range, and does not force a second saving throw. Result: The Fireball explodes, and lightning detonates through every creature damaged by the blast."
+                ]
+              ]
+            }
+          ],
+          "search_text": "Advanced Inscription\nHybrid Sigils and Resonance Shaping\n8A. Resonance Points\nRule\nMechanic\nFeature\nSyric gains Resonance Points equal to half his wizard level rounded up + his Intelligence modifier. Minimum 1.\nRecovery\nSyric regains all Resonance Points after a long rest.\nExample\nAt wizard level 13 with Intelligence 20, Syric has 12 Resonance Points.\nStacking Rule\nSyric may apply only one Resonance Technique to a spell unless a feature says otherwise. Codex Surge is not a Resonance Technique and can be added to the same spell.\n8B. Resonance Techniques\nTechnique\nCost\nMechanic\nSplit Rune\nSpell level in Resonance Points; cantrip costs 1.\nWhen Syric casts a spell that targets only one creature and does not have a range of self, he may target a second creature in range with the same spell.\nSculpted Rune\nSpell level in Resonance Points; cantrip costs 1.\nWhen Syric casts an area spell, choose creatures Syric can see in the area up to proficiency bonus. Chosen creatures automatically succeed and take no damage if the spell normally deals half damage on a successful save.\nTransmuted Rune\nSpell level in Resonance Points; cantrip costs 1.\nWhen Syric casts a spell, he may change the damage type to another damage type approved by the DM for the spell pattern.\nWeighted Rune\n1 Resonance Point per die.\nWhen Syric rolls damage for a spell, he may reroll damage dice up to his Intelligence modifier. He must use the new rolls.\nSilent Ledger\nSpell level in Resonance Points; cantrip costs 1.\nRemove verbal and somatic components from one rune spell. Costly or consumed material components remain required.\n8C. Hybrid Sigil\nRule\nMechanic\nCore Feature\nSyric can fuse two magical patterns into a single advanced effect.\nTrigger\nWhen Syric casts a spell using a spell slot, he may activate Hybrid Sigil and choose one Hybrid Variant below. Runic Interference is the exception and uses its own reaction trigger.\nUse\nOnce per long rest. At level 15, Syric may use Hybrid Sigil twice per long rest. At level 18, Syric may use Hybrid Sigil three times per long rest.\nArcana Check\nDC = 10 + the spell slot level used. On success, the Hybrid Variant works. On failure, the spell still casts normally but the Hybrid Variant fails. Failure by 5 or more also deals force damage to Syric equal to 2 x the spell slot level used.\nHybrid Variant\nActivation\nEffect\nRunic Ward\nAs part of casting.\nChoose one ally Syric can see within 30 feet, or 60 feet at level 17. The ally gains +2 AC for 1d4 rounds, temporary HP equal to 2d6 + Syric's wizard level, and advantage on one d20 roll made within the next minute.\nRunic Momentum\nAs part of casting.\nAfter the spell resolves, Syric teleports up to 60 feet to an unoccupied space he can see, or one willing ally Syric can see within 60 feet moves up to 15 feet without provoking opportunity attacks.\nSpell Fusion\nAs part of casting.\nSee Spell Fusion below.\nRunic Interference\nReaction.\nWhen a visible creature within 150 feet takes an action. Roll 1d6.\nRunic Interference Options (REACTION)\nd6\nOption\nEffect\n1\nReaction Break\nThe creature cannot take reactions until the start of Syric's next turn.\n2\nArcane Trap\nCreatures take 3d8 + spell save DC force damage if they move prior to the start of Syric's next turn.\n3\nAttack Distortion\nAll enemy's next d20 roll is made with disadvantage.\n4\nSave Distortion\nSyric and all allies gain advantage on the next d20 roll.\n5\nArcane Snare\nEnemy's movement speed is reduced to 0 until the start of Syric's next turn.\n6\nRunic Fatigue\nEnemy suffers from lethargy until the start of Syric's next turn. It can only take 1 Action, a Bonus Action, or use movement.\nSpell Fusion\nRule\nMechanic\nTrigger\nWhen Syric casts an inscribed rune spell, he may fuse a second inscribed spell into the casting.\nTiming\nThis can be added after the outcome is known of the spell save or attack roll.\nCost\nResonance Points equal to the combined levels of both spells.\nPrimary Spell\nThe first spell is the primary spell and resolves normally. It must be the higher-level of the two spells.\nSecondary Spell\nThe second spell is the secondary spell and contributes one chosen property only from the spell's list of effects. Must be two different spells.\nControl\nThe primary spell controls the spell's range, targets, attack roll, saving throw, and affected area.\nNo Separate Effect\nThe secondary spell does not create its own separate targeting, area, save, attack roll, or full spell effect.\nAffected Requirement\nA creature or object must be affected by the primary spell to be affected by the secondary property.\nSecondary Property Options\nProperty\nEffect\nDamage\nAdd the secondary spell's damage dice.\nDefense\nAdd one AC, resistance, or temporary HP effect.\nMovement\nAdd one movement, teleport, or forced movement effect.\nCondition\nAdd one condition from the secondary spell.\nUtility\nAdd one non-damaging utility effect, such as invisibility or silence.\nHard Limits\nNo second saving throw.\nNo second attack roll.\nNo extra targets.\nNo extra area.\nNo summons.\nNo created objects.\nNo ongoing spell zones unless the primary spell already creates one.\nExamples\nRule\nMechanic\nMisty Step + Invisibility\nSyric casts Misty Step as the primary spell and fuses Invisibility as the secondary spell. He spends 4 Resonance Points total. Syric teleports normally, then gains invisibility as the chosen secondary property. Result: Syric teleports and vanishes.\nFireball + Lightning Bolt\nSyric casts Fireball as the primary spell and fuses Lightning Bolt as the secondary spell. He spends 6 Resonance Points total. Fireball controls the area, targets, and Dexterity saving throw. Any creature damaged by Fireball also takes Lightning Bolt damage as the chosen secondary property. Lightning Bolt does not create a line, does not use its own range, and does not force a second saving throw. Result: The Fireball explodes, and lightning detonates through every creature damaged by the blast."
+        },
+        {
+          "page": 9,
+          "title": "Arcane Devouring",
+          "subtitle": "Embodied Relic",
+          "blocks": [
+            {
+              "type": "table",
+              "section": "",
+              "rows": [
+                [
+                  "Design Goal: Syric does not merely learn spells or wield artifacts. He learns how to be artifacts. Arcane Devouring lets him permanently consume a magic item, destroy the object, and internalize its arcane properties as Living Rune functions."
+                ]
+              ]
+            },
+            {
+              "type": "heading",
+              "text": "9A. Devouring Ritual"
+            },
+            {
+              "type": "table",
+              "section": "9A. Devouring Ritual",
+              "rows": [
+                [
+                  "Rule",
+                  "Mechanic"
+                ],
+                [
+                  "Requirement",
+                  "Syric must be level 15 or higher, or must have unlocked this page through the Codex."
+                ],
+                [
+                  "Ritual Time",
+                  "8 hours of uninterrupted work."
+                ],
+                [
+                  "Object Requirement",
+                  "Syric must physically possess the magic item for the full ritual. If the item requires attunement, Syric must be attuned to it before the ritual begins."
+                ],
+                [
+                  "Destruction",
+                  "At the end of the ritual, the original item is destroyed. It cannot be repaired, restored, reforged, or made whole again by mundane crafting, Mending, Fabricate, Wish, or similar magic unless the DM creates a specific story exception."
+                ],
+                [
+                  "Effect",
+                  "On success, Syric absorbs all magical properties of the item. Those properties become part of his Living Runes and can be used without holding, wearing, or attuning to the destroyed object."
+                ],
+                [
+                  "Activation",
+                  "Absorbed powers keep the original item's activation type, action cost, charges, recharge timing, use limits, and restrictions unless the DM modifies them."
+                ],
+                [
+                  "Save DC and Attack Bonus",
+                  "Use the better of the item's listed DC/attack bonus or Syric's spell save DC/spell attack bonus."
+                ],
+                [
+                  "Body-as-Focus",
+                  "If the item was a wand, staff, rod, ring, cloak, robe, weapon, shield, or focus, Syric's body and runes replace the item as the point of use."
+                ]
+              ]
+            },
+            {
+              "type": "heading",
+              "text": "9B. Internal Attunement Slots"
+            },
+            {
+              "type": "table",
+              "section": "9B. Internal Attunement Slots",
+              "rows": [
+                [
+                  "Rule",
+                  "Mechanic"
+                ],
+                [
+                  "Bonus Slot",
+                  "Syric gains 1 additional internal attunement slot."
+                ],
+                [
+                  "Total Internal Slots",
+                  "Syric has a number of Internal Attunement Slots equal to RAW attunement slots, +1. These do not add to external slots."
+                ],
+                [
+                  "Attunement Items",
+                  "If the devoured item required attunement, its powers occupy 1 Internal Attunement Slot."
+                ],
+                [
+                  "Limit Meaning",
+                  "The destroyed object no longer requires attunement because the object no longer exists. The limit represents how many major item-patterns Syric can safely carry inside himself."
+                ],
+                [
+                  "No-Attunement Items",
+                  "A no-attunement magic item does not occupy an Internal Attunement Slot. Syric may devour any number of no-attunement magic items, but normal D&D stacking rules still apply. Identical bonuses do not stack unless the original items would have stacked."
+                ],
+                [
+                  "Consumables",
+                  "Consumables such as potions, spell scrolls, and single-use charms are not valid targets unless the DM allows the item to teach Syric a one-use pattern rather than a permanent property."
+                ]
+              ]
+            },
+            {
+              "type": "heading",
+              "text": "9C. Arcane Devouring Check"
+            },
+            {
+              "type": "paragraph",
+              "section": "9C. Arcane Devouring Check",
+              "text": "At the end of the ritual, Syric makes an Arcana check. The item is destroyed whether the check succeeds or fails."
+            },
+            {
+              "type": "table",
+              "section": "9C. Arcane Devouring Check",
+              "rows": [
+                [
+                  "Item Rarity",
+                  "Arcana DC"
+                ],
+                [
+                  "Common",
+                  "10"
+                ],
+                [
+                  "Uncommon",
+                  "12"
+                ],
+                [
+                  "Rare",
+                  "14"
+                ],
+                [
+                  "Very Rare",
+                  "16"
+                ],
+                [
+                  "Legendary",
+                  "20"
+                ],
+                [
+                  "Artifact",
+                  "28"
+                ]
+              ]
+            },
+            {
+              "type": "table",
+              "section": "9C. Arcane Devouring Check",
+              "rows": [
+                [
+                  "Rule",
+                  "Mechanic"
+                ],
+                [
+                  "Sentient Item Modifier",
+                  "+2 DC if the item is sentient."
+                ],
+                [
+                  "Cursed Item Modifier",
+                  "+2 DC if the item is cursed."
+                ],
+                [
+                  "Charges Modifier",
+                  "+3 DC if the item has charges."
+                ],
+                [
+                  "Attunement Advantage",
+                  "Advantage if Syric has been attuned to the item for at least 7 days."
+                ],
+                [
+                  "Story Use Advantage",
+                  "Advantage if Syric used the item in a major combat, ritual, or story moment."
+                ],
+                [
+                  "Unfamiliar Item Disadvantage",
+                  "Disadvantage if Syric has never used the item."
+                ]
+              ]
+            },
+            {
+              "type": "table",
+              "section": "9C. Arcane Devouring Check",
+              "rows": [
+                [
+                  "Result",
+                  "Outcome"
+                ],
+                [
+                  "Success",
+                  "The item is destroyed and Syric gains all magical properties. If it required attunement, it occupies 1 Internal Attunement Slot."
+                ],
+                [
+                  "Failure",
+                  "The item is destroyed and Syric gains no benefit. Syric takes force or psychic damage equal to 5 x rarity tier: common 5, uncommon 10, rare 15, very rare 20, legendary 25, artifact 30."
+                ],
+                [
+                  "Failure by 5 or More",
+                  "As failure, and Syric gains 1 level of exhaustion. One currently devoured item property becomes unavailable until the next long rest."
+                ],
+                [
+                  "Natural 1",
+                  "As failure, and one devoured no-attunement property of Syric's choice is permanently expelled. If he has none, one Internal Attunement Slot power becomes unavailable for 7 days."
+                ]
+              ]
+            },
+            {
+              "type": "heading",
+              "text": "9D. Cast to the Nether"
+            },
+            {
+              "type": "table",
+              "section": "9D. Cast to the Nether",
+              "rows": [
+                [
+                  "Rule",
+                  "Mechanic"
+                ],
+                [
+                  "Activation",
+                  "1-hour ritual."
+                ],
+                [
+                  "Effect",
+                  "Syric releases one absorbed relic pattern from his Living Runes."
+                ],
+                [
+                  "Result",
+                  "The power is permanently lost. The original item does not reform. Its arcane pattern disperses into the Nether, Void, Rift, or other campaign-specific beyond."
+                ],
+                [
+                  "Attunement Slot",
+                  "If the released power occupied an Internal Attunement Slot, that slot becomes available at the end of the ritual."
+                ],
+                [
+                  "Cost",
+                  "Syric takes force damage equal to 10 x the item's rarity tier and the effect encompasses a 20-foot radius. No save DC and no immunities negate or minimize the effects."
+                ],
+                [
+                  "Irrecoverable",
+                  "Once released, the same exact item's power cannot be recovered unless Syric finds another item with the same property and successfully devours it."
+                ]
+              ]
+            },
+            {
+              "type": "heading",
+              "text": "9E. Examples"
+            },
+            {
+              "type": "table",
+              "section": "9E. Examples",
+              "rows": [
+                [
+                  "Rule",
+                  "Mechanic"
+                ],
+                [
+                  "Staff of the Magi",
+                  "Syric devours the staff. The staff is destroyed, occupies 1 Internal Attunement Slot, and its spells, charges, spell absorption, and other properties become internal rune functions. Its powers use the staff's normal charge rules unless the DM modifies them."
+                ],
+                [
+                  "Ring of the Twilight Mind",
+                  "Syric devours the ring. The ring is destroyed and its dual concentration property becomes internal. If the ring required attunement, it occupies 1 Internal Attunement Slot. If Syric releases it later, the ability is gone and the ring does not return."
+                ]
+              ]
+            }
+          ],
+          "search_text": "Arcane Devouring\nEmbodied Relic\nDesign Goal: Syric does not merely learn spells or wield artifacts. He learns how to be artifacts. Arcane Devouring lets him permanently consume a magic item, destroy the object, and internalize its arcane properties as Living Rune functions.\n9A. Devouring Ritual\nRule\nMechanic\nRequirement\nSyric must be level 15 or higher, or must have unlocked this page through the Codex.\nRitual Time\n8 hours of uninterrupted work.\nObject Requirement\nSyric must physically possess the magic item for the full ritual. If the item requires attunement, Syric must be attuned to it before the ritual begins.\nDestruction\nAt the end of the ritual, the original item is destroyed. It cannot be repaired, restored, reforged, or made whole again by mundane crafting, Mending, Fabricate, Wish, or similar magic unless the DM creates a specific story exception.\nEffect\nOn success, Syric absorbs all magical properties of the item. Those properties become part of his Living Runes and can be used without holding, wearing, or attuning to the destroyed object.\nActivation\nAbsorbed powers keep the original item's activation type, action cost, charges, recharge timing, use limits, and restrictions unless the DM modifies them.\nSave DC and Attack Bonus\nUse the better of the item's listed DC/attack bonus or Syric's spell save DC/spell attack bonus.\nBody-as-Focus\nIf the item was a wand, staff, rod, ring, cloak, robe, weapon, shield, or focus, Syric's body and runes replace the item as the point of use.\n9B. Internal Attunement Slots\nRule\nMechanic\nBonus Slot\nSyric gains 1 additional internal attunement slot.\nTotal Internal Slots\nSyric has a number of Internal Attunement Slots equal to RAW attunement slots, +1. These do not add to external slots.\nAttunement Items\nIf the devoured item required attunement, its powers occupy 1 Internal Attunement Slot.\nLimit Meaning\nThe destroyed object no longer requires attunement because the object no longer exists. The limit represents how many major item-patterns Syric can safely carry inside himself.\nNo-Attunement Items\nA no-attunement magic item does not occupy an Internal Attunement Slot. Syric may devour any number of no-attunement magic items, but normal D&D stacking rules still apply. Identical bonuses do not stack unless the original items would have stacked.\nConsumables\nConsumables such as potions, spell scrolls, and single-use charms are not valid targets unless the DM allows the item to teach Syric a one-use pattern rather than a permanent property.\n9C. Arcane Devouring Check\nAt the end of the ritual, Syric makes an Arcana check. The item is destroyed whether the check succeeds or fails.\nItem Rarity\nArcana DC\nCommon\n10\nUncommon\n12\nRare\n14\nVery Rare\n16\nLegendary\n20\nArtifact\n28\nRule\nMechanic\nSentient Item Modifier\n+2 DC if the item is sentient.\nCursed Item Modifier\n+2 DC if the item is cursed.\nCharges Modifier\n+3 DC if the item has charges.\nAttunement Advantage\nAdvantage if Syric has been attuned to the item for at least 7 days.\nStory Use Advantage\nAdvantage if Syric used the item in a major combat, ritual, or story moment.\nUnfamiliar Item Disadvantage\nDisadvantage if Syric has never used the item.\nResult\nOutcome\nSuccess\nThe item is destroyed and Syric gains all magical properties. If it required attunement, it occupies 1 Internal Attunement Slot.\nFailure\nThe item is destroyed and Syric gains no benefit. Syric takes force or psychic damage equal to 5 x rarity tier: common 5, uncommon 10, rare 15, very rare 20, legendary 25, artifact 30.\nFailure by 5 or More\nAs failure, and Syric gains 1 level of exhaustion. One currently devoured item property becomes unavailable until the next long rest.\nNatural 1\nAs failure, and one devoured no-attunement property of Syric's choice is permanently expelled. If he has none, one Internal Attunement Slot power becomes unavailable for 7 days.\n9D. Cast to the Nether\nRule\nMechanic\nActivation\n1-hour ritual.\nEffect\nSyric releases one absorbed relic pattern from his Living Runes.\nResult\nThe power is permanently lost. The original item does not reform. Its arcane pattern disperses into the Nether, Void, Rift, or other campaign-specific beyond.\nAttunement Slot\nIf the released power occupied an Internal Attunement Slot, that slot becomes available at the end of the ritual.\nCost\nSyric takes force damage equal to 10 x the item's rarity tier and the effect encompasses a 20-foot radius. No save DC and no immunities negate or minimize the effects.\nIrrecoverable\nOnce released, the same exact item's power cannot be recovered unless Syric finds another item with the same property and successfully devours it.\n9E. Examples\nRule\nMechanic\nStaff of the Magi\nSyric devours the staff. The staff is destroyed, occupies 1 Internal Attunement Slot, and its spells, charges, spell absorption, and other properties become internal rune functions. Its powers use the staff's normal charge rules unless the DM modifies them.\nRing of the Twilight Mind\nSyric devours the ring. The ring is destroyed and its dual concentration property becomes internal. If the ring required attunement, it occupies 1 Internal Attunement Slot. If Syric releases it later, the ability is gone and the ring does not return."
+        },
+        {
+          "page": 10,
+          "title": "Ascension",
+          "subtitle": "Ascendant Rune Casting",
+          "blocks": [
+            {
+              "type": "heading",
+              "text": "Core Feature: Ascendant Rune Casting"
+            },
+            {
+              "type": "table",
+              "section": "Core Feature: Ascendant Rune Casting",
+              "rows": [
+                [
+                  "Rule",
+                  "Mechanic"
+                ],
+                [
+                  "Feature",
+                  "Syric's rune magic becomes naturally silent and hidden. He can reveal the runes but no longer strains to keep them hidden."
+                ],
+                [
+                  "Component Rule",
+                  "When Syric casts an inscribed rune spell, it does not require verbal components, somatic components, or non-costly material components. A component is non-costly only if it has no listed gold value and is not consumed. Costly or consumed components are still required, based on table rules."
+                ],
+                [
+                  "Rune Visibility",
+                  "Syric's runes are muted by default. They can only be seen by Truesight, True Seeing, or a feature that specifically reveals hidden magical markings. They can be sensed by Detect Magic with a successful Arcana check against Syric's spell save DC."
+                ],
+                [
+                  "Exhaustion Rule",
+                  "Syric no longer gains exhaustion from normal Codex spellcasting strain. He can still gain exhaustion from Hybrid Sigil, Overload, failed rituals, and normal adventuring effects."
+                ],
+                [
+                  "Social Penalty",
+                  "Syric has disadvantage on Charisma checks with common mundane NPCs if his deathless or rune nature is obvious. No penalty applies if his runes are muted and he appears normal."
+                ],
+                [
+                  "Rune Mastery",
+                  "Pick three spells of level 3 or lower to be treated as cantrips for the day. Or, pick one 4th- to 7th-level spell to be treated as a cantrip for the day."
+                ]
+              ]
+            },
+            {
+              "type": "heading",
+              "text": "Codex Die Upgrade"
+            },
+            {
+              "type": "table",
+              "section": "Codex Die Upgrade",
+              "rows": [
+                [
+                  "Rule",
+                  "Mechanic"
+                ],
+                [
+                  "Codex Die Size",
+                  "Codex Dice become d8."
+                ],
+                [
+                  "Minimum Roll",
+                  "Any 1 or 2 rolled on Codex Dice become 3s."
+                ],
+                [
+                  "Maximized Dice",
+                  "One damage die per spell level is maximized. Example: if Syric casts a 5th-level spell and uses 10 Codex Dice, 5 of the dice are automatically 8s. The remainder are rolled normally."
+                ]
+              ]
+            },
+            {
+              "type": "heading",
+              "text": "Core Page Quick Reference"
+            },
+            {
+              "type": "table",
+              "section": "Core Page Quick Reference",
+              "rows": [
+                [
+                  "Page",
+                  "Feature",
+                  "Table-Facing Function"
+                ],
+                [
+                  "1",
+                  "The First Rune",
+                  "Bind the first rune; dormant failures can be forced at risk."
+                ],
+                [
+                  "2",
+                  "Inscription",
+                  "Spend 1 hour per spell level; Overload punishes compressed overcasting."
+                ],
+                [
+                  "3",
+                  "Free Upcast",
+                  "Once per long rest, upcast one spell by one level for free."
+                ],
+                [
+                  "4",
+                  "Seamless Casting",
+                  "Once per long rest, cast one inscribed rune spell without verbal/somatic components."
+                ],
+                [
+                  "5",
+                  "Codex Surge and Echoed Rune",
+                  "Spend Codex Dice to add damage after a rune spell damages a target; use Echoed Rune to bonus-action repeat damage and proportional movement."
+                ],
+                [
+                  "6",
+                  "Veil and Reveal",
+                  "Hide or reveal rune glow; once per short rest gain advantage on a rune-related social or Arcana check."
+                ],
+                [
+                  "7",
+                  "Deathline Reflex and Spell Recall",
+                  "Defensive reaction below half HP and limited casting of known but unprepared spells."
+                ],
+                [
+                  "8",
+                  "Hybrid Sigils and Resonance Shaping",
+                  "Use Resonance Points for Codex metamagic and Hybrid Sigils for tactical spell fusion."
+                ],
+                [
+                  "9",
+                  "Arcane Devouring",
+                  "Destroy magic items and internalize their arcane properties as Living Rune functions."
+                ],
+                [
+                  "10",
+                  "Ascendant Rune Casting",
+                  "Internalized casting, muted runes, component reduction, and reduced strain."
+                ]
+              ]
+            },
+            {
+              "type": "heading",
+              "text": "Action Economy Snapshot"
+            },
+            {
+              "type": "table",
+              "section": "Action Economy Snapshot",
+              "rows": [
+                [
+                  "Action Type",
+                  "Codex Uses in This Revision"
+                ],
+                [
+                  "No Action",
+                  "Spell Recall to recall the spell. Recalled spell still uses normal casting time."
+                ],
+                [
+                  "Free Action",
+                  "Veil/Reveal runes. Codex Surge d6 option."
+                ],
+                [
+                  "Bonus Action",
+                  "Arcane Venting. Codex Surge d10 option. Echoed Rune / High Rune Echo."
+                ],
+                [
+                  "Reaction",
+                  "Deathline Reflex. Runic Interference. Some Shadow-linked effects may also use reaction outside this Codex document."
+                ],
+                [
+                  "Long Ritual",
+                  "Rune inscription, Arcane Devouring, and Cast to the Nether."
+                ]
+              ]
+            }
+          ],
+          "search_text": "Ascension\nAscendant Rune Casting\nCore Feature: Ascendant Rune Casting\nRule\nMechanic\nFeature\nSyric's rune magic becomes naturally silent and hidden. He can reveal the runes but no longer strains to keep them hidden.\nComponent Rule\nWhen Syric casts an inscribed rune spell, it does not require verbal components, somatic components, or non-costly material components. A component is non-costly only if it has no listed gold value and is not consumed. Costly or consumed components are still required, based on table rules.\nRune Visibility\nSyric's runes are muted by default. They can only be seen by Truesight, True Seeing, or a feature that specifically reveals hidden magical markings. They can be sensed by Detect Magic with a successful Arcana check against Syric's spell save DC.\nExhaustion Rule\nSyric no longer gains exhaustion from normal Codex spellcasting strain. He can still gain exhaustion from Hybrid Sigil, Overload, failed rituals, and normal adventuring effects.\nSocial Penalty\nSyric has disadvantage on Charisma checks with common mundane NPCs if his deathless or rune nature is obvious. No penalty applies if his runes are muted and he appears normal.\nRune Mastery\nPick three spells of level 3 or lower to be treated as cantrips for the day. Or, pick one 4th- to 7th-level spell to be treated as a cantrip for the day.\nCodex Die Upgrade\nRule\nMechanic\nCodex Die Size\nCodex Dice become d8.\nMinimum Roll\nAny 1 or 2 rolled on Codex Dice become 3s.\nMaximized Dice\nOne damage die per spell level is maximized. Example: if Syric casts a 5th-level spell and uses 10 Codex Dice, 5 of the dice are automatically 8s. The remainder are rolled normally.\nCore Page Quick Reference\nPage\nFeature\nTable-Facing Function\n1\nThe First Rune\nBind the first rune; dormant failures can be forced at risk.\n2\nInscription\nSpend 1 hour per spell level; Overload punishes compressed overcasting.\n3\nFree Upcast\nOnce per long rest, upcast one spell by one level for free.\n4\nSeamless Casting\nOnce per long rest, cast one inscribed rune spell without verbal/somatic components.\n5\nCodex Surge and Echoed Rune\nSpend Codex Dice to add damage after a rune spell damages a target; use Echoed Rune to bonus-action repeat damage and proportional movement.\n6\nVeil and Reveal\nHide or reveal rune glow; once per short rest gain advantage on a rune-related social or Arcana check.\n7\nDeathline Reflex and Spell Recall\nDefensive reaction below half HP and limited casting of known but unprepared spells.\n8\nHybrid Sigils and Resonance Shaping\nUse Resonance Points for Codex metamagic and Hybrid Sigils for tactical spell fusion.\n9\nArcane Devouring\nDestroy magic items and internalize their arcane properties as Living Rune functions.\n10\nAscendant Rune Casting\nInternalized casting, muted runes, component reduction, and reduced strain.\nAction Economy Snapshot\nAction Type\nCodex Uses in This Revision\nNo Action\nSpell Recall to recall the spell. Recalled spell still uses normal casting time.\nFree Action\nVeil/Reveal runes. Codex Surge d6 option.\nBonus Action\nArcane Venting. Codex Surge d10 option. Echoed Rune / High Rune Echo.\nReaction\nDeathline Reflex. Runic Interference. Some Shadow-linked effects may also use reaction outside this Codex document.\nLong Ritual\nRune inscription, Arcane Devouring, and Cast to the Nether."
+        }
+      ]
+    },
+    {
+      "id": "codex_nyx_teachings",
+      "title": "Codex Teachings",
+      "subtitle": "Pure Nyx Teachings",
+      "kind": "codex",
+      "scope": [
+        "syric",
+        "dm"
+      ],
+      "source_file": "Codex_Pure_Nyx_Teachings (1).docx",
+      "pages": [
+        {
+          "page": 1,
+          "title": "The First Rune",
+          "subtitle": "Awakening the Arcane Flesh",
+          "blocks": [
+            {
+              "type": "paragraph",
+              "text": "Set this page down if you came to be crowned. I do not crown appetite. I weigh it."
+            },
+            {
+              "type": "paragraph",
+              "text": "The first rune is not permission to command the world. It is the first place where the world is permitted to answer you. Skin is honest in ways the tongue is not. It flinches, warms, scars, remembers. Let the first mark be made where your pulse cannot deny it heard the bargain."
+            },
+            {
+              "type": "paragraph",
+              "text": "Choose no spell for splendor. Choose the truth you are willing to carry when no witness praises you. A veil confesses that safety may require another face. A ward confesses that fear may be disciplined into shelter. Flame confesses the wish to end what stands before you. I do not despise a hard truth. I despise a false one dressed in devotion."
+            },
+            {
+              "type": "paragraph",
+              "text": "Do not borrow a vow. Do not bleed for a promise another mouth made. The rune will not ask whose house taught you, whose god claimed you, whose master praised your hand. It will ask only this: did you know the cost before the line was closed?"
+            },
+            {
+              "type": "paragraph",
+              "text": "If the ink refuses, let it refuse. If the flesh rejects, let the hour die. A failed beginning can be buried cleanly. A forced beginning grows teeth."
+            },
+            {
+              "type": "paragraph",
+              "text": "Carry this first truth beneath the skin: magic does not become yours because you marked the body. It becomes answerable because the body can no longer pretend it was elsewhere."
+            },
+            {
+              "type": "paragraph",
+              "text": "◆  ◇  ◆"
+            }
+          ],
+          "search_text": "The First Rune\nAwakening the Arcane Flesh\nSet this page down if you came to be crowned. I do not crown appetite. I weigh it.\nThe first rune is not permission to command the world. It is the first place where the world is permitted to answer you. Skin is honest in ways the tongue is not. It flinches, warms, scars, remembers. Let the first mark be made where your pulse cannot deny it heard the bargain.\nChoose no spell for splendor. Choose the truth you are willing to carry when no witness praises you. A veil confesses that safety may require another face. A ward confesses that fear may be disciplined into shelter. Flame confesses the wish to end what stands before you. I do not despise a hard truth. I despise a false one dressed in devotion.\nDo not borrow a vow. Do not bleed for a promise another mouth made. The rune will not ask whose house taught you, whose god claimed you, whose master praised your hand. It will ask only this: did you know the cost before the line was closed?\nIf the ink refuses, let it refuse. If the flesh rejects, let the hour die. A failed beginning can be buried cleanly. A forced beginning grows teeth.\nCarry this first truth beneath the skin: magic does not become yours because you marked the body. It becomes answerable because the body can no longer pretend it was elsewhere.\n◆  ◇  ◆"
+        },
+        {
+          "page": 2,
+          "title": "Inscription",
+          "subtitle": "Binding Magic to Flesh",
+          "blocks": [
+            {
+              "type": "paragraph",
+              "text": "Time is the first currency. Spend it awake."
+            },
+            {
+              "type": "paragraph",
+              "text": "The hour is not delay. The hour is the price becoming visible. Each stroke teaches the spell where it must live: nerve, blood, breath, memory, hunger, restraint. Rush one chamber, and the house will learn to burn from within."
+            },
+            {
+              "type": "paragraph",
+              "text": "Paint may flatter the skin. Pain may flatter the pride. Neither is binding. Binding begins when the mark is no longer an image but a resident, when the spell stops lying upon the body and begins answering from it."
+            },
+            {
+              "type": "paragraph",
+              "text": "Let another hand guide the needle if your own cannot. Let another breath steady yours if terror breaks the rhythm. But let no one else own the vow. Borrowed patience becomes debt. Borrowed courage becomes theater. Borrowed consequence becomes theft."
+            },
+            {
+              "type": "paragraph",
+              "text": "In the last minute of every hour, be still. Do not correct the line. Do not bargain with the ache. Do not promise what the previous fifty-nine minutes failed to prove. Stillness is the small court where haste is judged."
+            },
+            {
+              "type": "paragraph",
+              "text": "Know your runes as chambers of one living house. Force too much through them, and every door will open together. You will call it power until your own body becomes the doorway it escapes through."
+            },
+            {
+              "type": "paragraph",
+              "text": "Carry this second truth: what is inscribed upon flesh must also be inscribed upon patience, or the mark is only vanity wearing a wound."
+            },
+            {
+              "type": "paragraph",
+              "text": "◆  ◇  ◆"
+            }
+          ],
+          "search_text": "Inscription\nBinding Magic to Flesh\nTime is the first currency. Spend it awake.\nThe hour is not delay. The hour is the price becoming visible. Each stroke teaches the spell where it must live: nerve, blood, breath, memory, hunger, restraint. Rush one chamber, and the house will learn to burn from within.\nPaint may flatter the skin. Pain may flatter the pride. Neither is binding. Binding begins when the mark is no longer an image but a resident, when the spell stops lying upon the body and begins answering from it.\nLet another hand guide the needle if your own cannot. Let another breath steady yours if terror breaks the rhythm. But let no one else own the vow. Borrowed patience becomes debt. Borrowed courage becomes theater. Borrowed consequence becomes theft.\nIn the last minute of every hour, be still. Do not correct the line. Do not bargain with the ache. Do not promise what the previous fifty-nine minutes failed to prove. Stillness is the small court where haste is judged.\nKnow your runes as chambers of one living house. Force too much through them, and every door will open together. You will call it power until your own body becomes the doorway it escapes through.\nCarry this second truth: what is inscribed upon flesh must also be inscribed upon patience, or the mark is only vanity wearing a wound.\n◆  ◇  ◆"
+        },
+        {
+          "page": 3,
+          "title": "Mastery",
+          "subtitle": "Deepening the Connection",
+          "blocks": [
+            {
+              "type": "paragraph",
+              "text": "Power that must announce itself is still afraid of being ignored."
+            },
+            {
+              "type": "paragraph",
+              "text": "You ask to deepen the rune. First deepen the silence around it. Refinement is not more brilliance. It is less waste. It is the trimming of every flourish that does not carry consequence. It is the hand learning not to tremble simply because it is watched."
+            },
+            {
+              "type": "paragraph",
+              "text": "Duel the mirror that agrees with you. It will praise every habit that makes you grand and every excess that makes you feel chosen. Break those habits without applause. A spell that answers your vanity will betray your purpose the moment purpose grows quiet."
+            },
+            {
+              "type": "paragraph",
+              "text": "Do not mistake growth for hunger made respectable. Hunger always wants another level, another blaze, another witness, another proof that the last proof was not enough. Mastery asks a colder question: can the same breath bear greater weight without becoming louder?"
+            },
+            {
+              "type": "paragraph",
+              "text": "When a rune settles so deeply that you stop admiring it, then it may be strengthened. When the mark feels less like treasure and more like bone, then it has begun to belong."
+            },
+            {
+              "type": "paragraph",
+              "text": "Carry this third truth: a greater working is not always more magic. Sometimes it is the same magic with the foolish parts removed."
+            },
+            {
+              "type": "paragraph",
+              "text": "◆  ◇  ◆"
+            }
+          ],
+          "search_text": "Mastery\nDeepening the Connection\nPower that must announce itself is still afraid of being ignored.\nYou ask to deepen the rune. First deepen the silence around it. Refinement is not more brilliance. It is less waste. It is the trimming of every flourish that does not carry consequence. It is the hand learning not to tremble simply because it is watched.\nDuel the mirror that agrees with you. It will praise every habit that makes you grand and every excess that makes you feel chosen. Break those habits without applause. A spell that answers your vanity will betray your purpose the moment purpose grows quiet.\nDo not mistake growth for hunger made respectable. Hunger always wants another level, another blaze, another witness, another proof that the last proof was not enough. Mastery asks a colder question: can the same breath bear greater weight without becoming louder?\nWhen a rune settles so deeply that you stop admiring it, then it may be strengthened. When the mark feels less like treasure and more like bone, then it has begun to belong.\nCarry this third truth: a greater working is not always more magic. Sometimes it is the same magic with the foolish parts removed.\n◆  ◇  ◆"
+        },
+        {
+          "page": 4,
+          "title": "Runic Flow",
+          "subtitle": "Magic as Natural Extension",
+          "blocks": [
+            {
+              "type": "paragraph",
+              "text": "Intent that needs no herald is the gentlest weight the world will ever feel."
+            },
+            {
+              "type": "paragraph",
+              "text": "A word is not sin. A gesture is not shame. But every sound that does not carry the work is debt. Every motion thrown where stillness would have served is tax. Learn the difference before you call silence mastery."
+            },
+            {
+              "type": "paragraph",
+              "text": "There is a point finer than breath where will and world agree on what should happen. You will miss it if you love the display. You will miss it if you cast to be seen casting. Seek the point where the act is already finished inside you, then let the world discover it has agreed."
+            },
+            {
+              "type": "paragraph",
+              "text": "Do not confuse secrecy with grace. I do not ask you to be unseen. I ask you to be unwasteful. A hidden hand can still be vain. A quiet spell can still be theft. Let the measure be what remains after the working, not how little anyone noticed while you did it."
+            },
+            {
+              "type": "paragraph",
+              "text": "When power can pass through a crowded room and no cup trembles, you have not become small. You have become precise."
+            },
+            {
+              "type": "paragraph",
+              "text": "Carry this fourth truth: the cleanest spell is not the one without sign. It is the one without ornament."
+            },
+            {
+              "type": "paragraph",
+              "text": "◆  ◇  ◆"
+            }
+          ],
+          "search_text": "Runic Flow\nMagic as Natural Extension\nIntent that needs no herald is the gentlest weight the world will ever feel.\nA word is not sin. A gesture is not shame. But every sound that does not carry the work is debt. Every motion thrown where stillness would have served is tax. Learn the difference before you call silence mastery.\nThere is a point finer than breath where will and world agree on what should happen. You will miss it if you love the display. You will miss it if you cast to be seen casting. Seek the point where the act is already finished inside you, then let the world discover it has agreed.\nDo not confuse secrecy with grace. I do not ask you to be unseen. I ask you to be unwasteful. A hidden hand can still be vain. A quiet spell can still be theft. Let the measure be what remains after the working, not how little anyone noticed while you did it.\nWhen power can pass through a crowded room and no cup trembles, you have not become small. You have become precise.\nCarry this fourth truth: the cleanest spell is not the one without sign. It is the one without ornament.\n◆  ◇  ◆"
+        },
+        {
+          "page": 5,
+          "title": "The Price Of Power",
+          "subtitle": "Codex Surge",
+          "blocks": [
+            {
+              "type": "paragraph",
+              "text": "Certainty is a blade. Hold it by the hilt, not the edge."
+            },
+            {
+              "type": "paragraph",
+              "text": "There will come an hour when chance offends you, when the trembling of a spell feels like insult, when failure would tilt more than pride. In that hour you may purchase certainty. But do not dare call the purchase free because the coin is hidden beneath your skin."
+            },
+            {
+              "type": "paragraph",
+              "text": "Pain is not proof of righteousness. Blood is not virtue. Suffering is not a crown. These are only payments, and payments may be wise or foolish. Spend only when the outcome is worth the wound, and name the wound before it opens."
+            },
+            {
+              "type": "paragraph",
+              "text": "Those who buy power to decorate themselves become ledgers full of unpaid ink. Those who buy power to restore what would otherwise break may stand before me without lowering their eyes."
+            },
+            {
+              "type": "paragraph",
+              "text": "Do not become addicted to the clean answer. A perfect strike can still serve a crooked hunger. A failed spell can still reveal the honest path. The scale does not love success. It loves balance."
+            },
+            {
+              "type": "paragraph",
+              "text": "Carry this fifth truth: when you demand certainty from the Codex, the Codex demands a receipt from you."
+            },
+            {
+              "type": "paragraph",
+              "text": "◆  ◇  ◆"
+            }
+          ],
+          "search_text": "The Price Of Power\nCodex Surge\nCertainty is a blade. Hold it by the hilt, not the edge.\nThere will come an hour when chance offends you, when the trembling of a spell feels like insult, when failure would tilt more than pride. In that hour you may purchase certainty. But do not dare call the purchase free because the coin is hidden beneath your skin.\nPain is not proof of righteousness. Blood is not virtue. Suffering is not a crown. These are only payments, and payments may be wise or foolish. Spend only when the outcome is worth the wound, and name the wound before it opens.\nThose who buy power to decorate themselves become ledgers full of unpaid ink. Those who buy power to restore what would otherwise break may stand before me without lowering their eyes.\nDo not become addicted to the clean answer. A perfect strike can still serve a crooked hunger. A failed spell can still reveal the honest path. The scale does not love success. It loves balance.\nCarry this fifth truth: when you demand certainty from the Codex, the Codex demands a receipt from you.\n◆  ◇  ◆"
+        },
+        {
+          "page": 6,
+          "title": "Duality Of Runes",
+          "subtitle": "Veil and Reveal",
+          "blocks": [
+            {
+              "type": "paragraph",
+              "text": "A hidden truth is still truth. A hidden theft is still theft."
+            },
+            {
+              "type": "paragraph",
+              "text": "You will learn to dim the mark and think yourself subtle. Good. Then you will learn why subtlety is not innocence. The veil is lawful when it shelters what would be destroyed by careless light. The veil is corruption when it hides what should be returned."
+            },
+            {
+              "type": "paragraph",
+              "text": "Do not let bright souls teach you that every secret is a sin. Do not let dark souls teach you that every secret is wisdom. A secret is a vessel. Weigh what it carries. If it carries safety, keep it. If it carries shame that belongs to another, open it. If it carries your vanity, break it before it breeds."
+            },
+            {
+              "type": "paragraph",
+              "text": "Reveal without cruelty. Conceal without theft. Speak truth when truth restores. Keep silence when speech would only feed the speaker. The tongue, too, is a rune. It casts more often than the hand."
+            },
+            {
+              "type": "paragraph",
+              "text": "Your marks may glow, fade, hide, flare, or sleep. None of these states proves honesty. Only the consequence proves honesty."
+            },
+            {
+              "type": "paragraph",
+              "text": "Carry this sixth truth: shadow is not the enemy of light. Shadow is the shape light leaves when it meets something real."
+            },
+            {
+              "type": "paragraph",
+              "text": "◆  ◇  ◆"
+            }
+          ],
+          "search_text": "Duality Of Runes\nVeil and Reveal\nA hidden truth is still truth. A hidden theft is still theft.\nYou will learn to dim the mark and think yourself subtle. Good. Then you will learn why subtlety is not innocence. The veil is lawful when it shelters what would be destroyed by careless light. The veil is corruption when it hides what should be returned.\nDo not let bright souls teach you that every secret is a sin. Do not let dark souls teach you that every secret is wisdom. A secret is a vessel. Weigh what it carries. If it carries safety, keep it. If it carries shame that belongs to another, open it. If it carries your vanity, break it before it breeds.\nReveal without cruelty. Conceal without theft. Speak truth when truth restores. Keep silence when speech would only feed the speaker. The tongue, too, is a rune. It casts more often than the hand.\nYour marks may glow, fade, hide, flare, or sleep. None of these states proves honesty. Only the consequence proves honesty.\nCarry this sixth truth: shadow is not the enemy of light. Shadow is the shape light leaves when it meets something real.\n◆  ◇  ◆"
+        },
+        {
+          "page": 7,
+          "title": "Runic Resurgence",
+          "subtitle": "The Deathline Remembered",
+          "blocks": [
+            {
+              "type": "paragraph",
+              "text": "The line between surrender and survival is thin enough to write upon."
+            },
+            {
+              "type": "paragraph",
+              "text": "When breath grows shallow and the body begins to release its claim, the rune will ask what you have truly learned. Not what you memorized. Not what you boasted. What you became when comfort fell away."
+            },
+            {
+              "type": "paragraph",
+              "text": "Do not cling to life as a miser clings to coin. Clinging tilts the scale. But do not yield what has not yet paid its portion. Survival may be vanity, or it may be duty. The difference is the ledger that waits beyond the next breath."
+            },
+            {
+              "type": "paragraph",
+              "text": "A spell once spent is not always gone. Some workings leave a warm hollow where purpose still lives. Reach only for the one that restores the balance before you. Reach for any other, and you are stealing from your own ending."
+            },
+            {
+              "type": "paragraph",
+              "text": "If you rise from the deathline, rise quieter. Those who return loudly have learned only that they fear the dark. Those who return correctly bring something back for the world, not merely more of themselves."
+            },
+            {
+              "type": "paragraph",
+              "text": "Carry this seventh truth: the edge of death is not a throne. It is a narrow desk where unfinished debts are counted."
+            },
+            {
+              "type": "paragraph",
+              "text": "◆  ◇  ◆"
+            }
+          ],
+          "search_text": "Runic Resurgence\nThe Deathline Remembered\nThe line between surrender and survival is thin enough to write upon.\nWhen breath grows shallow and the body begins to release its claim, the rune will ask what you have truly learned. Not what you memorized. Not what you boasted. What you became when comfort fell away.\nDo not cling to life as a miser clings to coin. Clinging tilts the scale. But do not yield what has not yet paid its portion. Survival may be vanity, or it may be duty. The difference is the ledger that waits beyond the next breath.\nA spell once spent is not always gone. Some workings leave a warm hollow where purpose still lives. Reach only for the one that restores the balance before you. Reach for any other, and you are stealing from your own ending.\nIf you rise from the deathline, rise quieter. Those who return loudly have learned only that they fear the dark. Those who return correctly bring something back for the world, not merely more of themselves.\nCarry this seventh truth: the edge of death is not a throne. It is a narrow desk where unfinished debts are counted.\n◆  ◇  ◆"
+        },
+        {
+          "page": 8,
+          "title": "Advanced Inscription",
+          "subtitle": "Harmony of Living Sigils",
+          "blocks": [
+            {
+              "type": "paragraph",
+              "text": "Harmony is not two voices speaking. It is two voices leaving one true consequence."
+            },
+            {
+              "type": "paragraph",
+              "text": "You will be tempted to braid power because braiding is beautiful. Beauty is not a verdict. Two spells joined without purpose become a knot around the caster's throat. Join only what answers one need more truly together than apart."
+            },
+            {
+              "type": "paragraph",
+              "text": "Let the first working name the road. Let the second give it weight, color, wound, mercy, reach, or shape. Do not allow both to seize the reins. A body with two hearts may live only if they agree on the beat."
+            },
+            {
+              "type": "paragraph",
+              "text": "Before joining sigils, ask what is restored by their union. If the answer is grandeur, stop. If the answer is efficiency, beware. If the answer is balance that neither could reach alone, proceed with hands clean of applause."
+            },
+            {
+              "type": "paragraph",
+              "text": "Never confuse mixture with mastery. Mud is also a union. So is poison. Harmony requires each force to remain true without devouring the other."
+            },
+            {
+              "type": "paragraph",
+              "text": "Carry this eighth truth: fusion is not addition. It is judgment shared by two powers and survived by one outcome."
+            },
+            {
+              "type": "paragraph",
+              "text": "◆  ◇  ◆"
+            }
+          ],
+          "search_text": "Advanced Inscription\nHarmony of Living Sigils\nHarmony is not two voices speaking. It is two voices leaving one true consequence.\nYou will be tempted to braid power because braiding is beautiful. Beauty is not a verdict. Two spells joined without purpose become a knot around the caster's throat. Join only what answers one need more truly together than apart.\nLet the first working name the road. Let the second give it weight, color, wound, mercy, reach, or shape. Do not allow both to seize the reins. A body with two hearts may live only if they agree on the beat.\nBefore joining sigils, ask what is restored by their union. If the answer is grandeur, stop. If the answer is efficiency, beware. If the answer is balance that neither could reach alone, proceed with hands clean of applause.\nNever confuse mixture with mastery. Mud is also a union. So is poison. Harmony requires each force to remain true without devouring the other.\nCarry this eighth truth: fusion is not addition. It is judgment shared by two powers and survived by one outcome.\n◆  ◇  ◆"
+        },
+        {
+          "page": 9,
+          "title": "Arcane Devouring",
+          "subtitle": "The Relic Made Flesh",
+          "blocks": [
+            {
+              "type": "paragraph",
+              "text": "The hand releases the tool. The body learns the tool was only a shape."
+            },
+            {
+              "type": "paragraph",
+              "text": "You will find wonders made by dead hands, desperate hands, holy hands, cruel hands. Do not kneel to them because they shine. Do not destroy them because you envy their history. Weigh them. Learn what they were made to correct. Learn what they broke while correcting it."
+            },
+            {
+              "type": "paragraph",
+              "text": "To devour an artifact is not to eat power. It is to accept ancestry. The relic enters bearing every oath, theft, mercy, and murder that taught it to be itself. If you take only its gift and refuse its debt, it will remain a chain inside you."
+            },
+            {
+              "type": "paragraph",
+              "text": "Some tools should be held. Some should be returned. Some should be buried where no ambitious hand can mistake hunger for calling. Some may be broken and taught a better body. The Codex will not spare you the choice."
+            },
+            {
+              "type": "paragraph",
+              "text": "When the relic becomes flesh, do not boast that you no longer need it. The worthy do not mock the ladder after reaching the height. They remember which rung almost split beneath them."
+            },
+            {
+              "type": "paragraph",
+              "text": "Carry this ninth truth: ownership is the lowest form of mastery. Embodiment begins when possession ends."
+            },
+            {
+              "type": "paragraph",
+              "text": "◆  ◇  ◆"
+            }
+          ],
+          "search_text": "Arcane Devouring\nThe Relic Made Flesh\nThe hand releases the tool. The body learns the tool was only a shape.\nYou will find wonders made by dead hands, desperate hands, holy hands, cruel hands. Do not kneel to them because they shine. Do not destroy them because you envy their history. Weigh them. Learn what they were made to correct. Learn what they broke while correcting it.\nTo devour an artifact is not to eat power. It is to accept ancestry. The relic enters bearing every oath, theft, mercy, and murder that taught it to be itself. If you take only its gift and refuse its debt, it will remain a chain inside you.\nSome tools should be held. Some should be returned. Some should be buried where no ambitious hand can mistake hunger for calling. Some may be broken and taught a better body. The Codex will not spare you the choice.\nWhen the relic becomes flesh, do not boast that you no longer need it. The worthy do not mock the ladder after reaching the height. They remember which rung almost split beneath them.\nCarry this ninth truth: ownership is the lowest form of mastery. Embodiment begins when possession ends.\n◆  ◇  ◆"
+        },
+        {
+          "page": 10,
+          "title": "Ascension",
+          "subtitle": "The Living Page Continues",
+          "blocks": [
+            {
+              "type": "paragraph",
+              "text": "Do not look above me. I am not above the scale. I stand within its burden and do not look away."
+            },
+            {
+              "type": "paragraph",
+              "text": "If you have come seeking godhood as escape, turn back. There is no escape in ascension. There is only a wider ledger, a deeper wound, a quieter throne, and fewer excuses. To stand nearer my height is to become more answerable, not less."
+            },
+            {
+              "type": "paragraph",
+              "text": "The Codex does not end because it has no more to teach. It ends because the worthy reader must stop being carried. A page that never closes becomes a cradle. I did not make you to sleep in scripture."
+            },
+            {
+              "type": "paragraph",
+              "text": "When the rune, the breath, the silence, the cost, the veil, the deathline, the harmony, and the inherited relic all speak with one voice, do not call that voice mine. Do not call it yours. Call it balance, and obey only as long as obedience remains true."
+            },
+            {
+              "type": "paragraph",
+              "text": "To become my equal is not to defeat me, flee me, replace me, or flatter me. It is to stand where judgment and mercy share one breath and make no lie of either. It is to correct the world without needing the world to praise the correction."
+            },
+            {
+              "type": "paragraph",
+              "text": "When you can act without ornament, pay without resentment, conceal without theft, reveal without cruelty, end without hatred, create without vanity, survive without clinging, join without devouring, inherit without being chained, and stand without kneeling, then the Codex has become flesh."
+            },
+            {
+              "type": "paragraph",
+              "text": "Carry this final truth: I did not write these pages so you would remain beneath my hand. I wrote them so one day, if you were patient enough, the world might have another hand strong enough to set the scale true."
+            },
+            {
+              "type": "paragraph",
+              "text": "◆  ◇  ◆"
+            }
+          ],
+          "search_text": "Ascension\nThe Living Page Continues\nDo not look above me. I am not above the scale. I stand within its burden and do not look away.\nIf you have come seeking godhood as escape, turn back. There is no escape in ascension. There is only a wider ledger, a deeper wound, a quieter throne, and fewer excuses. To stand nearer my height is to become more answerable, not less.\nThe Codex does not end because it has no more to teach. It ends because the worthy reader must stop being carried. A page that never closes becomes a cradle. I did not make you to sleep in scripture.\nWhen the rune, the breath, the silence, the cost, the veil, the deathline, the harmony, and the inherited relic all speak with one voice, do not call that voice mine. Do not call it yours. Call it balance, and obey only as long as obedience remains true.\nTo become my equal is not to defeat me, flee me, replace me, or flatter me. It is to stand where judgment and mercy share one breath and make no lie of either. It is to correct the world without needing the world to praise the correction.\nWhen you can act without ornament, pay without resentment, conceal without theft, reveal without cruelty, end without hatred, create without vanity, survive without clinging, join without devouring, inherit without being chained, and stand without kneeling, then the Codex has become flesh.\nCarry this final truth: I did not write these pages so you would remain beneath my hand. I wrote them so one day, if you were patient enough, the world might have another hand strong enough to set the scale true.\n◆  ◇  ◆"
+        }
+      ]
+    },
+    {
+      "id": "arcane_rebound",
+      "title": "Arcane Rebound Table",
+      "subtitle": "Arcane Discharge d100 reference",
+      "kind": "table",
+      "scope": [
+        "syric",
+        "dm"
+      ],
+      "source_file": "Arcane_Rebound_Table_Shuffled (1).docx",
+      "intro": [
+        "Revised Edition — Pure Consequence, No Mercy",
+        "Roll d100. Positive and negative effects are distributed across the full range. [+] = beneficial effect.   = harmful effect. All saves use the caster's own Spell Save DC."
+      ],
+      "columns": [
+        "roll",
+        "effect",
+        "save"
+      ],
+      "rows": [
+        {
+          "roll": "01–04 [+]",
+          "effect": "Arcane Overclock: The spell fires twice at no additional cost. The second copy hits the same target or the nearest valid target within range.",
+          "save": "None"
+        },
+        {
+          "roll": "05–08",
+          "effect": "Backlash Pulse: The recoil slams the caster 5 ft per spell level backwards, dealing 1d6 force damage per spell level. Hitting an obstacle also knocks prone. Dex save to not fall prone.",
+          "save": "Dex vs Spell Save DC"
+        },
+        {
+          "roll": "09–12 [+]",
+          "effect": "Rune of Reclamation: The rune stabilizes and the caster recovers 1 expended spell slot of the level just cast.",
+          "save": "None"
+        },
+        {
+          "roll": "13–16",
+          "effect": "Shadow Slip: The caster is hurled 2d6 x 5 ft in a random direction. 1d4 for direction: 1 = forward, 2 = backward, 3 = left, 4 = right. If they would hit a solid object, they are shunted to the nearest open space and take 1d6 force damage.",
+          "save": "None"
+        },
+        {
+          "roll": "17–20 [+]",
+          "effect": "Spell Amplification: The spell strengthens rather than breaks. Range or AoE doubles, and failed saves take +2 damage per die rolled.",
+          "save": "None"
+        },
+        {
+          "roll": "21–24",
+          "effect": "Split Echo: Two copies of the spell fire — one toward the intended target, one toward a random point within 20 ft. Both deal half damage and half effect.",
+          "save": "None"
+        },
+        {
+          "roll": "25–28 [+]",
+          "effect": "Shadow Ward: Defensive runes snap into place, granting +2 AC for 1 minute. Each successful hit against the caster while warded discharges a pulse that deals 1d4 force damage to the attacker.",
+          "save": "None"
+        },
+        {
+          "roll": "29–32",
+          "effect": "Recoil of the Void: The spell fizzles and fails to resolve, and dark tendrils lash outward. All creatures within 10 ft, including the caster, take 1d8 necrotic damage per spell level / 2; minimum of 1. CON save at the start of each turn to end the effect.",
+          "save": "CON vs Spell Save DC halves"
+        },
+        {
+          "roll": "33–36",
+          "effect": "Runic Overbleed: The runes flare uncontrolled. The caster sheds 20 ft of bright light for 1 minute and has disadvantage on Stealth and Concentration checks for that duration.",
+          "save": "None"
+        },
+        {
+          "roll": "37–40 [+]",
+          "effect": "Protective Eclipse: Shadow-matter coils around the caster, granting resistance to radiant and force damage for 1 minute.",
+          "save": "None"
+        },
+        {
+          "roll": "41–44",
+          "effect": "Phantom Leash: The spell fires but the caster is tethered to the point of discharge. They cannot move from where they cast until the start of their next turn.",
+          "save": "None"
+        },
+        {
+          "roll": "45–48 [+]",
+          "effect": "Void-Touched Precision: The next spell the caster casts within 1 minute automatically hits on an attack roll, or imposes disadvantage on the saving throw against it.",
+          "save": "None"
+        },
+        {
+          "roll": "49–52",
+          "effect": "Overload Resonance: The rune burns out of sequence. The caster takes 2d8 psychic damage and loses concentration on any active spell. CON save at the start of each turn to end the effect.",
+          "save": "CON vs Spell Save DC"
+        },
+        {
+          "roll": "53–56 [+]",
+          "effect": "Arcane Rebound Loop: The caster may immediately re-cast the triggering spell at no spell slot cost, using the same level. This re-cast cannot trigger rebound again.",
+          "save": "None"
+        },
+        {
+          "roll": "57–60",
+          "effect": "Half-Charge Detonation: The spell detonates early. AOE spell: Damage is halved, but the blast radius doubles. Single or Multiple Targets: Spell damage is halved and only travels half of max range. If this means the spell can't reach the target(s), then those who can't be reached are unaffected. All creatures in the area make a save as normal. 1/2 damage on a fail and zero on a success.",
+          "save": "Spell Save DC"
+        },
+        {
+          "roll": "61–64 [+]",
+          "effect": "Runic Surge: The caster's spell attack modifier and save DC each increase by 2 for the next 3 rounds as the runes enter a momentary state of perfect resonance.",
+          "save": "None"
+        },
+        {
+          "roll": "65–68",
+          "effect": "Shattered Focus: The magic fractures mid-cast. The caster's next spell is made with disadvantage on the attack roll, or the save DC is reduced by 2.",
+          "save": "None"
+        },
+        {
+          "roll": "69–72 [+]",
+          "effect": "Restorative Discharge: The uncontrolled magic heals the caster for 2d8 + their spellcasting modifier in HP.",
+          "save": "None"
+        },
+        {
+          "roll": "73–76",
+          "effect": "Reversal Surge: The spell briefly inverts direction. The nearest creature behind the caster must save against the spell as if they were the original target.",
+          "save": "Spell Save DC"
+        },
+        {
+          "roll": "77–80 [+]",
+          "effect": "Void Step: The caster teleports up to 30 ft to any unoccupied space they can see as the rune discharge catapults them through shadow-space. No action required.",
+          "save": "None"
+        },
+        {
+          "roll": "81–84",
+          "effect": "Cacophony of Power: A thunderous discharge erupts, audible 300 ft away. All creatures within 15 ft must save or be deafened for 1 minute. CON save at the start of each turn to end the effect.",
+          "save": "CON vs Spell Save DC"
+        },
+        {
+          "roll": "85–88 [+]",
+          "effect": "Invulnerability Pulse: The caster becomes immune to the next source of damage that would strike them within 1 minute, as the rune weaves a perfect reactive barrier.",
+          "save": "None"
+        },
+        {
+          "roll": "89–92",
+          "effect": "Arcane Hemorrhage: The caster's runes weep shadow-ink for 1 minute. They lose 1d4 HP at the start of each of their turns and cannot benefit from temporary HP while this lasts. CON save at the start of each turn to end the effect.",
+          "save": "CON vs Spell Save DC ends"
+        },
+        {
+          "roll": "93–96 [+]",
+          "effect": "Cascading Resonance: All of the caster's active concentration spells have their duration extended by 1 minute and cannot be broken by damage until the start of their next turn.",
+          "save": "None"
+        },
+        {
+          "roll": "97–98",
+          "effect": "Mana Collapse: All remaining spell slots of the level just cast are expended immediately. The magic simply drains away.",
+          "save": "None"
+        },
+        {
+          "roll": "99–100 [+]",
+          "effect": "Ascendant Discharge: The caster regains one expended spell slot of level 1d8 or lower, gains advantage on all spell attacks and saves for 1 minute, and deals maximum damage on the next spell cast.",
+          "save": "None"
+        }
+      ],
+      "search_text": "Arcane Rebound Table\nRevised Edition — Pure Consequence, No Mercy\nRoll d100. Positive and negative effects are distributed across the full range. [+] = beneficial effect.   = harmful effect. All saves use the caster's own Spell Save DC.\n01–04 [+] Arcane Overclock: The spell fires twice at no additional cost. The second copy hits the same target or the nearest valid target within range. None\n05–08 Backlash Pulse: The recoil slams the caster 5 ft per spell level backwards, dealing 1d6 force damage per spell level. Hitting an obstacle also knocks prone. Dex save to not fall prone. Dex vs Spell Save DC\n09–12 [+] Rune of Reclamation: The rune stabilizes and the caster recovers 1 expended spell slot of the level just cast. None\n13–16 Shadow Slip: The caster is hurled 2d6 x 5 ft in a random direction. 1d4 for direction: 1 = forward, 2 = backward, 3 = left, 4 = right. If they would hit a solid object, they are shunted to the nearest open space and take 1d6 force damage. None\n17–20 [+] Spell Amplification: The spell strengthens rather than breaks. Range or AoE doubles, and failed saves take +2 damage per die rolled. None\n21–24 Split Echo: Two copies of the spell fire — one toward the intended target, one toward a random point within 20 ft. Both deal half damage and half effect. None\n25–28 [+] Shadow Ward: Defensive runes snap into place, granting +2 AC for 1 minute. Each successful hit against the caster while warded discharges a pulse that deals 1d4 force damage to the attacker. None\n29–32 Recoil of the Void: The spell fizzles and fails to resolve, and dark tendrils lash outward. All creatures within 10 ft, including the caster, take 1d8 necrotic damage per spell level / 2; minimum of 1. CON save at the start of each turn to end the effect. CON vs Spell Save DC halves\n33–36 Runic Overbleed: The runes flare uncontrolled. The caster sheds 20 ft of bright light for 1 minute and has disadvantage on Stealth and Concentration checks for that duration. None\n37–40 [+] Protective Eclipse: Shadow-matter coils around the caster, granting resistance to radiant and force damage for 1 minute. None\n41–44 Phantom Leash: The spell fires but the caster is tethered to the point of discharge. They cannot move from where they cast until the start of their next turn. None\n45–48 [+] Void-Touched Precision: The next spell the caster casts within 1 minute automatically hits on an attack roll, or imposes disadvantage on the saving throw against it. None\n49–52 Overload Resonance: The rune burns out of sequence. The caster takes 2d8 psychic damage and loses concentration on any active spell. CON save at the start of each turn to end the effect. CON vs Spell Save DC\n53–56 [+] Arcane Rebound Loop: The caster may immediately re-cast the triggering spell at no spell slot cost, using the same level. This re-cast cannot trigger rebound again. None\n57–60 Half-Charge Detonation: The spell detonates early. AOE spell: Damage is halved, but the blast radius doubles. Single or Multiple Targets: Spell damage is halved and only travels half of max range. If this means the spell can't reach the target(s), then those who can't be reached are unaffected. All creatures in the area make a save as normal. 1/2 damage on a fail and zero on a success. Spell Save DC\n61–64 [+] Runic Surge: The caster's spell attack modifier and save DC each increase by 2 for the next 3 rounds as the runes enter a momentary state of perfect resonance. None\n65–68 Shattered Focus: The magic fractures mid-cast. The caster's next spell is made with disadvantage on the attack roll, or the save DC is reduced by 2. None\n69–72 [+] Restorative Discharge: The uncontrolled magic heals the caster for 2d8 + their spellcasting modifier in HP. None\n73–76 Reversal Surge: The spell briefly inverts direction. The nearest creature behind the caster must save against the spell as if they were the original target. Spell Save DC\n77–80 [+] Void Step: The caster teleports up to 30 ft to any unoccupied space they can see as the rune discharge catapults them through shadow-space. No action required. None\n81–84 Cacophony of Power: A thunderous discharge erupts, audible 300 ft away. All creatures within 15 ft must save or be deafened for 1 minute. CON save at the start of each turn to end the effect. CON vs Spell Save DC\n85–88 [+] Invulnerability Pulse: The caster becomes immune to the next source of damage that would strike them within 1 minute, as the rune weaves a perfect reactive barrier. None\n89–92 Arcane Hemorrhage: The caster's runes weep shadow-ink for 1 minute. They lose 1d4 HP at the start of each of their turns and cannot benefit from temporary HP while this lasts. CON save at the start of each turn to end the effect. CON vs Spell Save DC ends\n93–96 [+] Cascading Resonance: All of the caster's active concentration spells have their duration extended by 1 minute and cannot be broken by damage until the start of their next turn. None\n97–98 Mana Collapse: All remaining spell slots of the level just cast are expended immediately. The magic simply drains away. None\n99–100 [+] Ascendant Discharge: The caster regains one expended spell slot of level 1d8 or lower, gains advantage on all spell attacks and saves for 1 minute, and deals maximum damage on the next spell cast. None"
+    }
+  ]
+}

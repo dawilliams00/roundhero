@@ -2,13 +2,19 @@ from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
 from character_modules import available_modules_for, get_module_payload
-from character_modules.syric import sync_codex_pages, sync_shadow_level, syric_action
+from character_modules.syric import sync_codex_pages, sync_shadow_level, syric_action, syric_reference_docs
 from database import db
 from models.character import Character
 from models.user import User
 
 
 character_modules_bp = Blueprint("character_modules", __name__)
+
+
+@character_modules_bp.route("/syric_arcane/references", methods=["GET"])
+@jwt_required()
+def get_syric_references():
+    return jsonify(syric_reference_docs()), 200
 
 
 def _owned_character(char_id, user_id):
