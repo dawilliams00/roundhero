@@ -88,7 +88,7 @@ export default function CharacterSetup() {
                   {classes.map(c => <option key={c.name} value={c.name}>{c.name} (d{c.hit_die})</option>)}
                 </select>
               </div>
-              {subclasses.length > 0 && form.level >= 3 && (
+              {subclasses.length > 0 && (
                 <div className="form-group">
                   <label>Subclass (optional)</label>
                   <select value={form.subclass} onChange={e => set('subclass', e.target.value)}>

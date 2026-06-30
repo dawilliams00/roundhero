@@ -306,8 +306,30 @@ def update_character(char_id):
 @characters_bp.route("/<int:char_id>", methods=["DELETE"])
 @jwt_required()
 def delete_character(char_id):
+    """Deleting a character that's attached to a campaign roster (CampaignCharacter) or
+    referenced by a CampaignEffect (source/target) used to 500 - neither FK has an
+    ON DELETE behavior defined, so Postgres rejected the delete with an unhandled
+    IntegrityError rather than a clean error response. Roster attachments are removed
+    outright (the character no longer exists, so it can't stay on a roster); effect
+    ledger rows are kept but detached (their source/target reference cleared) rather than
+    deleted, since the ledger entry may still be meaningful history involving the other
+    character in the effect."""
     user_id = int(get_jwt_identity())
     char = Character.query.filter_by(id=char_id, user_id=user_id).first_or_404()
+
+    try:
+        from models.campaign import CampaignCharacter, CampaignEffect
+        CampaignCharacter.query.filter_by(character_id=char_id).delete()
+        for effect in CampaignEffect.query.filter(
+            (CampaignEffect.source_character_id == char_id) | (CampaignEffect.target_character_id == char_id)
+        ).all():
+            if effect.source_character_id == char_id:
+                effect.source_character_id = None
+            if effect.target_character_id == char_id:
+                effect.target_character_id = None
+    except ImportError:
+        pass  # Campaign models not present on this deployment - nothing to clean up.
+
     db.session.delete(char)
     db.session.commit()
     return jsonify({"message": "Deleted"}), 200
