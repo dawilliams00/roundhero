@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useCharacter } from '../context/CharacterContext';
 import api from '../utils/api';
 import { ABILITY_KEYS, ABILITY_LABELS, modifier, rollDie, spellLevelUpNote, featBuffItems, raceBuffItems, formatItemBuff } from '../utils/dnd';
-import { resolveFeatChoice } from '../utils/featChoices';
+import { resolveFeatChoice, buildFeatAttachPatch } from '../utils/featChoices';
 import FeatChoiceModal from './FeatChoiceModal';
 
 // Drives the full multi-step level-up flow for ANY character (single-class manually-
@@ -198,54 +198,11 @@ export default function LevelUpFlowModal({ onClose, mode = 'level_up', initialLe
   // release/granted-spell tags, buffs) so a feat picked here behaves identically to one
   // added later via Browse Feats - this is just a more convenient entry point at the
   // exact moment the player has an ASI-or-feat choice to make.
-  // Pure builder, no commit - mirrors TrackerTab.js's buildFeatAttachPatch, split out so
-  // a choice-feat (Resilient/Magic Initiate) can fold its extra patches into the SAME
-  // single updateCharacter call, not two sequential saves.
-  const buildFeatAttachPatch = async (feat) => {
-    const ae = character.ae_data || {};
-    const td = character.tracker_data || {};
-    const key = feat.name;
-    const alreadyHas = Object.values(ae).some(arr => (arr || []).some(a => a.tracker_key === key));
-    if (alreadyHas) return 'duplicate';
-    const newAbility = { name: feat.name, source: feat.source, source_type: 'custom', cost_type: feat.cost_type, tracker_key: key, description: feat.description };
-    const newAe = { ...ae };
-    if (!newAe[feat.section]) newAe[feat.section] = [];
-    newAe[feat.section] = [...newAe[feat.section], newAbility];
-    const newTd = { ...td };
-    if (feat.max_uses > 0 || feat.isTuck || feat.grantsSpell || feat.buffs?.length > 0) {
-      newTd.features = {
-        ...newTd.features,
-        [key]: {
-          current: feat.max_uses || 0, max: feat.max_uses || 0,
-          rest_type: feat.rest_type, action: feat.section, description: feat.description,
-          ...(feat.isTuck ? { spell_picker: true, tucked_spell: '', tucked_level: '' } : {}),
-          ...(feat.grantsSpell ? { granted_spell: feat.grantedSpellName, ability_override: feat.abilityOverride || null } : {}),
-          ...(feat.buffs?.length ? { buffs: feat.buffs } : {}),
-        },
-      };
-    }
-    let newSd = null;
-    if (feat.grantsSpell && feat.grantedSpellName) {
-      try {
-        const r = await api.get('/content/spells');
-        const master = r.data.find(s => s.name.toLowerCase() === feat.grantedSpellName.toLowerCase());
-        const sd = character.spell_data || {};
-        const known = sd.known_spells || [];
-        if (master && !known.some(s => s.name.toLowerCase() === master.name.toLowerCase())) {
-          newSd = { ...sd, known_spells: [...known, { ...master, granted_by: feat.name, ability_override: feat.abilityOverride || null, free_use_feature: key }] };
-        }
-      } catch {
-        // Non-fatal - the feature/charge still gets attached even if the spell lookup failed.
-      }
-    }
-    return { newAe, newTd, newSd };
-  };
-
   const submitFeat = async () => {
     if (!pickedFeat) return;
     setFeatError(null);
     if (pickedFeat.choice_type) { setShowFeatChoice(true); return; }
-    const patch = await buildFeatAttachPatch(pickedFeat);
+    const patch = await buildFeatAttachPatch(pickedFeat, character);
     if (patch === 'duplicate') { setFeatError(`"${pickedFeat.name}" is already on this character.`); return; }
     await updateCharacter(character.id, { ae_data: patch.newAe, tracker_data: patch.newTd, ...(patch.newSd ? { spell_data: patch.newSd } : {}) });
     setStep('done');
@@ -256,7 +213,7 @@ export default function LevelUpFlowModal({ onClose, mode = 'level_up', initialLe
   // patches, folded into the SAME commit as the normal feat attach.
   const confirmFeatChoice = async (choiceData) => {
     setShowFeatChoice(false);
-    const patch = await buildFeatAttachPatch(pickedFeat);
+    const patch = await buildFeatAttachPatch(pickedFeat, character);
     if (patch === 'duplicate') { setFeatError(`"${pickedFeat.name}" is already on this character.`); return; }
     let { newAe, newTd, newSd } = patch;
     const choice = await resolveFeatChoice(pickedFeat, choiceData);

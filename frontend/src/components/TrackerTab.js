@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
-import api from '../utils/api';
 import { sorceryDisplayName } from '../utils/dnd';
-import { resolveFeatChoice } from '../utils/featChoices';
+import { resolveFeatChoice, buildFeatAttachPatch } from '../utils/featChoices';
 import AbilityDetailModal from './AbilityDetailModal';
 import ConfirmModal from './ConfirmModal';
 import CustomAbilityModal from './CustomAbilityModal';
@@ -62,57 +61,9 @@ export default function TrackerTab() {
     saveTrackerData({ ...td, inventory: { ...td.inventory, items: newItems } });
   };
 
-  // Pure builder, no commit - split out so a choice-feat (Resilient/Magic Initiate) can
-  // fold its extra patches into the SAME single updateCharacter call below, rather than
-  // two separate sequential saves (the exact stale-closure-overwrite bug class this app
-  // has hit more than once - see CharacterContext.js's characterRef notes).
-  const buildFeatAttachPatch = async (feat) => {
-    const key = feat.name;
-    // Guards against the exact "doubled Cartomancer" bug - adding a feat that's already
-    // on this character (by tracker_key) used to just push a second ae_data entry with
-    // nothing to stop it, since features is keyed by name but ae_data's sections are arrays.
-    const alreadyHas = Object.values(ae).some(arr => (arr||[]).some(a => a.tracker_key === key));
-    if (alreadyHas) return 'duplicate';
-    const newAbility = { name: feat.name, source: feat.source, source_type: 'custom', cost_type: feat.cost_type, tracker_key: key, description: feat.description };
-    const newAe = { ...ae };
-    if (!newAe[feat.section]) newAe[feat.section] = [];
-    newAe[feat.section] = [...newAe[feat.section], newAbility];
-    const newTd = { ...td };
-    if (feat.max_uses > 0 || feat.isTuck || feat.grantsSpell || feat.buffs?.length > 0) {
-      newTd.features = {
-        ...newTd.features,
-        [key]: {
-          current: feat.max_uses || 0, max: feat.max_uses || 0,
-          rest_type: feat.rest_type, action: feat.section, description: feat.description,
-          ...(feat.isTuck ? { spell_picker: true, tucked_spell: '', tucked_level: '' } : {}),
-          ...(feat.grantsSpell ? { granted_spell: feat.grantedSpellName, ability_override: feat.abilityOverride || null } : {}),
-          ...(feat.buffs?.length ? { buffs: feat.buffs } : {}),
-        },
-      };
-    }
-    // A library feat that grants a spell (e.g. Draconic Healing) needs the full spell
-    // object added to spell_data.known_spells too, not just the feature charge - that's
-    // what makes it show up in the Spells tab and be castable at all.
-    let newSd = null;
-    if (feat.grantsSpell && feat.grantedSpellName) {
-      try {
-        const r = await api.get('/content/spells');
-        const master = r.data.find(s => s.name.toLowerCase() === feat.grantedSpellName.toLowerCase());
-        const sd = character.spell_data || {};
-        const known = sd.known_spells || [];
-        if (master && !known.some(s => s.name.toLowerCase() === master.name.toLowerCase())) {
-          newSd = { ...sd, known_spells: [...known, { ...master, granted_by: feat.name, ability_override: feat.abilityOverride || null, free_use_feature: key }] };
-        }
-      } catch {
-        // Non-fatal - the feature/charge still gets attached even if the spell lookup failed.
-      }
-    }
-    return { newAe, newTd, newSd };
-  };
-
   const addFeatFromLibrary = async (feat) => {
     if (feat.choice_type) { setChoiceFeat(feat); return; }
-    const patch = await buildFeatAttachPatch(feat);
+    const patch = await buildFeatAttachPatch(feat, character);
     if (patch === 'duplicate') { setInfoMessage(`"${feat.name}" is already on this character.`); return; }
     await updateCharacter(character.id, { ae_data: patch.newAe, tracker_data: patch.newTd, ...(patch.newSd ? { spell_data: patch.newSd } : {}) });
   };
@@ -123,7 +74,7 @@ export default function TrackerTab() {
   const confirmFeatChoice = async (choiceData) => {
     const feat = choiceFeat;
     setChoiceFeat(null);
-    const patch = await buildFeatAttachPatch(feat);
+    const patch = await buildFeatAttachPatch(feat, character);
     if (patch === 'duplicate') { setInfoMessage(`"${feat.name}" is already on this character.`); return; }
     let { newAe, newTd, newSd } = patch;
     const choice = await resolveFeatChoice(feat, choiceData);
