@@ -79,6 +79,7 @@ export default function CampaignPlayerViewModal({ views, onClose }) {
   ), [selectedId, views]);
   const encounters = selected?.encounters || [];
   const effects = selected?.effects || [];
+  const rules = selected?.campaign_rules || selected?.rules || {};
   const totalCombatants = encounters.reduce((count, encounter) => count + (encounter.combatants || []).length, 0);
 
   return (
@@ -113,6 +114,22 @@ export default function CampaignPlayerViewModal({ views, onClose }) {
         )}
 
         <div style={{overflowY:'auto',minHeight:0,paddingTop:12,display:'grid',gap:14}}>
+          {(rules.death_saves || rules.exhaustion) && (
+            <section style={{border:'1px solid rgba(255,193,7,0.34)',borderRadius:'var(--radius-sm)',padding:10,background:'rgba(255,193,7,0.07)'}}>
+              <h3 style={{color:'var(--warning)',fontSize:13,marginBottom:8,letterSpacing:0,textTransform:'uppercase'}}>Campaign Rules</h3>
+              {rules.death_saves && (
+                <div style={{color:'var(--text-secondary)',fontSize:12,lineHeight:1.45,whiteSpace:'pre-wrap',marginBottom:rules.exhaustion ? 8 : 0}}>
+                  <strong style={{color:'var(--text-primary)'}}>Death Saves:</strong> {rules.death_saves}
+                </div>
+              )}
+              {rules.exhaustion && (
+                <div style={{color:'var(--text-secondary)',fontSize:12,lineHeight:1.45,whiteSpace:'pre-wrap'}}>
+                  <strong style={{color:'var(--text-primary)'}}>Exhaustion:</strong> {rules.exhaustion}
+                </div>
+              )}
+            </section>
+          )}
+
           <section>
             <h3 style={{color:'var(--accent-light)',fontSize:14,marginBottom:8,letterSpacing:0,textTransform:'uppercase'}}>Active Encounters</h3>
             {encounters.length === 0 ? (

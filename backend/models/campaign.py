@@ -11,6 +11,7 @@ class Campaign(db.Model):
     name = db.Column(db.String(160), nullable=False)
     invite_code = db.Column(db.String(16), unique=True, nullable=False, index=True)
     owner_user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+    _rules = db.Column("rules", db.Text, default="{}")
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -20,12 +21,21 @@ class Campaign(db.Model):
     effects = db.relationship("CampaignEffect", back_populates="campaign", cascade="all, delete-orphan")
     encounters = db.relationship("CampaignEncounter", back_populates="campaign", cascade="all, delete-orphan")
 
+    @property
+    def rules(self):
+        return json.loads(self._rules or "{}")
+
+    @rules.setter
+    def rules(self, value):
+        self._rules = json.dumps(value or {})
+
     def to_dict(self, include_detail=False):
         data = {
             "id": self.id,
             "name": self.name,
             "invite_code": self.invite_code,
             "owner_user_id": self.owner_user_id,
+            "rules": self.rules,
             "created_at": self.created_at.isoformat(),
             "updated_at": self.updated_at.isoformat(),
         }

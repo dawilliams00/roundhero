@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
 import api from '../utils/api';
 
@@ -20,6 +20,24 @@ export default function DeathSaveModal({ onClose }) {
   const [rolling, setRolling] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
+  const [campaignRules, setCampaignRules] = useState(null);
+
+  useEffect(() => {
+    if (!character?.id) return undefined;
+    let cancelled = false;
+    api.get(`/campaigns/player-view/${character.id}`, { suppressGlobalError: true })
+      .then(r => {
+        if (cancelled) return;
+        const firstRules = (r.data || [])
+          .map(view => view.campaign_rules || view.rules)
+          .find(rules => rules?.death_saves || rules?.exhaustion);
+        setCampaignRules(firstRules || null);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [character?.id]);
 
   const rollDeathSave = async () => {
     if (!character?.id || rolling) return;
@@ -59,6 +77,13 @@ export default function DeathSaveModal({ onClose }) {
         <div style={{color:'var(--text-secondary)',fontSize:12,lineHeight:1.5,marginBottom:14}}>
           Blind rolls are sent to the DM encounter tracker, but you will not see the roll result or pass/fail counters here.
         </div>
+
+        {campaignRules?.death_saves && (
+          <div style={{border:'1px solid rgba(255,193,7,0.35)',background:'rgba(255,193,7,0.08)',borderRadius:'var(--radius-sm)',padding:10,color:'var(--text-secondary)',fontSize:12,lineHeight:1.45,whiteSpace:'pre-wrap',marginBottom:12}}>
+            <div style={{color:'var(--warning)',fontWeight:900,marginBottom:3}}>Campaign Death Save Rules</div>
+            {campaignRules.death_saves}
+          </div>
+        )}
 
         {!blind && (
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:12}}>

@@ -10,7 +10,7 @@ import { ReferenceLibraryContent } from '../components/ReferenceLibrary';
 import api from '../utils/api';
 import { fetchSyricReferences } from '../utils/characterModules';
 
-const TABS = ['Party', 'Effects', 'Encounters', 'DM References'];
+const TABS = ['Party', 'Effects', 'Encounters', 'Rules', 'DM References'];
 const EFFECT_PRESETS = [
   {
     id: 'heroes_feast',
@@ -895,6 +895,7 @@ export default function CampaignsPage() {
     loadCampaign,
     createCampaign,
     joinCampaign,
+    updateCampaignRules,
     regenerateInvite,
     attachCharacter,
     detachCharacter,
@@ -925,6 +926,7 @@ export default function CampaignsPage() {
     duration: '',
     status: 'pending',
   });
+  const [rulesForm, setRulesForm] = useState({ death_saves: '', exhaustion: '' });
   const [encounterForm, setEncounterForm] = useState({ name: '', notes: '' });
   const [selectedEncounterId, setSelectedEncounterId] = useState(null);
   const [runningEncounterId, setRunningEncounterId] = useState(null);
@@ -1003,6 +1005,13 @@ export default function CampaignsPage() {
     : null;
   const runningEncounter = encounters.find(entry => entry.id === runningEncounterId) || null;
   const encounterSetupMode = activeTab === 'Encounters' && campaign?.is_dm && !!selectedEncounter;
+
+  useEffect(() => {
+    setRulesForm({
+      death_saves: campaign?.rules?.death_saves || '',
+      exhaustion: campaign?.rules?.exhaustion || '',
+    });
+  }, [campaign?.id, campaign?.rules?.death_saves, campaign?.rules?.exhaustion]);
   const attached = useMemo(
     () => new Set(activeRoster.map(entry => entry.character_id)),
     [activeRoster]
@@ -1188,6 +1197,17 @@ export default function CampaignsPage() {
       setEncounterForm({ name: '', notes: '' });
     } catch (err) {
       setError(err.response?.data?.error || 'Could not create encounter');
+    }
+  };
+
+  const submitRules = async e => {
+    e.preventDefault();
+    if (!campaign?.is_dm) return;
+    try {
+      setError('');
+      await updateCampaignRules(campaign.id, rulesForm);
+    } catch (err) {
+      setError(err.response?.data?.error || 'Could not save campaign rules');
     }
   };
 
@@ -1692,6 +1712,42 @@ export default function CampaignsPage() {
                   </div>
                 )}
 
+                {activeTab === 'Rules' && (
+                  <form onSubmit={submitRules} className="card" style={{display:'grid',gap:12}}>
+                    <div>
+                      <h3 style={{color:'var(--accent-light)',fontSize:14,marginBottom:4}}>Campaign Rules</h3>
+                      <div style={{color:'var(--text-secondary)',fontSize:12}}>
+                        These notes are visible to the DM in encounters and to players when death saves or encounter status matter.
+                      </div>
+                    </div>
+                    <label style={{display:'grid',gap:5}}>
+                      <span style={{color:'var(--text-secondary)',fontSize:11,fontWeight:800,textTransform:'uppercase'}}>Death Save Rules</span>
+                      <textarea
+                        value={rulesForm.death_saves}
+                        onChange={e => setRulesForm(form => ({ ...form, death_saves: e.target.value }))}
+                        placeholder="Example: Death saves are blind unless the player chooses open roll. Nat 1 counts as two failures; nat 20 returns to 1 HP."
+                        rows={4}
+                        disabled={!campaign.is_dm}
+                      />
+                    </label>
+                    <label style={{display:'grid',gap:5}}>
+                      <span style={{color:'var(--text-secondary)',fontSize:11,fontWeight:800,textTransform:'uppercase'}}>Exhaustion Rules</span>
+                      <textarea
+                        value={rulesForm.exhaustion}
+                        onChange={e => setRulesForm(form => ({ ...form, exhaustion: e.target.value }))}
+                        placeholder="Example: Track homebrew exhaustion thresholds, recovery rules, or table-specific penalties here."
+                        rows={4}
+                        disabled={!campaign.is_dm}
+                      />
+                    </label>
+                    {campaign.is_dm ? (
+                      <button className="btn btn-primary" style={{justifySelf:'start'}}>Save Rules</button>
+                    ) : (
+                      <div style={{color:'var(--text-secondary)',fontSize:12}}>Only the DM can edit campaign rules.</div>
+                    )}
+                  </form>
+                )}
+
                 {activeTab === 'DM References' && (
                   <div style={{height:620,minHeight:0,display:'flex',flexDirection:'column',gap:10}}>
                     <div style={{display:'flex',justifyContent:'space-between',gap:12,alignItems:'flex-start'}}>
@@ -1724,6 +1780,7 @@ export default function CampaignsPage() {
           onStatus={setEncounterStatus}
           onDelete={removeEncounter}
           reloadCampaign={loadCampaign}
+          campaignRules={campaign.rules || {}}
         />
       )}
       {viewingMonster && <MonsterDetailModal monster={viewingMonster} onClose={() => setViewingMonster(null)} />}

@@ -112,6 +112,21 @@ function normalizeCombatant(row) {
   };
 }
 
+function findFreshEncounterData(campaign, encounterId) {
+  const fresh = cleanList(campaign?.encounters).find(entry => sameId(entry.id, encounterId));
+  return fresh?.data || null;
+}
+
+function mergeDeathSaveState(localRow, serverRow) {
+  if (!serverRow) return localRow;
+  return normalizeCombatant({
+    ...localRow,
+    death_saves: serverRow.death_saves || localRow.death_saves,
+    last_death_save: serverRow.last_death_save || localRow.last_death_save,
+    death_save_rolls: cleanList(serverRow.death_save_rolls).length ? serverRow.death_save_rolls : localRow.death_save_rolls,
+  });
+}
+
 function sortedCombatants(encounter) {
   return [...((encounter?.data?.combatants || []).map(normalizeCombatant))]
     .sort((a, b) => initiativeValue(b.initiative) - initiativeValue(a.initiative) || a.name.localeCompare(b.name));
@@ -250,7 +265,7 @@ function MiniField({ label, value, onChange, width = 58 }) {
   );
 }
 
-function CombatantCard({ row, active, onUpdate, onRemove, onViewMonster, onAddCondition, onRemoveCondition, onRemoveEffect, onDeathSave, rowRef }) {
+function CombatantCard({ row, active, campaignRules, onUpdate, onRemove, onViewMonster, onAddCondition, onRemoveCondition, onRemoveEffect, onDeathSave, rowRef }) {
   return (
     <div ref={rowRef} style={{
       border:active ? '2px solid var(--accent)' : '1px solid var(--border)',
@@ -326,6 +341,11 @@ function CombatantCard({ row, active, onUpdate, onRemove, onViewMonster, onAddCo
               <MiniButton onClick={() => onDeathSave(row, 'successes', 1)}>Pass {row.death_saves?.successes || 0}</MiniButton>
               <MiniButton onClick={() => onDeathSave(row, 'failures', 1)}>Fail {row.death_saves?.failures || 0}</MiniButton>
             </div>
+            {campaignRules?.death_saves && (
+              <div style={{border:'1px solid rgba(255,193,7,0.35)',background:'rgba(255,193,7,0.08)',borderRadius:4,padding:'5px 6px',fontSize:11,color:'var(--text-secondary)',lineHeight:1.35,whiteSpace:'pre-wrap'}}>
+                <strong style={{color:'var(--warning)'}}>Rules:</strong> {campaignRules.death_saves}
+              </div>
+            )}
             {row.last_death_save && (
               <div style={{border:'1px solid rgba(154,128,255,0.42)',background:'rgba(124,92,252,0.16)',borderRadius:4,padding:'5px 6px',fontSize:11,color:'var(--text-secondary)',lineHeight:1.35}}>
                 <div style={{color:'var(--accent-light)',fontWeight:900}}>
@@ -352,6 +372,7 @@ export default function EncounterRunnerModal({
   onStatus,
   onDelete,
   reloadCampaign,
+  campaignRules = {},
 }) {
   const data = encounter?.data || {};
   const combatants = sortedCombatants(encounter);
@@ -405,12 +426,15 @@ export default function EncounterRunnerModal({
   const syncPartyStats = async () => {
     const freshCampaign = reloadCampaign ? await reloadCampaign(campaign.id) : null;
     const sourceRoster = (freshCampaign?.characters || roster || []).filter(entry => entry.active);
-    const currentRows = dataRef.current?.combatants || [];
+    const freshRows = findFreshEncounterData(freshCampaign, encounter.id)?.combatants || [];
+    const currentRows = freshRows.length ? freshRows : (dataRef.current?.combatants || []);
     const next = currentRows.map(row => {
-      if (row.type !== 'player' || !row.character_id) return normalizeCombatant(row);
-      const entry = sourceRoster.find(candidate => sameId(candidate.character_id, row.character_id));
-      if (!entry) return normalizeCombatant(row);
-      return combatantFromRoster(entry, { ...row, initiative: row.initiative, effects: row.effects });
+      const serverRow = freshRows.find(candidate => sameId(candidate.id, row.id) || (row.character_id && sameId(candidate.character_id, row.character_id)));
+      const stableRow = mergeDeathSaveState(normalizeCombatant(row), serverRow);
+      if (stableRow.type !== 'player' || !stableRow.character_id) return stableRow;
+      const entry = sourceRoster.find(candidate => sameId(candidate.character_id, stableRow.character_id));
+      if (!entry) return stableRow;
+      return combatantFromRoster(entry, { ...stableRow, initiative: stableRow.initiative, effects: stableRow.effects });
     });
     patchCombatants(next);
   };
@@ -504,8 +528,14 @@ export default function EncounterRunnerModal({
   };
 
   const setDeathSave = (row, key, delta) => {
-    const current = row.death_saves || { successes: 0, failures: 0 };
-    updateCombatant(row.id, { death_saves: { ...current, [key]: Math.max(0, Math.min(3, toNumber(current[key], 0) + delta)) } });
+    const latest = (dataRef.current?.combatants || []).find(entry => sameId(entry.id, row.id)) || row;
+    const current = latest.death_saves || { successes: 0, failures: 0 };
+    updateCombatant(row.id, {
+      death_saves: {
+        ...current,
+        [key]: Math.max(0, Math.min(3, toNumber(current[key], 0) + delta)),
+      },
+    });
   };
 
   const toggleEffectTarget = id => {
@@ -574,6 +604,12 @@ export default function EncounterRunnerModal({
           <div>
             <h2 style={{marginBottom:2}}>Encounter Tracker: {encounter.name}</h2>
             <div style={{color:'var(--text-secondary)',fontSize:12}}>{combatants.length} combatants · {encounter.status}</div>
+            {(campaignRules.death_saves || campaignRules.exhaustion) && (
+              <div style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:6}}>
+                {campaignRules.death_saves && <span style={{color:'var(--warning)',fontSize:11,fontWeight:800}}>Death Save Rules Active</span>}
+                {campaignRules.exhaustion && <span style={{color:'var(--warning)',fontSize:11,fontWeight:800}}>Exhaustion Rules Active</span>}
+              </div>
+            )}
           </div>
           <div style={{display:'flex',gap:6,flexWrap:'wrap',justifyContent:'flex-end'}}>
             <MiniButton onClick={() => onStatus(encounter.id, primaryStatusAction.status)} variant={primaryStatusAction.variant}>{primaryStatusAction.label}</MiniButton>
@@ -715,6 +751,7 @@ export default function EncounterRunnerModal({
                 onRemoveCondition={removeCondition}
                 onRemoveEffect={removeEffect}
                 onDeathSave={setDeathSave}
+                campaignRules={campaignRules}
               />
             ))}
           </main>

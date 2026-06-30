@@ -51,6 +51,13 @@ export function CampaignProvider({ children }) {
     return r.data;
   }, []);
 
+  const updateCampaignRules = useCallback(async (id, rules) => {
+    const r = await api.put(`/campaigns/${id}`, { rules });
+    setCampaign(r.data);
+    setCampaigns(prev => prev.map(c => c.id === id ? { ...c, rules: r.data.rules } : c));
+    return r.data;
+  }, []);
+
   const regenerateInvite = useCallback(async id => {
     const r = await api.post(`/campaigns/${id}/invite/regenerate`);
     setCampaign(prev => prev ? { ...prev, invite_code: r.data.invite_code } : prev);
@@ -159,6 +166,7 @@ export function CampaignProvider({ children }) {
       createCampaign,
       joinCampaign,
       renameCampaign,
+      updateCampaignRules,
       regenerateInvite,
       attachCharacter,
       detachCharacter,

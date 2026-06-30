@@ -127,6 +127,14 @@ def _death_save_record(character, roll, result, note, blind, death_saves):
     }
 
 
+def _clean_campaign_rules(value):
+    value = value if isinstance(value, dict) else {}
+    return {
+        "death_saves": str(value.get("death_saves") or "").strip(),
+        "exhaustion": str(value.get("exhaustion") or "").strip(),
+    }
+
+
 def _player_encounter_view(encounter):
     data = encounter.data or {}
     combatants = data.get("combatants") if isinstance(data.get("combatants"), list) else []
@@ -135,6 +143,7 @@ def _player_encounter_view(encounter):
         "name": encounter.name,
         "status": encounter.status,
         "updated_at": encounter.updated_at.isoformat(),
+        "campaign_rules": _clean_campaign_rules(encounter.campaign.rules if encounter.campaign else {}),
         "combatants": [_public_combatant(row) for row in combatants],
     }
 
@@ -584,6 +593,7 @@ def get_player_campaign_view(character_id):
             **_campaign_response(campaign, member, include_detail=False),
             "character_id": character.id,
             "character_name": character.name,
+            "campaign_rules": _clean_campaign_rules(campaign.rules),
             "encounters": [_player_encounter_view(encounter) for encounter in running],
             "effects": [
                 effect.to_dict() for effect in campaign.effects
@@ -686,6 +696,8 @@ def update_campaign(campaign_id):
     name = (data.get("name") or "").strip()
     if name:
         campaign.name = name
+    if "rules" in data:
+        campaign.rules = _clean_campaign_rules(data.get("rules"))
     db.session.commit()
     return jsonify(_campaign_response(campaign, member)), 200
 
