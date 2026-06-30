@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { schoolColor } from '../utils/dnd';
 
-export default function SpellListManagerModal({ knownSpells, spellLists, activeList, maxPrepared, onSave, onClose }) {
+export default function SpellListManagerModal({ knownSpells, spellLists, activeList, maxPrepared, onSave, onClose, onEditKnown }) {
   const lists = spellLists || {};
   const [editing, setEditing] = useState(null); // name being created/edited, or null for browse view
   const [editName, setEditName] = useState('');
@@ -102,12 +102,16 @@ export default function SpellListManagerModal({ knownSpells, spellLists, activeL
       <div className="modal" style={{maxWidth:420}} onClick={e => e.stopPropagation()}>
         <h2>Spell Lists</h2>
         <div style={{color:'var(--text-dim)',fontSize:12,marginBottom:10}}>Switch quickly between prepared-spell loadouts. Changes here save immediately.</div>
-        <div
-          onClick={() => setActiveList(null)}
-          style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'8px 10px',borderRadius:'var(--radius-sm)',border:`1px solid ${activeList===null?'var(--accent)':'var(--border)'}`,marginBottom:6,cursor:'pointer'}}
-        >
-          <span style={{color:'var(--text-primary)',fontWeight:500}}>All Known Spells</span>
+        <div style={{display:'flex',alignItems:'center',gap:8,padding:'8px 10px',borderRadius:'var(--radius-sm)',border:`1px solid ${activeList===null?'var(--accent)':'var(--border)'}`,marginBottom:6}}>
+          <div onClick={() => setActiveList(null)} style={{flex:1,cursor:'pointer'}}>
+            <span style={{color:'var(--text-primary)',fontWeight:500}}>All Known Spells</span>
+          </div>
           {activeList===null && <span style={{color:'var(--accent-light)',fontSize:12}}>Active</span>}
+          {onEditKnown && (
+            <button className="btn btn-secondary btn-sm" onClick={onEditKnown} title="Add or remove spells from your known spells - prepared lists are built from these">
+              ✏️ Edit
+            </button>
+          )}
         </div>
         {Object.keys(lists).map(name => (
           <div key={name} style={{display:'flex',alignItems:'center',gap:8,padding:'8px 10px',borderRadius:'var(--radius-sm)',border:`1px solid ${activeList===name?'var(--accent)':'var(--border)'}`,marginBottom:6}}>

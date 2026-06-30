@@ -211,6 +211,17 @@ export default function SpellsTab() {
             {spellBlocks.map(b => (
               <span key={b.className} style={{color:'var(--accent-light)',fontSize:11,fontWeight:600}}>{b.className}: {b.attackMod>=0?'+':''}{b.attackMod} atk · DC {b.saveDC}</span>
             ))}
+            {knownSpells.length > 0 && (
+              <select
+                value={activeList || ''}
+                onChange={e => saveLists(spellLists, e.target.value || null)}
+                title="Loaded list"
+                style={{fontWeight:600,color:'var(--accent-light)',fontSize:12,minWidth:130}}
+              >
+                <option value="">{needsListPrompt ? 'No List Selected' : 'All Known Spells'}</option>
+                {Object.keys(spellLists).map(name => <option key={name} value={name}>{name}</option>)}
+              </select>
+            )}
             <button className="btn btn-secondary btn-sm" onClick={() => setManagingLists(true)}>Manage Lists</button>
             <button className="btn btn-secondary btn-sm" disabled={refreshing} onClick={refreshSpells} title="Re-pull all known spells from the latest spell data">
               {refreshing ? 'Refreshing...' : '🔄 Refresh Spell Data'}
@@ -264,25 +275,6 @@ export default function SpellsTab() {
           )}
         </div>
 
-        {knownSpells.length > 0 && (
-          <div className="card">
-            <div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}>
-              <span style={{color:'var(--text-dim)',fontSize:11}}>Loaded list:</span>
-              <select
-                value={activeList || ''}
-                onChange={e => saveLists(spellLists, e.target.value || null)}
-                style={{fontWeight:600,color:'var(--accent-light)',fontSize:13,minWidth:140}}
-              >
-                <option value="">{needsListPrompt ? 'No List Selected' : 'All Known Spells'}</option>
-                {Object.keys(spellLists).map(name => <option key={name} value={name}>{name}</option>)}
-              </select>
-              <button className="btn btn-secondary btn-sm" onClick={() => setBrowsing(true)} title="Add or remove spells from your known spells - prepared lists are built from these">
-                ✏️ Edit Known Spells
-              </button>
-              {maxPrepared != null && <span style={{color:'var(--text-dim)',fontSize:11}}>prepares up to {maxPrepared} (cantrips don't count)</span>}
-            </div>
-          </div>
-        )}
       </div>
 
       <div style={{flex:1,overflowY:'auto',padding:'0 12px 12px'}}>
@@ -349,6 +341,7 @@ export default function SpellsTab() {
           maxPrepared={maxPrepared}
           onSave={saveLists}
           onClose={() => setManagingLists(false)}
+          onEditKnown={() => { setManagingLists(false); setBrowsing(true); }}
         />
       )}
       {browsing && (

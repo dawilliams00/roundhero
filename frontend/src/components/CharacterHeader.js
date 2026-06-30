@@ -21,7 +21,19 @@ import FeedbackModal from './FeedbackModal';
 // (see hasteAcBonus below), so it isn't duplicated here. Add future mechanically-modeled
 // effects here rather than hardcoding a new one-off chip elsewhere.
 const EFFECT_MECHANICAL_NOTES = {
-  [HASTED_EFFECT]: [{ t: 'ADV on DEX saves', d: 'From Haste' }],
+  [HASTED_EFFECT]: [{ t: 'ADV on DEX saves', d: 'From Haste', type: 'advantage' }],
+};
+
+// Single-letter, color-coded prefix for trait chips so a long row of resistances/
+// immunities/advantages/disadvantages reads at a glance instead of needing to read every
+// chip's full text. Distinct colors per category, not just per-trait, so the player's eye
+// can sort "what kind of thing is this" before reading the specific name.
+const TRAIT_TYPE_STYLE = {
+  advantage:     { letter: 'A', color: '#4caf50' }, // green
+  disadvantage:  { letter: 'D', color: '#f44336' }, // red
+  resistance:    { letter: 'R', color: '#ffc107' }, // yellow
+  immune:        { letter: 'I', color: '#29b6f6' }, // bright blue
+  vulnerability: { letter: 'V', color: '#ff7043' }, // orange
 };
 
 function EditableStat({ label, value, onSave, color, title }) {
@@ -284,25 +296,25 @@ export default function CharacterHeader({ onBack }) {
   const traits = td?.traits || { resistances: [], immunities: [], vulnerabilities: [], advantages: [], disadvantages: [] };
   const traitName = t => (typeof t === 'string' ? t : t?.name) || '';
   const traitChips = [
-    ...activeEffects.flatMap(e => (EFFECT_MECHANICAL_NOTES[e] || []).map(n => ({...n, c:'var(--accent-light)'}))),
-    ...(traits.resistances||[]).map(t => ({t: traitName(t), d: t?.description, c:'var(--text-dim)'})),
-    ...(traits.immunities||[]).map(t => ({t: traitName(t), d: t?.description, c:'var(--success)'})),
-    ...(traits.vulnerabilities||[]).map(t => ({t: traitName(t), d: t?.description, c:'var(--danger)'})),
-    ...(traits.advantages||[]).map(t => ({t: traitName(t), d: t?.description, c:'var(--accent-light)'})),
-    ...(traits.disadvantages||[]).map(t => ({t: traitName(t), d: t?.description, c:'var(--warning)'})),
+    ...activeEffects.flatMap(e => EFFECT_MECHANICAL_NOTES[e] || []),
+    ...(traits.resistances||[]).map(t => ({t: traitName(t), d: t?.description, type:'resistance'})),
+    ...(traits.immunities||[]).map(t => ({t: traitName(t), d: t?.description, type:'immune'})),
+    ...(traits.vulnerabilities||[]).map(t => ({t: traitName(t), d: t?.description, type:'vulnerability'})),
+    ...(traits.advantages||[]).map(t => ({t: traitName(t), d: t?.description, type:'advantage'})),
+    ...(traits.disadvantages||[]).map(t => ({t: traitName(t), d: t?.description, type:'disadvantage'})),
     // Item-granted advantage on saves (an advantage_save buff, e.g. a Cloak of
     // Protection-style homebrew) shows the same way Haste's hardcoded "ADV on DEX
     // saves" chip already does - just sourced from equipped items instead.
     ...itemBonuses.advantageSaves.map(a => ({
-      t: `ADV on ${a.ability !== 'all' ? `${a.ability} ` : ''}saves`, d: a.source, c: 'var(--accent-light)',
+      t: `ADV on ${a.ability !== 'all' ? `${a.ability} ` : ''}saves`, d: a.source, type: 'advantage',
     })),
     // Item-granted resistances/immunities/vulnerabilities (e.g. the Great Silver Sword's
     // psychic resistance + charmed immunity while held) - same chip styling as the
     // character-level trait fields above, just only active while the item actually is.
-    ...itemBonuses.resistances.map(r => ({ t: `Resist ${r.type}`, d: r.source, c: 'var(--text-dim)' })),
-    ...itemBonuses.immunities.map(r => ({ t: `Immune ${r.type}`, d: r.source, c: 'var(--success)' })),
-    ...itemBonuses.vulnerabilities.map(r => ({ t: `Vuln ${r.type}`, d: r.source, c: 'var(--danger)' })),
-    ...itemBonuses.conditionImmunities.map(r => ({ t: `Immune: ${r.condition}`, d: r.source, c: 'var(--success)' })),
+    ...itemBonuses.resistances.map(r => ({ t: `Resist ${r.type}`, d: r.source, type: 'resistance' })),
+    ...itemBonuses.immunities.map(r => ({ t: `Immune ${r.type}`, d: r.source, type: 'immune' })),
+    ...itemBonuses.vulnerabilities.map(r => ({ t: `Vuln ${r.type}`, d: r.source, type: 'vulnerability' })),
+    ...itemBonuses.conditionImmunities.map(r => ({ t: `Immune: ${r.condition}`, d: r.source, type: 'immune' })),
   ];
 
   const adjustHp = async delta => {
@@ -398,9 +410,18 @@ export default function CharacterHeader({ onBack }) {
 
             {traitChips.length > 0 && (
               <div style={{display:'flex',gap:5,flexWrap:'wrap',marginTop:8}}>
-                {traitChips.map(({t,d,c}, i) => (
-                  <div key={t+i} title={d || undefined} style={{border:`1px solid ${c}`,color:c,borderRadius:10,padding:'1px 7px',fontSize:10}}>{t}</div>
-                ))}
+                {traitChips.map(({t,d,type}, i) => {
+                  const style = TRAIT_TYPE_STYLE[type];
+                  const c = style?.color || 'var(--text-dim)';
+                  return (
+                    <div key={t+i} title={d || undefined} style={{display:'flex',alignItems:'center',gap:4,border:`1px solid ${c}`,borderRadius:10,padding:'1px 7px 1px 5px',fontSize:10}}>
+                      {style && (
+                        <span style={{display:'inline-flex',alignItems:'center',justifyContent:'center',width:13,height:13,borderRadius:'50%',background:c,color:'#000',fontWeight:800,fontSize:9,lineHeight:1}}>{style.letter}</span>
+                      )}
+                      <span style={{color:c}}>{t}</span>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
