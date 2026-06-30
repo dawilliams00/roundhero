@@ -16,6 +16,7 @@ export default function FeatureEditModal({ name, feature, onClose }) {
   const [form, setForm] = useState({
     name, max: feature.max || 0, rest_type: feature.rest_type || 'long', description: feature.description || '',
     reminder: !!feature.reminder, refillOnCombat: !!feature.refill_on_combat, buffs: feature.buffs || [],
+    restReminder: { ...(feature.rest_reminder || {}) },
   });
   const set = (k,v) => setForm(f => ({...f,[k]:v}));
 
@@ -33,6 +34,7 @@ export default function FeatureEditModal({ name, feature, onClose }) {
     const updatedFeature = { ...feature, max: newMax, current: newCurrent, rest_type: form.rest_type, description: form.description };
     if (form.reminder) updatedFeature.reminder = true; else delete updatedFeature.reminder;
     if (form.refillOnCombat) updatedFeature.refill_on_combat = true; else delete updatedFeature.refill_on_combat;
+    if (Object.values(form.restReminder || {}).some(Boolean)) updatedFeature.rest_reminder = form.restReminder; else delete updatedFeature.rest_reminder;
     if (form.buffs?.length) updatedFeature.buffs = form.buffs; else delete updatedFeature.buffs;
 
     const newFeatures = { ...td.features };
@@ -70,6 +72,23 @@ export default function FeatureEditModal({ name, feature, onClose }) {
           <input type="checkbox" checked={form.refillOnCombat} onChange={e=>set('refillOnCombat',e.target.checked)} />
           <span style={{fontSize:13,color:'var(--text-secondary)'}}>🛡️ Refills automatically on entering combat if it's at 0</span>
         </label>
+        <div style={{marginBottom:8}}>
+          <div style={{fontSize:13,color:'var(--text-secondary)',marginBottom:4}}>🌙 Remind me about this around a rest (e.g. a spell that must be stored before/after resting) — shows a confirm-or-go-handle-it prompt, so you can cancel out of the rest, do it, then come back:</div>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6,paddingLeft:8}}>
+            {[
+              ['before_short', 'Before Short Rest'],
+              ['after_short', 'After Short Rest'],
+              ['before_long', 'Before Long Rest'],
+              ['after_long', 'After Long Rest'],
+            ].map(([k, label]) => (
+              <label key={k} style={{display:'flex',alignItems:'center',gap:6,cursor:'pointer'}}>
+                <input type="checkbox" checked={!!form.restReminder[k]}
+                  onChange={e => set('restReminder', { ...form.restReminder, [k]: e.target.checked })} />
+                <span style={{fontSize:12,color:'var(--text-secondary)'}}>{label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
         <ModifiersEditor
           buffs={form.buffs}
           onChange={(buffs) => set('buffs', buffs)}

@@ -2,13 +2,41 @@ import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
 import { modifier, HIT_DIE } from '../utils/dnd';
 
+// A feature can flag tracker_data.features[name].rest_reminder = {before_short,
+// after_short, before_long, after_long} to get a nag at the right moment around a rest -
+// generic, not tied to any one feature/class, so any homebrew "do X before/after you
+// rest" mechanic (Nightbound Shadowcast's pre-rest spell storage, Cartomancer's post-rest
+// tuck, etc.) can use the same checkboxes in CustomAbilityModal/FeatureEditModal.
+const restReminderNames = (features, when) =>
+  Object.entries(features || {}).filter(([, f]) => f?.rest_reminder?.[when]).map(([name]) => name);
+
 export default function RestModal({ onClose, onRest }) {
   const { character, saveTrackerData } = useCharacter();
   const [view, setView] = useState('choose');
   const [rollLog, setRollLog] = useState([]);
   const [spendCount, setSpendCount] = useState(1);
+  const [pendingRestType, setPendingRestType] = useState(null); // rest type waiting on a "before" reminder confirm
 
   const td = character?.tracker_data || {};
+  const features = td.features || {};
+
+  const beginRest = (type) => {
+    const before = restReminderNames(features, `before_${type}`);
+    if (before.length > 0) {
+      setPendingRestType(type);
+      setView('beforeReminder');
+      return;
+    }
+    if (type === 'short') setView('shortRestHitDice');
+    else onRest('long');
+  };
+
+  const confirmPendingRest = () => {
+    const type = pendingRestType;
+    setPendingRestType(null);
+    if (type === 'short') setView('shortRestHitDice');
+    else onRest('long');
+  };
   const rawHd = td.hit_dice;
   // Fallback for characters whose hit_dice was never populated (pre-dates the feature, needs a Re-sync from PDF)
   const fallbackClass = (character?.class_name || '').split(/[\s/]/)[0];
@@ -47,6 +75,35 @@ export default function RestModal({ onClose, onRest }) {
   const finishShortRest = async () => {
     await onRest('short');
   };
+
+  if (view === 'beforeReminder') {
+    const names = restReminderNames(features, `before_${pendingRestType}`);
+    return (
+      <div className="modal-overlay">
+        <div className="modal" onClick={e => e.stopPropagation()} style={{maxWidth:360}}>
+          <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
+          <h2>🌙 Before You Rest...</h2>
+          <div style={{marginBottom:16}}>
+            {names.map(n => (
+              <div key={n} style={{display:'flex',alignItems:'center',gap:8,padding:'8px 10px',marginBottom:6,background:'rgba(245,158,11,0.1)',border:'1px solid var(--warning)',borderRadius:'var(--radius-sm)'}}>
+                <span style={{fontSize:14}}>📌</span>
+                <span style={{color:'var(--text-primary)',fontSize:13}}>Don't forget: <b>{n}</b></span>
+              </div>
+            ))}
+          </div>
+          <p style={{color:'var(--text-dim)',fontSize:11,marginBottom:12}}>
+            If you still need to do this, close out and handle it now — your {pendingRestType} rest will still be here when you come back.
+          </p>
+          <button className="btn btn-secondary" style={{width:'100%',marginBottom:8}} onClick={onClose}>
+            Wait, Let Me Handle This First
+          </button>
+          <button className="btn btn-primary" style={{width:'100%'}} onClick={confirmPendingRest}>
+            I'm Ready, Continue {pendingRestType === 'short' ? 'Short' : 'Long'} Rest
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (view === 'shortRestHitDice') {
     return (
@@ -98,12 +155,12 @@ export default function RestModal({ onClose, onRest }) {
         <h2>Take a Rest</h2>
         <p style={{color:'var(--text-secondary)',marginBottom:24,fontSize:13}}>Choose rest type. All matching features and slots will reset.</p>
         <div style={{display:'flex',gap:12}}>
-          <button className="btn btn-secondary" style={{flex:1,padding:'12px'}} onClick={() => setView('shortRestHitDice')}>
+          <button className="btn btn-secondary" style={{flex:1,padding:'12px'}} onClick={() => beginRest('short')}>
             <div style={{fontSize:20,marginBottom:4}}>☕</div>
             <div style={{fontWeight:500}}>Short Rest</div>
             <div style={{fontSize:11,color:'var(--text-dim)',marginTop:2}}>Spend hit dice</div>
           </button>
-          <button className="btn btn-primary" style={{flex:1,padding:'12px'}} onClick={() => onRest('long')}>
+          <button className="btn btn-primary" style={{flex:1,padding:'12px'}} onClick={() => beginRest('long')}>
             <div style={{fontSize:20,marginBottom:4}}>🌙</div>
             <div style={{fontWeight:500}}>Long Rest</div>
             <div style={{fontSize:11,marginTop:2}}>Full reset</div>

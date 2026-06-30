@@ -27,8 +27,9 @@ export default function CustomAbilityModal({ onClose, editingFeat, editMode = 'c
     grantsSpell: !!editingFeat.grantsSpell, grantedSpellName: editingFeat.grantedSpellName || '', abilityOverride: editingFeat.abilityOverride || '', saveToLibrary: true,
     edition: editingFeat.edition || 'expanded',
     reminder: !!editingFeat.reminder, refillOnCombat: !!editingFeat.refillOnCombat,
+    restReminder: { ...(editingFeat.rest_reminder || {}) },
     buffs: editingFeat.buffs || [],
-  } : { name:'', section:'Action', source:'Custom', tracker_key:'', max_uses:1, rest_type:'long', description:'', isSpell:false, isTuck:false, grantsSpell:false, grantedSpellName:'', abilityOverride:'', saveToLibrary:true, edition:'expanded', reminder:false, refillOnCombat:false, buffs:[] });
+  } : { name:'', section:'Action', source:'Custom', tracker_key:'', max_uses:1, rest_type:'long', description:'', isSpell:false, isTuck:false, grantsSpell:false, grantedSpellName:'', abilityOverride:'', saveToLibrary:true, edition:'expanded', reminder:false, refillOnCombat:false, restReminder:{}, buffs:[] });
   const [saving, setSaving] = useState(false);
   const isLibraryEdit = !!editingFeat && editMode !== 'duplicate';
 
@@ -59,6 +60,7 @@ export default function CustomAbilityModal({ onClose, editingFeat, editMode = 'c
       rest_type: form.rest_type, isSpell: form.isSpell, isTuck: form.isTuck,
       grantsSpell: form.grantsSpell, grantedSpellName: form.grantedSpellName, abilityOverride: form.abilityOverride,
       edition: form.edition, reminder: form.reminder, refillOnCombat: form.refillOnCombat,
+      rest_reminder: form.restReminder,
       buffs: form.buffs || [],
     };
     if (isLibraryEdit) {
@@ -82,7 +84,8 @@ export default function CustomAbilityModal({ onClose, editingFeat, editMode = 'c
     if (!newAe[form.section]) newAe[form.section] = [];
     newAe[form.section] = [...newAe[form.section], newAbility];
     const newTd = { ...character.tracker_data };
-    if (form.max_uses > 0 || form.isTuck || form.grantsSpell || form.reminder || form.refillOnCombat || (form.buffs && form.buffs.length > 0)) {
+    const hasRestReminder = Object.values(form.restReminder || {}).some(Boolean);
+    if (form.max_uses > 0 || form.isTuck || form.grantsSpell || form.reminder || form.refillOnCombat || hasRestReminder || (form.buffs && form.buffs.length > 0)) {
       newTd.features = {
         ...newTd.features,
         [key]: {
@@ -92,6 +95,7 @@ export default function CustomAbilityModal({ onClose, editingFeat, editMode = 'c
           ...(form.grantsSpell ? { granted_spell: form.grantedSpellName, ability_override: form.abilityOverride || null } : {}),
           ...(form.reminder ? { reminder: true } : {}),
           ...(form.refillOnCombat ? { refill_on_combat: true } : {}),
+          ...(hasRestReminder ? { rest_reminder: form.restReminder } : {}),
           ...(form.buffs?.length ? { buffs: form.buffs } : {}),
         },
       };
@@ -218,6 +222,24 @@ export default function CustomAbilityModal({ onClose, editingFeat, editMode = 'c
           <input type="checkbox" checked={form.refillOnCombat} onChange={e => set('refillOnCombat', e.target.checked)} />
           <span style={{fontSize:13,color:'var(--text-secondary)'}}>🛡️ Refills automatically on entering combat if it's at 0 (e.g. Primal Champion, Perfect Self)</span>
         </label>
+
+        <div style={{marginBottom:8}}>
+          <div style={{fontSize:13,color:'var(--text-secondary)',marginBottom:4}}>🌙 Remind me about this around a rest (e.g. Nightbound Shadowcast needs a spell stored BEFORE a long rest; Cartomancer needs a new spell tucked AFTER one) — shows as a confirm-or-go-handle-it prompt when resting, so you can cancel out, do it, then come back:</div>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6,paddingLeft:8}}>
+            {[
+              ['before_short', 'Before Short Rest'],
+              ['after_short', 'After Short Rest'],
+              ['before_long', 'Before Long Rest'],
+              ['after_long', 'After Long Rest'],
+            ].map(([k, label]) => (
+              <label key={k} style={{display:'flex',alignItems:'center',gap:6,cursor:'pointer'}}>
+                <input type="checkbox" checked={!!form.restReminder[k]}
+                  onChange={e => set('restReminder', { ...form.restReminder, [k]: e.target.checked })} />
+                <span style={{fontSize:12,color:'var(--text-secondary)'}}>{label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
 
         <ModifiersEditor
           buffs={form.buffs}
