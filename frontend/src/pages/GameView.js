@@ -126,9 +126,9 @@ export default function GameView() {
             }}>{t.label}</button>
           ))}
         </div>
-        {campaignViews.length > 0 && (
+        {campaignViews.some(v => v.encounters && v.encounters.length > 0) && (
           <button className="btn btn-secondary btn-sm" style={{margin:6,flexShrink:0}} onClick={openCampaignView}>
-            Campaign
+            Encounter
           </button>
         )}
       </div>
@@ -138,7 +138,7 @@ export default function GameView() {
       {showConfirmClasses && (
         <LevelUpFlowModal mode="confirm_classes" onClose={() => { setShowConfirmClasses(false); setNeedsClassConfirm(false); }} />
       )}
-      {showCampaignView && campaignViews.length > 0 && (
+      {showCampaignView && campaignViews.some(v => v.encounters && v.encounters.length > 0) && (
         <CampaignPlayerViewModal views={campaignViews} onClose={() => setShowCampaignView(false)} />
       )}
     </div>
