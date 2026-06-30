@@ -230,6 +230,26 @@ function HpControls({ row, onUpdate }) {
   );
 }
 
+function MiniField({ label, value, onChange, width = 58 }) {
+  return (
+    <div style={{display:'grid',gap:2,width,flex:'0 0 auto'}}>
+      <div style={{color:'var(--text-dim)',fontSize:10,lineHeight:1,fontWeight:800,textTransform:'uppercase'}}>{label}</div>
+      <input
+        value={value}
+        onChange={onChange}
+        style={{
+          width:'100%',
+          height:28,
+          textAlign:'center',
+          fontWeight:800,
+          padding:'3px 6px',
+          lineHeight:1.1,
+        }}
+      />
+    </div>
+  );
+}
+
 function CombatantCard({ row, active, onUpdate, onRemove, onViewMonster, onAddCondition, onRemoveCondition, onRemoveEffect, onDeathSave, rowRef }) {
   return (
     <div ref={rowRef} style={{
@@ -247,17 +267,11 @@ function CombatantCard({ row, active, onUpdate, onRemove, onViewMonster, onAddCo
       scrollMarginTop:72,
     }}>
       <div style={{gridArea:'identity',display:'grid',gap:5,minWidth:0}}>
-        <input value={row.name} onChange={e => onUpdate(row.id, { name: e.target.value })} style={{fontWeight:800,flex:'1 1 200px',minWidth:120}} />
-        <div style={{display:'grid',gridTemplateColumns:'58px 58px auto',gap:6,alignItems:'end'}}>
-          <label style={{display:'grid',gap:2,fontSize:10,color:'var(--text-dim)'}}>
-            INIT
-            <input value={row.initiative} onChange={e => onUpdate(row.id, { initiative: e.target.value })} style={{textAlign:'center',fontWeight:800}} />
-          </label>
-          <label style={{display:'grid',gap:2,fontSize:10,color:'var(--text-dim)'}}>
-            AC
-            <input value={row.ac} onChange={e => onUpdate(row.id, { ac: e.target.value })} style={{textAlign:'center',fontWeight:800}} />
-          </label>
-          <div style={{display:'flex',gap:6,alignItems:'center',flexWrap:'wrap',minWidth:0}}>
+        <input value={row.name} onChange={e => onUpdate(row.id, { name: e.target.value })} style={{fontWeight:800,minWidth:120,width:'100%'}} />
+        <div style={{display:'flex',gap:6,alignItems:'flex-end',minWidth:0,flexWrap:'wrap'}}>
+          <MiniField label="INIT" value={row.initiative} onChange={e => onUpdate(row.id, { initiative: e.target.value })} />
+          <MiniField label="AC" value={row.ac} onChange={e => onUpdate(row.id, { ac: e.target.value })} />
+          <div style={{display:'flex',gap:6,alignItems:'center',flexWrap:'wrap',minWidth:0,paddingBottom:4}}>
             {row.monster && <MiniButton onClick={() => onViewMonster(row.monster)}>Stat</MiniButton>}
             <span style={{color:row.type === 'player' ? 'var(--success)' : 'var(--warning)',fontSize:11,fontWeight:900,textTransform:'uppercase'}}>{row.type}</span>
           </div>
@@ -589,7 +603,7 @@ export default function EncounterRunnerModal({
           marginTop:12,
           overflow:'auto',
         }}>
-          <aside style={{display:'flex',flexDirection:'column',gap:8,minHeight:0,overflow:'hidden',paddingRight:4}}>
+          <aside style={{display:'flex',flexDirection:'column',gap:8,minHeight:0,overflowY:'auto',overflowX:'hidden',paddingRight:4}}>
             <section style={{border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',padding:10}}>
               <div style={{color:'var(--accent-light)',fontWeight:800,marginBottom:8}}>Add Characters</div>
               <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
@@ -599,7 +613,7 @@ export default function EncounterRunnerModal({
               </div>
             </section>
 
-            <section style={{border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',padding:8,display:'flex',flexDirection:'column',minHeight:0,flex:'1 1 320px',overflow:'hidden'}}>
+            <section style={{border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',padding:8,display:'flex',flexDirection:'column',minHeight:340,flex:'0 0 380px',overflow:'hidden'}}>
               <div style={{color:'var(--accent-light)',fontWeight:800,marginBottom:8}}>Add Enemies</div>
               <input value={monsterSearch} onChange={e => setMonsterSearch(e.target.value)} placeholder="Search bestiary" />
               <div style={{display:'grid',gridTemplateColumns:'32px 1fr 32px 1fr',gap:6,marginTop:6}}>
@@ -613,7 +627,7 @@ export default function EncounterRunnerModal({
                 Shared initiative
               </label>
               <div style={{color:'var(--text-dim)',fontSize:11,marginBottom:5}}>{filteredMonsters.length} monster{filteredMonsters.length === 1 ? '' : 's'}</div>
-              <div style={{flex:1,minHeight:120,overflowY:'auto',paddingRight:3,border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',background:'rgba(0,0,0,0.12)'}}>
+              <div style={{flex:1,minHeight:210,overflowY:'auto',paddingRight:3,border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',background:'rgba(0,0,0,0.12)'}}>
                 {filteredMonsters.map(monster => (
                   <button key={monster._custom_id ? `custom_${monster._custom_id}` : monster.name} type="button" onClick={() => addMonster(monster)} style={{display:'flex',justifyContent:'space-between',gap:8,width:'100%',textAlign:'left',border:0,borderBottom:'1px solid var(--border)',background:'transparent',color:'var(--text-primary)',padding:'7px 8px',cursor:'pointer',fontWeight:700}}>
                     <span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{monster.name}</span>

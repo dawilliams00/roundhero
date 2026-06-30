@@ -534,6 +534,7 @@ export default function CharacterHeader({ onBack }) {
               <button className="btn btn-secondary btn-sm" onClick={() => setShowSaves(true)}>SAVES</button>
               <button className="btn btn-secondary btn-sm" onClick={() => setShowSkills(true)}>SKILLS</button>
               <button className="btn btn-secondary btn-sm" onClick={() => setShowTraits(true)}>TRAITS</button>
+              <button className="btn btn-secondary btn-sm" onClick={() => setShowDeathSaves(true)}>DEATH SAVES</button>
               <button className="btn btn-secondary btn-sm" onClick={() => setShowRest(true)}>🌙 REST</button>
               {hd && hd.total > 0 && (
                 <div className="stat-box">
