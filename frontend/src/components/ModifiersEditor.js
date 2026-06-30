@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { ABILITY_KEYS } from '../utils/dnd';
 
 // Shared "Modifiers" editor - originally AddItemModal's, extracted so feats (via
@@ -22,9 +22,22 @@ const FULL_DAMAGE_TYPES = ['Acid','Bludgeoning','Cold','Fire','Force','Lightning
 const CONDITIONS = ['Blinded','Charmed','Deafened','Exhaustion','Frightened','Grappled','Incapacitated','Invisible','Paralyzed','Petrified','Poisoned','Prone','Restrained','Stunned','Unconscious'];
 
 export default function ModifiersEditor({ buffs, onChange, allowWeapon = false, weaponScope = 'this weapon', activeWhileText }) {
-  const addModifier = () => onChange([...buffs, { stat: 'ac_base', value: 1 }]);
+  // Stable per-row id, independent of array position - using the array index as React's
+  // key (the original bug here) let a <select>'s native browser selection state get
+  // silently reused for the wrong row whenever a row was added/removed/changed, since
+  // React matches DOM nodes by key, not by content - a freshly-added "AC" row could end
+  // up displaying/saving as a duplicate of whatever the PREVIOUS row at that index used to
+  // be. rowIdsRef keeps a stable id per row for as long as that row exists, growing/
+  // shrinking in lockstep with addModifier/removeModifier so each <select> always keys to
+  // the same DOM node it started with, regardless of what other rows do.
+  const rowIdsRef = useRef([]);
+  const nextIdRef = useRef(0);
+  while (rowIdsRef.current.length < buffs.length) rowIdsRef.current.push(nextIdRef.current++);
+  if (rowIdsRef.current.length > buffs.length) rowIdsRef.current.length = buffs.length;
+
+  const addModifier = () => { rowIdsRef.current.push(nextIdRef.current++); onChange([...buffs, { stat: 'ac_base', value: 1 }]); };
   const updateModifier = (i, patch) => onChange(buffs.map((b, idx) => idx === i ? { ...b, ...patch } : b));
-  const removeModifier = (i) => onChange(buffs.filter((_, idx) => idx !== i));
+  const removeModifier = (i) => { rowIdsRef.current.splice(i, 1); onChange(buffs.filter((_, idx) => idx !== i)); };
   const setModifierType = (i, value) => {
     if (value.startsWith('set_ability:')) {
       updateModifier(i, { stat: value.slice(12), mode: 'set_ability', ability: 'DEX', damage_type: undefined, condition: undefined, value: 13 });
@@ -61,7 +74,7 @@ export default function ModifiersEditor({ buffs, onChange, allowWeapon = false, 
         const selectValue = isSetAbilityMode ? `set_ability:${b.stat}` : isSetMode ? `set:${b.stat}` : isAddMode ? `add:${b.stat}` : isAdvSave ? `advsave:${b.ability || 'all'}`
           : isDamageBuff ? damageBuffPrefix : isCondImmune ? 'condimmune' : b.stat;
         return (
-          <div key={i} style={{display:'flex',gap:6,alignItems:'center',marginBottom:6}}>
+          <div key={rowIdsRef.current[i]} style={{display:'flex',gap:6,alignItems:'center',marginBottom:6}}>
             <select value={selectValue} onChange={e => setModifierType(i, e.target.value)} style={{flex:2}}>
               {ADD_MODIFIERS(weaponScope).filter(m => !m.stat.startsWith('weapon_') || allowWeapon).map(m => (
                 <option key={m.stat} value={m.stat}>{m.label}</option>

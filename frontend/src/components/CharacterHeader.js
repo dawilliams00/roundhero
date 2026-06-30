@@ -346,6 +346,14 @@ export default function CharacterHeader({ onBack }) {
     ...itemBonuses.vulnerabilities.map(r => ({ t: r.type, d: `From: ${r.source}`, type: 'vulnerability' })),
     ...itemBonuses.conditionImmunities.map(r => ({ t: r.condition, d: `From: ${r.source}`, type: 'immune' })),
   ];
+  // Group chips by type (all Resistances together, all Advantages together, etc.) instead
+  // of interleaving character-level traits with item-granted ones in whatever order they
+  // happened to be concatenated above - a stable sort keeps each type's own internal order
+  // (e.g. items still listed after character traits within "resistance") while clustering
+  // same-type chips so the row reads at a glance instead of needing to scan every chip's
+  // letter badge individually.
+  const TRAIT_TYPE_ORDER = ['advantage','disadvantage','resistance','immune','vulnerability','sense'];
+  traitChips.sort((a, b) => TRAIT_TYPE_ORDER.indexOf(a.type) - TRAIT_TYPE_ORDER.indexOf(b.type));
 
   const adjustHp = async delta => {
     const newHp = Math.max(0, Math.min(maxHp, curHp + delta));
