@@ -266,6 +266,13 @@ export default function LevelUpFlowModal({ onClose, mode = 'level_up', initialLe
         const existing = newTd.save_proficiencies || td.save_proficiencies || [];
         if (!existing.includes(choice.saveProficiencyAdd)) newTd.save_proficiencies = [...existing, choice.saveProficiencyAdd];
       }
+      if (choice.skillProficienciesAdd?.length) {
+        const td = character.tracker_data || {};
+        const existing = newTd.skill_proficiencies || td.skill_proficiencies || [];
+        const merged = [...existing];
+        choice.skillProficienciesAdd.forEach(s => { if (!merged.includes(s)) merged.push(s); });
+        newTd.skill_proficiencies = merged;
+      }
       if (choice.newFeature) {
         const { key: fKey, ...fData } = choice.newFeature;
         newTd.features = { ...newTd.features, [fKey]: fData };

@@ -322,8 +322,10 @@
       "rest_type": "long",
       "source": "SRD",
       "official": true,
-      "description": "You gain proficiency in any combination of three skills or tools of your choice.\n\nYou can take this feat more than once.",
-      "edition": "2014"
+      "description": "You gain proficiency in any combination of three skills or tools of your choice. This app only tracks skill proficiencies (no tool-proficiency list exists), so the choice picker covers skills only - if you pick a tool instead of a skill for one or more of your three, note it for yourself; nothing here enforces or displays it.\n\nYou can take this feat more than once.",
+      "edition": "2014",
+      "choice_type": "skill_proficiencies",
+      "choice_count": 3
     },
     {
       "name": "Two Weapon Fighting",

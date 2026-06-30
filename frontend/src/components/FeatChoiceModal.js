@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../utils/api';
-import { ABILITY_KEYS, ABILITY_LABELS } from '../utils/dnd';
+import { ABILITY_KEYS, ABILITY_LABELS, SKILL_MAP } from '../utils/dnd';
 
 // One-time UI for a feat's "choose X when you take this" step (Resilient: which ability;
 // Magic Initiate: which class list/ability/cantrips/spell) - onConfirm(choiceData) hands
@@ -14,8 +14,11 @@ export default function FeatChoiceModal({ feat, onConfirm, onCancel }) {
   const [loadingSpells, setLoadingSpells] = useState(false);
   const [cantripChoices, setCantripChoices] = useState([]);
   const [levelOneChoice, setLevelOneChoice] = useState('');
+  const [skillChoices, setSkillChoices] = useState([]);
 
   const isMagicInitiate = feat.choice_type === 'magic_initiate';
+  const isSkillChoice = feat.choice_type === 'skill_proficiencies';
+  const skillCount = feat.choice_count || 3;
 
   useEffect(() => {
     if (!isMagicInitiate) return;
@@ -36,21 +39,30 @@ export default function FeatChoiceModal({ feat, onConfirm, onCancel }) {
     return [...c, name];
   });
 
+  const toggleSkill = (name) => setSkillChoices(c => {
+    if (c.includes(name)) return c.filter(n => n !== name);
+    if (c.length >= skillCount) return c;
+    return [...c, name];
+  });
+
   const confirm = () => {
     if (feat.choice_type === 'ability_save_increase') {
       onConfirm({ ability });
     } else if (isMagicInitiate) {
       onConfirm({ magicInitiateClass: miClass, ability: miAbility, cantrips: cantripChoices, levelOneSpell: levelOneChoice });
+    } else if (isSkillChoice) {
+      onConfirm({ skills: skillChoices });
     }
   };
 
   const canConfirm = feat.choice_type === 'ability_save_increase'
     ? !!ability
+    : isSkillChoice ? skillChoices.length === skillCount
     : (cantripChoices.length === 2 && !!levelOneChoice);
 
   return (
     <div className="modal-overlay">
-      <div className="modal" style={{maxWidth: isMagicInitiate ? 560 : 420, maxHeight:'85vh', display:'flex', flexDirection:'column'}} onClick={e => e.stopPropagation()}>
+      <div className="modal" style={{maxWidth: (isMagicInitiate || isSkillChoice) ? 560 : 420, maxHeight:'85vh', display:'flex', flexDirection:'column'}} onClick={e => e.stopPropagation()}>
         <div className="modal-sticky-header">
           <h2>{feat.name}: Choose</h2>
           <button type="button" className="modal-close-x" onClick={onCancel} aria-label="Close">×</button>
@@ -127,6 +139,25 @@ export default function FeatChoiceModal({ feat, onConfirm, onCancel }) {
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {isSkillChoice && (
+          <div style={{flex:1, overflowY:'auto', minHeight:0}}>
+            <div style={{color:'var(--text-dim)',fontSize:12,marginBottom:12}}>
+              Choose {skillCount} skills to gain proficiency in ({skillChoices.length}/{skillCount}). This app only tracks skill proficiencies, not tool proficiencies - pick skills here, and just remember separately if you took a tool instead of one or more of these.
+            </div>
+            <div style={{maxHeight:280, overflowY:'auto', border:'1px solid var(--border)', borderRadius:'var(--radius-sm)'}}>
+              {Object.entries(SKILL_MAP).map(([name, ab]) => (
+                <label key={name} style={{display:'flex',gap:8,alignItems:'center',padding:'6px 10px',borderBottom:'1px solid var(--border)',cursor:'pointer',background: skillChoices.includes(name) ? 'rgba(124,92,252,0.12)' : 'none'}}>
+                  <input type="checkbox" checked={skillChoices.includes(name)}
+                    disabled={!skillChoices.includes(name) && skillChoices.length >= skillCount}
+                    onChange={() => toggleSkill(name)} />
+                  <span style={{flex:1,color:'var(--text-primary)',fontSize:13}}>{name}</span>
+                  <span style={{color:'var(--text-dim)',fontSize:11}}>{ab}</span>
+                </label>
+              ))}
+            </div>
           </div>
         )}
 

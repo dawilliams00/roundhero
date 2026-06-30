@@ -7,7 +7,7 @@ import api from './api';
 // feat's CHOICE-SPECIFIC side effects only (ability bump/save proficiency, spell grants) -
 // the normal "attach this feat as an ability" logic (TrackerTab's addFeatFromLibrary,
 // LevelUpFlowModal's submitFeat) still runs separately afterward, same as any other feat.
-export const FEAT_CHOICE_TYPES = ['ability_save_increase', 'magic_initiate'];
+export const FEAT_CHOICE_TYPES = ['ability_save_increase', 'magic_initiate', 'skill_proficiencies'];
 
 // Resolves choiceData (gathered by FeatChoiceModal) into the actual patches a caller needs
 // to apply. Async because Magic Initiate needs to look up the chosen spells' full data.
@@ -37,6 +37,12 @@ export async function resolveFeatChoice(feat, choiceData) {
         description: `Magic Initiate (${magicInitiateClass}): ${levelOneSpell} can be cast once free, regaining the ability on a long rest. Also always knows ${cantrips.join(' and ')}.`,
       },
     };
+  }
+  if (feat.choice_type === 'skill_proficiencies') {
+    const { skills } = choiceData;
+    const count = feat.choice_count || 3;
+    if (!skills || skills.length !== count) return null;
+    return { skillProficienciesAdd: skills };
   }
   return null;
 }
