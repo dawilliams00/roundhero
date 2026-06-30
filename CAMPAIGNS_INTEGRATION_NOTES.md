@@ -73,10 +73,16 @@ Navigation/dashboard hook:
 - Record party effects as pending/applied/removed, including source, target, duration, concentration, and notes.
 - DM-owned encounter builder with planned/running/paused/complete status, party-member adds, bestiary monster pulls, shared-initiative enemy groups, HP/temp HP, AC, conditions, concentration labels, death saves, and clickable monster stat blocks.
 - Campaign/encounter feedback button using the existing feedback email route and `FeedbackModal`.
+- Campaign-wide rules are now stored on `Campaign.rules` as JSON text, with a lightweight additive migration in `backend/app.py`. The UI has a `Rules` tab for DM-edited death-save and exhaustion rule notes. These notes show in the DM encounter runner, player encounter view, and player death-save popup. Death-save pass/fail/roll state is preserved during encounter PC sync so the 15-second sync loop should not overwrite a player's roll result.
 
 ## Next Slice
 
 Effects are intentionally a ledger first. The next step is connecting selected party effects to character sheets with explicit confirmation/permission.
+
+### Campaign Rules Follow-Up
+
+- Campaign-wide homebrew rules should eventually auto-apply to characters when they join or are attached to a campaign. At minimum, campaign death-save and exhaustion rules should be copied or linked into character settings so the character sheet, death-save popup, and exhaustion UI all agree with the DM's campaign rules. Be careful not to silently overwrite a player's existing personal homebrew settings without either preserving a local override or making the campaign source obvious.
+- The rules system is currently notes-only. Future rules should become structured where useful: death-save visibility/default blind-roll mode, exhaustion table mode, recovery rules, and rule source labels. Keep the freeform notes field as an escape hatch.
 
 ### Claude's half is done: `frontend/src/utils/effectApply.js`
 
@@ -163,4 +169,4 @@ Do not make death saves public. Encounter death-save handling should become a pr
 - **Live-test blocker:** encounter setup rows and the full encounter tracker rows still have overlapping fields/controls. The last attempted compact-grid fix did not solve it. Rebuild combatant rows as stacked panels or named CSS grid areas with explicit min heights for identity, HP/temp, AC, conditions, concentration, death saves, and stat/delete actions. Test both setup and runner screens with long monster names and condition text.
 - Make PC status updates from character sheets reliably refresh encounter HP, temp HP, conditions, concentration, Haste, and active effects.
 - Improve the full running encounter layout beyond the current modal/docked-panel V1.
-- Polish death saves into a player-sheet/DM encounter workflow instead of simple visible counters. Character sheets should have a Death Saves roll popup near Exhaustion and a Settings toggle for blind rolls. Blind rolls/results/counters should be DM-only in the encounter tracker; non-blind rolls can show pass/fail counts to the player too. Encounter tracker should receive/show the roll event and update the relevant combatant's death-save counters.
+- Death saves now have a player-sheet popup and DM encounter roll handoff, but still need deeper polish: secret DM-only death-save history, clearer reset/clear controls, active dying-state prompts, and campaign-rule-driven defaults for blind/open rolling.
