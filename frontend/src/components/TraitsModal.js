@@ -7,11 +7,18 @@ const CATEGORIES = [
   { key: 'vulnerabilities', label: 'Vulnerabilities' },
   { key: 'advantages',      label: 'Advantages' },
   { key: 'disadvantages',   label: 'Disadvantages' },
+  { key: 'senses',          label: 'Senses' },
 ];
 
 const DAMAGE_TYPES = ['Acid','Bludgeoning','Cold','Fire','Force','Lightning','Necrotic','Piercing','Poison','Psychic','Radiant','Slashing','Thunder'];
 const CONDITIONS = ['Blinded','Charmed','Deafened','Exhaustion','Frightened','Grappled','Incapacitated','Invisible','Paralyzed','Petrified','Poisoned','Prone','Restrained','Stunned','Unconscious'];
 const ADV_DISADV = ['Saves vs being Charmed','Saves vs being Frightened','Saves vs Poison','Saves vs Disease','Saves vs being Paralyzed','Saves vs being Put to Sleep','Saves vs Magic','Perception checks','Stealth checks','Death saving throws'];
+// Common sense ranges - same "type or pick from a common list, or add a custom one"
+// pattern every other trait category already uses. Magical immunity to being put to
+// sleep (e.g. an Elf/Shadar-kai's Fey Ancestry) isn't a sense - that's "Saves vs being
+// Put to Sleep" under Advantages, or "Magical Sleep" under Immunities if it's a flat
+// immunity rather than just advantage on the save; both already exist above.
+const SENSES = ['Darkvision 60 ft.','Darkvision 120 ft.','Blindsight 10 ft.','Blindsight 30 ft.','Tremorsense 10 ft.','Tremorsense 30 ft.','Truesight 30 ft.','Truesight 60 ft.'];
 
 const COMMON_OPTIONS = {
   resistances: DAMAGE_TYPES,
@@ -19,6 +26,7 @@ const COMMON_OPTIONS = {
   vulnerabilities: DAMAGE_TYPES,
   advantages: ADV_DISADV,
   disadvantages: ADV_DISADV,
+  senses: SENSES,
 };
 
 const itemName = t => (typeof t === 'string' ? t : t?.name) || '';
@@ -34,7 +42,7 @@ export default function TraitsModal({ onClose }) {
   if (!character) return null;
 
   const td = character.tracker_data || {};
-  const traits = td.traits || { resistances: [], immunities: [], vulnerabilities: [], advantages: [], disadvantages: [] };
+  const traits = td.traits || { resistances: [], immunities: [], vulnerabilities: [], advantages: [], disadvantages: [], senses: [] };
 
   const saveTraits = (newTraits) => saveTrackerData({ ...td, traits: newTraits });
 

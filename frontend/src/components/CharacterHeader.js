@@ -34,6 +34,7 @@ const TRAIT_TYPE_STYLE = {
   resistance:    { letter: 'R', color: '#ffc107' }, // yellow
   immune:        { letter: 'I', color: '#29b6f6' }, // bright blue
   vulnerability: { letter: 'V', color: '#ff7043' }, // orange
+  sense:         { letter: '👁', color: '#9c27b0' }, // purple - Darkvision/Truesight/etc., not a modifier
 };
 
 function EditableStat({ label, value, onSave, color, title }) {
@@ -293,7 +294,14 @@ export default function CharacterHeader({ onBack }) {
   // Exhaustion has its own stepper below, so don't double-count it if it's ever
   // also present as a legacy free-text condition string.
   const conditions = (td?.conditions || []).filter(c => c !== 'Exhaustion');
-  const traits = td?.traits || { resistances: [], immunities: [], vulnerabilities: [], advantages: [], disadvantages: [] };
+  const traits = td?.traits || { resistances: [], immunities: [], vulnerabilities: [], advantages: [], disadvantages: [], senses: [] };
+  // PDF import parses a single flat "senses" string (e.g. "Darkvision 60 ft., Passive
+  // Perception 17") into tracker_data.senses, but nothing ever displayed or let the
+  // player edit it - shown as a one-time fallback chip only when the newer structured
+  // traits.senses list (added via Traits -> Senses, one entry per sense) is still empty,
+  // so already-imported Darkvision isn't silently lost while encouraging the move to the
+  // structured list (which supports more than one sense, e.g. Darkvision + Truesight).
+  const legacySensesFallback = (!traits.senses || traits.senses.length === 0) && td?.senses ? [td.senses] : [];
   const traitName = t => (typeof t === 'string' ? t : t?.name) || '';
   // The letter badge (A/D/R/I/V) already conveys the category, so strip a redundant
   // leading category word from the displayed chip text (player-typed text like
@@ -322,6 +330,8 @@ export default function CharacterHeader({ onBack }) {
     ...(traits.vulnerabilities||[]).map(t => ({t: traitName(t), d: t?.description || traitName(t), type:'vulnerability'})),
     ...(traits.advantages||[]).map(t => ({t: traitName(t), d: t?.description || traitName(t), type:'advantage'})),
     ...(traits.disadvantages||[]).map(t => ({t: traitName(t), d: t?.description || traitName(t), type:'disadvantage'})),
+    ...(traits.senses||[]).map(t => ({t: traitName(t), d: t?.description || traitName(t), type:'sense'})),
+    ...legacySensesFallback.map(s => ({t: s, d: `${s} (from PDF import - add via Traits -> Senses to edit/split this up)`, type:'sense'})),
     // Item-granted advantage on saves (an advantage_save buff, e.g. a Cloak of
     // Protection-style homebrew) shows the same way Haste's hardcoded "ADV on DEX
     // saves" chip already does - just sourced from equipped items instead.
