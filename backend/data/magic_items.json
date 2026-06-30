@@ -148,7 +148,18 @@
         }
       ],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d4",
+      "damage_type": "Slashing",
+      "properties": [
+        "Light",
+        "Monk"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Sickle"
     },
     {
       "name": "+1 Rhythm-Maker's Drum",
@@ -386,7 +397,18 @@
         }
       ],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d4",
+      "damage_type": "Slashing",
+      "properties": [
+        "Light",
+        "Monk"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Sickle"
     },
     {
       "name": "+2 Rhythm-Maker's Drum",
@@ -660,7 +682,18 @@
         }
       ],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d4",
+      "damage_type": "Slashing",
+      "properties": [
+        "Light",
+        "Monk"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Sickle"
     },
     {
       "name": "+3 Rhythm-Maker's Drum",
@@ -801,7 +834,18 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "1d12",
+      "damage_type": "Slashing",
+      "properties": [
+        "Heavy",
+        "Two-Handed"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Greataxe"
     },
     {
       "name": "Agony (Dormant)",
@@ -825,7 +869,21 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "1d8",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d10",
+        "damage_type": "Bludgeoning"
+      },
+      "proficient": true,
+      "_base_weapon_guess": "Warhammer"
     },
     {
       "name": "Alchemical Compendium",
@@ -1380,7 +1438,21 @@
       },
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "1d8",
+      "damage_type": "Slashing",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d10",
+        "damage_type": "Slashing"
+      },
+      "proficient": true,
+      "_base_weapon_guess": "Battleaxe"
     },
     {
       "name": "Azuremite",
@@ -1438,7 +1510,22 @@
       },
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Versatile",
+        "Monk"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d8",
+        "damage_type": "Bludgeoning"
+      },
+      "proficient": true,
+      "_base_weapon_guess": "Quarterstaff"
     },
     {
       "name": "Badge of the Watch",
@@ -1564,7 +1651,20 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d4",
+      "damage_type": "Piercing",
+      "properties": [
+        "Finesse",
+        "Light",
+        "Thrown",
+        "Monk"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Dagger"
     },
     {
       "name": "Balloon Pack",
@@ -2065,7 +2165,20 @@
           "charge_cost": 6
         }
       ],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d8",
+        "damage_type": "Bludgeoning"
+      },
+      "proficient": true
     },
     {
       "name": "Blade of Avernus",
@@ -2089,7 +2202,20 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d4",
+      "damage_type": "Piercing",
+      "properties": [
+        "Finesse",
+        "Light",
+        "Thrown",
+        "Monk"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Dagger"
     },
     {
       "name": "Blast Scepter",
@@ -2165,7 +2291,23 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Piercing",
+      "properties": [
+        "Thrown",
+        "Versatile",
+        "Monk"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d8",
+        "damage_type": "Piercing"
+      },
+      "proficient": true,
+      "_base_weapon_guess": "Spear"
     },
     {
       "name": "Blood of the Lycanthrope Antidote",
@@ -2201,7 +2343,18 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "1d12",
+      "damage_type": "Slashing",
+      "properties": [
+        "Heavy",
+        "Two-Handed"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Greataxe"
     },
     {
       "name": "Blue Chromatic Rose",
@@ -2271,7 +2424,21 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "1d8",
+      "damage_type": "Slashing",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d10",
+        "damage_type": "Slashing"
+      },
+      "proficient": true,
+      "_base_weapon_guess": "Battleaxe"
     },
     {
       "name": "Bobbing Lily Pad",
@@ -2295,7 +2462,17 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Monk"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Mace"
     },
     {
       "name": "Book of Exalted Deeds",
@@ -2331,7 +2508,20 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d4",
+      "damage_type": "Piercing",
+      "properties": [
+        "Finesse",
+        "Light",
+        "Thrown",
+        "Monk"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Dagger"
     },
     {
       "name": "Boomerang Shield",
@@ -2815,7 +3005,17 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Monk"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Mace"
     },
     {
       "name": "Candle of Invocation",
@@ -3606,7 +3806,20 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d4",
+      "damage_type": "Piercing",
+      "properties": [
+        "Finesse",
+        "Light",
+        "Thrown",
+        "Monk"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Dagger"
     },
     {
       "name": "Cracked Driftglobe",
@@ -3750,7 +3963,19 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Piercing",
+      "properties": [
+        "Finesse",
+        "Light",
+        "Monk"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Shortsword"
     },
     {
       "name": "Crystal Ball",
@@ -3914,7 +4139,20 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d4",
+      "damage_type": "Piercing",
+      "properties": [
+        "Finesse",
+        "Light",
+        "Thrown",
+        "Monk"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Dagger"
     },
     {
       "name": "Dagger of Denial",
@@ -3926,7 +4164,20 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d4",
+      "damage_type": "Piercing",
+      "properties": [
+        "Finesse",
+        "Light",
+        "Thrown",
+        "Monk"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Dagger"
     },
     {
       "name": "Dagger of Guitar Solos",
@@ -3938,7 +4189,20 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d4",
+      "damage_type": "Piercing",
+      "properties": [
+        "Finesse",
+        "Light",
+        "Thrown",
+        "Monk"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Dagger"
     },
     {
       "name": "Dagger of Venom",
@@ -3950,7 +4214,20 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d4",
+      "damage_type": "Piercing",
+      "properties": [
+        "Finesse",
+        "Light",
+        "Thrown",
+        "Monk"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Dagger"
     },
     {
       "name": "Dancing Monkey Fruit",
@@ -4010,7 +4287,21 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "1d8",
+      "damage_type": "Slashing",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d10",
+        "damage_type": "Slashing"
+      },
+      "proficient": true,
+      "_base_weapon_guess": "Longsword"
     },
     {
       "name": "Deathwalker's Ward (Dormant)",
@@ -4176,7 +4467,22 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Piercing",
+      "properties": [
+        "Thrown",
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d8",
+        "damage_type": "Piercing"
+      },
+      "proficient": true,
+      "_base_weapon_guess": "Trident"
     },
     {
       "name": "Delerium Crystal Focus",
@@ -4335,7 +4641,15 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "1d8",
+      "damage_type": "Bludgeoning",
+      "properties": [],
+      "proficient": true,
+      "_base_weapon_guess": "Flail"
     },
     {
       "name": "Dimensional Loop",
@@ -4516,7 +4830,20 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d4",
+      "damage_type": "Piercing",
+      "properties": [
+        "Finesse",
+        "Light",
+        "Thrown",
+        "Monk"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Dagger"
     },
     {
       "name": "Draakhorn",
@@ -4540,7 +4867,21 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "1d8",
+      "damage_type": "Slashing",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d10",
+        "damage_type": "Slashing"
+      },
+      "proficient": true,
+      "_base_weapon_guess": "Longsword"
     },
     {
       "name": "Dragon Sensing Longsword",
@@ -4552,7 +4893,21 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "1d8",
+      "damage_type": "Slashing",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d10",
+        "damage_type": "Slashing"
+      },
+      "proficient": true,
+      "_base_weapon_guess": "Longsword"
     },
     {
       "name": "Dragon Thighbone Club",
@@ -4564,7 +4919,18 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d4",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Light",
+        "Monk"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Club"
     },
     {
       "name": "Dragongleam",
@@ -4580,7 +4946,23 @@
       },
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Piercing",
+      "properties": [
+        "Thrown",
+        "Versatile",
+        "Monk"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d8",
+        "damage_type": "Piercing"
+      },
+      "proficient": true,
+      "_base_weapon_guess": "Spear"
     },
     {
       "name": "Dragonguard",
@@ -4620,7 +5002,20 @@
           "charge_cost": 1
         }
       ],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d8",
+        "damage_type": "Bludgeoning"
+      },
+      "proficient": true
     },
     {
       "name": "Dragontooth Dagger",
@@ -4632,7 +5027,20 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d4",
+      "damage_type": "Piercing",
+      "properties": [
+        "Finesse",
+        "Light",
+        "Thrown",
+        "Monk"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Dagger"
     },
     {
       "name": "Dread Helm",
@@ -4673,7 +5081,22 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Piercing",
+      "properties": [
+        "Thrown",
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d8",
+        "damage_type": "Piercing"
+      },
+      "proficient": true,
+      "_base_weapon_guess": "Trident"
     },
     {
       "name": "Duplicitous Manuscript",
@@ -4702,7 +5125,21 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "1d8",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d10",
+        "damage_type": "Bludgeoning"
+      },
+      "proficient": true,
+      "_base_weapon_guess": "Warhammer"
     },
     {
       "name": "Dust of Corrosion",
@@ -4792,7 +5229,21 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "1d8",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d10",
+        "damage_type": "Bludgeoning"
+      },
+      "proficient": true,
+      "_base_weapon_guess": "Warhammer"
     },
     {
       "name": "Dyrrn's Tentacle Whip",
@@ -4804,7 +5255,18 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "1d4",
+      "damage_type": "Slashing",
+      "properties": [
+        "Finesse",
+        "Reach"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Whip"
     },
     {
       "name": "Eagle Whistle",
@@ -4971,7 +5433,20 @@
       },
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d8",
+        "damage_type": "Bludgeoning"
+      },
+      "proficient": true
     },
     {
       "name": "Elemental Essence Shard",
@@ -5167,7 +5642,20 @@
       },
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d8",
+        "damage_type": "Bludgeoning"
+      },
+      "proficient": true
     },
     {
       "name": "Enspelled Staff (Level 1)",
@@ -5184,7 +5672,20 @@
       },
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d8",
+        "damage_type": "Bludgeoning"
+      },
+      "proficient": true
     },
     {
       "name": "Enspelled Staff (Level 2)",
@@ -5201,7 +5702,20 @@
       },
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d8",
+        "damage_type": "Bludgeoning"
+      },
+      "proficient": true
     },
     {
       "name": "Enspelled Staff (Level 3)",
@@ -5218,7 +5732,20 @@
       },
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d8",
+        "damage_type": "Bludgeoning"
+      },
+      "proficient": true
     },
     {
       "name": "Enspelled Staff (Level 4)",
@@ -5235,7 +5762,20 @@
       },
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d8",
+        "damage_type": "Bludgeoning"
+      },
+      "proficient": true
     },
     {
       "name": "Enspelled Staff (Level 5)",
@@ -5252,7 +5792,20 @@
       },
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d8",
+        "damage_type": "Bludgeoning"
+      },
+      "proficient": true
     },
     {
       "name": "Enspelled Staff (Level 6)",
@@ -5269,7 +5822,20 @@
       },
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d8",
+        "damage_type": "Bludgeoning"
+      },
+      "proficient": true
     },
     {
       "name": "Enspelled Staff (Level 7)",
@@ -5286,7 +5852,20 @@
       },
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d8",
+        "damage_type": "Bludgeoning"
+      },
+      "proficient": true
     },
     {
       "name": "Enspelled Staff (Level 8)",
@@ -5303,7 +5882,20 @@
       },
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d8",
+        "damage_type": "Bludgeoning"
+      },
+      "proficient": true
     },
     {
       "name": "Ephixis, Bow of Nylea",
@@ -5315,7 +5907,18 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Ranged",
+      "damage_dice": "1d6",
+      "damage_type": "Piercing",
+      "properties": [
+        "Ammunition",
+        "Two-Handed"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Shortbow"
     },
     {
       "name": "Ersatz Eye",
@@ -5533,7 +6136,21 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "1d8",
+      "damage_type": "Slashing",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d10",
+        "damage_type": "Slashing"
+      },
+      "proficient": true,
+      "_base_weapon_guess": "Battleaxe"
     },
     {
       "name": "Far Gear",
@@ -5575,7 +6192,20 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d4",
+      "damage_type": "Piercing",
+      "properties": [
+        "Finesse",
+        "Light",
+        "Thrown",
+        "Monk"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Dagger"
     },
     {
       "name": "Fates Card",
@@ -5623,7 +6253,19 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Ranged",
+      "damage_dice": "1d8",
+      "damage_type": "Piercing",
+      "properties": [
+        "Ammunition",
+        "Heavy",
+        "Two-Handed"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Longbow"
     },
     {
       "name": "Feywild Shard",
@@ -5795,7 +6437,15 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "1d8",
+      "damage_type": "Bludgeoning",
+      "properties": [],
+      "proficient": true,
+      "_base_weapon_guess": "Flail"
     },
     {
       "name": "Flame Lance",
@@ -5816,7 +6466,18 @@
           "charge_cost": 1
         }
       ],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "1d12",
+      "damage_type": "Piercing",
+      "properties": [
+        "Reach",
+        "Special"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Lance"
     },
     {
       "name": "Flame Tongue Shortsword of Greed",
@@ -5828,7 +6489,19 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Piercing",
+      "properties": [
+        "Finesse",
+        "Light",
+        "Monk"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Shortsword"
     },
     {
       "name": "Flamefriend Lantern",
@@ -5869,7 +6542,18 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "1d12",
+      "damage_type": "Slashing",
+      "properties": [
+        "Heavy",
+        "Two-Handed"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Greataxe"
     },
     {
       "name": "Flying Chariot",
@@ -6314,7 +6998,18 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "1d4",
+      "damage_type": "Slashing",
+      "properties": [
+        "Finesse",
+        "Reach"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Whip"
     },
     {
       "name": "Gravenhollow Compass Ring",
@@ -6338,7 +7033,18 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "2d6",
+      "damage_type": "Slashing",
+      "properties": [
+        "Heavy",
+        "Two-Handed"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Greatsword"
     },
     {
       "name": "Greater Silver Sword",
@@ -6428,7 +7134,21 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "1d8",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d10",
+        "damage_type": "Bludgeoning"
+      },
+      "proficient": true,
+      "_base_weapon_guess": "Warhammer"
     },
     {
       "name": "Gruul Guild Signet",
@@ -6496,7 +7216,20 @@
       },
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d8",
+        "damage_type": "Bludgeoning"
+      },
+      "proficient": true
     },
     {
       "name": "Gurt's Greataxe",
@@ -6508,7 +7241,18 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "1d12",
+      "damage_type": "Slashing",
+      "properties": [
+        "Heavy",
+        "Two-Handed"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Greataxe"
     },
     {
       "name": "Hag Eye",
@@ -6730,7 +7474,18 @@
           "charge_cost": 2
         }
       ],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "2d6",
+      "damage_type": "Slashing",
+      "properties": [
+        "Heavy",
+        "Two-Handed"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Greatsword"
     },
     {
       "name": "Headband of Intellect",
@@ -7034,7 +7789,21 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "1d8",
+      "damage_type": "Slashing",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d10",
+        "damage_type": "Slashing"
+      },
+      "proficient": true,
+      "_base_weapon_guess": "Battleaxe"
     },
     {
       "name": "Heward's Handy Haversack",
@@ -7116,7 +7885,20 @@
       },
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d8",
+        "damage_type": "Bludgeoning"
+      },
+      "proficient": true
     },
     {
       "name": "Holy Symbol of Ravenkind",
@@ -7440,7 +8222,18 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "1d4",
+      "damage_type": "Slashing",
+      "properties": [
+        "Finesse",
+        "Reach"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Whip"
     },
     {
       "name": "Infernal Amulet",
@@ -7608,7 +8401,20 @@
           "charge_cost": 8
         }
       ],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d8",
+        "damage_type": "Bludgeoning"
+      },
+      "proficient": true
     },
     {
       "name": "Insignia of Claws",
@@ -8049,7 +8855,15 @@
           "charge_cost": 3
         }
       ],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "1d8",
+      "damage_type": "Piercing",
+      "properties": [],
+      "proficient": true,
+      "_base_weapon_guess": "War pick"
     },
     {
       "name": "Izzet Guild Signet",
@@ -8107,7 +8921,18 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Piercing",
+      "properties": [
+        "Thrown",
+        "Monk"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Javelin"
     },
     {
       "name": "Javelin of Lightning",
@@ -8119,7 +8944,18 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Piercing",
+      "properties": [
+        "Thrown",
+        "Monk"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Javelin"
     },
     {
       "name": "Jester Card",
@@ -8194,7 +9030,20 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d4",
+      "damage_type": "Piercing",
+      "properties": [
+        "Finesse",
+        "Light",
+        "Thrown",
+        "Monk"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Dagger"
     },
     {
       "name": "Kagonesti Forest Shroud",
@@ -8289,7 +9138,23 @@
           "charge_cost": 6
         }
       ],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Piercing",
+      "properties": [
+        "Thrown",
+        "Versatile",
+        "Monk"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d8",
+        "damage_type": "Piercing"
+      },
+      "proficient": true,
+      "_base_weapon_guess": "Spear"
     },
     {
       "name": "Kiss of the Changebringer (Dormant)",
@@ -8387,7 +9252,18 @@
           "charge_cost": 3
         }
       ],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d4",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Light",
+        "Monk"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Club"
     },
     {
       "name": "Kyrzin's Ooze",
@@ -8435,7 +9311,18 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "1d4",
+      "damage_type": "Slashing",
+      "properties": [
+        "Finesse",
+        "Reach"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Whip"
     },
     {
       "name": "Lash of Shadows (Dormant)",
@@ -8447,7 +9334,18 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "1d4",
+      "damage_type": "Slashing",
+      "properties": [
+        "Finesse",
+        "Reach"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Whip"
     },
     {
       "name": "Leather Golem Armor",
@@ -8523,7 +9421,17 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Monk"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Mace"
     },
     {
       "name": "Lightning Absorbing Tattoo",
@@ -8625,7 +9533,19 @@
           "charge_cost": 3
         }
       ],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Ranged",
+      "damage_dice": "1d8",
+      "damage_type": "Piercing",
+      "properties": [
+        "Ammunition",
+        "Heavy",
+        "Two-Handed"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Longbow"
     },
     {
       "name": "Lord Commander's Badge",
@@ -8724,7 +9644,15 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "1d8",
+      "damage_type": "Piercing",
+      "properties": [],
+      "proficient": true,
+      "_base_weapon_guess": "War pick"
     },
     {
       "name": "Lute of Thunderous Thumping",
@@ -8736,7 +9664,18 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d4",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Light",
+        "Monk"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Club"
     },
     {
       "name": "Luxon Beacon",
@@ -8789,7 +9728,17 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Monk"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Mace"
     },
     {
       "name": "Mace of Smiting",
@@ -8801,7 +9750,17 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Monk"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Mace"
     },
     {
       "name": "Mace of Terror",
@@ -8818,7 +9777,17 @@
       },
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Monk"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Mace"
     },
     {
       "name": "Mace of the Black Crown (Dormant)",
@@ -8830,7 +9799,17 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Monk"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Mace"
     },
     {
       "name": "Macuahuitl",
@@ -8842,7 +9821,21 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "1d8",
+      "damage_type": "Slashing",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d10",
+        "damage_type": "Slashing"
+      },
+      "proficient": true,
+      "_base_weapon_guess": "Longsword"
     },
     {
       "name": "Maddgoth's Helm",
@@ -8866,7 +9859,18 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "2d6",
+      "damage_type": "Slashing",
+      "properties": [
+        "Heavy",
+        "Two-Handed"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Greatsword"
     },
     {
       "name": "Mantle of Spell Resistance",
@@ -9044,7 +10048,18 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "1d4",
+      "damage_type": "Slashing",
+      "properties": [
+        "Finesse",
+        "Reach"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Whip"
     },
     {
       "name": "Matalotok",
@@ -9289,7 +10304,18 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "1d4",
+      "damage_type": "Slashing",
+      "properties": [
+        "Finesse",
+        "Reach"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Whip"
     },
     {
       "name": "Mindblasting Cap",
@@ -9438,7 +10464,21 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "1d8",
+      "damage_type": "Slashing",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d10",
+        "damage_type": "Slashing"
+      },
+      "proficient": true,
+      "_base_weapon_guess": "Longsword"
     },
     {
       "name": "Mudslick Tower",
@@ -9503,7 +10543,21 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "1d8",
+      "damage_type": "Slashing",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d10",
+        "damage_type": "Slashing"
+      },
+      "proficient": true,
+      "_base_weapon_guess": "Longsword"
     },
     {
       "name": "Nature's Mantle",
@@ -9592,7 +10646,20 @@
           "charge_cost": 0
         }
       ],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d4",
+      "damage_type": "Piercing",
+      "properties": [
+        "Finesse",
+        "Light",
+        "Thrown",
+        "Monk"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Dagger"
     },
     {
       "name": "Nepenthe",
@@ -9668,7 +10735,17 @@
       },
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Monk"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Mace"
     },
     {
       "name": "Nightfall Pearl",
@@ -9708,7 +10785,17 @@
           "charge_cost": 1
         }
       ],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Monk"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Mace"
     },
     {
       "name": "Nimbus Coronet",
@@ -9744,7 +10831,19 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Ranged",
+      "damage_dice": "1d8",
+      "damage_type": "Piercing",
+      "properties": [
+        "Ammunition",
+        "Heavy",
+        "Two-Handed"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Longbow"
     },
     {
       "name": "Obsidian Flint Dragon Plate",
@@ -10178,7 +11277,18 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "1d12",
+      "damage_type": "Slashing",
+      "properties": [
+        "Heavy",
+        "Two-Handed"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Greataxe"
     },
     {
       "name": "Pearl of Power",
@@ -10413,7 +11523,19 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Piercing",
+      "properties": [
+        "Finesse",
+        "Light",
+        "Monk"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Shortsword"
     },
     {
       "name": "Piwafwi (Cloak of Elvenkind)",
@@ -11440,7 +12562,19 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Piercing",
+      "properties": [
+        "Finesse",
+        "Light",
+        "Monk"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Shortsword"
     },
     {
       "name": "Psi Crystal",
@@ -11637,7 +12771,20 @@
         }
       ],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d8",
+        "damage_type": "Bludgeoning"
+      },
+      "proficient": true
     },
     {
       "name": "Quiver of Ehlonna",
@@ -11725,7 +12872,20 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d4",
+      "damage_type": "Piercing",
+      "properties": [
+        "Finesse",
+        "Light",
+        "Thrown",
+        "Monk"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Dagger"
     },
     {
       "name": "Ranseur of Torture",
@@ -11737,7 +12897,19 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "1d10",
+      "damage_type": "Piercing",
+      "properties": [
+        "Heavy",
+        "Reach",
+        "Two-Handed"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Pike"
     },
     {
       "name": "Raven's Slumber",
@@ -11773,7 +12945,15 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "1d8",
+      "damage_type": "Piercing",
+      "properties": [],
+      "proficient": true,
+      "_base_weapon_guess": "Morningstar"
     },
     {
       "name": "Red Chromatic Rose",
@@ -11827,7 +13007,20 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d4",
+      "damage_type": "Piercing",
+      "properties": [
+        "Finesse",
+        "Light",
+        "Thrown",
+        "Monk"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Dagger"
     },
     {
       "name": "Refined Delerium Dust",
@@ -11887,7 +13080,20 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d4",
+      "damage_type": "Piercing",
+      "properties": [
+        "Finesse",
+        "Light",
+        "Thrown",
+        "Monk"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Dagger"
     },
     {
       "name": "Reveler's Concertina",
@@ -13139,7 +14345,22 @@
       },
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Versatile",
+        "Monk"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d8",
+        "damage_type": "Bludgeoning"
+      },
+      "proficient": true,
+      "_base_weapon_guess": "Quarterstaff"
     },
     {
       "name": "Rod of the Vonindod",
@@ -13336,7 +14557,23 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Piercing",
+      "properties": [
+        "Thrown",
+        "Versatile",
+        "Monk"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d8",
+        "damage_type": "Piercing"
+      },
+      "proficient": true,
+      "_base_weapon_guess": "Spear"
     },
     {
       "name": "Ruinblade",
@@ -13360,7 +14597,15 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "1d8",
+      "damage_type": "Bludgeoning",
+      "properties": [],
+      "proficient": true,
+      "_base_weapon_guess": "Flail"
     },
     {
       "name": "Ruinstone",
@@ -13506,7 +14751,17 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Monk"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Mace"
     },
     {
       "name": "Saint Vitruvio's Phylactery",
@@ -13593,7 +14848,20 @@
           "charge_cost": 5
         }
       ],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d8",
+        "damage_type": "Bludgeoning"
+      },
+      "proficient": true
     },
     {
       "name": "Scimitar of Speed",
@@ -13605,7 +14873,18 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Slashing",
+      "properties": [
+        "Finesse",
+        "Light"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Scimitar"
     },
     {
       "name": "Scissors of Shadow Snipping",
@@ -13641,7 +14920,18 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "1d4",
+      "damage_type": "Slashing",
+      "properties": [
+        "Finesse",
+        "Reach"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Whip"
     },
     {
       "name": "Scribe's Pen",
@@ -14037,7 +15327,18 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Ranged",
+      "damage_dice": "1d4",
+      "damage_type": "Piercing",
+      "properties": [
+        "Finesse",
+        "Thrown"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Dart"
     },
     {
       "name": "Sekolahian Worshiping Statuette",
@@ -14602,7 +15903,17 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "1d8",
+      "damage_type": "Piercing",
+      "properties": [
+        "Finesse"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Rapier"
     },
     {
       "name": "Silver Dragon Scale Mail",
@@ -14749,7 +16060,20 @@
         }
       ],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d8",
+        "damage_type": "Bludgeoning"
+      },
+      "proficient": true
     },
     {
       "name": "Skymetal Shield",
@@ -14773,7 +16097,20 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d8",
+        "damage_type": "Bludgeoning"
+      },
+      "proficient": true
     },
     {
       "name": "Skysail",
@@ -14809,7 +16146,17 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Ranged",
+      "damage_dice": "1d4",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Ammunition"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Sling"
     },
     {
       "name": "Slippers of Spider Climbing",
@@ -14881,7 +16228,18 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "2d6",
+      "damage_type": "Slashing",
+      "properties": [
+        "Heavy",
+        "Two-Handed"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Greatsword"
     },
     {
       "name": "Sorcerous Spyglass",
@@ -14953,7 +16311,23 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Piercing",
+      "properties": [
+        "Thrown",
+        "Versatile",
+        "Monk"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d8",
+        "damage_type": "Piercing"
+      },
+      "proficient": true,
+      "_base_weapon_guess": "Spear"
     },
     {
       "name": "Spell Bottle",
@@ -15471,7 +16845,20 @@
           "charge_cost": 2
         }
       ],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d8",
+        "damage_type": "Bludgeoning"
+      },
+      "proficient": true
     },
     {
       "name": "Spies' Murmur",
@@ -15537,7 +16924,20 @@
           "charge_cost": 3
         }
       ],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d8",
+        "damage_type": "Bludgeoning"
+      },
+      "proficient": true
     },
     {
       "name": "Spirit Board",
@@ -15599,7 +16999,20 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d8",
+        "damage_type": "Bludgeoning"
+      },
+      "proficient": true
     },
     {
       "name": "Staff of Birdcalls",
@@ -15616,7 +17029,20 @@
       },
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d8",
+        "damage_type": "Bludgeoning"
+      },
+      "proficient": true
     },
     {
       "name": "Staff of Charming",
@@ -15641,7 +17067,20 @@
           "charge_cost": 1
         }
       ],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d8",
+        "damage_type": "Bludgeoning"
+      },
+      "proficient": true
     },
     {
       "name": "Staff of Contaminated Power",
@@ -15682,7 +17121,20 @@
           "charge_cost": 6
         }
       ],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d8",
+        "damage_type": "Bludgeoning"
+      },
+      "proficient": true
     },
     {
       "name": "Staff of Defense",
@@ -15714,7 +17166,20 @@
           "charge_cost": 2
         }
       ],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d8",
+        "damage_type": "Bludgeoning"
+      },
+      "proficient": true
     },
     {
       "name": "Staff of Dunamancy",
@@ -15744,7 +17209,20 @@
           "charge_cost": 4
         }
       ],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d8",
+        "damage_type": "Bludgeoning"
+      },
+      "proficient": true
     },
     {
       "name": "Staff of Fate",
@@ -15760,7 +17238,20 @@
       },
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d8",
+        "damage_type": "Bludgeoning"
+      },
+      "proficient": true
     },
     {
       "name": "Staff of Fire",
@@ -15790,7 +17281,20 @@
           "charge_cost": 4
         }
       ],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d8",
+        "damage_type": "Bludgeoning"
+      },
+      "proficient": true
     },
     {
       "name": "Staff of Flowers",
@@ -15807,7 +17311,20 @@
       },
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d8",
+        "damage_type": "Bludgeoning"
+      },
+      "proficient": true
     },
     {
       "name": "Staff of Frost",
@@ -15841,7 +17358,20 @@
           "charge_cost": 5
         }
       ],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d8",
+        "damage_type": "Bludgeoning"
+      },
+      "proficient": true
     },
     {
       "name": "Staff of Healing",
@@ -15871,7 +17401,20 @@
           "charge_cost": 5
         }
       ],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d8",
+        "damage_type": "Bludgeoning"
+      },
+      "proficient": true
     },
     {
       "name": "Staff of Power",
@@ -15943,7 +17486,20 @@
           "charge_cost": 6
         }
       ],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d8",
+        "damage_type": "Bludgeoning"
+      },
+      "proficient": true
     },
     {
       "name": "Staff of Ruling",
@@ -15955,7 +17511,20 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d8",
+        "damage_type": "Bludgeoning"
+      },
+      "proficient": true
     },
     {
       "name": "Staff of Striking",
@@ -15972,7 +17541,20 @@
       },
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d8",
+        "damage_type": "Bludgeoning"
+      },
+      "proficient": true
     },
     {
       "name": "Staff of Swarming Insects",
@@ -15998,7 +17580,20 @@
           "charge_cost": 5
         }
       ],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d8",
+        "damage_type": "Bludgeoning"
+      },
+      "proficient": true
     },
     {
       "name": "Staff of Thunder and Lightning",
@@ -16010,7 +17605,20 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d8",
+        "damage_type": "Bludgeoning"
+      },
+      "proficient": true
     },
     {
       "name": "Staff of Withering",
@@ -16027,7 +17635,20 @@
       },
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d8",
+        "damage_type": "Bludgeoning"
+      },
+      "proficient": true
     },
     {
       "name": "Staff of the Adder",
@@ -16039,7 +17660,20 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d8",
+        "damage_type": "Bludgeoning"
+      },
+      "proficient": true
     },
     {
       "name": "Staff of the Forgotten One",
@@ -16056,7 +17690,20 @@
       },
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d8",
+        "damage_type": "Bludgeoning"
+      },
+      "proficient": true
     },
     {
       "name": "Staff of the Ivory Claw",
@@ -16074,7 +17721,20 @@
         }
       ],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d8",
+        "damage_type": "Bludgeoning"
+      },
+      "proficient": true
     },
     {
       "name": "Staff of the Magi",
@@ -16176,7 +17836,20 @@
           "charge_cost": 7
         }
       ],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d8",
+        "damage_type": "Bludgeoning"
+      },
+      "proficient": true
     },
     {
       "name": "Staff of the Python",
@@ -16188,7 +17861,20 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d8",
+        "damage_type": "Bludgeoning"
+      },
+      "proficient": true
     },
     {
       "name": "Staff of the Rooted Hills",
@@ -16200,7 +17886,20 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d8",
+        "damage_type": "Bludgeoning"
+      },
+      "proficient": true
     },
     {
       "name": "Staff of the Woodlands",
@@ -16256,7 +17955,20 @@
           "charge_cost": 6
         }
       ],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d8",
+        "damage_type": "Bludgeoning"
+      },
+      "proficient": true
     },
     {
       "name": "Star Card",
@@ -16280,7 +17992,21 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "1d8",
+      "damage_type": "Slashing",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d10",
+        "damage_type": "Slashing"
+      },
+      "proficient": true,
+      "_base_weapon_guess": "Longsword"
     },
     {
       "name": "Statuette of Augury",
@@ -16322,7 +18048,21 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "1d8",
+      "damage_type": "Slashing",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d10",
+        "damage_type": "Slashing"
+      },
+      "proficient": true,
+      "_base_weapon_guess": "Longsword"
     },
     {
       "name": "Steward's Seal",
@@ -16499,7 +18239,15 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "1d8",
+      "damage_type": "Piercing",
+      "properties": [],
+      "proficient": true,
+      "_base_weapon_guess": "War pick"
     },
     {
       "name": "Stonespeaker Crystal",
@@ -16558,7 +18306,18 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Piercing",
+      "properties": [
+        "Thrown",
+        "Monk"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Javelin"
     },
     {
       "name": "Stormgirdle (Dormant)",
@@ -16612,7 +18371,20 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d8",
+        "damage_type": "Bludgeoning"
+      },
+      "proficient": true
     },
     {
       "name": "Summer's Dance",
@@ -16634,7 +18406,18 @@
           "charge_cost": 1
         }
       ],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Slashing",
+      "properties": [
+        "Finesse",
+        "Light"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Scimitar"
     },
     {
       "name": "Sun Blade",
@@ -16646,7 +18429,21 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "1d8",
+      "damage_type": "Slashing",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d10",
+        "damage_type": "Slashing"
+      },
+      "proficient": true,
+      "_base_weapon_guess": "Longsword"
     },
     {
       "name": "Sun Card",
@@ -16670,7 +18467,20 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d8",
+        "damage_type": "Bludgeoning"
+      },
+      "proficient": true
     },
     {
       "name": "Sunbeam Compass",
@@ -16754,7 +18564,21 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "1d8",
+      "damage_type": "Slashing",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d10",
+        "damage_type": "Slashing"
+      },
+      "proficient": true,
+      "_base_weapon_guess": "Longsword"
     },
     {
       "name": "Sword of Answering (Answerer)",
@@ -16874,7 +18698,21 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "1d8",
+      "damage_type": "Slashing",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d10",
+        "damage_type": "Slashing"
+      },
+      "proficient": true,
+      "_base_weapon_guess": "Longsword"
     },
     {
       "name": "Sword of Zariel",
@@ -16886,7 +18724,21 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "1d8",
+      "damage_type": "Slashing",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d10",
+        "damage_type": "Slashing"
+      },
+      "proficient": true,
+      "_base_weapon_guess": "Longsword"
     },
     {
       "name": "Sword of the Paruns",
@@ -17074,7 +18926,21 @@
           "charge_cost": 4
         }
       ],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "1d8",
+      "damage_type": "Slashing",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d10",
+        "damage_type": "Slashing"
+      },
+      "proficient": true,
+      "_base_weapon_guess": "Longsword"
     },
     {
       "name": "Teeth of Dahlver-Nar",
@@ -17157,7 +19023,15 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "1d8",
+      "damage_type": "Piercing",
+      "properties": [],
+      "proficient": true,
+      "_base_weapon_guess": "Morningstar"
     },
     {
       "name": "The Codicil of White",
@@ -17292,7 +19166,17 @@
         }
       ],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d8",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Two-Handed"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Greatclub"
     },
     {
       "name": "Tidecaller Trident",
@@ -17318,7 +19202,22 @@
           "charge_cost": 3
         }
       ],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Piercing",
+      "properties": [
+        "Thrown",
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d8",
+        "damage_type": "Piercing"
+      },
+      "proficient": true,
+      "_base_weapon_guess": "Trident"
     },
     {
       "name": "Timepiece of Travel",
@@ -17353,7 +19252,20 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d4",
+      "damage_type": "Piercing",
+      "properties": [
+        "Finesse",
+        "Light",
+        "Thrown",
+        "Monk"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Dagger"
     },
     {
       "name": "Tinkertop Boltblaster 1000",
@@ -17477,7 +19389,22 @@
           "charge_cost": 1
         }
       ],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Piercing",
+      "properties": [
+        "Thrown",
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d8",
+        "damage_type": "Piercing"
+      },
+      "proficient": true,
+      "_base_weapon_guess": "Trident"
     },
     {
       "name": "True-Ice Shards (Dagger)",
@@ -17512,7 +19439,20 @@
           "charge_cost": 0
         }
       ],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d4",
+      "damage_type": "Piercing",
+      "properties": [
+        "Finesse",
+        "Light",
+        "Thrown",
+        "Monk"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Dagger"
     },
     {
       "name": "True-Ice Shards (Rapier)",
@@ -17541,7 +19481,17 @@
           "charge_cost": 0
         }
       ],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "1d8",
+      "damage_type": "Piercing",
+      "properties": [
+        "Finesse"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Rapier"
     },
     {
       "name": "Two-Birds Sling",
@@ -17553,7 +19503,17 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Ranged",
+      "damage_dice": "1d4",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Ammunition"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Sling"
     },
     {
       "name": "Unbreakable Arrow",
@@ -17805,7 +19765,20 @@
           "charge_cost": 7
         }
       ],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d8",
+        "damage_type": "Bludgeoning"
+      },
+      "proficient": true
     },
     {
       "name": "Wakened Dragon Vessel",
@@ -18093,7 +20066,17 @@
           "charge_cost": 4
         }
       ],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Monk"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Mace"
     },
     {
       "name": "Wand of Paralysis",
@@ -18414,7 +20397,22 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Piercing",
+      "properties": [
+        "Thrown",
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d8",
+        "damage_type": "Piercing"
+      },
+      "proficient": true,
+      "_base_weapon_guess": "Trident"
     },
     {
       "name": "Wayfarer's Boots",
@@ -18438,7 +20436,18 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "2d6",
+      "damage_type": "Slashing",
+      "properties": [
+        "Heavy",
+        "Two-Handed"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Greatsword"
     },
     {
       "name": "Weird Tank",
@@ -18517,7 +20526,21 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "1d8",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d10",
+        "damage_type": "Bludgeoning"
+      },
+      "proficient": true,
+      "_base_weapon_guess": "Warhammer"
     },
     {
       "name": "Whisper (Dormant)",
@@ -18529,7 +20552,20 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d4",
+      "damage_type": "Piercing",
+      "properties": [
+        "Finesse",
+        "Light",
+        "Thrown",
+        "Monk"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Dagger"
     },
     {
       "name": "Whisper Jar",
@@ -18631,7 +20667,15 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "1d8",
+      "damage_type": "Piercing",
+      "properties": [],
+      "proficient": true,
+      "_base_weapon_guess": "War pick"
     },
     {
       "name": "Wind Fan",
@@ -18655,7 +20699,23 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Simple",
+      "weapon_range": "Melee",
+      "damage_dice": "1d6",
+      "damage_type": "Piercing",
+      "properties": [
+        "Thrown",
+        "Versatile",
+        "Monk"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d8",
+        "damage_type": "Piercing"
+      },
+      "proficient": true,
+      "_base_weapon_guess": "Spear"
     },
     {
       "name": "Winged Boots",
@@ -18707,7 +20767,18 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "2d6",
+      "damage_type": "Slashing",
+      "properties": [
+        "Heavy",
+        "Two-Handed"
+      ],
+      "proficient": true,
+      "_base_weapon_guess": "Greatsword"
     },
     {
       "name": "Witchlight Vane",
@@ -18818,7 +20889,21 @@
           "cast_level": 6
         }
       ],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "1d8",
+      "damage_type": "Bludgeoning",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d10",
+        "damage_type": "Bludgeoning"
+      },
+      "proficient": true,
+      "_base_weapon_guess": "Warhammer"
     },
     {
       "name": "Wyrmreaver Gauntlets",
@@ -18869,7 +20954,21 @@
       "charges": null,
       "buffs": [],
       "granted_spells": [],
-      "source": "SRD"
+      "source": "SRD",
+      "is_weapon": true,
+      "weapon_category": "Martial",
+      "weapon_range": "Melee",
+      "damage_dice": "1d8",
+      "damage_type": "Slashing",
+      "properties": [
+        "Versatile"
+      ],
+      "two_handed_damage": {
+        "damage_dice": "1d10",
+        "damage_type": "Slashing"
+      },
+      "proficient": true,
+      "_base_weapon_guess": "Battleaxe"
     },
     {
       "name": "Ythryn Mythallar",
