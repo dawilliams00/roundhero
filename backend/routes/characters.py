@@ -6,7 +6,7 @@ from engine.character_engine import build_character, level_up_character
 from engine.content_packs import CLASSES
 from engine.pdf_import import parse_character_pdf, resync_character
 from engine.spell_data import get_all_spells
-from engine.multiclass_engine import infer_classes, level_up_one_class, apply_subclass_choice, apply_ability_score_improvement
+from engine.multiclass_engine import infer_classes, level_up_one_class, apply_subclass_choice, apply_ability_score_improvement, recalculate_class_resources
 
 characters_bp = Blueprint("characters", __name__)
 
@@ -239,6 +239,30 @@ def set_subclass_route(char_id):
     # left alone (tracker_data.classes[i].subclass is the source of truth for those).
     if len(char.tracker_data.get("classes", [])) == 1:
         char.subclass = subclass_name
+    db.session.commit()
+    return jsonify(char.to_dict()), 200
+
+@characters_bp.route("/<int:char_id>/recalculate_class_resources", methods=["POST"])
+@jwt_required()
+def recalculate_class_resources_route(char_id):
+    """On-demand fix for a character whose class resources (Rage, Action Surge, Sorcery
+    Points, etc.) were never correct in the first place - most commonly a PDF-imported or
+    multiclass character, since the PDF parser has no knowledge of any of these formulas
+    and just parses whatever the sheet's printed Uses field happened to say. Works for
+    both the structured multiclass `classes` list and a plain single-class character (the
+    latter is just treated as a one-entry classes list) - same underlying function either
+    way, so this isn't a second engine to maintain. Never refills an already-spent
+    resource and never lowers max below what's already in use; only ever corrects/grants."""
+    user_id = int(get_jwt_identity())
+    char = Character.query.filter_by(id=char_id, user_id=user_id).first_or_404()
+    classes = char.tracker_data.get("classes")
+    if not classes:
+        if char.class_name not in CLASSES:
+            return jsonify({"error": f"\"{char.class_name}\" isn't a recognized class - confirm classes first."}), 400
+        classes = [{"class_name": char.class_name, "level": char.level, "subclass": char.subclass}]
+    merged_td, merged_ae = recalculate_class_resources(char.tracker_data, char.ae_data, classes, char.ability_scores)
+    char.tracker_data = merged_td
+    char.ae_data = merged_ae
     db.session.commit()
     return jsonify(char.to_dict()), 200
 

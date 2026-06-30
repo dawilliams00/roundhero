@@ -1,7 +1,7 @@
 import re
 
 from .content_packs import CLASSES, get_multiclass_spell_slots
-from .character_engine import get_features_up_to_level, modifier, _merge_features_for_level_up, _merge_spell_slots_for_level_up
+from .character_engine import get_features_up_to_level, modifier, _merge_features_for_level_up, _merge_spell_slots_for_level_up, apply_dynamic_feature_maxes
 from .class_feature_data import get_all_class_features
 
 # "Wizard 13" -> [{"class_name": "Wizard", "level": 13}]; "Wizard 10 / Fighter 3" -> both
@@ -176,6 +176,15 @@ def level_up_one_class(old_tracker_data, old_spell_data, old_ae_data, classes, l
 
     new_features = _build_features_for_class_level(leveling_class_name, new_class_level)
     new_features.update(_build_subclass_features(leveling_class_name, target.get("subclass"), new_class_level))
+    # Recomputes whichever of this class's resources scale with its own level (Rage uses,
+    # Action Surge, Sorcery Points, etc. - see apply_dynamic_feature_maxes) on the FRESH
+    # new_features dict, before merging - this was the actual gap a multiclass/PDF-imported
+    # character had: level-up granted new FEATURES via class_features.json above, but never
+    # recalculated any of these formulas, so e.g. a Barbarian's Rage uses stayed wherever
+    # the PDF parser left them (often max:0) forever, even across real level-ups. Running
+    # this before the merge (not after) means _merge_features_for_level_up below is still
+    # the one and only place spent-amount preservation happens, same as every other field.
+    apply_dynamic_feature_maxes(new_features, leveling_class_name, new_class_level, ability_scores)
 
     merged_td = dict(old_tracker_data)
     merged_td["features"] = _merge_features_for_level_up(old_tracker_data.get("features"), new_features)
@@ -217,6 +226,33 @@ def level_up_one_class(old_tracker_data, old_spell_data, old_ae_data, classes, l
         "new_class_name": classes_to_display_name(new_classes),
     }
     return merged_td, dict(old_spell_data), merged_ae, info
+
+
+def recalculate_class_resources(tracker_data, ae_data, classes, ability_scores):
+    """On-demand fix for a character whose class resources were never correct to begin
+    with, not just future level-ups - the most common real case being a PDF import, which
+    has no knowledge of any of these formulas at all and just parses whatever the sheet's
+    printed Uses happened to say (often blank/0). For every one of the character's current
+    classes at its CURRENT level: rebuilds that class's full base+subclass feature set
+    (auto-granting anything missing the same way a level-up would, via the same
+    _merge_features_for_level_up "preserve spent, grant the gain" merge - this never
+    refills an already-spent resource, it only ever corrects max/grants what's missing)
+    and recomputes its dynamic resource maxes (Rage, Action Surge, Sorcery Points, etc.).
+    Also backfills any missing Action Economy rows for newly-granted features, same as a
+    real level-up does. Returns (merged_td, merged_ae) - safe to call anytime, not just
+    right after a level-up."""
+    features = dict(tracker_data.get("features") or {})
+    ae = ae_data
+    for c in (classes or []):
+        class_name, level = c["class_name"], c["level"]
+        new_features = _build_features_for_class_level(class_name, level)
+        new_features.update(_build_subclass_features(class_name, c.get("subclass"), level))
+        apply_dynamic_feature_maxes(new_features, class_name, level, ability_scores)
+        features = _merge_features_for_level_up(features, new_features)
+        ae = _add_ae_entries_for_features(ae, new_features, class_name)
+    merged_td = dict(tracker_data)
+    merged_td["features"] = features
+    return merged_td, ae
 
 
 def apply_subclass_choice(tracker_data, ae_data, class_name, subclass_name):

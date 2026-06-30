@@ -19,6 +19,7 @@ export default function CharacterEditorModal({ onClose }) {
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
   const [rollingBack, setRollingBack] = useState(false);
+  const [recalculating, setRecalculating] = useState(false);
   const [settingSubclassFor, setSettingSubclassFor] = useState(null);
 
   const td = character?.tracker_data || {};
@@ -304,6 +305,22 @@ export default function CharacterEditorModal({ onClose }) {
             </div>
           </>
         )}
+        <div style={{marginBottom:16}}>
+          <button className="btn btn-secondary btn-sm" disabled={recalculating} onClick={async () => {
+            setRecalculating(true);
+            try {
+              const r = await api.post(`/characters/${character.id}/recalculate_class_resources`);
+              setCharacter(r.data);
+            } finally { setRecalculating(false); }
+          }}>
+            {recalculating ? 'Recalculating...' : '🔄 Recalculate Class Resources'}
+          </button>
+          <div style={{color:'var(--text-dim)',fontSize:11,marginTop:4}}>
+            Fixes Rage/Action Surge/Sorcery Points/etc. uses that are wrong or stuck at 0 - common on a
+            PDF-imported or multiclass character, since import has no knowledge of these formulas.
+            Never refills an already-spent use, only corrects/grants what's missing.
+          </div>
+        </div>
         {(td._level_up_snapshots?.length > 0 || td._level_up_snapshot) && (
           <div style={{marginBottom:16}}>
             <button className="btn btn-secondary" disabled={rollingBack} onClick={async () => {

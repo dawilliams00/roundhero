@@ -15,6 +15,89 @@ def get_features_up_to_level(class_name, level):
                 result.append(feat)
     return result
 
+def apply_dynamic_feature_maxes(features, class_name, level, ability_scores):
+    """Recomputes the max AND current of every class resource whose count scales with THIS
+    class's own level/ability score - Rage uses, Divine Sense, Lay on Hands, Bardic
+    Inspiration, Ki Points, Action Surge, Indomitable, Sorcery Points. Shared by the
+    single-class manual-build path (build_tracker_data below), the multiclass leveling path
+    (multiclass_engine.level_up_one_class), and the on-demand recalculate route
+    (multiclass_engine.recalculate_class_resources) so a Barbarian's Rage or a Fighter's
+    Action Surge scales correctly regardless of which engine built the character - this was
+    the actual gap: the multiclass path granted new FEATURES on level-up via
+    class_features.json, but never recomputed any of these formulas, so a PDF-imported/
+    multiclass character's Rage uses (etc.) stayed wherever the PDF parser happened to leave
+    them forever, even across real level-ups.
+
+    `level` here is always THIS CLASS's own level (e.g. Barbarian level within a Barbarian
+    5/Fighter 3 multiclass build, not total character level) - matches RAW, where these
+    all scale off the single class's own progression table, never total character level.
+
+    Always meant to run on a FRESHLY BUILT features dict (current == max for everything,
+    same as _build_features_for_class_level/build_tracker_data already produce) - NOT
+    directly on a live character's already-in-play features. An already-spent resource is
+    never silently refilled by this function; that's _merge_features_for_level_up's job
+    (called right after, by every caller), which compares old spent-vs-max against
+    whatever max this function just computed. Mutates `features` in place and returns it.
+    """
+    scores = ability_scores or {}
+    cls = CLASSES.get(class_name, {})
+    cha_mod = modifier(scores.get("CHA", 10))
+
+    def _apply(name, value):
+        if name not in features:
+            return
+        features[name]["max"] = value
+        features[name]["current"] = value
+
+    if class_name == "Barbarian":
+        rage_table = cls.get("rage_uses", {})
+        rage_uses = 2
+        for lvl in sorted(rage_table.keys()):
+            if level >= lvl:
+                val = rage_table[lvl]
+                rage_uses = 99 if val == "unlimited" else val
+        _apply("Rage", rage_uses)
+
+    if class_name == "Paladin":
+        _apply("Divine Sense", max(1, 1 + cha_mod))
+        _apply("Lay on Hands", level * 5)
+
+    if class_name == "Bard":
+        _apply("Bardic Inspiration", max(1, cha_mod))
+
+    if class_name == "Monk":
+        ki_max = level
+        if "Ki Points" not in features:
+            features["Ki Points"] = {
+                "current": ki_max, "max": ki_max,
+                "rest_type": "short", "action": "Passive",
+                "description": f"Ki pool: {ki_max} points. Regain on short or long rest."
+            }
+        else:
+            _apply("Ki Points", ki_max)
+
+    if class_name == "Fighter":
+        surge_table = cls.get("action_surge_uses", {})
+        surge_uses = 0
+        for lvl in sorted(surge_table.keys()):
+            if level >= lvl:
+                surge_uses = surge_table[lvl]
+        if surge_uses:
+            _apply("Action Surge", surge_uses)
+        indom_table = cls.get("indomitable_uses", {})
+        indom_uses = 0
+        for lvl in sorted(indom_table.keys()):
+            if level >= lvl:
+                indom_uses = indom_table[lvl]
+        if indom_uses:
+            _apply("Indomitable", indom_uses)
+
+    if class_name == "Sorcerer":
+        # RAW: sorcery points = sorcerer level, starting at 2nd level (Font of Magic).
+        _apply("Font of Magic (Sorcery Points)", level if level >= 2 else 0)
+
+    return features
+
 def build_tracker_data(class_name, level, ability_scores):
     scores = ability_scores or {}
     prof = get_proficiency_bonus(level)
@@ -31,70 +114,9 @@ def build_tracker_data(class_name, level, ability_scores):
                 "description": feat.get("description", ""),
             }
 
-    # Dynamic use counts
+    apply_dynamic_feature_maxes(features, class_name, level, scores)
     cls = CLASSES.get(class_name, {})
-    cha_mod = modifier(scores.get("CHA", 10))
     con_mod = modifier(scores.get("CON", 10))
-
-    if class_name == "Barbarian":
-        rage_table = cls.get("rage_uses", {})
-        rage_uses = 2
-        for lvl in sorted(rage_table.keys()):
-            if level >= lvl:
-                val = rage_table[lvl]
-                rage_uses = 99 if val == "unlimited" else val
-        if "Rage" in features:
-            features["Rage"]["max"] = rage_uses
-            features["Rage"]["current"] = rage_uses
-
-    if class_name == "Paladin":
-        if "Divine Sense" in features:
-            ds_max = max(1, 1 + cha_mod)
-            features["Divine Sense"]["max"] = ds_max
-            features["Divine Sense"]["current"] = ds_max
-        if "Lay on Hands" in features:
-            loh_max = level * 5
-            features["Lay on Hands"]["max"] = loh_max
-            features["Lay on Hands"]["current"] = loh_max
-
-    if class_name == "Bard":
-        bi_max = max(1, cha_mod)
-        if "Bardic Inspiration" in features:
-            features["Bardic Inspiration"]["max"] = bi_max
-            features["Bardic Inspiration"]["current"] = bi_max
-
-    if class_name == "Monk":
-        ki_max = level
-        features["Ki Points"] = {
-            "current": ki_max, "max": ki_max,
-            "rest_type": "short", "action": "Passive",
-            "description": f"Ki pool: {ki_max} points. Regain on short or long rest."
-        }
-
-    if class_name == "Fighter":
-        surge_table = cls.get("action_surge_uses", {})
-        surge_uses = 0
-        for lvl in sorted(surge_table.keys()):
-            if level >= lvl:
-                surge_uses = surge_table[lvl]
-        if "Action Surge" in features and surge_uses:
-            features["Action Surge"]["max"] = surge_uses
-            features["Action Surge"]["current"] = surge_uses
-        indom_table = cls.get("indomitable_uses", {})
-        indom_uses = 0
-        for lvl in sorted(indom_table.keys()):
-            if level >= lvl:
-                indom_uses = indom_table[lvl]
-        if "Indomitable" in features and indom_uses:
-            features["Indomitable"]["max"] = indom_uses
-            features["Indomitable"]["current"] = indom_uses
-
-    if class_name == "Sorcerer":
-        # RAW: sorcery points = sorcerer level, starting at 2nd level (Font of Magic).
-        sp_max = level if level >= 2 else 0
-        if "Font of Magic (Sorcery Points)" in features:
-            features["Font of Magic (Sorcery Points)"]["max"] = sp_max
-            features["Font of Magic (Sorcery Points)"]["current"] = sp_max
 
     spell_slots = get_spell_slots(class_name, level)
 
