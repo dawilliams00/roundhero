@@ -344,11 +344,14 @@ export const computeItemBonuses = (items) => {
         abilityOverrides[b.stat] = Math.max(abilityOverrides[b.stat] ?? -Infinity, b.value || 0);
       } else if (b.mode === 'add' && ABILITY_KEYS.includes(b.stat)) {
         abilityAdds[b.stat] = (abilityAdds[b.stat] || 0) + (b.value || 0);
-      } else if ((b.mode === 'set' || b.mode === 'set_dex') && b.stat === 'ac_base') {
-        // set_dex stores the BASE value (e.g. 15 for Robe of the Archmagi, 13 for Mage
-        // Armor) that gets DEX mod added at display/calc time in CharacterHeader. 'set'
-        // is a flat value (no DEX, like heavy armor). Both track the highest base offered.
-        const entry = { value: b.value || 0, addDex: b.mode === 'set_dex' };
+      } else if ((b.mode === 'set' || b.mode === 'set_dex' || b.mode === 'set_ability') && b.stat === 'ac_base') {
+        // 'set'          — flat value (heavy armor that ignores DEX, e.g. Plate = 18)
+        // 'set_ability'  — base + chosen ability mod (Robe of Archmagi: 15+DEX,
+        //                   Mage Armor: 13+DEX, Chain Shirt: 13+DEX). Stores b.ability.
+        // 'set_dex'      — legacy alias for set_ability with DEX (kept for existing data).
+        // Tracks the highest BASE value offered; the caller adds the ability mod at render.
+        const abilityKey = b.mode === 'set_dex' ? 'DEX' : (b.ability || null);
+        const entry = { value: b.value || 0, ability: abilityKey };
         if (acOverride === null || b.value > (acOverride.value ?? -Infinity)) acOverride = entry;
       } else if (b.stat === 'advantage_save') {
         advantageSaves.push({ ability: b.ability || 'all', source: it.name });
@@ -365,8 +368,9 @@ export const computeItemBonuses = (items) => {
       }
     });
   });
-  // Normalise acOverride into a plain number so callers can still do simple arithmetic.
-  // Callers that need DEX-mod handling receive the raw object when needed via acOverrideRaw.
+  // acOverrideRaw carries the {value, ability} shape so callers can add the right ability
+  // mod at display time. acOverride (the plain number) is kept for callers that don't need
+  // the ability detail — they'd use acOverrideRaw instead if they do.
   const acOverrideRaw = acOverride;
   const acOverrideFlatValue = acOverride !== null ? acOverride.value : null;
   return { ...bonuses, acOverride: acOverrideFlatValue, acOverrideRaw, abilityOverrides, abilityAdds, advantageSaves, resistances, immunities, vulnerabilities, conditionImmunities };

@@ -188,7 +188,7 @@ export default function AddItemModal({ item, onSave, onClose }) {
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={e => e.stopPropagation()}>
+      <div className="modal" style={{maxWidth:740}} onClick={e => e.stopPropagation()}>
         <h2>{item ? 'Edit Item' : 'Add Item'}</h2>
         <div className="form-group"><label>Name</label><input value={form.name} onChange={e=>set('name',e.target.value)} placeholder="Item name" autoFocus /></div>
         <div className="form-row">

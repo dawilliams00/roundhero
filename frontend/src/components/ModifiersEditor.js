@@ -26,8 +26,11 @@ export default function ModifiersEditor({ buffs, onChange, allowWeapon = false, 
   const updateModifier = (i, patch) => onChange(buffs.map((b, idx) => idx === i ? { ...b, ...patch } : b));
   const removeModifier = (i) => onChange(buffs.filter((_, idx) => idx !== i));
   const setModifierType = (i, value) => {
-    if (value.startsWith('set_dex:')) {
-      updateModifier(i, { stat: value.slice(8), mode: 'set_dex', ability: undefined, damage_type: undefined, condition: undefined, value: 13 });
+    if (value.startsWith('set_ability:')) {
+      updateModifier(i, { stat: value.slice(12), mode: 'set_ability', ability: 'DEX', damage_type: undefined, condition: undefined, value: 13 });
+    } else if (value.startsWith('set_dex:')) {
+      // legacy alias — treat same as set_ability with DEX
+      updateModifier(i, { stat: value.slice(8), mode: 'set_ability', ability: 'DEX', damage_type: undefined, condition: undefined, value: 13 });
     } else if (value.startsWith('set:')) {
       updateModifier(i, { stat: value.slice(4), mode: 'set', ability: undefined, damage_type: undefined, condition: undefined, value: 16 });
     } else if (value.startsWith('add:')) {
@@ -49,13 +52,13 @@ export default function ModifiersEditor({ buffs, onChange, allowWeapon = false, 
       <div style={{color:'var(--text-dim)',fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:1,margin:'12px 0 6px'}}>Modifiers</div>
       {buffs.map((b, i) => {
         const isSetMode = b.mode === 'set';
-        const isSetDexMode = b.mode === 'set_dex';
+        const isSetAbilityMode = b.mode === 'set_ability' || b.mode === 'set_dex';
         const isAddMode = b.mode === 'add';
         const isAdvSave = b.stat === 'advantage_save';
         const isDamageBuff = ['damage_resistance','damage_immunity','damage_vulnerability'].includes(b.stat);
         const isCondImmune = b.stat === 'condition_immunity';
         const damageBuffPrefix = { damage_resistance: 'resist', damage_immunity: 'immune', damage_vulnerability: 'vuln' }[b.stat];
-        const selectValue = isSetDexMode ? `set_dex:${b.stat}` : isSetMode ? `set:${b.stat}` : isAddMode ? `add:${b.stat}` : isAdvSave ? `advsave:${b.ability || 'all'}`
+        const selectValue = isSetAbilityMode ? `set_ability:${b.stat}` : isSetMode ? `set:${b.stat}` : isAddMode ? `add:${b.stat}` : isAdvSave ? `advsave:${b.ability || 'all'}`
           : isDamageBuff ? damageBuffPrefix : isCondImmune ? 'condimmune' : b.stat;
         return (
           <div key={i} style={{display:'flex',gap:6,alignItems:'center',marginBottom:6}}>
@@ -63,8 +66,8 @@ export default function ModifiersEditor({ buffs, onChange, allowWeapon = false, 
               {ADD_MODIFIERS(weaponScope).filter(m => !m.stat.startsWith('weapon_') || allowWeapon).map(m => (
                 <option key={m.stat} value={m.stat}>{m.label}</option>
               ))}
-              <option value="set:ac_base">Set Base AC To X (flat, ignores DEX)</option>
-              <option value="set_dex:ac_base">Set Base AC To X + DEX mod (light armor / Mage Armor / Robe of the Archmagi)</option>
+              <option value="set:ac_base">Set Base AC To X (flat, ignores ability mods)</option>
+              <option value="set_ability:ac_base">Set Base AC To X + ability mod…</option>
               {ABILITY_KEYS.map(k => <option key={`set-${k}`} value={`set:${k}`}>Set {k} Score To...</option>)}
               {ABILITY_KEYS.map(k => <option key={`add-${k}`} value={`add:${k}`}>Add to {k} Score</option>)}
               <option value="advsave:all">Advantage on All Saving Throws</option>
@@ -84,10 +87,16 @@ export default function ModifiersEditor({ buffs, onChange, allowWeapon = false, 
                 {CONDITIONS.map(c => <option key={c}>{c}</option>)}
               </select>
             )}
+            {isSetAbilityMode && (
+              <select value={b.ability || 'DEX'} onChange={e => updateModifier(i, { ability: e.target.value })} style={{width:64}}>
+                {ABILITY_KEYS.map(k => <option key={k} value={k}>{k}</option>)}
+              </select>
+            )}
             {!isAdvSave && !isDamageBuff && !isCondImmune && (
               <>
-                <span style={{fontSize:12,color:'var(--text-dim)'}}>{isSetMode ? 'becomes' : '+'}</span>
-                <input type="number" value={b.value} onChange={e => updateModifier(i, { value: parseInt(e.target.value) || 0 })} style={{width:60}} />
+                <span style={{fontSize:12,color:'var(--text-dim)'}}>{(isSetMode || isSetAbilityMode) ? '=' : '+'}</span>
+                <input type="number" value={b.value} onChange={e => updateModifier(i, { value: parseInt(e.target.value) || 0 })} style={{width:56}} />
+                {isSetAbilityMode && <span style={{fontSize:11,color:'var(--text-dim)'}}>+ mod</span>}
               </>
             )}
             <button className="btn btn-secondary btn-sm" onClick={() => removeModifier(i)}>✕</button>

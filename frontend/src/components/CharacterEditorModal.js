@@ -406,7 +406,7 @@ export default function CharacterEditorModal({ onClose }) {
           const { acOverrideRaw, ac_base: itemAddAc } = computeItemBonuses(buffItems);
           const dexMod = modifier(effScores.DEX || 10);
           const resolvedOverride = acOverrideRaw !== null
-            ? acOverrideRaw.value + (acOverrideRaw.addDex ? dexMod : 0)
+            ? acOverrideRaw.value + (acOverrideRaw.ability ? modifier(effScores[acOverrideRaw.ability] ?? 10) : 0)
             : null;
           const baseAcDisplay = resolvedOverride != null ? resolvedOverride : unarmoredBase;
           const totalAc = baseAcDisplay + (itemAddAc || 0) + (parseInt(acMisc) || 0);
@@ -427,7 +427,7 @@ export default function CharacterEditorModal({ onClose }) {
                 </div>
               </div>
               {resolvedOverride != null
-                ? <Row label={`Armor override${acOverrideRaw.addDex ? ` (${acOverrideRaw.value} + DEX)` : ` (flat ${acOverrideRaw.value})`}`} value={resolvedOverride} dim />
+                ? <Row label={`Armor override${acOverrideRaw.ability ? ` (${acOverrideRaw.value} + ${acOverrideRaw.ability})` : ` (flat ${acOverrideRaw.value})`}`} value={resolvedOverride} dim />
                 : <Row label={`Unarmored (${unarmoredFormula})`} value={unarmoredBase} dim />}
               {(itemAddAc||0) !== 0 && <Row label="Shield / Items" value={`+${itemAddAc}`} dim />}
               <Row label="Misc (spells, natural armor…)" value={acMisc} editable onChange={e => setAcMisc(e.target.value)} />

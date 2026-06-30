@@ -257,7 +257,7 @@ export default function CharacterHeader({ onBack }) {
   // shape; acOverride is the resolved flat number after adding DEX when applicable.
   const acOverrideRaw = itemBonuses.acOverrideRaw;
   const armorOverride = acOverrideRaw !== null
-    ? acOverrideRaw.value + (acOverrideRaw.addDex ? dexMod : 0)
+    ? acOverrideRaw.value + (acOverrideRaw.ability ? modifier(effAb[acOverrideRaw.ability] ?? 10) : 0)
     : null;
   const { ac: unarmoredBase } = unarmoredAC(class_name, effAb, td?.features);
   // Priority: equipped armor/robe override → manually stored td.ac → auto-computed unarmored.
