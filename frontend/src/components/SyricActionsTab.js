@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
-import { SECTION_COLORS, HASTED_EFFECT, concentrationSlotCount, formatItemBuff, isItemActive, slotBadgeTextColor } from '../utils/dnd';
+import { SECTION_COLORS, HASTED_EFFECT, concentrationSlotCount, formatItemBuff, isItemActive, slotBadgeTextColor, availableSpellsForBucket } from '../utils/dnd';
 import { fetchCharacterModule, findTrackerCounter, runSyricAction, syncSyricCodexPages, updateTrackerCounter } from '../utils/characterModules';
 import AbilityDetailModal from './AbilityDetailModal';
 import CastSpellPickerModal from './CastSpellPickerModal';
@@ -165,7 +165,7 @@ function ActionRow({ action, section, ownerKey, trackerData, inInitiative, used,
   );
 }
 
-function OwnerPanel({ title, ownerKey, sections, trackerData, inInitiative, used, setUsed, isHasted, onSpend, onDetail, onCast, onSpecial, beforeSections = null }) {
+function OwnerPanel({ title, ownerKey, sections, trackerData, inInitiative, used, setUsed, isHasted, onSpend, onDetail, onCast, onSpecial, beforeSections = null, canCastInSection = null }) {
   const labels = ownerKey === 'shadow' ? SHADOW_BUCKET_LABELS : BUCKET_LABELS;
   const markBucket = (bucket) => {
     if (!inInitiative || !bucket) return;
@@ -184,12 +184,15 @@ function OwnerPanel({ title, ownerKey, sections, trackerData, inInitiative, used
       </div>
       <div style={{flex:1,overflowY:'auto'}}>
         {beforeSections}
-        {(sections || []).map(section => (
+        {(sections || []).map(section => {
+          const actions = (section.actions || []).filter(action => action.cost_type !== 'cast_spell' || !canCastInSection || canCastInSection(section.name));
+          if (!actions.length) return null;
+          return (
           <div key={`${ownerKey}-${section.name}`}>
             <div style={{position:'sticky',top:0,zIndex:2,padding:'6px 10px',background:sectionColor(section.name),color:'#fff',fontSize:11,fontWeight:900,letterSpacing:1,textTransform:'uppercase'}}>
               {section.name}
             </div>
-            {(section.actions || []).map(action => (
+            {actions.map(action => (
               <ActionRow
                 key={`${ownerKey}-${section.name}-${action.name}-${action.tracker_key || ''}`}
                 action={action}
@@ -206,7 +209,8 @@ function OwnerPanel({ title, ownerKey, sections, trackerData, inInitiative, used
               />
             ))}
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -624,6 +628,7 @@ export default function SyricActionsTab() {
     if (!inInitiative || !bucket) return;
     setTurnUsed(prev => ({ ...prev, [bucket]: true }));
   };
+  const canCastInSection = (section) => availableSpellsForBucket(character?.spell_data || {}, section).length > 0;
 
   const handleItemUse = async (idx, itemBucket) => {
     await useItemCharge(idx, -1);
@@ -718,6 +723,7 @@ export default function SyricActionsTab() {
           onDetail={setDetail}
           onCast={startCast}
           onSpecial={handleSpecial}
+          canCastInSection={canCastInSection}
           beforeSections={(
             <>
               <RemindersSection
@@ -753,6 +759,7 @@ export default function SyricActionsTab() {
           onDetail={setDetail}
           onCast={startCast}
           onSpecial={handleSpecial}
+          canCastInSection={canCastInSection}
         />
       </div>
 

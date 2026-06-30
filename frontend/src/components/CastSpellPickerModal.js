@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
-import { spellCastBucket, schoolColor, slotBadgeTextColor } from '../utils/dnd';
+import { availableSpellsForBucket, schoolColor, slotBadgeTextColor } from '../utils/dnd';
 import SpellDetailModal from './SpellDetailModal';
 
 export default function CastSpellPickerModal({ onClose, bucket, onCast }) {
@@ -9,14 +9,8 @@ export default function CastSpellPickerModal({ onClose, bucket, onCast }) {
   const [viewing, setViewing] = useState(null);
 
   const sd = character?.spell_data || {};
-  const knownSpells = sd.known_spells || [];
-  const spellLists  = sd.spell_lists || {};
   const activeList  = sd.active_list || null;
-  const isAlwaysAvailable = s => s.ritual || !!s.granted_by || s.level_int === 0;
-  const visibleSpells = activeList && spellLists[activeList]
-    ? knownSpells.filter(s => spellLists[activeList].includes(s.name) || isAlwaysAvailable(s))
-    : knownSpells;
-  const bucketFiltered = bucket ? visibleSpells.filter(s => spellCastBucket(s.casting_time) === bucket) : visibleSpells;
+  const bucketFiltered = availableSpellsForBucket(sd, bucket);
   const spells = bucketFiltered.filter(s => !search || s.name.toLowerCase().includes(search.toLowerCase()))
     .sort((a,b) => (a.level_int - b.level_int) || a.name.localeCompare(b.name));
 

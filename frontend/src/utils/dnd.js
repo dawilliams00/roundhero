@@ -159,6 +159,21 @@ export const spellCastBucket = (castingTime) => {
   return 'Action';
 };
 
+export const visibleSpellsForSpellData = (spellData = {}) => {
+  const knownSpells = spellData.known_spells || [];
+  const spellLists = spellData.spell_lists || {};
+  const activeList = spellData.active_list || null;
+  const isAlwaysAvailable = spell => spell.ritual || !!spell.granted_by || spell.level_int === 0;
+  return activeList && spellLists[activeList]
+    ? knownSpells.filter(spell => spellLists[activeList].includes(spell.name) || isAlwaysAvailable(spell))
+    : knownSpells;
+};
+
+export const availableSpellsForBucket = (spellData = {}, bucket = null) => {
+  const visibleSpells = visibleSpellsForSpellData(spellData);
+  return bucket ? visibleSpells.filter(spell => spellCastBucket(spell.casting_time) === bucket) : visibleSpells;
+};
+
 export const rollD20 = () => 1 + Math.floor(Math.random() * 20);
 export const rollDie = sides => 1 + Math.floor(Math.random() * sides);
 

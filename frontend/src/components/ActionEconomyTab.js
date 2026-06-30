@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
-import { SECTION_ORDER, SECTION_COLORS, slotBadgeTextColor, concentrationSlotCount, HASTED_EFFECT, LETHARGIC_CONDITION, maxAttacksForCharacter, isItemActive, formatItemBuff, martialArtsDie, sorceryDisplayName, activeCompanionKey } from '../utils/dnd';
+import { SECTION_ORDER, SECTION_COLORS, slotBadgeTextColor, concentrationSlotCount, HASTED_EFFECT, LETHARGIC_CONDITION, maxAttacksForCharacter, isItemActive, formatItemBuff, martialArtsDie, sorceryDisplayName, activeCompanionKey, availableSpellsForBucket } from '../utils/dnd';
 import AbilityDetailModal from './AbilityDetailModal';
 import CastSpellPickerModal from './CastSpellPickerModal';
 import ItemSpellsModal from './ItemSpellsModal';
@@ -52,7 +52,7 @@ export default function ActionEconomyTab() {
   // gates equipped+attuned the same way every other buff consumer does.
   const passiveItems = items.map((it,i) => ({ it, idx: i }))
     .filter(({it}) => !it.charges && isItemActive(it) && ((it.buffs||[]).length > 0 || it.grants_unarmed_bonus));
-  const knownSpells = character.spell_data?.known_spells || [];
+  const hasSpellForBucket = (bucket) => availableSpellsForBucket(character.spell_data || {}, bucket).length > 0;
   // Unarmed Strike is always a valid RAW attack option, with or without a magic item
   // boosting it - the row always shows; an equipped+attuned item with
   // grants_unarmed_bonus (gauntlets, etc.) folds its bonus dice in via the same
@@ -406,11 +406,9 @@ export default function ActionEconomyTab() {
           // feat added twice via Browse Feats, or a PDF-imported descriptive feature and
           // a separately-added custom functional version sharing a name) - only the first
           // occurrence of a given tracker_key/name renders, so the player only ever sees one.
-          // Keep stock CAST rows visible in Action/Bonus/Reaction. The picker itself
-          // filters spells by casting time and can show an empty state when none match.
           const abilities = (ae[section] || []).filter((a, i, arr) =>
             arr.findIndex(b => (b.tracker_key || b.name) === (a.tracker_key || a.name)) === i
-          );
+          ).filter(a => a.cost_type !== 'cast_spell' || hasSpellForBucket(section));
           if (!abilities || abilities.length === 0) return null;
           return (
             <div key={section}>
