@@ -12,8 +12,10 @@ import CompanionTab from '../components/CompanionTab';
 import SyricConsoleTab from '../components/SyricConsoleTab';
 import SyricActionsTab from '../components/SyricActionsTab';
 import ShadowConsoleTab from '../components/ShadowConsoleTab';
+import CampaignPlayerViewModal from '../components/CampaignPlayerViewModal';
 import { fetchCharacterModules } from '../utils/characterModules';
 import { activeCompanionKey } from '../utils/dnd';
+import api from '../utils/api';
 
 export default function GameView() {
   const { id }                    = useParams();
@@ -21,6 +23,8 @@ export default function GameView() {
   const { character, loadCharacter, loading } = useCharacter();
   const [activeTab, setActiveTab] = useState(0);
   const [modules, setModules] = useState([]);
+  const [campaignViews, setCampaignViews] = useState([]);
+  const [showCampaignView, setShowCampaignView] = useState(false);
 
   useEffect(() => { loadCharacter(parseInt(id)); }, [id, loadCharacter]);
 
@@ -32,6 +36,26 @@ export default function GameView() {
       .catch(() => { if (!cancelled) setModules([]); });
     return () => { cancelled = true; };
   }, [character?.id]);
+
+  useEffect(() => {
+    if (!character?.id) return;
+    let cancelled = false;
+    api.get(`/campaigns/player-view/${character.id}`, { suppressGlobalError: true })
+      .then(r => { if (!cancelled) setCampaignViews(r.data || []); })
+      .catch(() => { if (!cancelled) setCampaignViews([]); });
+    return () => { cancelled = true; };
+  }, [character?.id]);
+
+  const openCampaignView = async () => {
+    if (!character?.id) return;
+    try {
+      const r = await api.get(`/campaigns/player-view/${character.id}`, { suppressGlobalError: true });
+      setCampaignViews(r.data || []);
+    } catch (err) {
+      setCampaignViews([]);
+    }
+    setShowCampaignView(true);
+  };
 
   if (loading || !character) {
     return <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'100vh',color:'var(--text-secondary)'}}>Loading character...</div>;
@@ -69,19 +93,29 @@ export default function GameView() {
   return (
     <div style={{display:'flex',flexDirection:'column',height:'100vh',background:'var(--bg-primary)',overflow:'hidden'}}>
       <CharacterHeader onBack={() => nav('/characters')} />
-      <div style={{display:'flex',borderBottom:'1px solid var(--border)',background:'var(--bg-secondary)',flexShrink:0}}>
-        {tabs.map((t,i) => (
-          <button key={t.label} onClick={() => setActiveTab(i)} style={{
-            flex:1, padding:'10px 4px', fontSize:12, fontWeight:500,
-            background:'none', border:'none', borderBottom: i===safeTab ? '2px solid var(--accent)' : '2px solid transparent',
-            color: i===safeTab ? 'var(--accent-light)' : 'var(--text-secondary)',
-            transition:'color 0.15s',
-          }}>{t.label}</button>
-        ))}
+      <div style={{display:'flex',borderBottom:'1px solid var(--border)',background:'var(--bg-secondary)',flexShrink:0,alignItems:'stretch'}}>
+        <div style={{display:'flex',flex:1,minWidth:0}}>
+          {tabs.map((t,i) => (
+            <button key={t.label} onClick={() => setActiveTab(i)} style={{
+              flex:1, padding:'10px 4px', fontSize:12, fontWeight:500,
+              background:'none', border:'none', borderBottom: i===safeTab ? '2px solid var(--accent)' : '2px solid transparent',
+              color: i===safeTab ? 'var(--accent-light)' : 'var(--text-secondary)',
+              transition:'color 0.15s',
+            }}>{t.label}</button>
+          ))}
+        </div>
+        {campaignViews.length > 0 && (
+          <button className="btn btn-secondary btn-sm" style={{margin:6,flexShrink:0}} onClick={openCampaignView}>
+            Campaign
+          </button>
+        )}
       </div>
       <div style={{flex:1,overflow:'hidden',display:'flex',flexDirection:'column'}}>
         <ActiveComponent />
       </div>
+      {showCampaignView && campaignViews.length > 0 && (
+        <CampaignPlayerViewModal views={campaignViews} onClose={() => setShowCampaignView(false)} />
+      )}
     </div>
   );
 }

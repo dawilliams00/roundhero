@@ -17,7 +17,7 @@ export default function NumberPadPopover({ label, value, color = 'var(--accent-l
     ? { position: 'absolute', left: 0, top: '100%', marginTop: 6 }
     : { position: 'absolute', right: '100%', top: 0, marginRight: 8 };
   return (
-    <div style={{...posStyle, background:'var(--bg-card)', border:`1px solid ${color}`, borderRadius:'var(--radius-md)', padding:10, zIndex:30, width:150, boxShadow:'var(--shadow)'}} onClick={e => e.stopPropagation()}>
+    <div style={{...posStyle, background:'var(--bg-card)', border:`1px solid ${color}`, borderRadius:'var(--radius-md)', padding:10, zIndex:2900, width:150, boxShadow:'var(--shadow)'}} onClick={e => e.stopPropagation()}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:6}}>
         <span style={{color, fontWeight:700, fontSize:12}}>{label}: {value}</span>
         <span onClick={onClose} style={{cursor:'pointer',color:'var(--text-dim)',fontSize:14}}>✕</span>

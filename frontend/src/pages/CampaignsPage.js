@@ -98,6 +98,47 @@ function CampaignInviteEmailModal({ campaign, onClose }) {
   );
 }
 
+function TransferOwnerModal({ campaign, onClose, onTransfer }) {
+  const [email, setEmail] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  const submit = async e => {
+    e.preventDefault();
+    if (!email.trim()) return;
+    setSaving(true);
+    setError('');
+    try {
+      await onTransfer(email.trim());
+      onClose();
+    } catch (err) {
+      setError(err.response?.data?.error || 'Could not transfer DM ownership.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <form className="modal" style={{maxWidth:420}} onClick={e => e.stopPropagation()} onSubmit={submit}>
+        <h2>Transfer DM Ownership</h2>
+        <div style={{color:'var(--text-secondary)',fontSize:12,lineHeight:1.5,marginBottom:12}}>
+          Transfer owner DM control of {campaign?.name} to a registered RoundHero user by email.
+        </div>
+        <div className="form-group">
+          <label>New Owner Email</label>
+          <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="newdm@example.com" autoFocus />
+        </div>
+        {error && <div style={{color:'var(--danger)',fontSize:12,marginTop:8}}>{error}</div>}
+        <div style={{display:'flex',gap:8,marginTop:12}}>
+          <button type="button" className="btn btn-secondary" style={{flex:1}} onClick={onClose}>Cancel</button>
+          <button className="btn btn-primary" style={{flex:2}} disabled={!email.trim() || saving}>{saving ? 'Transferring...' : 'Transfer'}</button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
 function normalizeCombatant(row) {
   return {
     id: row.id || combatantId(),
@@ -132,6 +173,14 @@ function rosterConText(entry) {
   const slots = entry.sheet_snapshot?.concentration_slots || [];
   if (!slots.length) return '';
   return slots.map(slot => slot.spell).filter(Boolean).join(' / ');
+}
+
+function preparedSpellsForRosterEntry(entry) {
+  const prepared = entry?.sheet_snapshot?.prepared_spells || [];
+  return prepared
+    .map(spell => (typeof spell === 'string' ? { name: spell } : spell))
+    .filter(spell => spell?.name)
+    .sort((a, b) => String(a.level ?? 0).localeCompare(String(b.level ?? 0), undefined, { numeric: true }) || a.name.localeCompare(b.name));
 }
 
 function combatantFromRosterEntry(entry) {
@@ -230,7 +279,7 @@ function MemberRow({ member, campaign, onRole, onRemove }) {
   );
 }
 
-function RosterRow({ entry, campaign, user, onPrimary, onActive }) {
+function RosterRow({ entry, campaign, user, onPrimary, onActive, onDetach }) {
   const canManage = campaign.is_dm || sameId(entry.user_id, user?.id);
   const conditions = entry.sheet_snapshot?.conditions || [];
   const activeEffects = entry.sheet_snapshot?.active_effects || [];
@@ -262,6 +311,7 @@ function RosterRow({ entry, campaign, user, onPrimary, onActive }) {
           <button className={entry.active ? 'btn btn-secondary btn-sm' : 'btn btn-primary btn-sm'} onClick={() => onActive(entry, !entry.active)}>
             {entry.active ? 'Inactivate' : 'Reactivate'}
           </button>
+          <button className="btn btn-danger btn-sm" onClick={() => onDetach(entry)}>Remove</button>
         </div>
       )}
     </div>
@@ -325,8 +375,8 @@ function EncounterRow({ encounter, selected, isDm, onStatus, onDelete, onSelect,
       </div>
       {isDm && (
         <div style={{display:'flex',gap:6}}>
-          <button className="btn btn-primary btn-sm" onClick={() => onSelect(encounter.id)}>{selected ? 'Open' : 'Build'}</button>
-          <button className="btn btn-success btn-sm" onClick={() => onRun(encounter.id)}>Run</button>
+          <button className="btn btn-secondary btn-sm" onClick={() => onSelect(encounter.id)}>Setup</button>
+          <button className="btn btn-primary btn-sm" onClick={() => onRun(encounter.id)}>Open</button>
           {nextActions.map(([label, status]) => (
             <button key={status} className="btn btn-secondary btn-sm" onClick={() => onStatus(encounter.id, status)}>{label}</button>
           ))}
@@ -461,9 +511,11 @@ function EncounterBuilder({
 
           <div style={{border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',padding:10}}>
             <div style={{color:'var(--text-secondary)',fontSize:11,fontWeight:800,textTransform:'uppercase',marginBottom:8}}>Pull Enemy</div>
-            <div style={{display:'grid',gridTemplateColumns:'1fr 64px 88px',gap:6,marginBottom:8}}>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 32px 64px 32px 88px',gap:6,marginBottom:8}}>
               <input value={monsterSearch} onChange={e => setMonsterSearch(e.target.value)} placeholder="Search bestiary" />
-              <input value={addMonsterQuantity} onChange={e => setAddMonsterQuantity(e.target.value)} placeholder="Qty" />
+              <button type="button" className="btn btn-secondary btn-sm" onClick={() => setAddMonsterQuantity(String(Math.max(1, toNumber(addMonsterQuantity, 1) - 1)))}>-</button>
+              <input value={addMonsterQuantity} onChange={e => setAddMonsterQuantity(e.target.value)} placeholder="Qty" style={{textAlign:'center'}} />
+              <button type="button" className="btn btn-secondary btn-sm" onClick={() => setAddMonsterQuantity(String(Math.min(30, toNumber(addMonsterQuantity, 1) + 1)))}>+</button>
               <input value={addMonsterInitiative} onChange={e => setAddMonsterInitiative(e.target.value)} placeholder="Init" />
             </div>
             <label style={{display:'flex',alignItems:'center',gap:8,color:'var(--text-secondary)',fontSize:12,marginBottom:8}}>
@@ -481,9 +533,9 @@ function EncounterBuilder({
         </div>
       )}
 
-      <div style={{overflowX:'auto'}}>
+      <div style={{overflowX:'auto',border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',background:'var(--bg-secondary)'}}>
         <div style={{minWidth:860}}>
-          <div style={{display:'grid',gridTemplateColumns:'64px 1.3fr 130px 110px 1.1fr 1fr 110px 86px',gap:6,color:'var(--text-secondary)',fontSize:11,fontWeight:800,textTransform:'uppercase',padding:'0 0 6px'}}>
+          <div style={{position:'sticky',top:0,zIndex:2,display:'grid',gridTemplateColumns:'64px 1.3fr 130px 110px 1.1fr 1fr 110px 86px',gap:6,color:'var(--text-secondary)',fontSize:11,fontWeight:800,textTransform:'uppercase',padding:'8px 10px',background:'var(--bg-primary)',borderBottom:'1px solid var(--border)'}}>
             <div>Init</div>
             <div>Name</div>
             <div>HP / Temp</div>
@@ -494,9 +546,9 @@ function EncounterBuilder({
             <div />
           </div>
           {combatants.length === 0 ? (
-            <div style={{color:'var(--text-secondary)',fontSize:13,padding:'20px 0'}}>No combatants yet.</div>
+            <div style={{color:'var(--text-secondary)',fontSize:13,padding:20}}>No combatants yet.</div>
           ) : combatants.map(row => (
-            <div key={row.id} style={{display:'grid',gridTemplateColumns:'64px 1.3fr 130px 110px 1.1fr 1fr 110px 86px',gap:6,alignItems:'center',padding:'7px 0',borderTop:'1px solid var(--border)'}}>
+            <div key={row.id} style={{display:'grid',gridTemplateColumns:'64px 1.3fr 130px 110px 1.1fr 1fr 110px 86px',gap:6,alignItems:'center',padding:'8px 10px',borderTop:'1px solid var(--border)'}}>
               <input value={row.initiative} onChange={e => updateCombatant(row.id, { initiative: e.target.value })} />
               <div>
                 <input value={row.name} onChange={e => updateCombatant(row.id, { name: e.target.value })} />
@@ -547,9 +599,11 @@ export default function CampaignsPage() {
     joinCampaign,
     regenerateInvite,
     attachCharacter,
+    detachCharacter,
     setCampaignCharacterActive,
     setPrimaryCharacter,
     updateMemberRole,
+    transferCampaignOwner,
     removeMember,
     leaveCampaign,
     createEffect,
@@ -573,6 +627,13 @@ export default function CampaignsPage() {
     concentration: false,
     notes: '',
   });
+  const [spellEffectForm, setSpellEffectForm] = useState({
+    source_character_id: '',
+    spell_name: '',
+    target_character_id: '',
+    duration: '',
+    status: 'pending',
+  });
   const [encounterForm, setEncounterForm] = useState({ name: '', notes: '' });
   const [selectedEncounterId, setSelectedEncounterId] = useState(null);
   const [runningEncounterId, setRunningEncounterId] = useState(null);
@@ -584,6 +645,8 @@ export default function CampaignsPage() {
   const [viewingMonster, setViewingMonster] = useState(null);
   const [showFeedback, setShowFeedback] = useState(false);
   const [showInviteEmail, setShowInviteEmail] = useState(false);
+  const [showTransferOwner, setShowTransferOwner] = useState(false);
+  const [handledJoinCode, setHandledJoinCode] = useState('');
   const [referenceDocs, setReferenceDocs] = useState(null);
   const [error, setError] = useState('');
 
@@ -598,6 +661,22 @@ export default function CampaignsPage() {
       setInviteCode(joinCode.toUpperCase());
     }
   }, [params]);
+
+  useEffect(() => {
+    const joinCode = (params.get('join') || '').trim().toUpperCase();
+    if (!joinCode || handledJoinCode === joinCode) return;
+    setHandledJoinCode(joinCode);
+    setError('');
+    joinCampaign(joinCode)
+      .then(joined => {
+        setInviteCode('');
+        nav(`/campaigns?id=${joined.id}`, { replace: true });
+        return loadCampaign(joined.id);
+      })
+      .catch(err => {
+        setError(err.response?.data?.error || 'Could not join campaign from invite link');
+      });
+  }, [handledJoinCode, joinCampaign, loadCampaign, nav, params]);
 
   useEffect(() => {
     api.get('/content/monsters')
@@ -637,6 +716,9 @@ export default function CampaignsPage() {
   const membersWithoutCharacters = (campaign?.members || []).filter(member => (
     !activeRoster.some(entry => entry.user_id === member.user_id)
   ));
+  const selectedSpellSource = activeRoster.find(entry => sameId(entry.character_id, spellEffectForm.source_character_id));
+  const preparedSpellOptions = preparedSpellsForRosterEntry(selectedSpellSource);
+  const selectedPreparedSpell = preparedSpellOptions.find(spell => spell.name === spellEffectForm.spell_name);
 
   const submitCreate = async e => {
     e.preventDefault();
@@ -692,6 +774,34 @@ export default function CampaignsPage() {
     }
   };
 
+  const submitSpellEffect = async e => {
+    e.preventDefault();
+    if (!campaign || !spellEffectForm.source_character_id || !spellEffectForm.target_character_id || !spellEffectForm.spell_name) return;
+    setError('');
+    try {
+      await createEffect(campaign.id, {
+        name: spellEffectForm.spell_name,
+        source_character_id: Number(spellEffectForm.source_character_id),
+        target_character_id: Number(spellEffectForm.target_character_id),
+        effect_type: 'spell',
+        status: spellEffectForm.status,
+        duration: spellEffectForm.duration || selectedPreparedSpell?.duration || '',
+        concentration: !!selectedPreparedSpell?.concentration,
+        notes: `${selectedSpellSource?.name || 'Caster'} cast ${spellEffectForm.spell_name}.`,
+        payload: {
+          spell_level: selectedPreparedSpell?.level,
+          casting_time: selectedPreparedSpell?.casting_time || '',
+          duration: spellEffectForm.duration || selectedPreparedSpell?.duration || '',
+          concentration: !!selectedPreparedSpell?.concentration,
+          source: 'campaign_spell_v1',
+        },
+      });
+      setSpellEffectForm({ source_character_id: '', spell_name: '', target_character_id: '', duration: '', status: 'pending' });
+    } catch (err) {
+      setError(err.response?.data?.error || 'Could not create spell effect');
+    }
+  };
+
   const submitEncounter = async e => {
     e.preventDefault();
     if (!campaign || !encounterForm.name.trim()) return;
@@ -729,6 +839,11 @@ export default function CampaignsPage() {
     await setCampaignCharacterActive(campaign.id, entry.id, active);
   };
 
+  const detachRosterCharacter = async entry => {
+    if (!campaign) return;
+    await detachCharacter(campaign.id, entry.id);
+  };
+
   const handleLeave = async () => {
     if (!campaign) return;
     setError('');
@@ -739,6 +854,12 @@ export default function CampaignsPage() {
     } catch (err) {
       setError(err.response?.data?.error || 'Could not leave campaign');
     }
+  };
+
+  const handleTransferOwner = async email => {
+    if (!campaign) return;
+    await transferCampaignOwner(campaign.id, email);
+    await fetchCampaigns();
   };
 
   const setEffectStatus = async (effectId, status) => {
@@ -844,7 +965,8 @@ export default function CampaignsPage() {
                     <button className="btn btn-secondary btn-sm" type="button" onClick={() => setShowInviteEmail(true)}>Email Invite</button>
                     <button className="btn btn-secondary btn-sm" onClick={copyInviteLink}>Copy Link</button>
                     {campaign.is_dm && <button className="btn btn-secondary btn-sm" onClick={refreshInvite}>New Code</button>}
-                    {!sameId(campaign.owner_user_id, user?.id) && <button className="btn btn-secondary btn-sm" onClick={handleLeave}>Leave</button>}
+                    {sameId(campaign.owner_user_id, user?.id) && <button className="btn btn-secondary btn-sm" onClick={() => setShowTransferOwner(true)}>Transfer DM</button>}
+                    {!sameId(campaign.owner_user_id, user?.id) && <button className="btn btn-danger btn-sm" onClick={handleLeave}>Leave Campaign</button>}
                   </div>
                 </div>
 
@@ -881,6 +1003,11 @@ export default function CampaignsPage() {
                           </select>
                           <button className="btn btn-primary" disabled={!selectedCharacterId}>Add</button>
                         </form>
+                        {availableCharacters.length === 0 && (
+                          <div style={{color:'var(--text-dim)',fontSize:12,marginTop:8}}>
+                            No unattached characters found for your account. Create or import a character, then return here to add it.
+                          </div>
+                        )}
                         {membersWithoutCharacters.length > 0 && (
                           <div style={{color:'var(--text-secondary)',fontSize:12,marginTop:12}}>
                             Members without attached characters: {membersWithoutCharacters.map(member => member.username).join(', ')}
@@ -904,6 +1031,7 @@ export default function CampaignsPage() {
                           user={user}
                           onPrimary={row => setPrimaryCharacter(campaign.id, row.id)}
                           onActive={toggleRosterActive}
+                          onDetach={detachRosterCharacter}
                         />
                       ))}
                       {inactiveRoster.length > 0 && (
@@ -917,6 +1045,7 @@ export default function CampaignsPage() {
                               user={user}
                               onPrimary={row => setPrimaryCharacter(campaign.id, row.id)}
                               onActive={toggleRosterActive}
+                              onDetach={detachRosterCharacter}
                             />
                           ))}
                         </div>
@@ -928,6 +1057,45 @@ export default function CampaignsPage() {
                 {activeTab === 'Effects' && (
                   <div>
                     <h3 style={{color:'var(--accent-light)',fontSize:14,marginBottom:10}}>Party Effects</h3>
+                    <form onSubmit={submitSpellEffect} style={{border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',padding:10,background:'var(--bg-secondary)',display:'grid',gridTemplateColumns:'1fr 1.2fr 1fr 0.8fr auto',gap:8,marginBottom:12,alignItems:'end'}}>
+                      <div className="form-group" style={{marginBottom:0}}>
+                        <label>Caster</label>
+                        <select value={spellEffectForm.source_character_id} onChange={e => setSpellEffectForm(f => ({ ...f, source_character_id: e.target.value, spell_name: '' }))}>
+                          <option value="">Source</option>
+                          {activeRoster.map(entry => <option key={entry.id} value={entry.character_id}>{entry.name}</option>)}
+                        </select>
+                      </div>
+                      <div className="form-group" style={{marginBottom:0}}>
+                        <label>Prepared Spell</label>
+                        <select value={spellEffectForm.spell_name} onChange={e => setSpellEffectForm(f => ({ ...f, spell_name: e.target.value }))} disabled={!spellEffectForm.source_character_id}>
+                          <option value="">Choose spell</option>
+                          {preparedSpellOptions.map(spell => (
+                            <option key={`${spell.name}_${spell.level ?? ''}`} value={spell.name}>
+                              L{spell.level ?? '?'} {spell.name}{spell.concentration ? ' (Con)' : ''}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="form-group" style={{marginBottom:0}}>
+                        <label>Target</label>
+                        <select value={spellEffectForm.target_character_id} onChange={e => setSpellEffectForm(f => ({ ...f, target_character_id: e.target.value }))}>
+                          <option value="">Target</option>
+                          {activeRoster.map(entry => <option key={entry.id} value={entry.character_id}>{entry.name}</option>)}
+                        </select>
+                      </div>
+                      <div className="form-group" style={{marginBottom:0}}>
+                        <label>Duration</label>
+                        <input value={spellEffectForm.duration} onChange={e => setSpellEffectForm(f => ({ ...f, duration: e.target.value }))} placeholder={selectedPreparedSpell?.duration || 'Duration'} />
+                      </div>
+                      <button className="btn btn-primary" disabled={!spellEffectForm.source_character_id || !spellEffectForm.target_character_id || !spellEffectForm.spell_name}>Add Spell</button>
+                      {selectedPreparedSpell && (
+                        <div style={{gridColumn:'1 / -1',display:'flex',gap:8,flexWrap:'wrap',color:'var(--text-dim)',fontSize:11}}>
+                          <span>Level {selectedPreparedSpell.level ?? '?'}</span>
+                          {selectedPreparedSpell.casting_time && <span>{selectedPreparedSpell.casting_time}</span>}
+                          {selectedPreparedSpell.concentration && <span style={{color:'var(--accent-light)',fontWeight:800}}>Concentration</span>}
+                        </div>
+                      )}
+                    </form>
                     <form onSubmit={submitEffect} style={{display:'grid',gridTemplateColumns:'1.2fr 1fr 1fr',gap:8,marginBottom:8}}>
                       <input value={effectForm.name} onChange={e => setEffectForm(f => ({ ...f, name: e.target.value }))} placeholder="Effect or spell" />
                       <select value={effectForm.source_character_id} onChange={e => setEffectForm(f => ({ ...f, source_character_id: e.target.value }))}>
@@ -1043,6 +1211,7 @@ export default function CampaignsPage() {
       )}
       {viewingMonster && <MonsterDetailModal monster={viewingMonster} onClose={() => setViewingMonster(null)} />}
       {showInviteEmail && campaign && <CampaignInviteEmailModal campaign={campaign} onClose={() => setShowInviteEmail(false)} />}
+      {showTransferOwner && campaign && <TransferOwnerModal campaign={campaign} onClose={() => setShowTransferOwner(false)} onTransfer={handleTransferOwner} />}
       {showFeedback && <FeedbackModal contextLabel={campaign ? `Campaign: ${campaign.name}${selectedEncounter ? ` / Encounter: ${selectedEncounter.name}` : ''}` : 'Campaigns'} onClose={() => setShowFeedback(false)} />}
     </div>
   );
