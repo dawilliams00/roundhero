@@ -64,13 +64,13 @@ function BucketBar({ owner, labels, used, onToggle, inInitiative, isHasted }) {
         const isUsed = !!used[label];
         return (
           <button key={`${owner}-${label}`} className="btn btn-secondary btn-sm"
-            disabled={!inInitiative}
             onClick={() => onToggle(label)}
             style={{
               padding:'3px 8px',fontSize:10,borderColor:isUsed ? 'var(--border)' : sectionColor(label === 'Haste' ? 'Haste Action' : label),
               background:isUsed ? 'var(--bg-primary)' : sectionColor(label === 'Haste' ? 'Haste Action' : label),
               color:isUsed ? 'var(--text-dim)' : '#fff',
               textDecoration:isUsed ? 'line-through' : 'none',
+              opacity: !inInitiative && !isUsed ? 0.65 : 1,
             }}>
             {label === 'Bonus Action' ? 'Bonus' : label}
           </button>
@@ -91,11 +91,11 @@ function ActionRow({ action, section, ownerKey, trackerData, inInitiative, used,
   const hasCounter = !!match && (max || 0) > 0;
   const depleted = hasCounter && (current || 0) <= 0;
   const bucket = bucketForSection(section, action);
-  const bucketUsed = inInitiative && bucket && used[bucket];
+  const bucketUsed = bucket && used[bucket];
   const isCastSpell = action.cost_type === 'cast_spell';
   const unavailable = depleted || bucketUsed;
 
-  const useLabel = isCastSpell ? 'CAST' : hasCounter ? 'USE' : bucket ? 'MARK' : 'INFO';
+  const useLabel = isCastSpell ? 'CAST' : bucket || hasCounter ? 'USE' : 'INFO';
   const handleClick = () => {
     if (unavailable) return;
     if (action.name === 'Arcane Venting' || action.name?.includes('Codex Surge') || action.cost_type === 'store' || action.cost_type === 'release_shadow') {
@@ -157,7 +157,7 @@ function ActionRow({ action, section, ownerKey, trackerData, inInitiative, used,
 function OwnerPanel({ title, ownerKey, sections, trackerData, inInitiative, used, setUsed, isHasted, onSpend, onDetail, onCast, onSpecial }) {
   const labels = ownerKey === 'shadow' ? SHADOW_BUCKET_LABELS : BUCKET_LABELS;
   const markBucket = (bucket) => {
-    if (!inInitiative || !bucket) return;
+    if (!bucket) return;
     setUsed(prev => ({ ...prev, [bucket]: true }));
   };
   const toggleBucket = (bucket) => setUsed(prev => ({ ...prev, [bucket]: !prev[bucket] }));
@@ -197,6 +197,50 @@ function OwnerPanel({ title, ownerKey, sections, trackerData, inInitiative, used
   );
 }
 
+function NumberActionModal({ config, onClose, onConfirm }) {
+  const [value, setValue] = useState(config?.initial ?? 1);
+  if (!config) return null;
+  const numeric = Math.max(0, Number(value || 0));
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2 style={{color:'var(--accent-light)'}}>{config.title}</h2>
+          {config.subtitle && <div style={{color:'var(--text-secondary)',fontSize:12}}>{config.subtitle}</div>}
+        </div>
+        <div className="modal-body">
+          <label style={{display:'block',color:'var(--text-dim)',fontSize:11,fontWeight:900,textTransform:'uppercase',marginBottom:6}}>
+            {config.label || 'Amount'}
+          </label>
+          <div style={{display:'grid',gridTemplateColumns:'auto 1fr auto',gap:8,alignItems:'center'}}>
+            <button className="btn btn-secondary" onClick={() => setValue(v => Math.max(0, Number(v || 0) - 1))}>-</button>
+            <input
+              autoFocus
+              value={value}
+              onChange={e => setValue(e.target.value)}
+              type="number"
+              min="0"
+              style={{width:'100%',fontSize:18,textAlign:'center'}}
+            />
+            <button className="btn btn-secondary" onClick={() => setValue(v => Number(v || 0) + 1)}>+</button>
+          </div>
+          {config.helper && (
+            <div style={{color:'var(--text-secondary)',fontSize:12,lineHeight:1.5,marginTop:12}}>
+              {config.helper}
+            </div>
+          )}
+        </div>
+        <div className="modal-footer">
+          <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
+          <button className="btn" onClick={() => onConfirm(numeric)} style={{background:'var(--accent)',color:'#fff'}}>
+            {config.confirmText || 'Use'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function OverloadModal({ event, onClose, onResolve }) {
   if (!event) return null;
   const dc = event.overload_dc || event.arcane?.current || 0;
@@ -219,6 +263,44 @@ function OverloadModal({ event, onClose, onResolve }) {
           <button className="btn btn-secondary" onClick={onClose}>Later</button>
           <button className="btn" onClick={() => onResolve('pass')} style={{background:'var(--success)',color:'#fff'}}>Passed</button>
           <button className="btn btn-danger" onClick={() => onResolve('fail')}>Failed / Discharge</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DischargeResultModal({ event, onClose }) {
+  if (!event) return null;
+  const stored = event.previousCharge ?? event.before?.arcane?.current ?? event.before?.overload_dc ?? 0;
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2 style={{color:'var(--danger)'}}>Arcane Discharge</h2>
+          <div style={{color:'var(--text-secondary)',fontSize:12}}>Failed Overload Check</div>
+        </div>
+        <div className="modal-body">
+          <div style={{display:'grid',gap:10}}>
+            <div style={{padding:10,border:'1px solid var(--danger)',borderRadius:8,background:'rgba(244,67,54,0.08)'}}>
+              <div style={{color:'var(--text-primary)',fontWeight:900}}>Roll this damage manually</div>
+              <div style={{color:'var(--danger)',fontSize:18,fontWeight:900,marginTop:4}}>
+                Force damage = 2 x stored spell levels
+              </div>
+              <div style={{color:'var(--text-secondary)',fontSize:12,marginTop:4}}>
+                Charge before discharge was {stored}. Use your table ruling for stored spell levels if different from current charge.
+              </div>
+            </div>
+            <div style={{color:'var(--text-secondary)',fontSize:13,lineHeight:1.55}}>
+              20-foot radius centered on Syric. Dex save for half using Syric's spell save DC. Syric auto-fails and takes full damage.
+              After damage, roll Arcane Rebound if your table is using that result table.
+            </div>
+            <div style={{color:'var(--success)',fontSize:13,fontWeight:800}}>
+              Arcane Charge reset to 0.
+            </div>
+          </div>
+        </div>
+        <div className="modal-footer">
+          <button className="btn" onClick={onClose} style={{background:'var(--accent)',color:'#fff',width:'100%'}}>Got it</button>
         </div>
       </div>
     </div>
@@ -288,8 +370,10 @@ export default function SyricActionsTab() {
   const [pendingPages, setPendingPages] = useState([]);
   const [notice, setNotice] = useState('');
   const [overload, setOverload] = useState(null);
+  const [discharge, setDischarge] = useState(null);
   const [shadowStore, setShadowStore] = useState(null);
   const [ventAmount, setVentAmount] = useState(2);
+  const [numberAction, setNumberAction] = useState(null);
 
   useEffect(() => {
     if (!character?.id) return;
@@ -373,21 +457,37 @@ export default function SyricActionsTab() {
 
   const handleSpecial = async (action, section, bucket) => {
     if (action.name === 'Arcane Venting') {
-      const raw = window.prompt('Vent die result to subtract from Arcane Charge:', String(ventAmount || 2));
-      if (raw == null) return;
-      const amount = Math.max(0, Number(raw || 0));
-      setVentAmount(amount);
-      await runAction('vent', { amount });
-      if (bucket) setTurnUsed(prev => ({ ...prev, [bucket]: true }));
+      setNumberAction({
+        title: 'Arcane Venting',
+        subtitle: 'Roll your Vent Die and enter the result.',
+        label: 'Vent die result',
+        initial: ventAmount || 2,
+        confirmText: 'Vent',
+        helper: 'At Syric level 13, Vent Die is 2d6. This subtracts the amount from Arcane Charge.',
+        onConfirm: async (amount) => {
+          setVentAmount(amount);
+          await runAction('vent', { amount });
+          if (bucket) setTurnUsed(prev => ({ ...prev, [bucket]: true }));
+        },
+      });
       return;
     }
     if (action.name?.includes('Codex Surge')) {
-      const raw = window.prompt(`${action.name}: how many Codex Dice did you spend?`, '1');
-      if (raw == null) return;
-      const amount = Math.max(0, Number(raw || 0));
-      if (!amount) return;
-      const result = await runAction('spend', { tracker_key: action.tracker_key, tracker_aliases: action.tracker_aliases || [], amount });
-      if (result.spent && bucket) setTurnUsed(prev => ({ ...prev, [bucket]: true }));
+      setNumberAction({
+        title: action.name,
+        subtitle: action.name.includes('d6') ? 'Free Action mode: d6s.' : 'Bonus Action mode: d10s.',
+        label: 'Codex Dice spent',
+        initial: 1,
+        confirmText: 'Spend Dice',
+        helper: action.name.includes('d6')
+          ? 'Spend up to proficiency bonus dice as d6s.'
+          : 'Spend any number of dice as d10s, using your bonus action.',
+        onConfirm: async (amount) => {
+          if (!amount) return;
+          const result = await runAction('spend', { tracker_key: action.tracker_key, tracker_aliases: action.tracker_aliases || [], amount });
+          if (result.spent && bucket) setTurnUsed(prev => ({ ...prev, [bucket]: true }));
+        },
+      });
       return;
     }
     if (action.cost_type === 'store') {
@@ -468,9 +568,24 @@ export default function SyricActionsTab() {
         event={overload}
         onClose={() => setOverload(null)}
         onResolve={async (outcome) => {
-          if (outcome === 'fail') await runAction('discharge');
-          else setNotice('Overload check passed. Syric holds the charge state.');
+          if (outcome === 'fail') {
+            const before = overload;
+            await runAction('discharge');
+            setDischarge({ before, previousCharge: before?.arcane?.current ?? before?.overload_dc ?? 0 });
+          } else {
+            setNotice('Overload check passed. Syric holds the charge state.');
+          }
           setOverload(null);
+        }}
+      />
+      <DischargeResultModal event={discharge} onClose={() => setDischarge(null)} />
+      <NumberActionModal
+        config={numberAction}
+        onClose={() => setNumberAction(null)}
+        onConfirm={async (value) => {
+          const handler = numberAction?.onConfirm;
+          setNumberAction(null);
+          if (handler) await handler(value);
         }}
       />
       {shadowStore && (
