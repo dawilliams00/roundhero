@@ -40,6 +40,17 @@ const EFFECT_PRESETS = [
     ],
   },
   {
+    id: 'aid',
+    name: 'Aid',
+    effect_type: 'spell',
+    duration: '8 hr',
+    target_scope: 'selected',
+    notes: 'Increase current and maximum HP for selected targets. Adjust the HP bonus for upcast level before queueing.',
+    modifiers: [
+      { type: 'max_hp_bonus', value: 5, detail: 'Aid HP increase', label: 'Max HP +5' },
+    ],
+  },
+  {
     id: 'bane',
     name: 'Bane',
     effect_type: 'spell',
@@ -52,6 +63,54 @@ const EFFECT_PRESETS = [
     ],
   },
   {
+    id: 'haste',
+    name: 'Haste',
+    effect_type: 'spell',
+    duration: '1 min',
+    target_scope: 'single',
+    concentration: true,
+    notes: 'Reminder effect for Haste. Character sheet Haste handling still controls the full action-economy behavior.',
+    modifiers: [
+      { type: 'advantage', detail: 'Dexterity saving throws', label: 'Advantage: DEX saves' },
+      { type: 'note', detail: '+2 AC, doubled speed, one limited extra action', label: 'Haste rules reminder' },
+    ],
+  },
+  {
+    id: 'protection_from_energy',
+    name: 'Protection from Energy',
+    effect_type: 'spell',
+    duration: '1 hr',
+    target_scope: 'single',
+    concentration: true,
+    notes: 'Set the resistance detail to acid, cold, fire, lightning, or thunder.',
+    modifiers: [
+      { type: 'resistance', detail: 'chosen damage type', label: 'Resistant: chosen type' },
+    ],
+  },
+  {
+    id: 'bardic_inspiration',
+    name: 'Bardic Inspiration',
+    effect_type: 'buff',
+    duration: '10 min',
+    target_scope: 'single',
+    notes: 'Set die size for the bard level before queueing.',
+    modifiers: [
+      { type: 'bonus_dice', value: '1d10', detail: 'one ability check, attack roll, or saving throw', label: 'Bardic die 1d10' },
+    ],
+  },
+  {
+    id: 'polymorph_reminder',
+    name: 'Polymorph',
+    effect_type: 'spell',
+    duration: '1 hr',
+    target_scope: 'single',
+    concentration: true,
+    notes: 'Reminder to use beast form stats and temp/form HP tracking.',
+    modifiers: [
+      { type: 'note', detail: 'Use selected beast stat block and form HP', label: 'Polymorph form reminder' },
+    ],
+  },
+  {
     id: 'fire_resistance',
     name: 'Fire Resistance',
     effect_type: 'buff',
@@ -59,6 +118,17 @@ const EFFECT_PRESETS = [
     target_scope: 'selected',
     modifiers: [
       { type: 'resistance', detail: 'fire', label: 'Resistant: fire' },
+    ],
+  },
+  {
+    id: 'environmental_hazard',
+    name: 'Environmental Hazard',
+    effect_type: 'hazard',
+    duration: 'Until removed',
+    target_scope: 'selected',
+    notes: 'DM quick template for trap, lair, terrain, or cursed area effects.',
+    modifiers: [
+      { type: 'condition', detail: 'poisoned', label: 'Condition: poisoned' },
     ],
   },
 ];
@@ -106,6 +176,40 @@ function combatantId() {
 function toNumber(value, fallback = 0) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function cleanList(value) {
+  return Array.isArray(value) ? value.filter(Boolean) : [];
+}
+
+function modifierNumber(modifier) {
+  const parsed = Number(modifier?.value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function campaignEffectHpBonus(snapshot) {
+  const effects = cleanList(snapshot?.campaign_effects);
+  return effects.reduce((sum, effect) => {
+    const bonuses = cleanList(effect?.modifiers)
+      .filter(modifier => modifier?.type === 'max_hp_bonus')
+      .map(modifierNumber);
+    return sum + (bonuses.length ? Math.max(...bonuses) : 0);
+  }, 0);
+}
+
+function snapshotHpValues(snapshot, existing = {}) {
+  const hp = snapshot?.hp || {};
+  const bonus = campaignEffectHpBonus(snapshot);
+  const fallbackMax = hp.max_override ?? hp.max ?? existing.hp_max ?? '';
+  const baseMaxRaw = hp.campaign_base_max ?? hp.base_max ?? hp.max ?? (bonus && hp.max_override ? Number(hp.max_override) - bonus : fallbackMax);
+  const max = baseMaxRaw === '' || baseMaxRaw == null ? fallbackMax : toNumber(baseMaxRaw) + bonus;
+  const rawCurrent = hp.current ?? existing.hp_current ?? '';
+  const current = rawCurrent === '' || max === '' ? rawCurrent : Math.min(toNumber(rawCurrent), toNumber(max));
+  return {
+    current,
+    max,
+    temp: hp.temp ?? existing.temp_hp ?? 0,
+  };
 }
 
 function initiativeValue(value) {
@@ -221,6 +325,23 @@ function TransferOwnerModal({ campaign, onClose, onTransfer }) {
   );
 }
 
+function ConfirmActionModal({ title, message, confirmLabel = 'Delete', onCancel, onConfirm }) {
+  return (
+    <div className="modal-overlay" onClick={onCancel} style={{zIndex:3200}}>
+      <div className="modal" style={{maxWidth:420}} onClick={e => e.stopPropagation()}>
+        <h2>{title}</h2>
+        <p style={{color:'var(--text-secondary)',fontSize:13,lineHeight:1.55,marginTop:8}}>
+          {message}
+        </p>
+        <div style={{display:'flex',gap:8,marginTop:16}}>
+          <button type="button" className="btn btn-secondary" style={{flex:1}} onClick={onCancel}>Cancel</button>
+          <button type="button" className="btn btn-danger" style={{flex:1}} onClick={onConfirm}>{confirmLabel}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function normalizeCombatant(row) {
   return {
     id: row.id || combatantId(),
@@ -246,7 +367,7 @@ function normalizeCombatant(row) {
 }
 
 function rosterHpText(entry) {
-  const hp = entry.sheet_snapshot?.hp || {};
+  const hp = snapshotHpValues(entry.sheet_snapshot || {});
   if (hp.current == null && hp.max == null) return 'HP ?';
   return `HP ${hp.current ?? '?'}/${hp.max ?? '?'}${hp.temp ? ` +${hp.temp}` : ''}`;
 }
@@ -295,16 +416,16 @@ function campaignEffectSummary(effect, roster) {
 
 function combatantFromRosterEntry(entry) {
   const snapshot = entry.sheet_snapshot || {};
-  const hp = snapshot.hp || {};
+  const hp = snapshotHpValues(snapshot);
   return normalizeCombatant({
     type: 'player',
     name: entry.name,
     character_id: entry.character_id,
     user_id: entry.user_id,
     group_key: 'Players',
-    hp_current: hp.current ?? '',
-    hp_max: hp.max ?? '',
-    temp_hp: hp.temp ?? 0,
+    hp_current: hp.current,
+    hp_max: hp.max,
+    temp_hp: hp.temp,
     ac: snapshot.ac ?? '',
     conditions: Array.isArray(snapshot.conditions) ? snapshot.conditions : [],
     concentration: rosterConText(entry),
@@ -599,6 +720,17 @@ function EncounterBuilder({
     });
   };
 
+  const setupFieldLabel = {
+    display: 'grid',
+    gap: 4,
+    color: 'var(--text-secondary)',
+    fontSize: 10,
+    fontWeight: 800,
+    textTransform: 'uppercase',
+    letterSpacing: 0,
+    minWidth: 0,
+  };
+
   return (
     <div className="card" style={{marginTop:12,display:'flex',flexDirection:'column',gap:14}}>
       <div style={{display:'flex',justifyContent:'space-between',gap:12,alignItems:'flex-start',flexWrap:'wrap'}}>
@@ -634,53 +766,68 @@ function EncounterBuilder({
             </div>
           </div>
 
-          <div style={{overflowX:'auto',border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',background:'var(--bg-secondary)'}}>
-            <div style={{minWidth:860}}>
-              <div style={{position:'sticky',top:0,zIndex:2,display:'grid',gridTemplateColumns:'64px 1.3fr 130px 110px 1.1fr 1fr 110px 86px',gap:6,color:'var(--text-secondary)',fontSize:11,fontWeight:800,textTransform:'uppercase',padding:'8px 10px',background:'var(--bg-primary)',borderBottom:'1px solid var(--border)'}}>
-                <div>Init</div>
-                <div>Name</div>
-                <div>HP / Temp</div>
-                <div>AC / Type</div>
-                <div>Conditions</div>
-                <div>Concentration</div>
-                <div>Death Saves</div>
-                <div />
-              </div>
-              {combatants.length === 0 ? (
-                <div style={{color:'var(--text-secondary)',fontSize:13,padding:20}}>No combatants yet.</div>
-              ) : combatants.map(row => (
-                <div key={row.id} style={{display:'grid',gridTemplateColumns:'64px 1.3fr 130px 110px 1.1fr 1fr 110px 86px',gap:6,alignItems:'center',padding:'8px 10px',borderTop:'1px solid var(--border)'}}>
-                  <input value={row.initiative} onChange={e => updateCombatant(row.id, { initiative: e.target.value })} />
-                  <div>
-                    <input value={row.name} onChange={e => updateCombatant(row.id, { name: e.target.value })} />
-                    <div style={{color:'var(--text-dim)',fontSize:11,marginTop:2}}>
-                      {row.group_key ? `Group: ${row.group_key.split('_')[0]}` : row.type}
+          <div style={{overflowX:'auto',border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',background:'var(--bg-secondary)',padding:10}}>
+            {combatants.length === 0 ? (
+              <div style={{color:'var(--text-secondary)',fontSize:13,padding:20}}>No combatants yet.</div>
+            ) : (
+              <div style={{display:'grid',gap:10,minWidth:1040}}>
+                {combatants.map(row => (
+                  <div key={row.id} style={{display:'grid',gridTemplateColumns:'84px minmax(210px,1fr) minmax(190px,0.82fr) minmax(300px,1.25fr) minmax(126px,0.5fr) 88px',gap:10,alignItems:'start',padding:10,border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',background:'var(--bg-card)'}}>
+                    <label style={setupFieldLabel}>
+                      Init
+                      <input value={row.initiative} onChange={e => updateCombatant(row.id, { initiative: e.target.value })} style={{textAlign:'center',fontWeight:800}} />
+                    </label>
+                    <div style={{display:'grid',gap:5,minWidth:0}}>
+                      <label style={setupFieldLabel}>
+                        Name
+                        <input value={row.name} onChange={e => updateCombatant(row.id, { name: e.target.value })} style={{fontWeight:800}} />
+                      </label>
+                      <div style={{display:'flex',gap:6,alignItems:'center',flexWrap:'wrap'}}>
+                        <span style={{color:row.type === 'player' ? 'var(--accent-light)' : 'var(--warning)',fontSize:11,fontWeight:900,textTransform:'uppercase'}}>{row.type}</span>
+                        <span style={{color:'var(--text-dim)',fontSize:11}}>
+                          {row.group_key ? `Group: ${row.group_key.split('_')[0]}` : 'No group'}
+                        </span>
+                      </div>
+                    </div>
+                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6}}>
+                      <label style={setupFieldLabel}>
+                        HP
+                        <input value={row.hp_current} onChange={e => updateCombatant(row.id, { hp_current: e.target.value })} />
+                      </label>
+                      <label style={setupFieldLabel}>
+                        Temp
+                        <input value={row.temp_hp} onChange={e => updateCombatant(row.id, { temp_hp: e.target.value })} />
+                      </label>
+                      <button className="btn btn-secondary btn-sm" onClick={() => updateCombatant(row.id, { hp_current: Math.max(0, toNumber(row.hp_current) - 1) })}>-1 HP</button>
+                      <button className="btn btn-secondary btn-sm" onClick={() => updateCombatant(row.id, { hp_current: toNumber(row.hp_current) + 1 })}>+1 HP</button>
+                    </div>
+                    <div style={{display:'grid',gridTemplateColumns:'80px minmax(0,1fr)',gap:6}}>
+                      <label style={setupFieldLabel}>
+                        AC
+                        <input value={row.ac} onChange={e => updateCombatant(row.id, { ac: e.target.value })} style={{textAlign:'center',fontWeight:800}} />
+                      </label>
+                      <label style={setupFieldLabel}>
+                        Conditions
+                        <input value={(row.conditions || []).join(', ')} onChange={e => updateConditionText(row, e.target.value)} placeholder="poisoned, hexed" />
+                      </label>
+                      <label style={{...setupFieldLabel,gridColumn:'1 / -1'}}>
+                        Concentration
+                        <input value={row.concentration} onChange={e => updateCombatant(row.id, { concentration: e.target.value })} placeholder="Spell or effect" />
+                      </label>
+                    </div>
+                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:5}}>
+                      <button className="btn btn-secondary btn-sm" onClick={() => setDeathSave(row, 'successes', 1)}>S {row.death_saves?.successes || 0}</button>
+                      <button className="btn btn-secondary btn-sm" onClick={() => setDeathSave(row, 'failures', 1)}>F {row.death_saves?.failures || 0}</button>
+                      <button className="btn btn-secondary btn-sm" onClick={() => updateCombatant(row.id, { death_saves: { successes: 0, failures: 0 } })} style={{gridColumn:'1 / -1'}}>Reset</button>
+                    </div>
+                    <div style={{display:'grid',gap:5}}>
+                      {row.monster && <button className="btn btn-secondary btn-sm" onClick={() => onViewMonster(row.monster)}>Stats</button>}
+                      {campaign.is_dm && <button className="btn btn-danger btn-sm" onClick={() => removeCombatant(row.id)}>X</button>}
                     </div>
                   </div>
-                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:4}}>
-                    <input value={row.hp_current} onChange={e => updateCombatant(row.id, { hp_current: e.target.value })} placeholder="HP" />
-                    <input value={row.temp_hp} onChange={e => updateCombatant(row.id, { temp_hp: e.target.value })} placeholder="Temp" />
-                    <button className="btn btn-secondary btn-sm" onClick={() => updateCombatant(row.id, { hp_current: Math.max(0, toNumber(row.hp_current) - 1) })}>-1</button>
-                    <button className="btn btn-secondary btn-sm" onClick={() => updateCombatant(row.id, { hp_current: toNumber(row.hp_current) + 1 })}>+1</button>
-                  </div>
-                  <div>
-                    <input value={row.ac} onChange={e => updateCombatant(row.id, { ac: e.target.value })} placeholder="AC" />
-                    <div style={{color:row.type === 'player' ? 'var(--accent-light)' : 'var(--warning)',fontSize:11,marginTop:3}}>{row.type}</div>
-                  </div>
-                  <input value={(row.conditions || []).join(', ')} onChange={e => updateConditionText(row, e.target.value)} placeholder="poisoned, hexed" />
-                  <input value={row.concentration} onChange={e => updateCombatant(row.id, { concentration: e.target.value })} placeholder="Spell or effect" />
-                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:4}}>
-                    <button className="btn btn-secondary btn-sm" onClick={() => setDeathSave(row, 'successes', 1)}>S {row.death_saves?.successes || 0}</button>
-                    <button className="btn btn-secondary btn-sm" onClick={() => setDeathSave(row, 'failures', 1)}>F {row.death_saves?.failures || 0}</button>
-                    <button className="btn btn-secondary btn-sm" onClick={() => updateCombatant(row.id, { death_saves: { successes: 0, failures: 0 } })} style={{gridColumn:'1 / -1'}}>Reset</button>
-                  </div>
-                  <div style={{display:'flex',gap:4}}>
-                    {row.monster && <button className="btn btn-secondary btn-sm" onClick={() => onViewMonster(row.monster)}>Stats</button>}
-                    {campaign.is_dm && <button className="btn btn-danger btn-sm" onClick={() => removeCombatant(row.id)}>X</button>}
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
           </div>
 
@@ -752,6 +899,7 @@ export default function CampaignsPage() {
     transferCampaignOwner,
     removeMember,
     leaveCampaign,
+    deleteCampaign,
     createEffect,
     updateEffectStatus,
     createEncounter,
@@ -784,6 +932,7 @@ export default function CampaignsPage() {
   const [showFeedback, setShowFeedback] = useState(false);
   const [showInviteEmail, setShowInviteEmail] = useState(false);
   const [showTransferOwner, setShowTransferOwner] = useState(false);
+  const [confirmAction, setConfirmAction] = useState(null);
   const [handledJoinCode, setHandledJoinCode] = useState('');
   const [referenceDocs, setReferenceDocs] = useState(null);
   const [error, setError] = useState('');
@@ -924,56 +1073,6 @@ export default function CampaignsPage() {
       ...form,
       modifiers: (form.modifiers || []).filter((_, currentIndex) => currentIndex !== index),
     }));
-  };
-
-  const applyCampaignEffectToEncounters = async effect => {
-    const payload = effect.payload || {};
-    const targetIds = payload.target_character_ids || (effect.target_character_id ? [effect.target_character_id] : []);
-    if (!targetIds.length) return;
-    const modifiers = Array.isArray(payload.modifiers) ? payload.modifiers : [];
-    const hpBonus = modifiers
-      .filter(modifier => modifier.type === 'max_hp_bonus')
-      .reduce((sum, modifier) => sum + toNumber(modifier.value, 0), 0);
-    const tempHp = modifiers
-      .filter(modifier => modifier.type === 'temp_hp')
-      .reduce((max, modifier) => Math.max(max, toNumber(modifier.value, 0)), 0);
-    const effectId = `campaign_effect_${effect.id}`;
-    const effectTag = {
-      id: effectId,
-      name: effect.name,
-      type: effect.effect_type || 'campaign_effect',
-      duration: payload.duration || '',
-      modifiers,
-      source_name: effect.source_character_name || 'DM',
-    };
-    const openEncounters = encounters.filter(entry => entry.status !== 'complete');
-    for (const encounter of openEncounters) {
-      const data = encounter.data || {};
-      const rows = Array.isArray(data.combatants) ? data.combatants : [];
-      let changed = false;
-      const combatants = rows.map(row => {
-        if (row.type !== 'player' || !targetIds.some(id => sameId(id, row.character_id))) return row;
-        const effects = Array.isArray(row.effects) ? row.effects : [];
-        const alreadyApplied = effects.some(item => item.id === effectId);
-        if (alreadyApplied) return row;
-        changed = true;
-        const patch = {
-          ...row,
-          effects: [...effects, effectTag],
-        };
-        if (hpBonus) {
-          patch.hp_current = toNumber(row.hp_current, 0) + hpBonus;
-          patch.hp_max = toNumber(row.hp_max, 0) + hpBonus;
-        }
-        if (tempHp) {
-          patch.temp_hp = Math.max(toNumber(row.temp_hp, 0), tempHp);
-        }
-        return patch;
-      });
-      if (changed) {
-        await patchEncounterData(encounter.id, { ...data, combatants });
-      }
-    }
   };
 
   const submitCreate = async e => {
@@ -1134,12 +1233,31 @@ export default function CampaignsPage() {
     await fetchCampaigns();
   };
 
+  const requestDeleteCampaign = () => {
+    if (!campaign) return;
+    setConfirmAction({
+      title: 'Delete Campaign?',
+      message: `Delete ${campaign.name}? This removes members, encounters, effects, and campaign character links. This cannot be undone.`,
+      confirmLabel: 'Delete Campaign',
+      onConfirm: async () => {
+        const deletedId = campaign.id;
+        setConfirmAction(null);
+        setError('');
+        try {
+          await deleteCampaign(deletedId);
+          await fetchCampaigns();
+          nav('/campaigns');
+        } catch (err) {
+          setError(err.response?.data?.error || 'Could not delete campaign');
+        }
+      },
+    });
+  };
+
   const setEffectStatus = async (effectId, status) => {
     if (!campaign) return;
-    const updated = await updateEffectStatus(campaign.id, effectId, status);
-    if (status === 'applied') {
-      await applyCampaignEffectToEncounters(updated);
-    }
+    await updateEffectStatus(campaign.id, effectId, status);
+    await loadCampaign(campaign.id);
   };
 
   const setEncounterStatus = async (encounterId, status) => {
@@ -1152,10 +1270,25 @@ export default function CampaignsPage() {
     await updateEncounter(campaign.id, encounterId, { data });
   };
 
-  const removeEncounter = async encounterId => {
+  const removeEncounter = encounterId => {
     if (!campaign) return;
-    await deleteEncounter(campaign.id, encounterId);
-    setSelectedEncounterId(null);
+    const target = encounters.find(entry => entry.id === encounterId);
+    setConfirmAction({
+      title: 'Delete Encounter?',
+      message: `Delete ${target?.name || 'this encounter'}? This removes its combatants, initiative order, and running tracker data. This cannot be undone.`,
+      confirmLabel: 'Delete Encounter',
+      onConfirm: async () => {
+        setConfirmAction(null);
+        setError('');
+        try {
+          await deleteEncounter(campaign.id, encounterId);
+          setSelectedEncounterId(current => current === encounterId ? null : current);
+          setRunningEncounterId(current => current === encounterId ? null : current);
+        } catch (err) {
+          setError(err.response?.data?.error || 'Could not delete encounter');
+        }
+      },
+    });
   };
 
   return (
@@ -1243,6 +1376,7 @@ export default function CampaignsPage() {
                     <button className="btn btn-secondary btn-sm" onClick={copyInviteLink}>Copy Link</button>
                     {campaign.is_dm && <button className="btn btn-secondary btn-sm" onClick={refreshInvite}>New Code</button>}
                     {sameId(campaign.owner_user_id, user?.id) && <button className="btn btn-secondary btn-sm" onClick={() => setShowTransferOwner(true)}>Transfer DM</button>}
+                    {sameId(campaign.owner_user_id, user?.id) && <button className="btn btn-danger btn-sm" onClick={requestDeleteCampaign}>Delete Campaign</button>}
                     {!sameId(campaign.owner_user_id, user?.id) && <button className="btn btn-danger btn-sm" onClick={handleLeave}>Leave Campaign</button>}
                   </div>
                 </div>
@@ -1565,6 +1699,7 @@ export default function CampaignsPage() {
       {viewingMonster && <MonsterDetailModal monster={viewingMonster} onClose={() => setViewingMonster(null)} />}
       {showInviteEmail && campaign && <CampaignInviteEmailModal campaign={campaign} onClose={() => setShowInviteEmail(false)} />}
       {showTransferOwner && campaign && <TransferOwnerModal campaign={campaign} onClose={() => setShowTransferOwner(false)} onTransfer={handleTransferOwner} />}
+      {confirmAction && <ConfirmActionModal {...confirmAction} onCancel={() => setConfirmAction(null)} />}
       {showFeedback && <FeedbackModal contextLabel={campaign ? `Campaign: ${campaign.name}${selectedEncounter ? ` / Encounter: ${selectedEncounter.name}` : ''}` : 'Campaigns'} onClose={() => setShowFeedback(false)} />}
     </div>
   );

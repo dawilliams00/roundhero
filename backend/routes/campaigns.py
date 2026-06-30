@@ -93,7 +93,6 @@ def _public_combatant(row):
         public["hp_current"] = row.get("hp_current")
         public["hp_max"] = row.get("hp_max")
         public["temp_hp"] = row.get("temp_hp") or 0
-        public["death_saves"] = row.get("death_saves") or {"successes": 0, "failures": 0}
     return public
 
 
@@ -130,6 +129,233 @@ def _effect_visible_to_character(effect, character_id, campaign, member):
         or effect.source_character_id == character_id
         or _is_dm(campaign, member)
     )
+
+
+def _modifier_int(modifier):
+    try:
+        return int(modifier.get("value") or 0)
+    except (TypeError, ValueError):
+        return 0
+
+
+def _max_hp_bonus_from_modifiers(modifiers):
+    bonuses = [
+        _modifier_int(modifier)
+        for modifier in modifiers
+        if isinstance(modifier, dict) and modifier.get("type") == "max_hp_bonus"
+    ]
+    return max(bonuses) if bonuses else 0
+
+
+def _campaign_effect_max_hp_bonus(effect_record):
+    if not isinstance(effect_record, dict):
+        return 0
+    modifiers = effect_record.get("modifiers") if isinstance(effect_record.get("modifiers"), list) else []
+    return _max_hp_bonus_from_modifiers(modifiers)
+
+
+def _campaign_effect_record(effect, modifiers):
+    return {
+        "id": effect.id,
+        "name": effect.name,
+        "modifiers": modifiers,
+    }
+
+
+def _effect_tag(effect):
+    payload = effect.payload or {}
+    return {
+        "id": f"campaign_effect_{effect.id}",
+        "name": effect.name,
+        "type": effect.effect_type or "campaign_effect",
+        "duration": payload.get("duration") or "",
+        "modifiers": payload.get("modifiers") if isinstance(payload.get("modifiers"), list) else [],
+        "source_name": effect.source_character.name if effect.source_character else "DM / Environment",
+    }
+
+
+def _apply_campaign_effect_to_tracker(tracker_data, effect):
+    td = dict(tracker_data or {})
+    applied = td.get("campaign_effects") if isinstance(td.get("campaign_effects"), list) else []
+    if any(str(row.get("id")) == str(effect.id) for row in applied if isinstance(row, dict)):
+        return td
+
+    payload = effect.payload or {}
+    modifiers = payload.get("modifiers") if isinstance(payload.get("modifiers"), list) else []
+    hp = dict(td.get("hp") or {})
+    traits = dict(td.get("traits") or {})
+    for key in ["resistances", "immunities", "vulnerabilities", "advantages", "disadvantages"]:
+        traits[key] = list(traits.get(key) or [])
+    active_effects = list(td.get("active_effects") or [])
+    conditions = list(td.get("conditions") or [])
+
+    max_bonus = _max_hp_bonus_from_modifiers(modifiers)
+    for modifier in modifiers:
+        if not isinstance(modifier, dict):
+            continue
+        mod_type = modifier.get("type")
+        detail = (modifier.get("detail") or modifier.get("label") or effect.name or "").strip()
+        value = modifier.get("value")
+        trait_item = {
+            "name": detail or modifier.get("label") or effect.name,
+            "description": f"{effect.name} ({payload.get('duration') or 'campaign effect'})",
+            "campaign_effect_id": effect.id,
+        }
+        if mod_type == "temp_hp":
+            hp["temp"] = max(int(hp.get("temp") or 0), _modifier_int(modifier))
+        elif mod_type == "condition" and detail and detail not in conditions:
+            conditions.append(detail)
+        elif mod_type == "immunity" and detail:
+            traits["immunities"].append(trait_item)
+        elif mod_type == "resistance" and detail:
+            traits["resistances"].append(trait_item)
+        elif mod_type == "vulnerability" and detail:
+            traits["vulnerabilities"].append(trait_item)
+        elif mod_type == "advantage" and detail:
+            traits["advantages"].append(trait_item)
+        elif mod_type == "disadvantage" and detail:
+            traits["disadvantages"].append(trait_item)
+        elif mod_type in {"bonus_dice", "penalty_dice", "note"}:
+            note = modifier.get("label") or detail or effect.name
+            if note and note not in active_effects:
+                active_effects.append(note)
+
+    if effect.name not in active_effects:
+        active_effects.append(effect.name)
+    if max_bonus:
+        base_max = int(hp.get("campaign_base_max") or hp.get("max") or hp.get("current") or 0)
+        existing_bonus = sum(_campaign_effect_max_hp_bonus(row) for row in applied)
+        current_max = int(hp.get("max_override") or hp.get("max") or base_max or 0)
+        new_max = base_max + existing_bonus + max_bonus
+        hp["campaign_base_max"] = base_max
+        hp["max_override"] = new_max
+        hp["current"] = int(hp.get("current") or 0) + max(0, new_max - current_max)
+
+    td["hp"] = hp
+    td["traits"] = traits
+    td["active_effects"] = active_effects
+    td["conditions"] = conditions
+    td["campaign_effects"] = applied + [_campaign_effect_record(effect, modifiers)]
+    return td
+
+
+def _remove_campaign_effect_from_tracker(tracker_data, effect):
+    td = dict(tracker_data or {})
+    applied = td.get("campaign_effects") if isinstance(td.get("campaign_effects"), list) else []
+    if not any(str(row.get("id")) == str(effect.id) for row in applied if isinstance(row, dict)):
+        return td
+
+    payload = effect.payload or {}
+    modifiers = payload.get("modifiers") if isinstance(payload.get("modifiers"), list) else []
+    hp = dict(td.get("hp") or {})
+    traits = dict(td.get("traits") or {})
+    active_effects = [name for name in (td.get("active_effects") or []) if name != effect.name]
+    conditions = list(td.get("conditions") or [])
+
+    max_bonus = _max_hp_bonus_from_modifiers(modifiers)
+    for modifier in modifiers:
+        if not isinstance(modifier, dict):
+            continue
+        mod_type = modifier.get("type")
+        if mod_type == "condition":
+            detail = (modifier.get("detail") or modifier.get("label") or "").strip()
+            conditions = [name for name in conditions if name != detail]
+        elif mod_type in {"bonus_dice", "penalty_dice", "note"}:
+            note = modifier.get("label") or modifier.get("detail")
+            active_effects = [name for name in active_effects if name != note]
+
+    for key in ["resistances", "immunities", "vulnerabilities", "advantages", "disadvantages"]:
+        traits[key] = [
+            item for item in (traits.get(key) or [])
+            if not (isinstance(item, dict) and str(item.get("campaign_effect_id")) == str(effect.id))
+        ]
+
+    if max_bonus:
+        remaining = [
+            row for row in applied
+            if not (isinstance(row, dict) and str(row.get("id")) == str(effect.id))
+        ]
+        base_max = int(hp.get("campaign_base_max") or hp.get("max") or hp.get("current") or 0)
+        remaining_bonus = sum(_campaign_effect_max_hp_bonus(row) for row in remaining)
+        new_max = base_max + remaining_bonus
+        hp["max_override"] = new_max if remaining_bonus else None
+        if not remaining_bonus:
+            hp.pop("campaign_base_max", None)
+        hp["current"] = min(int(hp.get("current") or 0), new_max or int(hp.get("max") or 0))
+
+    td["hp"] = hp
+    td["traits"] = traits
+    td["active_effects"] = active_effects
+    td["conditions"] = conditions
+    td["campaign_effects"] = [
+        row for row in applied
+        if not (isinstance(row, dict) and str(row.get("id")) == str(effect.id))
+    ]
+    return td
+
+
+def _target_characters_for_effect(campaign, effect):
+    target_ids = _effect_payload_target_ids(effect)
+    if effect.target_character_id:
+        target_ids.add(int(effect.target_character_id))
+    if not target_ids:
+        return []
+    entries = CampaignCharacter.query.filter(
+        CampaignCharacter.campaign_id == campaign.id,
+        CampaignCharacter.active.is_(True),
+        CampaignCharacter.character_id.in_(target_ids),
+    ).all()
+    return [entry.character for entry in entries if entry.character]
+
+
+def _patch_encounter_effects(campaign, effect, apply_effect):
+    target_ids = _effect_payload_target_ids(effect)
+    if effect.target_character_id:
+        target_ids.add(int(effect.target_character_id))
+    if not target_ids:
+        return
+
+    tag = _effect_tag(effect)
+    modifiers = tag["modifiers"]
+    hp_bonus = _max_hp_bonus_from_modifiers(modifiers)
+    temp_hp = max([_modifier_int(modifier) for modifier in modifiers if isinstance(modifier, dict) and modifier.get("type") == "temp_hp"] or [0])
+
+    for encounter in campaign.encounters:
+        if encounter.status == "complete":
+            continue
+        data = encounter.data or {}
+        rows = data.get("combatants") if isinstance(data.get("combatants"), list) else []
+        changed = False
+        next_rows = []
+        for row in rows:
+            try:
+                row_character_id = int(row.get("character_id") or 0)
+            except (TypeError, ValueError):
+                row_character_id = 0
+            if row.get("type") != "player" or row_character_id not in target_ids:
+                next_rows.append(row)
+                continue
+            effects = row.get("effects") if isinstance(row.get("effects"), list) else []
+            has_effect = any(item.get("id") == tag["id"] for item in effects if isinstance(item, dict))
+            patched = dict(row)
+            if apply_effect and not has_effect:
+                patched["effects"] = effects + [tag]
+                if hp_bonus:
+                    patched["hp_current"] = int(patched.get("hp_current") or 0) + hp_bonus
+                    patched["hp_max"] = int(patched.get("hp_max") or 0) + hp_bonus
+                if temp_hp:
+                    patched["temp_hp"] = max(int(patched.get("temp_hp") or 0), temp_hp)
+                changed = True
+            elif not apply_effect and has_effect:
+                patched["effects"] = [item for item in effects if not (isinstance(item, dict) and item.get("id") == tag["id"])]
+                if hp_bonus:
+                    patched["hp_max"] = max(0, int(patched.get("hp_max") or 0) - hp_bonus)
+                    patched["hp_current"] = min(int(patched.get("hp_current") or 0), patched["hp_max"])
+                changed = True
+            next_rows.append(patched)
+        if changed:
+            data["combatants"] = next_rows
+            encounter.data = data
 
 
 @campaigns_bp.route("/", methods=["GET"])
@@ -330,7 +556,7 @@ def get_player_campaign_view(character_id):
             "encounters": [_player_encounter_view(encounter) for encounter in running],
             "effects": [
                 effect.to_dict() for effect in campaign.effects
-                if effect.status != "removed" and _effect_visible_to_character(effect, character.id, campaign, member)
+                if effect.status == "applied" and _effect_visible_to_character(effect, character.id, campaign, member)
             ],
         })
     return jsonify(views), 200
@@ -352,6 +578,21 @@ def update_campaign(campaign_id):
         campaign.name = name
     db.session.commit()
     return jsonify(_campaign_response(campaign, member)), 200
+
+
+@campaigns_bp.route("/<int:campaign_id>", methods=["DELETE"])
+@jwt_required()
+def delete_campaign(campaign_id):
+    user_id = int(get_jwt_identity())
+    campaign, member = _campaign_for_user(campaign_id, user_id)
+    if not campaign:
+        return jsonify({"error": "Campaign not found"}), 404
+    if campaign.owner_user_id != user_id:
+        return jsonify({"error": "Only the owner DM can delete this campaign"}), 403
+
+    db.session.delete(campaign)
+    db.session.commit()
+    return jsonify({"message": "Campaign deleted"}), 200
 
 
 @campaigns_bp.route("/<int:campaign_id>/invite/regenerate", methods=["POST"])
@@ -584,6 +825,15 @@ def update_effect_status(campaign_id, effect_id):
     )
     if not can_update:
         return jsonify({"error": "You cannot update this effect"}), 403
+
+    if status == "applied":
+        for character in _target_characters_for_effect(campaign, effect):
+            character.tracker_data = _apply_campaign_effect_to_tracker(character.tracker_data, effect)
+        _patch_encounter_effects(campaign, effect, apply_effect=True)
+    elif status == "removed":
+        for character in _target_characters_for_effect(campaign, effect):
+            character.tracker_data = _remove_campaign_effect_from_tracker(character.tracker_data, effect)
+        _patch_encounter_effects(campaign, effect, apply_effect=False)
 
     effect.status = status
     db.session.commit()
