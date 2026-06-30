@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
-import { SECTION_ORDER, SECTION_COLORS, slotBadgeTextColor, concentrationSlotCount, HASTED_EFFECT, LETHARGIC_CONDITION, maxAttacksForCharacter, isItemActive, formatItemBuff, spellCastBucket, martialArtsDie, sorceryDisplayName, activeCompanionKey } from '../utils/dnd';
+import { SECTION_ORDER, SECTION_COLORS, slotBadgeTextColor, concentrationSlotCount, isCharacterCaster, HASTED_EFFECT, LETHARGIC_CONDITION, maxAttacksForCharacter, isItemActive, formatItemBuff, spellCastBucket, martialArtsDie, sorceryDisplayName, activeCompanionKey } from '../utils/dnd';
 import AbilityDetailModal from './AbilityDetailModal';
 import CastSpellPickerModal from './CastSpellPickerModal';
 import ItemSpellsModal from './ItemSpellsModal';
@@ -90,7 +90,7 @@ export default function ActionEconomyTab() {
   const inInitiative = !!td.in_initiative;
   const isHasted = (td.active_effects || []).includes(HASTED_EFFECT);
   const concSlots = td.concentration?.slots || [];
-  const concMaxSlots = concentrationSlotCount(items);
+  const concMaxSlots = concentrationSlotCount(items, isCharacterCaster(character));
   // Sorcery Points/Metamagic management (SorceryPointsModal) is also reachable from the
   // Feats/Attunement tab - surfaced here too since "anything with a use/rest/charge
   // belongs on the AE tab" is the standing rule for this tab now. Detected by substring

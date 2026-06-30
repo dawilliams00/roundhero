@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
-import { schoolColor, getSpellcastingBlocks, getAbilityOverrideBlock, scaleSpellDamage, rollDamageDetailed, concentrationSlotCount, maxAttacksForCharacter, HASTED_EFFECT, METAMAGIC_OPTIONS, metamagicCost, featBuffItems, raceBuffItems } from '../utils/dnd';
+import { schoolColor, getSpellcastingBlocks, getAbilityOverrideBlock, scaleSpellDamage, rollDamageDetailed, concentrationSlotCount, isCharacterCaster, maxAttacksForCharacter, HASTED_EFFECT, METAMAGIC_OPTIONS, metamagicCost, featBuffItems, raceBuffItems } from '../utils/dnd';
 import InfoModal from './InfoModal';
 import WeaponAttackModal from './WeaponAttackModal';
 
@@ -97,7 +97,7 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
   const tryTrackConcentration = async (levelUsed) => {
     if (!spell.concentration) return true;
     const items = character?.tracker_data?.inventory?.items;
-    const maxSlots = concentrationSlotCount(items);
+    const maxSlots = concentrationSlotCount(items, isCharacterCaster(character));
     const slots = character?.tracker_data?.concentration?.slots || [];
     for (let i = 0; i < maxSlots; i++) {
       if (!slots[i]?.spell) {

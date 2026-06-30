@@ -47,6 +47,7 @@ export default function AddItemModal({ item, onSave, onClose }) {
     unarmed_bonus_damage_dice: item.unarmed_bonus_damage_dice || '',
     unarmed_bonus_damage_type: item.unarmed_bonus_damage_type || '',
     unarmed_heal_or_advantage: !!item.unarmed_heal_or_advantage,
+    grants_concentration_slot: !!item.grants_concentration_slot,
   } : {
     name: '', quantity: 1, weight: 0, rarity: 'Common',
     equipped: false, attunement: false, attuned: false,
@@ -59,6 +60,7 @@ export default function AddItemModal({ item, onSave, onClose }) {
     buffs: [],
     item_type: 'Other',
     grants_unarmed_bonus: false, unarmed_bonus_damage_dice: '', unarmed_bonus_damage_type: '', unarmed_heal_or_advantage: false,
+    grants_concentration_slot: false,
   });
   const set = (k,v) => setForm(f => ({...f,[k]:v}));
   const toggleProperty = (p) => setForm(f => ({...f, properties: f.properties.includes(p) ? f.properties.filter(x=>x!==p) : [...f.properties, p]}));
@@ -116,6 +118,10 @@ export default function AddItemModal({ item, onSave, onClose }) {
         unarmed_bonus_damage_type: form.unarmed_bonus_damage_type,
         unarmed_heal_or_advantage: !!form.unarmed_heal_or_advantage,
       } : {}),
+      // Explicit flag instead of a fuzzy description-text match (see concentrationSlotCount
+      // in dnd.js) - grants a second concentration slot while equipped+attuned, on top of
+      // the wearer's own base slot if they're a caster at all.
+      grants_concentration_slot: !!form.grants_concentration_slot,
       // Weapon fields - always include is_weapon explicitly (even false) so
       // changing item_type away from Weapon on an edit actually clears weapon-ness
       // rather than leaving stale fields from before.
@@ -188,7 +194,7 @@ export default function AddItemModal({ item, onSave, onClose }) {
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" style={{maxWidth:740}} onClick={e => e.stopPropagation()}>
+      <div className="modal" style={{maxWidth:960}} onClick={e => e.stopPropagation()}>
         <h2>{item ? 'Edit Item' : 'Add Item'}</h2>
         <div className="form-group"><label>Name</label><input value={form.name} onChange={e=>set('name',e.target.value)} placeholder="Item name" autoFocus /></div>
         <div className="form-row">
@@ -267,6 +273,9 @@ export default function AddItemModal({ item, onSave, onClose }) {
           </div>
         )}
         <label style={{display:'flex',alignItems:'center',gap:6,marginBottom:8}}><input type="checkbox" checked={form.grants_unarmed_bonus} onChange={e=>set('grants_unarmed_bonus',e.target.checked)} /> Boosts Unarmed Strikes (e.g. magic gauntlets)</label>
+        <label style={{display:'flex',alignItems:'center',gap:6,marginBottom:8}} title="While equipped/attuned, lets the wearer concentrate on a second spell at once - on top of their own normal slot if they're a caster at all">
+          <input type="checkbox" checked={form.grants_concentration_slot} onChange={e=>set('grants_concentration_slot',e.target.checked)} /> Grants an Extra Concentration Slot (this item concentrates for you)
+        </label>
         {form.grants_unarmed_bonus && (
           <div style={{border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',padding:10,marginBottom:8}}>
             <div className="form-row">
@@ -286,7 +295,16 @@ export default function AddItemModal({ item, onSave, onClose }) {
           allowWeapon={form.item_type === 'Weapon'}
           activeWhileText="Only applies while the item is Equipped (and Attuned, if attunement is required)."
         />
-        <div className="form-group"><label>Description</label><textarea value={form.description} onChange={e=>set('description',e.target.value)} rows={3} style={{width:'100%',resize:'vertical'}} /></div>
+        <div className="form-group">
+          <label>Description</label>
+          <textarea
+            value={form.description}
+            onChange={e => { set('description', e.target.value); e.target.style.height = 'auto'; e.target.style.height = `${e.target.scrollHeight}px`; }}
+            ref={el => { if (el && !el.dataset.sized) { el.style.height = 'auto'; el.style.height = `${el.scrollHeight}px`; el.dataset.sized = '1'; } }}
+            rows={3}
+            style={{width:'100%',resize:'vertical',minHeight:60,overflow:'hidden'}}
+          />
+        </div>
 
         <div style={{color:'var(--text-dim)',fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:1,margin:'12px 0 6px'}}>Granted Spells</div>
         {form.granted_spells.length > 0 && (

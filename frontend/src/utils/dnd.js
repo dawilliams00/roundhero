@@ -286,18 +286,29 @@ export const isFullListCaster = (classNameRaw) => fullListCasterClassNames(class
 export const maxCastableSpellLevel = (spellSlots) =>
   Object.entries(spellSlots || {}).reduce((max, [lvl, s]) => (s?.max > 0 ? Math.max(max, parseInt(lvl)) : max), 0);
 
-// Most characters can only concentrate on one spell at a time; a small number of
-// items/features grant a second slot. Rather than hardcoding a specific item name,
-// this scans equipped+attuned items for a description that reads like it grants a
-// second concentration slot.
-export const concentrationSlotCount = (items) => {
-  for (const it of (items || [])) {
-    if (!it.equipped) continue;
-    if (it.attunement && !it.attuned) continue;
-    const desc = (it.description || '').toLowerCase();
-    if (desc.includes('concentration') && /second|two|additional/.test(desc)) return 2;
-  }
-  return 1;
+// Whether this character can concentrate on a spell at all - any known spell or a real
+// spell slot counts (covers full/half/known casters and anyone with even a single
+// cantrip or feat-granted spell). Used to decide the BASE concentration slot below; a
+// non-caster gets 0 base slots, since "can concentrate on a second spell" is meaningless
+// without ever being able to concentrate on a first one.
+export const isCharacterCaster = (character) => {
+  const knownSpells = character?.spell_data?.known_spells || [];
+  if (knownSpells.length > 0) return true;
+  const slots = character?.tracker_data?.spell_slots || {};
+  return Object.values(slots).some(s => (s?.max || 0) > 0);
+};
+
+// Most characters can only concentrate on one spell at a time; a small number of items
+// (e.g. a ring that lets you concentrate on a second spell) grant an extra slot via the
+// explicit grants_concentration_slot flag (set in AddItemModal), not a fuzzy description
+// text match. "Smart" part: the base slot (1) only applies if the character can actually
+// concentrate on anything in the first place (isCharacterCaster) - but the item's bonus
+// slot still applies even to a non-caster who happens to be wearing it, since the item
+// itself concentrates independently of the wearer's own spellcasting.
+export const concentrationSlotCount = (items, isCaster = true) => {
+  const itemGrant = (items || []).some(it => isItemActive(it) && it.grants_concentration_slot) ? 1 : 0;
+  const base = isCaster ? 1 : 0;
+  return base + itemGrant;
 };
 
 // A character can track up to two companion slots (e.g. a Blood Hunter's normal form and

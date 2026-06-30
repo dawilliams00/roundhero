@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
-import { concentrationSlotCount } from '../utils/dnd';
+import { concentrationSlotCount, isCharacterCaster, isItemActive } from '../utils/dnd';
 import InfoModal from './InfoModal';
 
 export default function ConcentrationModal({ onClose }) {
@@ -10,7 +10,14 @@ export default function ConcentrationModal({ onClose }) {
   const td = character.tracker_data || {};
   const items = td.inventory?.items || [];
   const slots = td.concentration?.slots || [];
-  const maxSlots = concentrationSlotCount(items);
+  const isCaster = isCharacterCaster(character);
+  const maxSlots = concentrationSlotCount(items, isCaster);
+  const grantingItem = items.find(it => isItemActive(it) && it.grants_concentration_slot);
+  // The item-granted slot is always the LAST unlocked one: index 1 when the wearer also
+  // has their own base slot (caster), or index 0 when the item is their only slot at all
+  // (a non-caster wearing it - the item concentrates independently of the wearer's own
+  // spellcasting, see concentrationSlotCount in dnd.js).
+  const itemSlotIdx = grantingItem ? (isCaster ? 1 : 0) : null;
 
   const drop = async (idx) => {
     const result = await replaceConcentration(idx);
@@ -38,6 +45,9 @@ export default function ConcentrationModal({ onClose }) {
                 <div style={{color: active ? 'var(--text-primary)' : 'var(--text-dim)',fontWeight:600,fontSize:14}}>
                   {!active ? 'Locked' : spell ? `${spell}${slot.level ? ` (L${slot.level})` : ''}` : 'Empty'}
                 </div>
+                {active && idx === itemSlotIdx && (
+                  <div style={{color:'var(--accent-light)',fontSize:10,marginTop:2}}>🔮 {grantingItem.name} concentrates for you</div>
+                )}
               </div>
               <button className="btn btn-secondary btn-sm" disabled={!active || !spell} onClick={() => drop(idx)}>Drop</button>
             </div>
