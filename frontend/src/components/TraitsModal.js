@@ -18,7 +18,7 @@ const ADV_DISADV = ['Saves vs being Charmed','Saves vs being Frightened','Saves 
 // sleep (e.g. an Elf/Shadar-kai's Fey Ancestry) isn't a sense - that's "Saves vs being
 // Put to Sleep" under Advantages, or "Magical Sleep" under Immunities if it's a flat
 // immunity rather than just advantage on the save; both already exist above.
-const SENSES = ['Darkvision 60 ft.','Darkvision 120 ft.','Blindsight 10 ft.','Blindsight 30 ft.','Tremorsense 10 ft.','Tremorsense 30 ft.','Truesight 30 ft.','Truesight 60 ft.'];
+const SENSES = ['Darkvision 60 ft.','Darkvision 120 ft.','Blindsight 10 ft.','Blindsight 30 ft.','Tremorsense 10 ft.','Tremorsense 30 ft.','Truesight 30 ft.','Truesight 60 ft.','Telepathy 30 ft.','Telepathy 60 ft.','Telepathy 120 ft.'];
 
 const COMMON_OPTIONS = {
   resistances: DAMAGE_TYPES,
