@@ -36,15 +36,66 @@ function inviteUrlFor(code) {
   return `${origin}/campaigns?join=${encodeURIComponent(code || '')}`;
 }
 
-function mailtoForInvite(campaign) {
-  const url = inviteUrlFor(campaign?.invite_code);
-  const subject = encodeURIComponent(`Join my RoundHero campaign: ${campaign?.name || 'Campaign'}`);
-  const body = encodeURIComponent(
-    `You have been invited to join ${campaign?.name || 'my RoundHero campaign'}.\n\n` +
-    `Invite code: ${campaign?.invite_code || ''}\n\n` +
-    `Open this link, sign in, and join the campaign:\n${url}`
+function CampaignInviteEmailModal({ campaign, onClose }) {
+  const [email, setEmail] = useState('');
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [error, setError] = useState('');
+
+  const submit = async e => {
+    e.preventDefault();
+    if (!campaign || !email.trim()) return;
+    setSending(true);
+    setError('');
+    try {
+      await api.post(
+        `/campaigns/${campaign.id}/invite/email`,
+        { email: email.trim(), invite_url: inviteUrlFor(campaign.invite_code) },
+        { suppressGlobalError: true }
+      );
+      setSent(true);
+    } catch (err) {
+      setError(err.response?.data?.error || 'Could not send invite email.');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  if (sent) {
+    return (
+      <div className="modal-overlay" onClick={onClose}>
+        <div className="modal" style={{maxWidth:340}} onClick={e => e.stopPropagation()}>
+          <h2>Invite Sent</h2>
+          <p style={{color:'var(--text-secondary)',fontSize:13,lineHeight:1.6}}>
+            The campaign invite was sent to {email.trim()}.
+          </p>
+          <button className="btn btn-primary" style={{width:'100%',marginTop:8}} onClick={onClose}>Got it</button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <form className="modal" style={{maxWidth:420}} onClick={e => e.stopPropagation()} onSubmit={submit}>
+        <h2>Email Campaign Invite</h2>
+        <div style={{color:'var(--text-secondary)',fontSize:12,lineHeight:1.5,marginBottom:12}}>
+          Send an invite for {campaign?.name}. The email includes the join code and campaign link.
+        </div>
+        <div className="form-group">
+          <label>Recipient Email</label>
+          <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="player@example.com" autoFocus />
+        </div>
+        {error && <div style={{color:'var(--danger)',fontSize:12,marginTop:8}}>{error}</div>}
+        <div style={{display:'flex',gap:8,marginTop:12}}>
+          <button type="button" className="btn btn-secondary" style={{flex:1}} onClick={onClose}>Cancel</button>
+          <button className="btn btn-primary" style={{flex:2}} disabled={!email.trim() || sending}>
+            {sending ? 'Sending...' : 'Send Invite'}
+          </button>
+        </div>
+      </form>
+    </div>
   );
-  return `mailto:?subject=${subject}&body=${body}`;
 }
 
 function normalizeCombatant(row) {
@@ -532,6 +583,7 @@ export default function CampaignsPage() {
   const [sharedInitiative, setSharedInitiative] = useState(true);
   const [viewingMonster, setViewingMonster] = useState(null);
   const [showFeedback, setShowFeedback] = useState(false);
+  const [showInviteEmail, setShowInviteEmail] = useState(false);
   const [referenceDocs, setReferenceDocs] = useState(null);
   const [error, setError] = useState('');
 
@@ -789,7 +841,7 @@ export default function CampaignsPage() {
                     </div>
                   </div>
                   <div style={{display:'flex',gap:6}}>
-                    <a className="btn btn-secondary btn-sm" href={mailtoForInvite(campaign)}>Email Invite</a>
+                    <button className="btn btn-secondary btn-sm" type="button" onClick={() => setShowInviteEmail(true)}>Email Invite</button>
                     <button className="btn btn-secondary btn-sm" onClick={copyInviteLink}>Copy Link</button>
                     {campaign.is_dm && <button className="btn btn-secondary btn-sm" onClick={refreshInvite}>New Code</button>}
                     {!sameId(campaign.owner_user_id, user?.id) && <button className="btn btn-secondary btn-sm" onClick={handleLeave}>Leave</button>}
@@ -990,6 +1042,7 @@ export default function CampaignsPage() {
         />
       )}
       {viewingMonster && <MonsterDetailModal monster={viewingMonster} onClose={() => setViewingMonster(null)} />}
+      {showInviteEmail && campaign && <CampaignInviteEmailModal campaign={campaign} onClose={() => setShowInviteEmail(false)} />}
       {showFeedback && <FeedbackModal contextLabel={campaign ? `Campaign: ${campaign.name}${selectedEncounter ? ` / Encounter: ${selectedEncounter.name}` : ''}` : 'Campaigns'} onClose={() => setShowFeedback(false)} />}
     </div>
   );
