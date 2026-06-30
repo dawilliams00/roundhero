@@ -54,7 +54,7 @@ export default function CastSpellPickerModal({ onClose, bucket, onCast }) {
         <SpellDetailModal
           spell={viewing}
           onClose={() => setViewing(null)}
-          onCastSuccess={() => { if (onCast) onCast(); onClose(); }}
+          onCastSuccess={async (meta) => { if (onCast) await onCast(meta); onClose(); }}
         />
       )}
     </div>

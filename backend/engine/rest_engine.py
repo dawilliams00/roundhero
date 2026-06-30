@@ -41,6 +41,7 @@ def apply_rest(tracker_data, spell_data, rest_type="long"):
     features = td.get("features", {})
     slots    = td.get("spell_slots", {})
     items    = td.get("inventory", {}).get("items", [])
+    module_item_charges = td.get("item_charges", {})
     # Up to two companion slots (e.g. a Blood Hunter's normal form and Hybrid
     # Transformation) - both reset on rest regardless of which one is currently active,
     # same as a real character's own resources don't pause just because you're not
@@ -68,6 +69,17 @@ def apply_rest(tracker_data, spell_data, rest_type="long"):
         for item in items:
             _recharge_item(item.get("charges"), LONG_REST_RECHARGES, summary, item["name"])
         _restore_pact_slots(td, summary)
+        for name, charge in module_item_charges.items():
+            if charge.get("arcane_charge"):
+                if charge.get("current", 0) != 0:
+                    charge["current"] = 0
+                    summary["items_recharged"].append(name)
+                continue
+            mx = int(charge.get("max", 0))
+            recharge = str(charge.get("recharge_type", "")).lower()
+            if mx > 0 and recharge in {"long", "long_rest", "dawn", "dusk"} and charge.get("current", 0) < mx:
+                charge["current"] = mx
+                summary["items_recharged"].append(name)
         td["conditions"] = []
         if "hp" in td:
             hp = td["hp"]
@@ -98,6 +110,17 @@ def apply_rest(tracker_data, spell_data, rest_type="long"):
         for item in items:
             _recharge_item(item.get("charges"), SHORT_REST_RECHARGES, summary, item["name"])
         _restore_pact_slots(td, summary)
+        for name, charge in module_item_charges.items():
+            if charge.get("arcane_charge"):
+                if charge.get("current", 0) != 0:
+                    charge["current"] = 0
+                    summary["items_recharged"].append(name)
+                continue
+            mx = int(charge.get("max", 0))
+            recharge = str(charge.get("recharge_type", "")).lower()
+            if mx > 0 and recharge in {"short", "short_rest"} and charge.get("current", 0) < mx:
+                charge["current"] = mx
+                summary["items_recharged"].append(name)
         caster_type = spell_data.get("caster_type", "none")
         if caster_type == "warlock":
             for level, slot in slots.items():
