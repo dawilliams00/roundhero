@@ -64,7 +64,7 @@ export default function SpellsTab() {
 
   if (!character) return null;
   const buffItems = [...(character.tracker_data?.inventory?.items || []), ...featBuffItems(character.tracker_data?.features), ...raceBuffItems(character.race)];
-  const maxPrepared = maxPreparedSpells(character.class_name, character.ability_scores, buffItems);
+  const maxPrepared = maxPreparedSpells(character.class_name, character.ability_scores, buffItems, character.level);
   const isAlwaysVisible = s => s.ritual || !!s.granted_by || s.level_int === 0;
   // A spell auto-synced from a full-list class's complete spell list (see the sync effect
   // above) genuinely needs to be prepared before it's usable, per RAW - unlike a spell a

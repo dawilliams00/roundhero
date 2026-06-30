@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useCharacter } from '../context/CharacterContext';
 import api from '../utils/api';
-import { ABILITY_KEYS, ABILITY_LABELS, modifier, rollDie } from '../utils/dnd';
+import { ABILITY_KEYS, ABILITY_LABELS, modifier, rollDie, spellLevelUpNote, featBuffItems, raceBuffItems } from '../utils/dnd';
 
 // Drives the full multi-step level-up flow for ANY character (single-class manually-
 // created, or multiclass/PDF-imported once classes are confirmed) - POST /level_up is
@@ -317,12 +317,28 @@ export default function LevelUpFlowModal({ onClose, mode = 'level_up', initialLe
           </>
         )}
 
-        {step === 'done' && (
+        {step === 'done' && (() => {
+          const buffItems = [...(character?.tracker_data?.inventory?.items || []), ...featBuffItems(character?.tracker_data?.features), ...raceBuffItems(character?.race)];
+          const newLevel = summary?.new_total_level ?? summary?.new_level;
+          const spellNote = spellLevelUpNote(
+            character?.class_name,
+            summary?.leveling_class,
+            newLevel,
+            summary?.new_class_level,
+            character?.ability_scores,
+            buffItems,
+          );
+          return (
           <>
-            <div style={{color:'var(--success)',fontSize:14,marginBottom:8,fontWeight:600}}>Welcome to level {summary?.new_total_level ?? summary?.new_level}!</div>
-            <div style={{color:'var(--text-dim)',fontSize:12,marginBottom:16}}>
-              HP max increased by {summary?.hp_gained}. New features and spell slots (if any) have been added - check the Feats/Attunement and Spells tabs.
+            <div style={{color:'var(--success)',fontSize:14,marginBottom:8,fontWeight:600}}>Welcome to level {newLevel}!</div>
+            <div style={{color:'var(--text-dim)',fontSize:12,marginBottom: spellNote ? 8 : 16}}>
+              HP max increased by {summary?.hp_gained}. New features and spell slots (if any) have been added — check the Feats/Attunement and Spells tabs.
             </div>
+            {spellNote && (
+              <div style={{color:'var(--accent-light)',fontSize:12,marginBottom:16,padding:'8px 10px',background:'rgba(124,92,252,0.1)',borderRadius:'var(--radius-sm)',lineHeight:1.6}}>
+                {spellNote}
+              </div>
+            )}
             <div style={{display:'flex',gap:8}}>
               <button className="btn btn-secondary" style={{flex:1}} disabled={rollingBack} onClick={async () => { setRollingBack(true); try { await rollbackLevelUp(); } finally { setRollingBack(false); onClose(); } }}>
                 {rollingBack ? 'Rolling back...' : "↺ Undo, I'll check first"}
@@ -330,7 +346,8 @@ export default function LevelUpFlowModal({ onClose, mode = 'level_up', initialLe
               <button className="btn btn-primary" style={{flex:1}} onClick={onClose}>Close</button>
             </div>
           </>
-        )}
+          );
+        })()}
       </div>
     </div>
   );

@@ -144,21 +144,64 @@ export const slotColor = level => `var(--slot-${Math.min(level, 9)})`;
 
 export const PREPARED_CASTER_ABILITY = { Wizard:'INT', Cleric:'WIS', Druid:'WIS', Paladin:'CHA', Ranger:'WIS', Artificer:'INT' };
 export const HALF_LEVEL_PREP_CLASSES = ['Paladin','Ranger','Artificer'];
+// Bard/Sorcerer/Warlock know a fixed number of spells and don't prepare a daily subset.
+// Ranger is a known caster in 2014 rules; in 2024 rules it became a prepared caster.
+export const KNOWN_SPELL_CASTERS = new Set(['Bard','Sorcerer','Warlock']);
 
-// Returns null if the class doesn't use daily spell preparation (e.g. Sorcerer/Bard/Warlock know fixed spells)
-export const maxPreparedSpells = (classNameRaw, abilityScores, items) => {
+// Returns null if the class doesn't use daily spell preparation (e.g. Sorcerer/Bard/Warlock
+// know fixed spells permanently). Handles multiclass correctly by summing across every
+// prepared-caster class found in the string - a Cleric 5/Wizard 5 prepares WIS+5 + INT+5
+// spells, not just one or the other. Accepts `totalLevel` as a fallback for plain class
+// strings without a level number (e.g. "Wizard" from a manually-created character, where
+// the level lives on the character model, not embedded in class_name).
+export const maxPreparedSpells = (classNameRaw, abilityScores, items, totalLevel) => {
   if (!classNameRaw) return null;
-  const parts = String(classNameRaw).split('/').map(p => p.trim());
-  const m = parts[0].match(/^(.+?)\s+(\d+)\s*$/);
-  if (!m) return null;
-  const className = m[1].trim();
-  const classLevel = parseInt(m[2]);
-  const ability = PREPARED_CASTER_ABILITY[className];
-  if (!ability) return null;
   const effAb = items ? effectiveAbilityScores(abilityScores, items) : abilityScores;
+  const parsed = parseClassLevels(classNameRaw);
+  if (parsed.length > 0) {
+    let total = 0; let anyPrepared = false;
+    for (const { className, level } of parsed) {
+      const ability = PREPARED_CASTER_ABILITY[className];
+      if (!ability) continue;
+      anyPrepared = true;
+      const mod = modifier(effAb?.[ability] ?? 10);
+      const effLvl = HALF_LEVEL_PREP_CLASSES.includes(className) ? Math.floor(level / 2) : level;
+      total += Math.max(0, effLvl + mod);
+    }
+    return anyPrepared ? Math.max(1, total) : null;
+  }
+  // Plain class name without a level number — fall back to totalLevel param.
+  if (!totalLevel) return null;
+  const cls = classNameRaw.trim();
+  const ability = PREPARED_CASTER_ABILITY[cls];
+  if (!ability) return null;
   const mod = modifier(effAb?.[ability] ?? 10);
-  const effLevel = HALF_LEVEL_PREP_CLASSES.includes(className) ? Math.floor(classLevel / 2) : classLevel;
-  return Math.max(1, effLevel + mod);
+  const effLvl = HALF_LEVEL_PREP_CLASSES.includes(cls) ? Math.floor(totalLevel / 2) : totalLevel;
+  return Math.max(1, effLvl + mod);
+};
+
+// Message shown in the level-up "done" screen reminding the player what spell work to
+// do now. Covers three cases: full-list prepared casters (update your daily list),
+// Wizard specifically (copy 2 new spells into spellbook AND update prep list), and
+// known-spell casters (learn a new permanent spell). Returns null for non-casters.
+export const spellLevelUpNote = (classNameRaw, leveledClass, newLevel, classLevel, abilityScores, items) => {
+  const cls = leveledClass || (parseClassLevels(classNameRaw)[0]?.className) || classNameRaw?.trim();
+  if (!cls) return null;
+  const prepLimit = maxPreparedSpells(classNameRaw, abilityScores, items, newLevel);
+  // Wizard: copies 2 free spells into spellbook per level AND has a prepared limit
+  if (cls === 'Wizard') {
+    return `📚 Add 2 new spells to your spellbook (Spells → Edit Known Spells). Your prepared limit is now ${prepLimit ?? '?'} — update your list in Manage Lists.`;
+  }
+  // Other prepared casters: daily list may now fit more spells
+  if (PREPARED_CASTER_ABILITY[cls] && !KNOWN_SPELL_CASTERS.has(cls)) {
+    if (prepLimit == null) return null;
+    return `📋 Your prepared spell limit is now ${prepLimit}. Update your daily list via Spells → Manage Lists.`;
+  }
+  // Known-spell casters: learn a new permanent spell this level
+  if (KNOWN_SPELL_CASTERS.has(cls)) {
+    return `✨ You can learn 1 new spell permanently (Spells → Edit Known Spells).`;
+  }
+  return null;
 };
 
 export const SECTION_ORDER = ['Action','Bonus Action','Reaction','Free Action','Passive'];
