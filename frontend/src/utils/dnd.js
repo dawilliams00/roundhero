@@ -344,8 +344,12 @@ export const computeItemBonuses = (items) => {
         abilityOverrides[b.stat] = Math.max(abilityOverrides[b.stat] ?? -Infinity, b.value || 0);
       } else if (b.mode === 'add' && ABILITY_KEYS.includes(b.stat)) {
         abilityAdds[b.stat] = (abilityAdds[b.stat] || 0) + (b.value || 0);
-      } else if (b.mode === 'set' && b.stat === 'ac_base') {
-        acOverride = Math.max(acOverride ?? -Infinity, b.value || 0);
+      } else if ((b.mode === 'set' || b.mode === 'set_dex') && b.stat === 'ac_base') {
+        // set_dex stores the BASE value (e.g. 15 for Robe of the Archmagi, 13 for Mage
+        // Armor) that gets DEX mod added at display/calc time in CharacterHeader. 'set'
+        // is a flat value (no DEX, like heavy armor). Both track the highest base offered.
+        const entry = { value: b.value || 0, addDex: b.mode === 'set_dex' };
+        if (acOverride === null || b.value > (acOverride.value ?? -Infinity)) acOverride = entry;
       } else if (b.stat === 'advantage_save') {
         advantageSaves.push({ ability: b.ability || 'all', source: it.name });
       } else if (b.stat === 'damage_resistance') {
@@ -361,7 +365,11 @@ export const computeItemBonuses = (items) => {
       }
     });
   });
-  return { ...bonuses, acOverride, abilityOverrides, abilityAdds, advantageSaves, resistances, immunities, vulnerabilities, conditionImmunities };
+  // Normalise acOverride into a plain number so callers can still do simple arithmetic.
+  // Callers that need DEX-mod handling receive the raw object when needed via acOverrideRaw.
+  const acOverrideRaw = acOverride;
+  const acOverrideFlatValue = acOverride !== null ? acOverride.value : null;
+  return { ...bonuses, acOverride: acOverrideFlatValue, acOverrideRaw, abilityOverrides, abilityAdds, advantageSaves, resistances, immunities, vulnerabilities, conditionImmunities };
 };
 
 // A feat's buffs (AC/saves/spell attack-DC/ability scores/weapon mods/resistances etc.,

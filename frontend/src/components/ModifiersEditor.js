@@ -26,8 +26,10 @@ export default function ModifiersEditor({ buffs, onChange, allowWeapon = false, 
   const updateModifier = (i, patch) => onChange(buffs.map((b, idx) => idx === i ? { ...b, ...patch } : b));
   const removeModifier = (i) => onChange(buffs.filter((_, idx) => idx !== i));
   const setModifierType = (i, value) => {
-    if (value.startsWith('set:')) {
-      updateModifier(i, { stat: value.slice(4), mode: 'set', ability: undefined, damage_type: undefined, condition: undefined, value: 19 });
+    if (value.startsWith('set_dex:')) {
+      updateModifier(i, { stat: value.slice(8), mode: 'set_dex', ability: undefined, damage_type: undefined, condition: undefined, value: 13 });
+    } else if (value.startsWith('set:')) {
+      updateModifier(i, { stat: value.slice(4), mode: 'set', ability: undefined, damage_type: undefined, condition: undefined, value: 16 });
     } else if (value.startsWith('add:')) {
       updateModifier(i, { stat: value.slice(4), mode: 'add', ability: undefined, damage_type: undefined, condition: undefined, value: 1 });
     } else if (value.startsWith('advsave:')) {
@@ -47,12 +49,13 @@ export default function ModifiersEditor({ buffs, onChange, allowWeapon = false, 
       <div style={{color:'var(--text-dim)',fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:1,margin:'12px 0 6px'}}>Modifiers</div>
       {buffs.map((b, i) => {
         const isSetMode = b.mode === 'set';
+        const isSetDexMode = b.mode === 'set_dex';
         const isAddMode = b.mode === 'add';
         const isAdvSave = b.stat === 'advantage_save';
         const isDamageBuff = ['damage_resistance','damage_immunity','damage_vulnerability'].includes(b.stat);
         const isCondImmune = b.stat === 'condition_immunity';
         const damageBuffPrefix = { damage_resistance: 'resist', damage_immunity: 'immune', damage_vulnerability: 'vuln' }[b.stat];
-        const selectValue = isSetMode ? `set:${b.stat}` : isAddMode ? `add:${b.stat}` : isAdvSave ? `advsave:${b.ability || 'all'}`
+        const selectValue = isSetDexMode ? `set_dex:${b.stat}` : isSetMode ? `set:${b.stat}` : isAddMode ? `add:${b.stat}` : isAdvSave ? `advsave:${b.ability || 'all'}`
           : isDamageBuff ? damageBuffPrefix : isCondImmune ? 'condimmune' : b.stat;
         return (
           <div key={i} style={{display:'flex',gap:6,alignItems:'center',marginBottom:6}}>
@@ -60,7 +63,8 @@ export default function ModifiersEditor({ buffs, onChange, allowWeapon = false, 
               {ADD_MODIFIERS(weaponScope).filter(m => !m.stat.startsWith('weapon_') || allowWeapon).map(m => (
                 <option key={m.stat} value={m.stat}>{m.label}</option>
               ))}
-              <option value="set:ac_base">Set Base AC To... (heavy armor)</option>
+              <option value="set:ac_base">Set Base AC To X (flat, ignores DEX)</option>
+              <option value="set_dex:ac_base">Set Base AC To X + DEX mod (light armor / Mage Armor / Robe of the Archmagi)</option>
               {ABILITY_KEYS.map(k => <option key={`set-${k}`} value={`set:${k}`}>Set {k} Score To...</option>)}
               {ABILITY_KEYS.map(k => <option key={`add-${k}`} value={`add:${k}`}>Add to {k} Score</option>)}
               <option value="advsave:all">Advantage on All Saving Throws</option>
@@ -92,7 +96,7 @@ export default function ModifiersEditor({ buffs, onChange, allowWeapon = false, 
       })}
       <button className="btn btn-secondary btn-sm" style={{marginBottom:8}} onClick={addModifier}>+ Add Modifier</button>
       <div style={{color:'var(--text-dim)',fontSize:11,marginBottom:10}}>
-        {activeWhileText || 'Always active.'} "Set X Score To" never lowers the character's score - it only raises it up to the value entered. "Add to X Score" is a flat bonus regardless of current score. "Set Base AC To" is for body armor whose AC replaces the unarmored calculation entirely (e.g. Plate's flat 18, ignoring DEX) rather than adding to it - it overrides the character's base AC while equipped/attuned and reverts the moment it's unequipped; a shield or other AC item should use the plain "AC" modifier above instead, since that one still adds on top. "Advantage on Saves" shows as a header chip (RAW advantage isn't auto-rolled anywhere in this app - same as conditions/exhaustion, you apply it yourself).
+        {activeWhileText || 'Always active.'} "Set X Score To" never lowers the character's score — it only raises it to the value. "Add to X Score" is a flat bonus. "Set Base AC To X (flat)" is for armor that ignores DEX entirely (heavy armor like Plate = flat 18). "Set Base AC To X + DEX mod" is for light armor, magical robes, or Mage Armor-style effects that still add your DEX — e.g. Robe of the Archmagi = 15, Mage Armor = 13, Chain Shirt = 13. A shield or ring should use plain "AC" above instead (additive, stacks on top of whichever formula applies). "Advantage on Saves" shows as a header chip — the app doesn't auto-apply advantage rolls, same as conditions/exhaustion.
       </div>
     </>
   );

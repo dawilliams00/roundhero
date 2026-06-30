@@ -252,13 +252,15 @@ export default function CharacterHeader({ onBack }) {
   const activeEffects = td?.active_effects || [];
   const isHasted = activeEffects.includes(HASTED_EFFECT);
   const hasteAcBonus = isHasted ? 2 : 0;
-  // Heavy armor (a "Set Base AC To" item buff) replaces the unarmored 10+DEX calculation
-  // entirely rather than adding to it - takes priority over the manually-entered/saved
-  // td.ac while equipped+attuned, and falls back to it the instant the armor comes off.
-  const armorOverride = itemBonuses.acOverride;
+  // Item AC override — either flat (heavy armor, Robe without DEX) or base+DEX (Robe of
+  // the Archmagi: 15+DEX, Mage Armor: 13+DEX). acOverrideRaw carries the {value, addDex}
+  // shape; acOverride is the resolved flat number after adding DEX when applicable.
+  const acOverrideRaw = itemBonuses.acOverrideRaw;
+  const armorOverride = acOverrideRaw !== null
+    ? acOverrideRaw.value + (acOverrideRaw.addDex ? dexMod : 0)
+    : null;
   const { ac: unarmoredBase } = unarmoredAC(class_name, effAb, td?.features);
-  // Priority: equipped armor's Set-Base-AC-To override → manually stored td.ac (e.g.
-  // Mage Armor) → auto-computed unarmored formula (10+DEX, or class variant).
+  // Priority: equipped armor/robe override → manually stored td.ac → auto-computed unarmored.
   const baseAc = armorOverride != null ? armorOverride : (td?.ac != null ? td.ac : unarmoredBase);
   const acMisc = td?.ac_misc || 0;
   const ac     = baseAc + itemBonuses.ac_base + acMisc + hasteAcBonus;
