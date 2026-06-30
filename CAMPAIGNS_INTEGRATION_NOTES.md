@@ -2,6 +2,10 @@
 
 This branch started with the first campaign slice isolated in new files so it would not collide with active character-sheet work. The `RoundHero-Campaigns` worktree now also has the bridge hooks applied locally so the slice can be reviewed end-to-end before merging back.
 
+## Codex Commit Policy
+
+The owner has explicitly instructed Codex to always commit completed, validated changes in this worktree from now on so Claude can deploy them. Do not leave finished Codex work only in the working tree. Pushes still require an explicit user request unless the owner changes that separately.
+
 ## New Files
 
 - `backend/models/campaign.py`
