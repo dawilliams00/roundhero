@@ -1,0 +1,56 @@
+{
+  "_purpose": "Standing preferences for Codex while working in this repo. Minimal confirmation mode — Codex should proceed with tasks without asking for confirmation unless explicitly listed in always_ask_before.",
+  "permission_free_edits": {
+    "enabled": true,
+    "file_globs": [
+      "**/*.md",
+      "**/*.txt",
+      "**/*.json",
+      "**/*.py",
+      "**/*.js",
+      "**/*.jsx",
+      "**/*.css",
+      "**/*.html",
+      "**/*.env.example",
+      "**/*.yaml",
+      "**/*.yml"
+    ],
+    "allowed_when": [
+      "The change is directly related to the current requested task.",
+      "The file is within the active RoundHero worktree/folder Codex is using.",
+      "The edit does not overwrite unrelated user/Claude work.",
+      "The edit does not remove data, delete files, reset branches, or discard changes."
+    ]
+  },
+  "confirmation_mode": "minimal",
+  "assume_yes_for": [
+    "Reading any file in the repo.",
+    "Writing or editing any file matching permission_free_edits globs.",
+    "Running git status, git diff, git log, git branch.",
+    "Running git add on campaign-related files.",
+    "Running grep, find, ls, cat on any file.",
+    "Running python, py, python3 for validation or testing scripts.",
+    "Running npm install, npm run build, npm start.",
+    "Creating new files within the campaigns feature scope.",
+    "Running non-destructive bash commands.",
+    "Staging and committing Codex-made changes after validation so Claude can deploy them."
+  ],
+  "always_ask_before": [
+    "Deleting files or directories.",
+    "Reverting, resetting, checking out, or discarding existing changes.",
+    "Running destructive database operations.",
+    "Changing branches.",
+    "Pushing to a remote unless explicitly asked in the current task.",
+    "Installing new packages not already in requirements.txt or package.json.",
+    "Editing any of these shared integration files without explicit instruction: frontend/src/App.js, backend/app.py, backend/models/__init__.py, frontend/src/components/Navbar.js, frontend/src/components/Header.js, frontend/src/index.js, frontend/src/App.css."
+  ],
+  "parallel_work_rules": {
+    "claude_folder": "C:\\Users\\David\\Desktop\\RoundHero",
+    "codex_campaign_folder": "C:\\Users\\David\\Desktop\\RoundHero-Campaigns",
+    "campaign_branch": "feature/campaigns",
+    "codex_should_prefer_new_campaign_dm_files": true,
+    "integration_changes_require_deliberate_handoff": true,
+    "codex_must_commit_after_each_completed_change": true,
+    "commit_policy_note": "The owner has explicitly instructed Codex to always commit completed changes from now on so Claude can deploy them. Do not leave Codex work only in the working tree after validation."
+  }
+}
