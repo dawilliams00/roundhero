@@ -65,6 +65,13 @@ function CombatantPublicRow({ row }) {
   );
 }
 
+function modifierLabel(modifier) {
+  if (modifier.label) return modifier.label;
+  const value = modifier.value ? ` ${modifier.value}` : '';
+  const detail = modifier.detail ? `: ${modifier.detail}` : '';
+  return `${modifier.type || 'Modifier'}${value}${detail}`;
+}
+
 export default function CampaignPlayerViewModal({ views, onClose }) {
   const [selectedId, setSelectedId] = useState(views[0]?.id || '');
   const selected = useMemo(() => (
@@ -137,8 +144,15 @@ export default function CampaignPlayerViewModal({ views, onClose }) {
                   <EffectPill tone="effect">{effect.status}</EffectPill>
                   {effect.payload?.concentration && <EffectPill tone="effect">Concentration</EffectPill>}
                 </div>
+                {Array.isArray(effect.payload?.modifiers) && effect.payload.modifiers.length > 0 && (
+                  <div style={{display:'flex',gap:5,flexWrap:'wrap',marginTop:7}}>
+                    {effect.payload.modifiers.map((modifier, index) => (
+                      <EffectPill key={`${modifier.type}_${index}`} tone="effect">{modifierLabel(modifier)}</EffectPill>
+                    ))}
+                  </div>
+                )}
                 <div style={{color:'var(--text-secondary)',fontSize:12,marginTop:4}}>
-                  {effect.source_character_name || 'Unknown'} to {effect.target_character_name || 'Unassigned'}
+                  {effect.source_character_name || 'DM / Environment'} to {effect.target_character_name || 'party'}
                   {effect.payload?.duration ? ` · ${effect.payload.duration}` : ''}
                 </div>
               </div>

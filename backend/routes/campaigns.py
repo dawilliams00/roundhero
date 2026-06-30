@@ -109,6 +109,29 @@ def _player_encounter_view(encounter):
     }
 
 
+def _effect_payload_target_ids(effect):
+    payload = effect.payload or {}
+    raw_ids = payload.get("target_character_ids") or []
+    if not isinstance(raw_ids, list):
+        return set()
+    target_ids = set()
+    for raw_id in raw_ids:
+        try:
+            target_ids.add(int(raw_id))
+        except (TypeError, ValueError):
+            continue
+    return target_ids
+
+
+def _effect_visible_to_character(effect, character_id, campaign, member):
+    return (
+        effect.target_character_id == character_id
+        or character_id in _effect_payload_target_ids(effect)
+        or effect.source_character_id == character_id
+        or _is_dm(campaign, member)
+    )
+
+
 @campaigns_bp.route("/", methods=["GET"])
 @jwt_required()
 def list_campaigns():
@@ -307,11 +330,7 @@ def get_player_campaign_view(character_id):
             "encounters": [_player_encounter_view(encounter) for encounter in running],
             "effects": [
                 effect.to_dict() for effect in campaign.effects
-                if effect.status != "removed" and (
-                    effect.target_character_id == character.id
-                    or effect.source_character_id == character.id
-                    or _is_dm(campaign, member)
-                )
+                if effect.status != "removed" and _effect_visible_to_character(effect, character.id, campaign, member)
             ],
         })
     return jsonify(views), 200
@@ -528,6 +547,12 @@ def create_effect(campaign_id):
     if effect.status not in {"pending", "applied", "dismissed", "removed"}:
         return jsonify({"error": "Invalid effect status"}), 400
     payload = data.get("payload") or {}
+    target_ids = payload.get("target_character_ids") or []
+    if target_ids and not isinstance(target_ids, list):
+        return jsonify({"error": "Target character ids must be a list"}), 400
+    for target_id in target_ids:
+        if not _character_in_campaign(campaign.id, target_id):
+            return jsonify({"error": "One or more targets are not in this campaign"}), 400
     for key in ["duration", "concentration", "notes"]:
         if key in data:
             payload[key] = data.get(key)
