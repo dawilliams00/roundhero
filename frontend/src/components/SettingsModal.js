@@ -45,6 +45,7 @@ export default function SettingsModal({ onClose }) {
   const setRuleset = (value) => saveTrackerData({ ...td, settings: { ...settings, ruleset: value } });
   const toggleEdition = (key) => saveTrackerData({ ...td, settings: { ...settings, content_editions: { ...contentEditions, [key]: !contentEditions[key] } } });
   const setExhaustionRules = (patch) => saveTrackerData({ ...td, settings: { ...settings, exhaustion_rules: { ...exhaustionRules, ...patch } } });
+  const setDeathSaveBlind = (checked) => saveTrackerData({ ...td, settings: { ...settings, death_save_roll_blind: checked } });
   const setCompanion = (patch) => saveTrackerData({ ...td, companion: { ...companion, ...patch } });
   const setCompanion2 = (patch) => saveTrackerData({ ...td, companion2: { ...companion2, ...patch } });
   const toggleCompanionEnabled = () => setCompanion({ enabled: !companion.enabled });
@@ -205,6 +206,22 @@ export default function SettingsModal({ onClose }) {
             )}
             <div style={{color:'var(--text-dim)',fontSize:11,marginTop:6}}>
               The Exhaustion counter in the header doesn't enforce any mechanical penalty either way — this just controls what shows up when you hover/tap it.
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label>Death Saves</label>
+            <label style={{display:'flex',alignItems:'center',gap:8,cursor:'pointer',color:'var(--text-primary)',textTransform:'none',letterSpacing:0}}>
+              <input
+                type="checkbox"
+                style={{width:'auto',flexShrink:0}}
+                checked={!!settings.death_save_roll_blind}
+                onChange={e => setDeathSaveBlind(e.target.checked)}
+              />
+              Roll Blind
+            </label>
+            <div style={{color:'var(--text-dim)',fontSize:11,marginTop:6}}>
+              Blind death saves are rolled from your sheet and sent to the DM encounter tracker, but you do not see the roll result or pass/fail counters.
             </div>
           </div>
         </div>

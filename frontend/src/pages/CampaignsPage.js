@@ -181,6 +181,15 @@ function cleanList(value) {
   return Array.isArray(value) ? value.filter(Boolean) : [];
 }
 
+function deathSaveResultLabel(result) {
+  return {
+    critical_success: 'Natural 20',
+    critical_failure: 'Natural 1',
+    success: 'Success',
+    failure: 'Failure',
+  }[result] || result || '';
+}
+
 function modifierNumber(modifier) {
   const parsed = Number(modifier?.value);
   return Number.isFinite(parsed) ? parsed : 0;
@@ -354,6 +363,8 @@ function normalizeCombatant(row) {
     conditions: Array.isArray(row.conditions) ? row.conditions : [],
     concentration: row.concentration || '',
     death_saves: row.death_saves || { successes: 0, failures: 0 },
+    last_death_save: row.last_death_save || null,
+    death_save_rolls: Array.isArray(row.death_save_rolls) ? row.death_save_rolls : [],
     group_key: row.group_key || '',
     monster_name: row.monster_name || '',
     monster: row.monster || null,
@@ -805,8 +816,15 @@ function EncounterBuilder({
                       </label>
                     </div>
                     <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:5,minWidth:124}}>
+                      <div style={{gridColumn:'1 / -1',color:'var(--text-secondary)',fontSize:10,fontWeight:800,textTransform:'uppercase'}}>Death Saves</div>
                       <button className="btn btn-secondary btn-sm" onClick={() => setDeathSave(row, 'successes', 1)}>Pass {row.death_saves?.successes || 0}</button>
                       <button className="btn btn-secondary btn-sm" onClick={() => setDeathSave(row, 'failures', 1)}>Fail {row.death_saves?.failures || 0}</button>
+                      {row.last_death_save && (
+                        <div style={{gridColumn:'1 / -1',border:'1px solid rgba(154,128,255,0.42)',background:'rgba(124,92,252,0.16)',borderRadius:4,padding:'5px 6px',fontSize:11,color:'var(--text-secondary)',lineHeight:1.35}}>
+                          <div style={{color:'var(--accent-light)',fontWeight:900}}>Last: d20 {row.last_death_save.roll} - {deathSaveResultLabel(row.last_death_save.result)}</div>
+                          {row.last_death_save.blind && <div>Blind roll. Player did not see this.</div>}
+                        </div>
+                      )}
                       {row.monster && <button className="btn btn-secondary btn-sm" onClick={() => onViewMonster(row.monster)}>Stats</button>}
                       {campaign.is_dm && <button className="btn btn-danger btn-sm" onClick={() => removeCombatant(row.id)}>Remove</button>}
                     </div>

@@ -43,6 +43,15 @@ function cleanList(value) {
   return Array.isArray(value) ? value.filter(Boolean) : [];
 }
 
+function deathSaveResultLabel(result) {
+  return {
+    critical_success: 'Natural 20',
+    critical_failure: 'Natural 1',
+    success: 'Success',
+    failure: 'Failure',
+  }[result] || result || '';
+}
+
 function isConcentrationEffect(name, manuallyFlagged = false) {
   return manuallyFlagged || KNOWN_CONCENTRATION_EFFECTS.has(String(name || '').trim().toLowerCase());
 }
@@ -91,6 +100,8 @@ function normalizeCombatant(row) {
     concentration: row.concentration || '',
     effects: cleanList(row.effects),
     death_saves: row.death_saves || { successes: 0, failures: 0 },
+    last_death_save: row.last_death_save || null,
+    death_save_rolls: cleanList(row.death_save_rolls),
     group_key: row.group_key || '',
     monster_name: row.monster_name || '',
     monster: row.monster || null,
@@ -301,6 +312,14 @@ function CombatantCard({ row, active, onUpdate, onRemove, onViewMonster, onAddCo
               <MiniButton onClick={() => onDeathSave(row, 'successes', 1)}>Pass {row.death_saves?.successes || 0}</MiniButton>
               <MiniButton onClick={() => onDeathSave(row, 'failures', 1)}>Fail {row.death_saves?.failures || 0}</MiniButton>
             </div>
+            {row.last_death_save && (
+              <div style={{border:'1px solid rgba(154,128,255,0.42)',background:'rgba(124,92,252,0.16)',borderRadius:4,padding:'5px 6px',fontSize:11,color:'var(--text-secondary)',lineHeight:1.35}}>
+                <div style={{color:'var(--accent-light)',fontWeight:900}}>
+                  Last: d20 {row.last_death_save.roll} - {deathSaveResultLabel(row.last_death_save.result)}
+                </div>
+                {row.last_death_save.blind && <div>Blind roll. Player did not see this.</div>}
+              </div>
+            )}
             </>
           )}
           <MiniButton onClick={() => onRemove(row.id)} variant="danger">Remove</MiniButton>

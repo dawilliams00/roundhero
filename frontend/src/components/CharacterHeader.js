@@ -13,6 +13,7 @@ import ConditionsModal from './ConditionsModal';
 import InfoModal from './InfoModal';
 import NumberPadPopover from './NumberPadPopover';
 import FeedbackModal from './FeedbackModal';
+import DeathSaveModal from './DeathSaveModal';
 
 // Mechanical side-effects of active_effects that are easy to forget about mid-combat,
 // shown as their own header chips instead of only ever appearing once in a cast popup -
@@ -222,6 +223,7 @@ export default function CharacterHeader({ onBack }) {
   const [showConditions, setShowConditions] = useState(false);
   const [viewingCondition, setViewingCondition] = useState(null);
   const [showExhaustionInfo, setShowExhaustionInfo] = useState(false);
+  const [showDeathSaves, setShowDeathSaves] = useState(false);
   const [conditionInfo, setConditionInfo] = useState({});
   const [showFeedback, setShowFeedback] = useState(false);
 
@@ -291,6 +293,8 @@ export default function CharacterHeader({ onBack }) {
   const setSpeed = (v) => saveTrackerData({ ...td, speed: isHasted ? Math.round(v / 2) : v });
   const insp   = !!td?.inspiration;
   const exhaustion = td?.exhaustion || 0;
+  const deathSaves = td?.death_saves || { successes: 0, failures: 0 };
+  const deathSaveBlind = !!td?.settings?.death_save_roll_blind;
   const exhaustionRules = td?.settings?.exhaustion_rules || { mode: 'raw' };
   const exhaustionTitle = exhaustionRules.mode === 'homebrew'
     ? `${exhaustionRules.name || 'Homebrew exhaustion'}${exhaustionRules.description ? `: ${exhaustionRules.description}` : ''}`
@@ -471,6 +475,12 @@ export default function CharacterHeader({ onBack }) {
           </div>
 
           <div style={{flexShrink:0,display:'flex',gap:14,flexWrap:'wrap',alignItems:'flex-start',paddingTop:2}}>
+            <div className="stat-box" onClick={() => setShowDeathSaves(true)} style={{cursor:'pointer',minWidth:78}}>
+              <div className="stat-value" style={{fontSize:deathSaveBlind ? 13 : 14,color:deathSaveBlind ? 'var(--text-secondary)' : 'var(--accent-light)'}}>
+                {deathSaveBlind ? 'Blind' : `${deathSaves.successes || 0}/${deathSaves.failures || 0}`}
+              </div>
+              <div className="stat-label">Death Saves</div>
+            </div>
             <PMStat
               label="Exhaustion"
               value={exhaustion}
@@ -551,6 +561,7 @@ export default function CharacterHeader({ onBack }) {
         <RestSummaryModal summary={restSummary.summary} restType={restSummary.restType} onClose={() => setRestSummary(null)} />
       )}
       {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
+      {showDeathSaves && <DeathSaveModal onClose={() => setShowDeathSaves(false)} />}
       {showFeedback && <FeedbackModal onClose={() => setShowFeedback(false)} />}
       {showConditions && <ConditionsModal onClose={() => setShowConditions(false)} />}
       {viewingCondition && (

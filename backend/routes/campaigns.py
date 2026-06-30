@@ -1,3 +1,4 @@
+from random import randint
 from secrets import token_urlsafe
 import os
 import smtplib
@@ -94,6 +95,36 @@ def _public_combatant(row):
         public["hp_max"] = row.get("hp_max")
         public["temp_hp"] = row.get("temp_hp") or 0
     return public
+
+
+def _death_save_result(roll):
+    if roll == 1:
+        return "critical_failure", 0, 2, "Natural 1: mark two death save failures."
+    if roll == 20:
+        return "critical_success", 1, 0, "Natural 20: RAW reminder, regain 1 HP."
+    if roll >= 10:
+        return "success", 1, 0, "10 or higher: mark one success."
+    return "failure", 0, 1, "Below 10: mark one failure."
+
+
+def _patch_death_saves(current, success_delta, failure_delta):
+    current = current if isinstance(current, dict) else {}
+    successes = max(0, min(3, int(current.get("successes") or 0) + success_delta))
+    failures = max(0, min(3, int(current.get("failures") or 0) + failure_delta))
+    return {"successes": successes, "failures": failures}
+
+
+def _death_save_record(character, roll, result, note, blind, death_saves):
+    return {
+        "character_id": character.id,
+        "character_name": character.name,
+        "roll": roll,
+        "result": result,
+        "note": note,
+        "blind": bool(blind),
+        "successes": death_saves.get("successes", 0),
+        "failures": death_saves.get("failures", 0),
+    }
 
 
 def _player_encounter_view(encounter):
@@ -560,6 +591,85 @@ def get_player_campaign_view(character_id):
             ],
         })
     return jsonify(views), 200
+
+
+@campaigns_bp.route("/player-view/<int:character_id>/death-save", methods=["POST"])
+@jwt_required()
+def roll_player_death_save(character_id):
+    user_id = int(get_jwt_identity())
+    character = Character.query.filter_by(id=character_id, user_id=user_id).first()
+    if not character:
+        return jsonify({"error": "Character not found"}), 404
+
+    data = request.get_json() or {}
+    blind = bool(data.get("blind"))
+    roll = randint(1, 20)
+    result, success_delta, failure_delta, note = _death_save_result(roll)
+
+    td = dict(character.tracker_data or {})
+    current_sheet_saves = td.get("death_saves") if isinstance(td.get("death_saves"), dict) else {}
+    next_sheet_saves = _patch_death_saves(current_sheet_saves, success_delta, failure_delta)
+    visible_death_saves = next_sheet_saves
+
+    updated_encounters = []
+    roster_entries = CampaignCharacter.query.filter_by(
+        character_id=character.id,
+        user_id=user_id,
+        active=True,
+    ).all()
+    for entry in roster_entries:
+        campaign = entry.campaign
+        member = _membership(entry.campaign_id, user_id)
+        if not campaign or not member:
+            continue
+        for encounter in campaign.encounters:
+            if encounter.status not in {"running", "paused"}:
+                continue
+            encounter_data = encounter.data or {}
+            rows = encounter_data.get("combatants") if isinstance(encounter_data.get("combatants"), list) else []
+            changed = False
+            next_rows = []
+            for row in rows:
+                if str(row.get("character_id")) == str(character.id):
+                    row = dict(row)
+                    death_saves = _patch_death_saves(row.get("death_saves"), success_delta, failure_delta)
+                    record = _death_save_record(character, roll, result, note, blind, death_saves)
+                    history = row.get("death_save_rolls") if isinstance(row.get("death_save_rolls"), list) else []
+                    row["death_saves"] = death_saves
+                    row["last_death_save"] = record
+                    row["death_save_rolls"] = [*history[-9:], record]
+                    visible_death_saves = death_saves
+                    changed = True
+                next_rows.append(row)
+            if changed:
+                encounter_data["combatants"] = next_rows
+                encounter.data = encounter_data
+                updated_encounters.append({"campaign_id": campaign.id, "encounter_id": encounter.id})
+
+    if not blind:
+        sheet_record = _death_save_record(character, roll, result, note, blind, visible_death_saves)
+        sheet_history = td.get("death_save_rolls") if isinstance(td.get("death_save_rolls"), list) else []
+        td["death_saves"] = visible_death_saves
+        td["last_death_save"] = sheet_record
+        td["death_save_rolls"] = [*sheet_history[-9:], sheet_record]
+        character.tracker_data = td
+
+    db.session.commit()
+
+    response = {
+        "blind": blind,
+        "updated_encounters": updated_encounters,
+        "message": "Death save rolled blind and sent to the DM." if blind else "Death save rolled.",
+    }
+    if not blind:
+        response.update({
+            "roll": roll,
+            "result": result,
+            "note": note,
+            "death_saves": visible_death_saves,
+            "tracker_data": character.tracker_data,
+        })
+    return jsonify(response), 200
 
 
 @campaigns_bp.route("/<int:campaign_id>", methods=["PUT"])
