@@ -432,13 +432,21 @@ def _codex_pages(codex, unlocked_pages):
 def _shadow_for_level(shadow, level):
     level_key = str(level or 13)
     data = shadow.get(level_key) or shadow.get("13") or {}
+    features = data.get("features") or []
+    core_reference = next((
+        feature.get("description") or ""
+        for feature in features
+        if isinstance(feature, dict) and "core" in (feature.get("display_name") or feature.get("name") or "").lower()
+    ), "")
     return {
         "level": int(level_key) if level_key.isdigit() else level,
         "title": data.get("title") or "Shadow",
         "summary": data.get("summary") or "",
+        "gui": data.get("gui") or {},
+        "core_reference": _normalize_codex_text(core_reference),
         "features": _feature_summary({
             feature.get("name") or feature.get("display_name") or f"Feature {index}": feature
-            for index, feature in enumerate(data.get("features") or [])
+            for index, feature in enumerate(features)
             if isinstance(feature, dict)
         }),
     }

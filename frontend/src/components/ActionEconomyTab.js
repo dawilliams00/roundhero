@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
-import { SECTION_ORDER, SECTION_COLORS, slotBadgeTextColor, concentrationSlotCount, isCharacterCaster, HASTED_EFFECT, LETHARGIC_CONDITION, maxAttacksForCharacter, isItemActive, formatItemBuff, spellCastBucket, martialArtsDie, sorceryDisplayName, activeCompanionKey } from '../utils/dnd';
+import { SECTION_ORDER, SECTION_COLORS, slotBadgeTextColor, concentrationSlotCount, isCharacterCaster, HASTED_EFFECT, LETHARGIC_CONDITION, maxAttacksForCharacter, isItemActive, formatItemBuff, martialArtsDie, sorceryDisplayName, activeCompanionKey } from '../utils/dnd';
 import AbilityDetailModal from './AbilityDetailModal';
 import CastSpellPickerModal from './CastSpellPickerModal';
 import ItemSpellsModal from './ItemSpellsModal';
@@ -53,7 +53,6 @@ export default function ActionEconomyTab() {
   // gates equipped+attuned the same way every other buff consumer does.
   const passiveItems = items.map((it,i) => ({ it, idx: i }))
     .filter(({it}) => !it.charges && isItemActive(it) && ((it.buffs||[]).length > 0 || it.grants_unarmed_bonus));
-  const knownSpells = character.spell_data?.known_spells || [];
   // Unarmed Strike is always a valid RAW attack option, with or without a magic item
   // boosting it - the row always shows; an equipped+attuned item with
   // grants_unarmed_bonus (gauntlets, etc.) folds its bonus dice in via the same
