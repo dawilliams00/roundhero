@@ -213,6 +213,15 @@ function HpControls({ row, onUpdate }) {
   );
 }
 
+// Rebuilt as stacked, full-width sections (not a dense multi-column grid) - the previous
+// version's nested fixed-width sub-grid for INIT/AC/[STAT] could overflow its parent
+// column once the outer 4-column grid compressed below the sub-grid's natural content
+// width, which is exactly the overlap the owner reported (STAT button colliding with the
+// HP display in the next column). Each section below is now its own full-width row with
+// an explicit min-height, so nothing can collide regardless of container width, long
+// monster names, or long condition/effect text - matches the fix direction already
+// documented in CAMPAIGNS_INTEGRATION_NOTES.md after the previous compact-grid attempt
+// didn't hold up under live testing.
 function CombatantCard({ row, active, onUpdate, onRemove, onViewMonster, onAddCondition, onRemoveCondition, onRemoveEffect, onDeathSave, rowRef }) {
   return (
     <div ref={rowRef} style={{
@@ -220,36 +229,43 @@ function CombatantCard({ row, active, onUpdate, onRemove, onViewMonster, onAddCo
       borderRadius:'var(--radius-sm)',
       background:active ? 'linear-gradient(90deg, rgba(124,92,252,0.24), rgba(30,41,78,0.92))' : 'var(--bg-secondary)',
       boxShadow:active ? '0 0 0 2px rgba(124,92,252,0.18), 0 0 24px rgba(124,92,252,0.2)' : 'none',
-      padding:10,
-      display:'grid',
-      gridTemplateColumns:'minmax(240px,1.05fr) minmax(150px,0.6fr) minmax(280px,1.25fr) minmax(170px,0.72fr)',
-      gap:12,
-      alignItems:'stretch',
+      padding:12,
+      display:'flex',
+      flexDirection:'column',
+      gap:10,
       minWidth:0,
       scrollMarginTop:72,
     }}>
-      <div style={{minWidth:0,display:'grid',gap:8,alignContent:'start'}}>
-        <div style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) auto',gap:6,alignItems:'center'}}>
-          <input value={row.name} onChange={e => onUpdate(row.id, { name: e.target.value })} style={{fontWeight:800,minWidth:0}} />
-          <span style={{color:row.type === 'player' ? 'var(--success)' : 'var(--warning)',fontSize:11,fontWeight:900,textTransform:'uppercase',whiteSpace:'nowrap'}}>{row.type}</span>
-        </div>
-        <div style={{display:'grid',gridTemplateColumns:'82px 72px minmax(74px,auto)',gap:8,alignItems:'end'}}>
-          <label style={{display:'grid',gap:3,fontSize:10,color:'var(--text-dim)'}}>
-            INIT
-            <input value={row.initiative} onChange={e => onUpdate(row.id, { initiative: e.target.value })} style={{textAlign:'center',fontWeight:800}} />
-          </label>
-          <label style={{display:'grid',gap:3,fontSize:10,color:'var(--text-dim)'}}>
-            AC
-            <input value={row.ac} onChange={e => onUpdate(row.id, { ac: e.target.value })} style={{textAlign:'center',fontWeight:800}} />
-          </label>
-          {row.monster && <div style={{alignSelf:'end'}}><MiniButton onClick={() => onViewMonster(row.monster)}>[STAT]</MiniButton></div>}
-        </div>
-        <div style={{color:'var(--text-dim)',fontSize:11,marginTop:6}}>{row.group_key ? `Group: ${enemyGroupLabel(row)}` : 'No group'}</div>
+      {/* Identity row: name + type badge + group, full width */}
+      <div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap',minWidth:0}}>
+        <input value={row.name} onChange={e => onUpdate(row.id, { name: e.target.value })} style={{fontWeight:800,flex:'1 1 200px',minWidth:120}} />
+        <span style={{color:row.type === 'player' ? 'var(--success)' : 'var(--warning)',fontSize:11,fontWeight:900,textTransform:'uppercase',whiteSpace:'nowrap'}}>{row.type}</span>
+        <span style={{color:'var(--text-dim)',fontSize:11,whiteSpace:'nowrap'}}>{row.group_key ? `Group: ${enemyGroupLabel(row)}` : 'No group'}</span>
       </div>
-      <HpControls row={row} onUpdate={onUpdate} />
+
+      {/* Stats row: INIT, AC, stat-block button - own full-width row, never shares space
+          with HP/conditions/effects, so it can't collide with anything below it. */}
+      <div style={{display:'flex',gap:10,alignItems:'flex-end',flexWrap:'wrap',minHeight:48}}>
+        <label style={{display:'grid',gap:3,fontSize:10,color:'var(--text-dim)'}}>
+          INIT
+          <input value={row.initiative} onChange={e => onUpdate(row.id, { initiative: e.target.value })} style={{textAlign:'center',fontWeight:800,width:64}} />
+        </label>
+        <label style={{display:'grid',gap:3,fontSize:10,color:'var(--text-dim)'}}>
+          AC
+          <input value={row.ac} onChange={e => onUpdate(row.id, { ac: e.target.value })} style={{textAlign:'center',fontWeight:800,width:64}} />
+        </label>
+        {row.monster && <MiniButton onClick={() => onViewMonster(row.monster)}>Stat Block</MiniButton>}
+      </div>
+
+      {/* HP row - own full-width row */}
       <div style={{minWidth:0}}>
-        <div style={{display:'grid',gridTemplateColumns:'1fr auto',gap:6,marginBottom:7}}>
-          <select onChange={e => { if (e.target.value) onAddCondition(row, e.target.value); e.target.value = ''; }} defaultValue="">
+        <HpControls row={row} onUpdate={onUpdate} />
+      </div>
+
+      {/* Conditions + concentration - own full-width row */}
+      <div style={{minWidth:0}}>
+        <div style={{display:'flex',gap:6,marginBottom:7,flexWrap:'wrap'}}>
+          <select onChange={e => { if (e.target.value) onAddCondition(row, e.target.value); e.target.value = ''; }} defaultValue="" style={{flex:'1 1 160px'}}>
             <option value="">Add condition</option>
             {COMMON_CONDITIONS.map(name => <option key={name} value={name}>{name}</option>)}
           </select>
@@ -268,6 +284,8 @@ function CombatantCard({ row, active, onUpdate, onRemove, onViewMonster, onAddCo
           <input value={row.concentration} onChange={e => onUpdate(row.id, { concentration: e.target.value })} placeholder="Spell or effect" />
         </div>
       </div>
+
+      {/* Effects + death saves + remove - own full-width row */}
       <div style={{minWidth:0}}>
         <div style={{color:'var(--text-secondary)',fontSize:11,fontWeight:800,marginBottom:5}}>EFFECTS</div>
         <div style={{display:'flex',flexDirection:'column',gap:4,maxHeight:98,overflowY:'auto'}}>
@@ -279,13 +297,15 @@ function CombatantCard({ row, active, onUpdate, onRemove, onViewMonster, onAddCo
             </button>
           ))}
         </div>
-        {row.type === 'player' && (
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:4,marginTop:7}}>
-            <MiniButton onClick={() => onDeathSave(row, 'successes', 1)}>Secret Save {row.death_saves?.successes || 0}</MiniButton>
-            <MiniButton onClick={() => onDeathSave(row, 'failures', 1)}>Secret Fail {row.death_saves?.failures || 0}</MiniButton>
-          </div>
-        )}
-        <div style={{marginTop:7}}><MiniButton onClick={() => onRemove(row.id)} variant="danger">Remove</MiniButton></div>
+        <div style={{display:'flex',gap:8,marginTop:7,flexWrap:'wrap',alignItems:'center'}}>
+          {row.type === 'player' && (
+            <>
+              <MiniButton onClick={() => onDeathSave(row, 'successes', 1)}>Secret Save {row.death_saves?.successes || 0}</MiniButton>
+              <MiniButton onClick={() => onDeathSave(row, 'failures', 1)}>Secret Fail {row.death_saves?.failures || 0}</MiniButton>
+            </>
+          )}
+          <MiniButton onClick={() => onRemove(row.id)} variant="danger">Remove</MiniButton>
+        </div>
       </div>
     </div>
   );
@@ -509,11 +529,21 @@ export default function EncounterRunnerModal({
         <div style={{
           display:'grid',
           gridTemplateColumns:viewingMonster ? '260px minmax(720px,1fr) minmax(420px,0.72fr)' : '300px minmax(760px,1fr)',
+          // Without an explicit row template, a single implicit grid row defaults to
+          // grid-auto-rows: auto, which sizes to its TALLEST child's natural content
+          // height rather than respecting the container's own bounded height from
+          // flex:1 above - so every column (including this aside) stretches to match
+          // that overflowed height, and the aside's own overflowY:auto never actually
+          // engages because it's never shorter than its content. minmax(0,1fr) forces
+          // the row to fill the container's actual available height instead, which is
+          // what makes the bestiary list's overflowY:auto below finally scroll instead
+          // of just growing the whole page taller.
+          gridTemplateRows:'minmax(0,1fr)',
           gap:12,
           minHeight:0,
           flex:1,
           marginTop:12,
-          overflowX:'auto',
+          overflow:'auto',
         }}>
           <aside style={{display:'flex',flexDirection:'column',gap:10,minHeight:0,overflowY:'auto',paddingRight:4}}>
             <section style={{border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',padding:10}}>
