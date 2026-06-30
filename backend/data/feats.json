@@ -19,8 +19,15 @@
       "rest_type": "long",
       "source": "SRD",
       "official": false,
-      "description": "You are difficult to wear down and kill. You gain the following benefits:\n\nPrerequisite: Constitution 13 or higher\n\n- Increase your Constitution score by 1, up to a maximum of 20.\n- You have advantage on saving throws against effects that cause you to suffer a level of exhaustion.\n- You have advantage on death saving throws.",
-      "edition": "2014"
+      "description": "You are difficult to wear down and kill. You gain the following benefits:\n\nPrerequisite: Constitution 13 or higher\n\n- Increase your Constitution score by 1, up to a maximum of 20.\n- You have advantage on saving throws against effects that cause you to suffer a level of exhaustion.\n- You have advantage on death saving throws.\n\nThe +1 Constitution is applied automatically once you take this feat (capped at 20, same as any other ability buff). Advantage on death saves and on saves against exhaustion are not auto-applied anywhere in this app - track those yourself at the table, same as other untracked advantage effects.",
+      "edition": "2014",
+      "buffs": [
+        {
+          "stat": "CON",
+          "mode": "add",
+          "value": 1
+        }
+      ]
     },
     {
       "name": "Floriographer",
