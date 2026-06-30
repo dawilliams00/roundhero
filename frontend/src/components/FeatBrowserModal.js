@@ -43,8 +43,9 @@ export default function FeatBrowserModal({ onAdd, onClose }) {
 
   if (viewing) {
     return (
-      <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-overlay">
         <div className="modal modal-flex modal-lg" onClick={e => e.stopPropagation()}>
+          <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
           <div className="modal-header">
             <h2>{viewing.name}</h2>
             <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
@@ -116,8 +117,9 @@ export default function FeatBrowserModal({ onAdd, onClose }) {
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay">
       <div className="modal" style={{maxWidth:440,maxHeight:'80vh',display:'flex',flexDirection:'column'}} onClick={e => e.stopPropagation()}>
+        <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
         <h2>Browse Feat Library</h2>
         <div style={{color:'var(--text-dim)',fontSize:11,marginBottom:10}}>Click a feat to see its details, fix its wording/modifiers, or add it straight to this character.</div>
         <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search feats..." style={{marginBottom:12}} autoFocus />

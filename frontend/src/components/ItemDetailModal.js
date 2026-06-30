@@ -3,8 +3,9 @@ import { formatItemBuff } from '../utils/dnd';
 
 export default function ItemDetailModal({ item, onEdit, onRefresh, onClose }) {
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay">
       <div className="modal modal-flex modal-lg" onClick={e => e.stopPropagation()}>
+        <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
         <div className="modal-header">
           <h2>{item.name}</h2>
           <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>

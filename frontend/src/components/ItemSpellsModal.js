@@ -33,8 +33,9 @@ export default function ItemSpellsModal({ item, onCast, onClose }) {
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay">
       <div className="modal" style={{maxWidth:420,maxHeight:'80vh',display:'flex',flexDirection:'column'}} onClick={e => e.stopPropagation()}>
+        <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
         <h2>{item.name}</h2>
         <div style={{color:'var(--text-dim)',fontSize:12,marginBottom:12}}>{charges.current}/{charges.max} charges</div>
         {loading ? (

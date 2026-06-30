@@ -19,8 +19,9 @@ export default function SkillsModal({ onClose }) {
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay">
       <div className="modal" onClick={e => e.stopPropagation()} style={{maxWidth:620}}>
+        <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
         <h2>Skills</h2>
         {lastRoll && (
           <div style={{background:'var(--bg-primary)',borderRadius:'var(--radius-sm)',padding:'8px 10px',marginBottom:10,textAlign:'center'}}>

@@ -182,8 +182,9 @@ export default function LevelUpFlowModal({ onClose, mode = 'level_up', initialLe
   const removeDraftClass = (idx) => setDraftClasses(d => d.filter((_, i) => i !== idx));
 
   return (
-    <div className="modal-overlay" onClick={step === 'loading' ? undefined : onClose}>
+    <div className="modal-overlay">
       <div className="modal" onClick={e => e.stopPropagation()}>
+        {step !== 'loading' && <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>}
         <h2>Level Up</h2>
 
         {step === 'loading' && <div style={{color:'var(--text-dim)',textAlign:'center',padding:20}}>Working...</div>}

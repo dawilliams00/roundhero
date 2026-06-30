@@ -50,8 +50,9 @@ export default function RestModal({ onClose, onRest }) {
 
   if (view === 'shortRestHitDice') {
     return (
-      <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-overlay">
         <div className="modal" onClick={e => e.stopPropagation()} style={{maxWidth:380}}>
+          <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
           <h2>Short Rest — Hit Dice</h2>
           <p style={{color:'var(--text-secondary)',fontSize:13,marginBottom:12}}>
             Spend Hit Dice to heal. Each die rolls a d{hd.die_size} + your CON modifier ({conMod >= 0 ? `+${conMod}` : conMod}).
@@ -91,8 +92,9 @@ export default function RestModal({ onClose, onRest }) {
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay">
       <div className="modal" onClick={e => e.stopPropagation()} style={{maxWidth:320,textAlign:'center'}}>
+        <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
         <h2>Take a Rest</h2>
         <p style={{color:'var(--text-secondary)',marginBottom:24,fontSize:13}}>Choose rest type. All matching features and slots will reset.</p>
         <div style={{display:'flex',gap:12}}>

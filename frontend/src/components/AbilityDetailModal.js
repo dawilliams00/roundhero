@@ -1,8 +1,9 @@
 import React from 'react';
 export default function AbilityDetailModal({ ability, onClose }) {
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay">
       <div className="modal modal-flex modal-lg" onClick={e => e.stopPropagation()}>
+        <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
         <div className="modal-header">
           <h2>{ability.name}</h2>
           {ability.source && <div style={{color:'var(--text-dim)',fontSize:12}}>{ability.source}</div>}

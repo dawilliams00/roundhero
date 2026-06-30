@@ -34,8 +34,9 @@ export default function FeedbackModal({ onClose, contextLabel }) {
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay">
       <div className="modal" onClick={e => e.stopPropagation()}>
+        <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
         <h2>Send Feedback</h2>
         <div style={{color:'var(--text-dim)',fontSize:11,marginBottom:12}}>
           Found a bug, or have an idea for an enhancement? Tell us about it below — a screenshot helps a lot.

@@ -110,8 +110,9 @@ export default function ItemBrowserModal({ existingItems, onAdd, onClose }) {
     const isWeapon = viewing._kind === 'weapon';
     const isAdded = !isWeapon && existingNames.has(viewing.name);
     return (
-      <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-overlay">
         <div className="modal modal-flex modal-lg" onClick={e => e.stopPropagation()}>
+          <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
           <div className="modal-header">
             <h2>{viewing.name}</h2>
             <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
@@ -225,8 +226,9 @@ export default function ItemBrowserModal({ existingItems, onAdd, onClose }) {
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay">
       <div className="modal" style={{maxWidth:440,maxHeight:'80vh',display:'flex',flexDirection:'column'}} onClick={e => e.stopPropagation()}>
+        <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
         <h2>Add Item</h2>
         <div style={{color:'var(--text-dim)',fontSize:11,marginBottom:10}}>Click an item to see its details before adding.</div>
         <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search items..." style={{marginBottom:12}} autoFocus />

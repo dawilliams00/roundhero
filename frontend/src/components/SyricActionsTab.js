@@ -312,8 +312,9 @@ function RollAmountModal({ config, onClose, onConfirm }) {
     setValue(total);
   };
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay">
       <div className="modal" onClick={e => e.stopPropagation()}>
+        <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
         <div className="modal-header">
           <h2 style={{color:'var(--accent-light)'}}>{config.title}</h2>
           {config.subtitle && <div style={{color:'var(--text-secondary)',fontSize:12}}>{config.subtitle}</div>}
@@ -370,8 +371,9 @@ function OverloadModal({ event, onClose, onResolve }) {
   if (!event) return null;
   const dc = event.overload_dc || event.arcane?.current || 0;
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay">
       <div className="modal" onClick={e => e.stopPropagation()}>
+        <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
         <div className="modal-header">
           <h2 style={{color:'var(--warning)'}}>Overload Check</h2>
           <div style={{color:'var(--text-secondary)',fontSize:12}}>{event.message}</div>
@@ -398,8 +400,9 @@ function DischargeResultModal({ event, onClose }) {
   if (!event) return null;
   const stored = event.previousCharge ?? event.before?.arcane?.current ?? event.before?.overload_dc ?? 0;
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay">
       <div className="modal" onClick={e => e.stopPropagation()}>
+        <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
         <div className="modal-header">
           <h2 style={{color:'var(--danger)'}}>Arcane Discharge</h2>
           <div style={{color:'var(--text-secondary)',fontSize:12}}>Failed Overload Check</div>
@@ -447,8 +450,9 @@ function ShadowStoreModal({ maxLevel, onStore, onClose }) {
     ? Object.entries(slots).filter(([level, slot]) => Number(level) >= selected.level_int && Number(level) <= maxLevel && (slot.current || 0) > 0)
     : [];
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay">
       <div className="modal modal-flex modal-lg" onClick={e => e.stopPropagation()}>
+        <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
         <div className="modal-header">
           <h2>Store in Shadow</h2>
           <div style={{color:'var(--text-dim)',fontSize:11}}>Nightbound Shadowcast max L{maxLevel}</div>

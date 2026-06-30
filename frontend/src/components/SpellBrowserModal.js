@@ -59,8 +59,9 @@ export default function SpellBrowserModal({ character, knownSpells, onAdd, onRem
   }).sort((a,b) => (a.level_int - b.level_int) || a.name.localeCompare(b.name));
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay">
       <div className="modal" style={{maxWidth:480,maxHeight:'80vh',display:'flex',flexDirection:'column'}} onClick={e => e.stopPropagation()}>
+        <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
         <h2>Add Spells</h2>
         <div style={{color:'var(--text-dim)',fontSize:11,marginBottom:10}}>Click Remove to take a spell out of your known spells.</div>
         <div style={{display:'flex',gap:8,marginBottom:8}}>

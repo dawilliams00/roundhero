@@ -15,8 +15,9 @@ export default function CastSpellPickerModal({ onClose, bucket, onCast }) {
     .sort((a,b) => (a.level_int - b.level_int) || a.name.localeCompare(b.name));
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay">
       <div className="modal modal-flex modal-lg" onClick={e => e.stopPropagation()}>
+        <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
         <div className="modal-header">
           <h2>Cast a Spell{bucket ? ` (${bucket})` : ''}</h2>
           <div style={{color:'var(--text-dim)',fontSize:11}}>From: {activeList || 'All Known Spells'}{bucket ? ` · only spells castable as a ${bucket.toLowerCase()}` : ''}</div>

@@ -48,8 +48,9 @@ export default function MonsterDetailModal({ monster: m, onClose, onSummon, onDu
   const skills = Object.entries(m.skills || {}).map(([k, v]) => `${k} ${v>=0?'+':''}${v}`).join(', ');
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay">
       <div className="modal modal-flex modal-lg" onClick={e => e.stopPropagation()}>
+        <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
         <div className="modal-header">
           <h2>{m.name}</h2>
           <div style={{color:'var(--text-dim)',fontSize:12,fontStyle:'italic'}}>

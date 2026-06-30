@@ -18,8 +18,9 @@ export default function SavesModal({ onClose }) {
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay">
       <div className="modal" onClick={e => e.stopPropagation()} style={{maxWidth:320}}>
+        <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
         <h2>Saving Throws</h2>
         {lastRoll && (
           <div style={{background:'var(--bg-primary)',borderRadius:'var(--radius-sm)',padding:'8px 10px',marginBottom:10,textAlign:'center'}}>

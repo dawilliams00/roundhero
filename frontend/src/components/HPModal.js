@@ -91,8 +91,9 @@ export default function HPModal({ onClose }) {
   const setCalcMode = (mode) => saveTrackerData({ ...td, hp: { ...hp, calc_mode: mode } });
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay">
       <div className="modal" style={{maxWidth:420}} onClick={e => e.stopPropagation()}>
+        <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
         <h2>D&D 5e HP Management</h2>
 
         <div style={{display:'flex',flexDirection:'column',gap:18,marginBottom:16}}>

@@ -46,8 +46,9 @@ export default function CompanionAbilityModal({ onClose, editingIndex, companion
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay">
       <div className="modal" onClick={e => e.stopPropagation()}>
+        <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
         <h2>{editing ? 'Edit Ability' : 'Add Companion Ability'}</h2>
         <div className="form-group"><label>Name</label><input value={form.name} onChange={e => set('name', e.target.value)} placeholder="e.g. Nightbound Shadowcast" autoFocus /></div>
         <div className="form-row">

@@ -18,8 +18,9 @@ export default function RulesetBrowserModal({ rulesetType, onImport, onClose }) 
   const filtered = rulesets.filter(r => !search || r.name.toLowerCase().includes(search.toLowerCase()));
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay">
       <div className="modal" style={{maxWidth:440,maxHeight:'80vh',display:'flex',flexDirection:'column'}} onClick={e => e.stopPropagation()}>
+        <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
         <h2>Browse Homebrew Rulesets</h2>
         <div style={{color:'var(--text-dim)',fontSize:11,marginBottom:10}}>Rulesets anyone at the table has typed out and saved — import one instead of retyping it.</div>
         <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search rulesets..." style={{marginBottom:12}} autoFocus />

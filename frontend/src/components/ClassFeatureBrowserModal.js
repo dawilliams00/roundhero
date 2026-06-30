@@ -71,8 +71,9 @@ export default function ClassFeatureBrowserModal({ onAdd, onClose, initialClassF
   }).sort((a, b) => (a.level - b.level) || a.name.localeCompare(b.name));
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay">
       <div className="modal" style={{maxWidth:960,maxHeight:'85vh',display:'flex',flexDirection:'column'}} onClick={e => e.stopPropagation()}>
+        <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
         <h2>{onAdd ? 'Browse Class Features' : 'Preview Class Features'}</h2>
         <div style={{color:'var(--text-dim)',fontSize:11,marginBottom:10}}>
           {onAdd ? 'Search class & subclass features and add one straight to this character.' : 'Move the Level dropdown to see what a different level grants, without committing to anything.'}

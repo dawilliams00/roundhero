@@ -81,8 +81,9 @@ export default function SpellEditModal({ spell, mode, onSave, onDelete, onClose 
   );
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay">
       <div className="modal modal-flex modal-lg" onClick={e => e.stopPropagation()}>
+        <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
         <div className="modal-header">
           <h2>{title}</h2>
           {mode === 'canonEdit' && <div style={{color:'var(--text-dim)',fontSize:11}}>Corrects this entry for everyone — existing characters pick it up via ↺ Refresh on the Spells tab.</div>}

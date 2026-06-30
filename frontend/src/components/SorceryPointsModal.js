@@ -56,8 +56,9 @@ export default function SorceryPointsModal({ featureName, onClose }) {
   const availableSlotLevels = Object.entries(slots).filter(([,s]) => (s.current||0) > 0).map(([lvl]) => parseInt(lvl)).sort((a,b)=>a-b);
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay">
       <div className="modal modal-flex modal-lg" onClick={e => e.stopPropagation()}>
+        <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
         <div className="modal-header">
           <h2>{sorceryDisplayName(featureName)}</h2>
           <div style={{color:'var(--accent-light)',fontSize:13,fontWeight:600}}>{points}/{feature.max} Sorcery Points</div>

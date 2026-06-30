@@ -70,8 +70,9 @@ function ShadowHPModal({ currentHp, maxHp, tempHp, onSave, onClose }) {
   const applyTempDelta = (delta) => setTemp(value => Math.max(0, value + delta));
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay">
       <div className="modal" style={{maxWidth:420}} onClick={e => e.stopPropagation()}>
+        <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
         <h2>Shadow HP</h2>
         <div style={{display:'flex',flexDirection:'column',gap:18,marginBottom:16}}>
           <ShadowHPRow label="Current HP" value={current} color="var(--accent-light)" onApply={applyCurrentDelta}
@@ -111,8 +112,9 @@ function ShadowStatBlockModal({ shadow, maxHp, currentHp, tempHp, onClose }) {
   const features = shadow?.features || [];
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay">
       <div className="modal modal-flex modal-lg" onClick={e => e.stopPropagation()}>
+        <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
         <div className="modal-header">
           <h2>{shadow?.title || 'Shadow'} Stat Block</h2>
           <div style={{color:'var(--text-secondary)',fontSize:12}}>HP {currentHp}/{maxHp}{tempHp ? ` +${tempHp} temp` : ''}</div>

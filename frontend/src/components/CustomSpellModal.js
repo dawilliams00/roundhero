@@ -33,8 +33,9 @@ export default function CustomSpellModal({ onAdd, onClose }) {
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay">
       <div className="modal" onClick={e => e.stopPropagation()}>
+        <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
         <h2>Add Custom Spell</h2>
         <div style={{color:'var(--text-dim)',fontSize:11,marginBottom:12}}>Saved to your spell library — available to add to any of your characters.</div>
         <div className="form-group"><label>Name</label><input value={form.name} onChange={e => set('name',e.target.value)} placeholder="Spell name" autoFocus /></div>

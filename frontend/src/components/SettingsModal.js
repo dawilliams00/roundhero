@@ -90,8 +90,9 @@ export default function SettingsModal({ onClose }) {
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay">
       <div className="modal" style={{maxWidth:1500}} onClick={e => e.stopPropagation()}>
+        <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
         <h2>Settings</h2>
         {/* 3-column grid so the taller sections (Companion/Exhaustion when their sub-
             options are expanded) don't force the whole modal into one long scrolling

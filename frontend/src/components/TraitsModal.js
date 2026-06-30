@@ -65,8 +65,9 @@ export default function TraitsModal({ onClose }) {
   const options = pickerCat ? (COMMON_OPTIONS[pickerCat] || []).filter(o => (traits[pickerCat]||[]).every(v => itemName(v) !== o) && o.toLowerCase().includes(search.toLowerCase())) : [];
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay">
       <div className="modal" style={{maxWidth:440}} onClick={e => e.stopPropagation()}>
+        <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
         {!pickerCat ? (
           <>
             <h2>Traits</h2>

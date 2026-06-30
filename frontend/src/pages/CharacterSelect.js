@@ -233,8 +233,9 @@ export default function CharacterSelect() {
       )}
 
       {importSummary && (
-        <div className="modal-overlay" onClick={() => { setImportSummary(null); nav(`/play/${importSummary.id}`); }}>
+        <div className="modal-overlay">
           <div className="modal" style={{maxWidth:440}} onClick={e => e.stopPropagation()}>
+            <button type="button" className="modal-close-x" onClick={() => { setImportSummary(null); nav(`/play/${importSummary.id}`); }} aria-label="Close">×</button>
             <h2>Imported {importSummary.name}</h2>
             <p style={{color:'var(--text-secondary)',fontSize:12,lineHeight:1.6,marginBottom:10}}>
               The PDF parsed successfully, but a few things below are worth a quick check before you start playing.
@@ -284,8 +285,9 @@ export default function CharacterSelect() {
       )}
 
       {confirmDelete && (
-        <div className="modal-overlay" onClick={() => !deleting && setConfirmDelete(null)}>
+        <div className="modal-overlay">
           <div className="modal" style={{maxWidth:360}} onClick={e => e.stopPropagation()}>
+            <button type="button" className="modal-close-x" disabled={deleting} onClick={() => !deleting && setConfirmDelete(null)} aria-label="Close">×</button>
             <h2>Delete {confirmDelete.name}?</h2>
             <p style={{color:'var(--text-secondary)',fontSize:13,lineHeight:1.6}}>
               This permanently deletes this character and all of its data. This can't be undone.

@@ -5,8 +5,9 @@ export default function RestSummaryModal({ summary, restType, onClose }) {
   const nothingChanged = features_reset.length === 0 && items_recharged.length === 0 && items_need_recharge.length === 0 && !slots_restored && !hit_dice_regained;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay">
       <div className="modal" style={{maxWidth:360}} onClick={e => e.stopPropagation()}>
+        <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
         <h2>{restType === 'long' ? 'Long Rest Complete' : 'Short Rest Complete'}</h2>
         {nothingChanged ? (
           <p style={{color:'var(--text-secondary)',fontSize:13}}>Nothing needed to recharge — you were already topped up.</p>

@@ -63,8 +63,9 @@ export default function CompanionHPModal({ onClose, companionKey = 'companion' }
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay">
       <div className="modal" style={{maxWidth:420}} onClick={e => e.stopPropagation()}>
+        <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
         <h2>{companion.name || companion.tab_name || 'Companion'} HP</h2>
 
         <div style={{display:'flex',flexDirection:'column',gap:18,marginBottom:16}}>

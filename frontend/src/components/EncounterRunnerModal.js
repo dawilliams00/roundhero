@@ -387,8 +387,9 @@ export default function EncounterRunnerModal({
   const activeId = selectedTurnId || combatants[0]?.id;
 
   return (
-    <div className="modal-overlay" onClick={onClose} style={{zIndex:2000}}>
+    <div className="modal-overlay" style={{zIndex:2000}}>
       <div className="modal" onClick={e => e.stopPropagation()} style={{width:'96vw',maxWidth:'none',height:'92vh',display:'flex',flexDirection:'column',padding:14}}>
+        <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:12,borderBottom:'1px solid var(--border)',paddingBottom:10}}>
           <div>
             <h2 style={{marginBottom:2}}>Encounter Tracker: {encounter.name}</h2>
