@@ -3,7 +3,7 @@ import { useCharacter } from '../context/CharacterContext';
 import api from '../utils/api';
 import LevelUpFlowModal from './LevelUpFlowModal';
 import ClassFeatureBrowserModal from './ClassFeatureBrowserModal';
-import { ABILITY_KEYS, ABILITY_LABELS, SAVE_PROFS, SKILL_MAP, suspectedAbilityContamination, featBuffItems, parseClassLevels, raceBuffItems, computeItemBonuses, RACE_ABILITY_BONUSES, modifier, unarmoredAC } from '../utils/dnd';
+import { ABILITY_KEYS, ABILITY_LABELS, SAVE_PROFS, SKILL_MAP, suspectedAbilityContamination, featBuffItems, parseClassLevels, raceBuffItems, computeItemBonuses, RACE_ABILITY_BONUSES, modifier, unarmoredAC, cappedModifier } from '../utils/dnd';
 
 // Full base-stat editor - identity, ability scores, and save/skill proficiencies, on top
 // of the original v1 level-up-only framework. This is the one place all of the
@@ -406,7 +406,7 @@ export default function CharacterEditorModal({ onClose }) {
           const { acOverrideRaw, ac_base: itemAddAc } = computeItemBonuses(buffItems);
           const dexMod = modifier(effScores.DEX || 10);
           const resolvedOverride = acOverrideRaw !== null
-            ? acOverrideRaw.value + (acOverrideRaw.ability ? modifier(effScores[acOverrideRaw.ability] ?? 10) : 0)
+            ? acOverrideRaw.value + (acOverrideRaw.ability ? cappedModifier(effScores[acOverrideRaw.ability] ?? 10, acOverrideRaw.cap) : 0)
             : null;
           const baseAcDisplay = resolvedOverride != null ? resolvedOverride : unarmoredBase;
           const totalAc = baseAcDisplay + (itemAddAc || 0) + (parseInt(acMisc) || 0);
@@ -427,7 +427,7 @@ export default function CharacterEditorModal({ onClose }) {
                 </div>
               </div>
               {resolvedOverride != null
-                ? <Row label={`Armor override${acOverrideRaw.ability ? ` (${acOverrideRaw.value} + ${acOverrideRaw.ability})` : ` (flat ${acOverrideRaw.value})`}`} value={resolvedOverride} dim />
+                ? <Row label={`Armor override${acOverrideRaw.ability ? ` (${acOverrideRaw.value} + ${acOverrideRaw.ability}${acOverrideRaw.cap != null ? `, max +${acOverrideRaw.cap}` : ''})` : ` (flat ${acOverrideRaw.value})`}`} value={resolvedOverride} dim />
                 : <Row label={`Unarmored (${unarmoredFormula})`} value={unarmoredBase} dim />}
               {(itemAddAc||0) !== 0 && <Row label="Shield / Items" value={`+${itemAddAc}`} dim />}
               <Row label="Misc (spells, natural armor…)" value={acMisc} editable onChange={e => setAcMisc(e.target.value)} />

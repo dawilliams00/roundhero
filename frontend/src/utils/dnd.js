@@ -85,6 +85,10 @@ export const HIT_DIE = { Barbarian:12, Fighter:10, Paladin:10, Ranger:10, Monk:8
 
 export const modifier = score => Math.floor((score - 10) / 2);
 export const modStr   = score => { const m = modifier(score); return m >= 0 ? `+${m}` : `${m}`; };
+// For medium-armor-style AC overrides (Dragon Scale Mail, Rare Barrier Tattoo: base + DEX
+// capped at +2) - cap is the max ability bonus allowed, or null/undefined for uncapped
+// (light armor, Robe of the Archmagi, Mage Armor).
+export const cappedModifier = (score, cap) => cap != null ? Math.min(modifier(score), cap) : modifier(score);
 export const profBonus = level => PROF_BONUS[level] || 2;
 
 // Unarmored base AC formula - varies by class. A "Set Base AC To" item buff (heavy
@@ -345,13 +349,17 @@ export const computeItemBonuses = (items) => {
       } else if (b.mode === 'add' && ABILITY_KEYS.includes(b.stat)) {
         abilityAdds[b.stat] = (abilityAdds[b.stat] || 0) + (b.value || 0);
       } else if ((b.mode === 'set' || b.mode === 'set_dex' || b.mode === 'set_ability') && b.stat === 'ac_base') {
-        // 'set'          — flat value (heavy armor that ignores DEX, e.g. Plate = 18)
-        // 'set_ability'  — base + chosen ability mod (Robe of Archmagi: 15+DEX,
-        //                   Mage Armor: 13+DEX, Chain Shirt: 13+DEX). Stores b.ability.
-        // 'set_dex'      — legacy alias for set_ability with DEX (kept for existing data).
-        // Tracks the highest BASE value offered; the caller adds the ability mod at render.
+        // 'set'          — flat value (heavy armor that ignores ability mods, e.g. Plate
+        //                   = 18, or a Very Rare Barrier Tattoo = flat 18)
+        // 'set_ability'  — base + chosen ability mod, optionally capped (medium-armor
+        //                   style): Robe of Archmagi = 15+DEX uncapped, Dragon Scale Mail/
+        //                   Rare Barrier Tattoo = 13-15+DEX capped at +2, Mage Armor =
+        //                   13+DEX uncapped, Loxodon natural armor = 12+CON uncapped.
+        //                   Stores b.ability and optional b.cap (null/undefined = uncapped).
+        // 'set_dex'      — legacy alias for set_ability with DEX, uncapped (old data).
+        // Tracks the highest BASE value offered; the caller adds the (capped) ability mod.
         const abilityKey = b.mode === 'set_dex' ? 'DEX' : (b.ability || null);
-        const entry = { value: b.value || 0, ability: abilityKey };
+        const entry = { value: b.value || 0, ability: abilityKey, cap: b.cap ?? null };
         if (acOverride === null || b.value > (acOverride.value ?? -Infinity)) acOverride = entry;
       } else if (b.stat === 'advantage_save') {
         advantageSaves.push({ ability: b.ability || 'all', source: it.name });

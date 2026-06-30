@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useCharacter } from '../context/CharacterContext';
 import api from '../utils/api';
-import { modifier, modStr, hpColor, profBonus, ABILITY_KEYS, getSpellcastingBlocks, computeItemBonuses, effectiveAbilityScores, suspectedAbilityContamination, featBuffItems, raceBuffItems, HASTED_EFFECT, HARDCODED_CONDITION_INFO, EXHAUSTION_RAW_TEXT, unarmoredAC } from '../utils/dnd';
+import { modifier, modStr, hpColor, profBonus, ABILITY_KEYS, getSpellcastingBlocks, computeItemBonuses, effectiveAbilityScores, suspectedAbilityContamination, featBuffItems, raceBuffItems, HASTED_EFFECT, HARDCODED_CONDITION_INFO, EXHAUSTION_RAW_TEXT, unarmoredAC, cappedModifier } from '../utils/dnd';
 import SavesModal from './SavesModal';
 import SkillsModal from './SkillsModal';
 import TraitsModal from './TraitsModal';
@@ -257,7 +257,7 @@ export default function CharacterHeader({ onBack }) {
   // shape; acOverride is the resolved flat number after adding DEX when applicable.
   const acOverrideRaw = itemBonuses.acOverrideRaw;
   const armorOverride = acOverrideRaw !== null
-    ? acOverrideRaw.value + (acOverrideRaw.ability ? modifier(effAb[acOverrideRaw.ability] ?? 10) : 0)
+    ? acOverrideRaw.value + (acOverrideRaw.ability ? cappedModifier(effAb[acOverrideRaw.ability] ?? 10, acOverrideRaw.cap) : 0)
     : null;
   const { ac: unarmoredBase } = unarmoredAC(class_name, effAb, td?.features);
   // Priority: equipped armor/robe override → manually stored td.ac → auto-computed unarmored.

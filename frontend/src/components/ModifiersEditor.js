@@ -96,7 +96,11 @@ export default function ModifiersEditor({ buffs, onChange, allowWeapon = false, 
               <>
                 <span style={{fontSize:12,color:'var(--text-dim)'}}>{(isSetMode || isSetAbilityMode) ? '=' : '+'}</span>
                 <input type="number" value={b.value} onChange={e => updateModifier(i, { value: parseInt(e.target.value) || 0 })} style={{width:56}} />
-                {isSetAbilityMode && <span style={{fontSize:11,color:'var(--text-dim)'}}>+ mod</span>}
+                {isSetAbilityMode && <span style={{fontSize:11,color:'var(--text-dim)'}}>+ mod, max</span>}
+                {isSetAbilityMode && (
+                  <input type="number" min={0} placeholder="∞" value={b.cap ?? ''} title="Max ability bonus allowed (blank = uncapped, like light armor). Use 2 for medium-armor-style items (Dragon Scale Mail, Rare Barrier Tattoo)."
+                    onChange={e => updateModifier(i, { cap: e.target.value === '' ? null : parseInt(e.target.value) || 0 })} style={{width:48}} />
+                )}
               </>
             )}
             <button className="btn btn-secondary btn-sm" onClick={() => removeModifier(i)}>✕</button>
@@ -105,7 +109,7 @@ export default function ModifiersEditor({ buffs, onChange, allowWeapon = false, 
       })}
       <button className="btn btn-secondary btn-sm" style={{marginBottom:8}} onClick={addModifier}>+ Add Modifier</button>
       <div style={{color:'var(--text-dim)',fontSize:11,marginBottom:10}}>
-        {activeWhileText || 'Always active.'} "Set X Score To" never lowers the character's score — it only raises it to the value. "Add to X Score" is a flat bonus. "Set Base AC To X (flat)" is for armor that ignores DEX entirely (heavy armor like Plate = flat 18). "Set Base AC To X + DEX mod" is for light armor, magical robes, or Mage Armor-style effects that still add your DEX — e.g. Robe of the Archmagi = 15, Mage Armor = 13, Chain Shirt = 13. A shield or ring should use plain "AC" above instead (additive, stacks on top of whichever formula applies). "Advantage on Saves" shows as a header chip — the app doesn't auto-apply advantage rolls, same as conditions/exhaustion.
+        {activeWhileText || 'Always active.'} "Set X Score To" never lowers the character's score — it only raises it to the value. "Add to X Score" is a flat bonus. "Set Base AC To X (flat)" is for armor that ignores ability mods entirely (heavy armor like Plate = flat 18, or a Very Rare Barrier Tattoo = flat 18). "Set Base AC To X + ability mod" picks an ability (usually DEX) and optionally caps how much of its modifier applies — leave the cap blank for uncapped (Robe of the Archmagi = 15+DEX, Mage Armor = 13+DEX, Loxodon natural armor = 12+CON), or set it to 2 for medium-armor-style items (Dragon Scale Mail and Rare Barrier Tattoo = 13-15+DEX capped at +2). A shield or ring should use the plain "AC" option above instead (additive, stacks on top of whichever base formula applies). "Advantage on Saves" shows as a header chip — the app doesn't auto-apply advantage rolls, same as conditions/exhaustion.
       </div>
     </>
   );
