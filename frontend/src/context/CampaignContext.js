@@ -107,6 +107,12 @@ export function CampaignProvider({ children }) {
     setCampaigns(prev => prev.filter(c => c.id !== campaignId));
   }, []);
 
+  const deleteCampaign = useCallback(async campaignId => {
+    await api.delete(`/campaigns/${campaignId}`);
+    setCampaign(null);
+    setCampaigns(prev => prev.filter(c => c.id !== campaignId));
+  }, []);
+
   const createEffect = useCallback(async (campaignId, effect) => {
     const r = await api.post(`/campaigns/${campaignId}/effects`, effect);
     setCampaign(prev => prev ? { ...prev, effects: [...(prev.effects || []), r.data] } : prev);
@@ -162,6 +168,7 @@ export function CampaignProvider({ children }) {
       transferCampaignOwner,
       removeMember,
       leaveCampaign,
+      deleteCampaign,
       createEffect,
       updateEffectStatus,
       createEncounter,

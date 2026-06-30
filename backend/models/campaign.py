@@ -113,17 +113,22 @@ def _character_snapshot(character):
     tracker_data = character.tracker_data or {}
     spell_data = character.spell_data or {}
     hp = tracker_data.get("hp") or {}
+    base_max_hp = hp.get("campaign_base_max") or hp.get("max")
     max_hp = hp.get("max_override") or hp.get("max")
     return {
         "hp": {
             "current": hp.get("current"),
+            "base_max": base_max_hp,
+            "campaign_base_max": hp.get("campaign_base_max"),
             "max": max_hp,
+            "max_override": hp.get("max_override"),
             "temp": hp.get("temp") or 0,
         },
         "ac": tracker_data.get("ac"),
         "initiative": tracker_data.get("initiative"),
         "conditions": _clean_list(tracker_data.get("conditions")),
         "active_effects": _clean_list(tracker_data.get("active_effects")),
+        "campaign_effects": _clean_list(tracker_data.get("campaign_effects")),
         "concentration_slots": _concentration_slots(tracker_data),
         "prepared_spells": _prepared_spells(spell_data),
         "updated_at": character.updated_at.isoformat() if character.updated_at else None,

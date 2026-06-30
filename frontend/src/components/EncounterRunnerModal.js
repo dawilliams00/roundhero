@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { MonsterStatBlockContent } from './MonsterDetailModal';
 import NumberPadPopover from './NumberPadPopover';
 
@@ -39,6 +39,36 @@ function cleanList(value) {
 
 function isConcentrationEffect(name, manuallyFlagged = false) {
   return manuallyFlagged || KNOWN_CONCENTRATION_EFFECTS.has(String(name || '').trim().toLowerCase());
+}
+
+function modifierNumber(modifier) {
+  const parsed = Number(modifier?.value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function campaignEffectHpBonus(snapshot) {
+  const effects = cleanList(snapshot?.campaign_effects);
+  return effects.reduce((sum, effect) => {
+    const bonuses = cleanList(effect?.modifiers)
+      .filter(modifier => modifier?.type === 'max_hp_bonus')
+      .map(modifierNumber);
+    return sum + (bonuses.length ? Math.max(...bonuses) : 0);
+  }, 0);
+}
+
+function snapshotHpValues(snapshot, existing = {}) {
+  const hp = snapshot?.hp || {};
+  const bonus = campaignEffectHpBonus(snapshot);
+  const fallbackMax = hp.max_override ?? hp.max ?? existing.hp_max ?? '';
+  const baseMaxRaw = hp.campaign_base_max ?? hp.base_max ?? hp.max ?? (bonus && hp.max_override ? Number(hp.max_override) - bonus : fallbackMax);
+  const max = baseMaxRaw === '' || baseMaxRaw == null ? fallbackMax : toNumber(baseMaxRaw) + bonus;
+  const rawCurrent = hp.current ?? existing.hp_current ?? '';
+  const current = rawCurrent === '' || max === '' ? rawCurrent : Math.min(toNumber(rawCurrent), toNumber(max));
+  return {
+    current,
+    max,
+    temp: hp.temp ?? existing.temp_hp ?? 0,
+  };
 }
 
 function normalizeCombatant(row) {
@@ -82,7 +112,12 @@ function concentrationText(snapshot) {
 
 function combatantFromRoster(entry, existing = {}) {
   const snap = rosterSnapshot(entry);
-  const hp = snap.hp || {};
+  const hp = snapshotHpValues(snap, existing);
+  const sheetEffects = cleanList(snap.active_effects).map(name => ({ id: `sheet_${name}`, name, type: 'sheet' }));
+  const mergedEffects = [...sheetEffects, ...cleanList(existing.effects)].filter((effect, index, list) => {
+    const key = effect.id || effect.name;
+    return list.findIndex(item => (item.id || item.name) === key) === index;
+  });
   return normalizeCombatant({
     ...existing,
     type: 'player',
@@ -90,13 +125,13 @@ function combatantFromRoster(entry, existing = {}) {
     character_id: entry.character_id,
     user_id: entry.user_id,
     group_key: 'Players',
-    hp_current: hp.current ?? existing.hp_current ?? '',
-    hp_max: hp.max ?? existing.hp_max ?? '',
-    temp_hp: hp.temp ?? existing.temp_hp ?? 0,
+    hp_current: hp.current,
+    hp_max: hp.max,
+    temp_hp: hp.temp,
     ac: snap.ac ?? existing.ac ?? '',
     conditions: cleanList(snap.conditions).length ? cleanList(snap.conditions) : cleanList(existing.conditions),
     concentration: concentrationText(snap) || existing.concentration || '',
-    effects: cleanList(snap.active_effects).map(name => ({ id: `sheet_${name}`, name, type: 'sheet' })).concat(cleanList(existing.effects)),
+    effects: mergedEffects,
     snapshot: snap,
   });
 }
@@ -178,15 +213,27 @@ function HpControls({ row, onUpdate }) {
   );
 }
 
-function CombatantCard({ row, active, onUpdate, onRemove, onViewMonster, onAddCondition, onRemoveCondition, onRemoveEffect, onDeathSave }) {
+function CombatantCard({ row, active, onUpdate, onRemove, onViewMonster, onAddCondition, onRemoveCondition, onRemoveEffect, onDeathSave, rowRef }) {
   return (
-    <div style={{border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',background:active ? 'rgba(124,92,252,0.14)' : 'var(--bg-secondary)',padding:10,display:'grid',gridTemplateColumns:'minmax(230px,1.15fr) 170px minmax(260px,1.35fr) minmax(150px,0.8fr)',gap:12,alignItems:'start',minWidth:0}}>
-      <div style={{minWidth:0}}>
+    <div ref={rowRef} style={{
+      border:active ? '2px solid var(--accent)' : '1px solid var(--border)',
+      borderRadius:'var(--radius-sm)',
+      background:active ? 'linear-gradient(90deg, rgba(124,92,252,0.24), rgba(30,41,78,0.92))' : 'var(--bg-secondary)',
+      boxShadow:active ? '0 0 0 2px rgba(124,92,252,0.18), 0 0 24px rgba(124,92,252,0.2)' : 'none',
+      padding:10,
+      display:'grid',
+      gridTemplateColumns:'minmax(240px,1.05fr) minmax(150px,0.6fr) minmax(280px,1.25fr) minmax(170px,0.72fr)',
+      gap:12,
+      alignItems:'stretch',
+      minWidth:0,
+      scrollMarginTop:72,
+    }}>
+      <div style={{minWidth:0,display:'grid',gap:8,alignContent:'start'}}>
         <div style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) auto',gap:6,alignItems:'center'}}>
           <input value={row.name} onChange={e => onUpdate(row.id, { name: e.target.value })} style={{fontWeight:800,minWidth:0}} />
           <span style={{color:row.type === 'player' ? 'var(--success)' : 'var(--warning)',fontSize:11,fontWeight:900,textTransform:'uppercase',whiteSpace:'nowrap'}}>{row.type}</span>
         </div>
-        <div style={{display:'grid',gridTemplateColumns:'minmax(64px,78px) minmax(54px,64px) auto',gap:6,alignItems:'end',marginTop:8}}>
+        <div style={{display:'grid',gridTemplateColumns:'82px 72px minmax(74px,auto)',gap:8,alignItems:'end'}}>
           <label style={{display:'grid',gap:3,fontSize:10,color:'var(--text-dim)'}}>
             INIT
             <input value={row.initiative} onChange={e => onUpdate(row.id, { initiative: e.target.value })} style={{textAlign:'center',fontWeight:800}} />
@@ -234,8 +281,8 @@ function CombatantCard({ row, active, onUpdate, onRemove, onViewMonster, onAddCo
         </div>
         {row.type === 'player' && (
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:4,marginTop:7}}>
-            <MiniButton onClick={() => onDeathSave(row, 'successes', 1)}>Save {row.death_saves?.successes || 0}</MiniButton>
-            <MiniButton onClick={() => onDeathSave(row, 'failures', 1)}>Fail {row.death_saves?.failures || 0}</MiniButton>
+            <MiniButton onClick={() => onDeathSave(row, 'successes', 1)}>Secret Save {row.death_saves?.successes || 0}</MiniButton>
+            <MiniButton onClick={() => onDeathSave(row, 'failures', 1)}>Secret Fail {row.death_saves?.failures || 0}</MiniButton>
           </div>
         )}
         <div style={{marginTop:7}}><MiniButton onClick={() => onRemove(row.id)} variant="danger">Remove</MiniButton></div>
@@ -264,6 +311,7 @@ export default function EncounterRunnerModal({
   const [selectedTurnId, setSelectedTurnId] = useState(combatants[0]?.id || null);
   const [viewingMonster, setViewingMonster] = useState(null);
   const [effectForm, setEffectForm] = useState({ type: 'condition', name: '', custom: '', source_id: '', target_id: '', duration: '1 min', concentration: false });
+  const rowRefs = useRef({});
 
   const activeRoster = roster.filter(entry => entry.active);
   const filteredMonsters = monsters
@@ -297,14 +345,31 @@ export default function EncounterRunnerModal({
   };
 
   const syncPartyStats = async () => {
-    if (reloadCampaign) await reloadCampaign(campaign.id);
+    const freshCampaign = reloadCampaign ? await reloadCampaign(campaign.id) : null;
+    const sourceRoster = (freshCampaign?.characters || roster || []).filter(entry => entry.active);
     const next = (data.combatants || []).map(row => {
       if (row.type !== 'player' || !row.character_id) return normalizeCombatant(row);
-      const entry = activeRoster.find(candidate => sameId(candidate.character_id, row.character_id));
+      const entry = sourceRoster.find(candidate => sameId(candidate.character_id, row.character_id));
       if (!entry) return normalizeCombatant(row);
       return combatantFromRoster(entry, { ...row, initiative: row.initiative, effects: row.effects });
     });
     patchCombatants(next);
+  };
+
+  useEffect(() => {
+    if (encounter.status !== 'running' || !reloadCampaign) return undefined;
+    syncPartyStats().catch(() => {});
+    const timer = setInterval(() => {
+      syncPartyStats().catch(() => {});
+    }, 15000);
+    return () => clearInterval(timer);
+  }, [encounter.id, encounter.status, reloadCampaign]);
+
+  const focusCombatant = id => {
+    setSelectedTurnId(id);
+    window.requestAnimationFrame(() => {
+      rowRefs.current[id]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
   };
 
   const addMonster = monster => {
@@ -443,11 +508,12 @@ export default function EncounterRunnerModal({
 
         <div style={{
           display:'grid',
-          gridTemplateColumns:viewingMonster ? '300px minmax(0,1fr) minmax(360px,0.82fr)' : '320px minmax(0,1fr)',
+          gridTemplateColumns:viewingMonster ? '260px minmax(720px,1fr) minmax(420px,0.72fr)' : '300px minmax(760px,1fr)',
           gap:12,
           minHeight:0,
           flex:1,
           marginTop:12,
+          overflowX:'auto',
         }}>
           <aside style={{display:'flex',flexDirection:'column',gap:10,minHeight:0,overflowY:'auto',paddingRight:4}}>
             <section style={{border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',padding:10}}>
@@ -530,7 +596,7 @@ export default function EncounterRunnerModal({
             <div style={{position:'sticky',top:0,zIndex:3,display:'flex',gap:6,alignItems:'center',flexWrap:'wrap',padding:'6px 0',borderBottom:'1px solid var(--border)',background:'var(--bg-primary)'}}>
               <span style={{color:'var(--text-secondary)',fontSize:11,fontWeight:800,textTransform:'uppercase'}}>Initiative</span>
               {combatants.map(row => (
-                <button key={row.id} type="button" onClick={() => setSelectedTurnId(row.id)} className={sameId(activeId, row.id) ? 'btn btn-primary btn-sm' : 'btn btn-secondary btn-sm'}>
+                <button key={row.id} type="button" onClick={() => focusCombatant(row.id)} className={sameId(activeId, row.id) ? 'btn btn-primary btn-sm' : 'btn btn-secondary btn-sm'}>
                   {row.initiative || '?'} {row.name}
                 </button>
               ))}
@@ -541,11 +607,12 @@ export default function EncounterRunnerModal({
               <CombatantCard
                 key={row.id}
                 row={row}
+                rowRef={element => { rowRefs.current[row.id] = element; }}
                 active={sameId(activeId, row.id)}
                 onUpdate={updateCombatant}
                 onRemove={removeCombatant}
                 onViewMonster={(monster) => {
-                  setSelectedTurnId(row.id);
+                  focusCombatant(row.id);
                   setViewingMonster(monster);
                 }}
                 onAddCondition={addCondition}
