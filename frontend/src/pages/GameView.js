@@ -17,7 +17,6 @@ import ShadowConsoleTab from '../components/ShadowConsoleTab';
 import CampaignPlayerViewModal from '../components/CampaignPlayerViewModal';
 import { fetchCharacterModules } from '../utils/characterModules';
 import { activeCompanionKey } from '../utils/dnd';
-import api from '../utils/api';
 
 export default function GameView() {
   const { id }                    = useParams();
