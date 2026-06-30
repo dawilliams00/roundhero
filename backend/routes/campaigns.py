@@ -77,6 +77,38 @@ def _character_in_campaign(campaign_id, character_id):
     ).first()
 
 
+def _public_combatant(row):
+    row_type = row.get("type") or "enemy"
+    public = {
+        "id": row.get("id"),
+        "type": row_type,
+        "name": row.get("name") or "Combatant",
+        "initiative": row.get("initiative") or "",
+        "conditions": row.get("conditions") if isinstance(row.get("conditions"), list) else [],
+        "concentration": row.get("concentration") or "",
+        "effects": row.get("effects") if isinstance(row.get("effects"), list) else [],
+        "notes": row.get("public_notes") or "",
+    }
+    if row_type == "player":
+        public["hp_current"] = row.get("hp_current")
+        public["hp_max"] = row.get("hp_max")
+        public["temp_hp"] = row.get("temp_hp") or 0
+        public["death_saves"] = row.get("death_saves") or {"successes": 0, "failures": 0}
+    return public
+
+
+def _player_encounter_view(encounter):
+    data = encounter.data or {}
+    combatants = data.get("combatants") if isinstance(data.get("combatants"), list) else []
+    return {
+        "id": encounter.id,
+        "name": encounter.name,
+        "status": encounter.status,
+        "updated_at": encounter.updated_at.isoformat(),
+        "combatants": [_public_combatant(row) for row in combatants],
+    }
+
+
 @campaigns_bp.route("/", methods=["GET"])
 @jwt_required()
 def list_campaigns():
@@ -180,6 +212,38 @@ def update_member_role(campaign_id, member_id):
     return jsonify(_campaign_response(campaign, current_member)), 200
 
 
+@campaigns_bp.route("/<int:campaign_id>/owner/transfer", methods=["POST"])
+@jwt_required()
+def transfer_campaign_owner(campaign_id):
+    user_id = int(get_jwt_identity())
+    campaign, current_member = _campaign_for_user(campaign_id, user_id)
+    if not campaign:
+        return jsonify({"error": "Campaign not found"}), 404
+    if campaign.owner_user_id != user_id:
+        return jsonify({"error": "Only the current owner DM can transfer campaign ownership"}), 403
+
+    data = request.get_json() or {}
+    email = (data.get("email") or "").strip()
+    if not email or "@" not in email:
+        return jsonify({"error": "Valid target email required"}), 400
+
+    target_user = User.query.filter(User.email.ilike(email)).first()
+    if not target_user:
+        return jsonify({"error": "No RoundHero user found with that email"}), 404
+
+    target_member = _membership(campaign.id, target_user.id)
+    if not target_member:
+        target_member = CampaignMember(campaign_id=campaign.id, user_id=target_user.id, role="dm")
+        db.session.add(target_member)
+    else:
+        target_member.role = "dm"
+
+    current_member.role = "dm"
+    campaign.owner_user_id = target_user.id
+    db.session.commit()
+    return jsonify(_campaign_response(campaign, current_member)), 200
+
+
 @campaigns_bp.route("/<int:campaign_id>/members/<int:member_id>", methods=["DELETE"])
 @jwt_required()
 def remove_member(campaign_id, member_id):
@@ -211,6 +275,46 @@ def get_campaign(campaign_id):
         return jsonify({"error": "Campaign not found"}), 404
 
     return jsonify(_campaign_response(campaign, member)), 200
+
+
+@campaigns_bp.route("/player-view/<int:character_id>", methods=["GET"])
+@jwt_required()
+def get_player_campaign_view(character_id):
+    user_id = int(get_jwt_identity())
+    character = Character.query.filter_by(id=character_id, user_id=user_id).first()
+    if not character:
+        return jsonify({"error": "Character not found"}), 404
+
+    roster_entries = CampaignCharacter.query.filter_by(
+        character_id=character.id,
+        user_id=user_id,
+        active=True,
+    ).all()
+    views = []
+    for entry in roster_entries:
+        member = _membership(entry.campaign_id, user_id)
+        if not member:
+            continue
+        campaign = entry.campaign
+        running = [
+            encounter for encounter in campaign.encounters
+            if encounter.status in {"running", "paused"}
+        ]
+        views.append({
+            **_campaign_response(campaign, member, include_detail=False),
+            "character_id": character.id,
+            "character_name": character.name,
+            "encounters": [_player_encounter_view(encounter) for encounter in running],
+            "effects": [
+                effect.to_dict() for effect in campaign.effects
+                if effect.status != "removed" and (
+                    effect.target_character_id == character.id
+                    or effect.source_character_id == character.id
+                    or _is_dm(campaign, member)
+                )
+            ],
+        })
+    return jsonify(views), 200
 
 
 @campaigns_bp.route("/<int:campaign_id>", methods=["PUT"])

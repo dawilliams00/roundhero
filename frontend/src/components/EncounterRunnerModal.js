@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { MonsterStatBlockContent } from './MonsterDetailModal';
+import NumberPadPopover from './NumberPadPopover';
 
 const COMMON_CONDITIONS = [
   'Blinded', 'Charmed', 'Deafened', 'Exhaustion', 'Frightened', 'Grappled',
@@ -124,8 +125,33 @@ function MiniButton({ children, onClick, variant = 'secondary', disabled }) {
   );
 }
 
+function StatusBadge({ children, tone = 'neutral', onClick }) {
+  const bg = {
+    danger: 'rgba(230,57,70,0.24)',
+    warning: 'rgba(255,184,77,0.18)',
+    success: 'rgba(32,201,151,0.18)',
+    effect: 'rgba(124,92,252,0.24)',
+    neutral: 'rgba(255,255,255,0.08)',
+  }[tone] || 'rgba(255,255,255,0.08)';
+  return (
+    <button type="button" onClick={onClick} disabled={!onClick} style={{
+      border:'1px solid var(--border)',
+      background:bg,
+      color:'var(--text-primary)',
+      borderRadius:4,
+      padding:'3px 7px',
+      fontSize:11,
+      cursor:onClick ? 'pointer' : 'default',
+      fontWeight:800,
+    }}>
+      {children}
+    </button>
+  );
+}
+
 function HpControls({ row, onUpdate }) {
   const [amount, setAmount] = useState('');
+  const [openCalc, setOpenCalc] = useState(null);
   const applyDelta = delta => {
     let current = toNumber(row.hp_current, 0);
     let temp = toNumber(row.temp_hp, 0);
@@ -141,15 +167,28 @@ function HpControls({ row, onUpdate }) {
     }
     onUpdate(row.id, { hp_current: current, temp_hp: temp });
   };
+  const applyTempDelta = delta => {
+    onUpdate(row.id, { temp_hp: Math.max(0, toNumber(row.temp_hp, 0) + delta) });
+  };
   const amt = Math.max(0, toNumber(amount, 0));
   return (
-    <div style={{display:'grid',gridTemplateColumns:'28px 1fr 28px',gap:6,alignItems:'center'}}>
+    <div style={{display:'grid',gridTemplateColumns:'28px 1fr 28px',gap:6,alignItems:'center',position:'relative'}}>
       <MiniButton onClick={() => applyDelta(-1)} variant="danger">-</MiniButton>
       <div style={{textAlign:'center'}}>
-        <div style={{color:'var(--accent-light)',fontWeight:800,fontSize:18}}>{row.hp_current || 0}/{row.hp_max || '?'}</div>
-        <div style={{color:'var(--text-dim)',fontSize:11}}>Temp {row.temp_hp || 0}</div>
+        <button type="button" onClick={() => setOpenCalc(openCalc === 'current' ? null : 'current')} style={{background:'transparent',border:0,color:'var(--accent-light)',fontWeight:900,fontSize:18,cursor:'pointer',padding:0}}>
+          {row.hp_current || 0}/{row.hp_max || '?'}
+        </button>
+        <button type="button" onClick={() => setOpenCalc(openCalc === 'temp' ? null : 'temp')} style={{display:'block',margin:'2px auto 0',background:'transparent',border:0,color:'var(--text-dim)',fontSize:11,cursor:'pointer',padding:0}}>
+          Temp {row.temp_hp || 0}
+        </button>
       </div>
       <MiniButton onClick={() => applyDelta(1)} variant="success">+</MiniButton>
+      {openCalc === 'current' && (
+        <NumberPadPopover label={`${row.name} HP`} value={row.hp_current || 0} color="var(--accent-light)" onApply={applyDelta} onClose={() => setOpenCalc(null)} />
+      )}
+      {openCalc === 'temp' && (
+        <NumberPadPopover label={`${row.name} Temp HP`} value={row.temp_hp || 0} color="var(--accent-light)" onApply={applyTempDelta} onClose={() => setOpenCalc(null)} />
+      )}
       <input value={amount} onChange={e => setAmount(e.target.value)} placeholder="Amount" style={{gridColumn:'1 / -1',textAlign:'center'}} />
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:4,gridColumn:'1 / -1'}}>
         <MiniButton onClick={() => { applyDelta(-amt); setAmount(''); }} variant="danger" disabled={!amt}>Damage</MiniButton>
@@ -162,7 +201,7 @@ function HpControls({ row, onUpdate }) {
 
 function CombatantCard({ row, active, onUpdate, onRemove, onViewMonster, onAddCondition, onRemoveCondition, onRemoveEffect, onDeathSave }) {
   return (
-    <div style={{border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',background:active ? 'rgba(124,92,252,0.14)' : 'var(--bg-secondary)',padding:10,display:'grid',gridTemplateColumns:'74px minmax(160px,1.2fr) 160px minmax(180px,1fr) 140px',gap:10,alignItems:'start'}}>
+    <div style={{border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',background:active ? 'rgba(124,92,252,0.14)' : 'var(--bg-secondary)',padding:10,display:'grid',gridTemplateColumns:'74px minmax(160px,1.15fr) 170px minmax(190px,1fr) 160px',gap:10,alignItems:'start'}}>
       <div>
         <label style={{fontSize:10,color:'var(--text-dim)'}}>INIT</label>
         <input value={row.initiative} onChange={e => onUpdate(row.id, { initiative: e.target.value })} style={{textAlign:'center',fontWeight:800}} />
@@ -191,7 +230,7 @@ function CombatantCard({ row, active, onUpdate, onRemove, onViewMonster, onAddCo
         <div style={{display:'flex',gap:5,flexWrap:'wrap',minHeight:24}}>
           {cleanList(row.conditions).length === 0 && <span style={{color:'var(--text-dim)',fontSize:12}}>No conditions</span>}
           {cleanList(row.conditions).map(condition => (
-            <button key={condition} type="button" onClick={() => onRemoveCondition(row, condition)} style={{border:'1px solid var(--border)',background:'rgba(0,0,0,0.25)',color:'var(--text-primary)',borderRadius:4,padding:'3px 6px',fontSize:11,cursor:'pointer'}}>
+            <button key={condition} type="button" onClick={() => onRemoveCondition(row, condition)} style={{border:'1px solid rgba(230,57,70,0.65)',background:'rgba(230,57,70,0.24)',color:'var(--text-primary)',borderRadius:4,padding:'3px 6px',fontSize:11,cursor:'pointer',fontWeight:800}}>
               {condition} x
             </button>
           ))}
@@ -206,7 +245,7 @@ function CombatantCard({ row, active, onUpdate, onRemove, onViewMonster, onAddCo
         <div style={{display:'flex',flexDirection:'column',gap:4,maxHeight:98,overflowY:'auto'}}>
           {cleanList(row.effects).length === 0 && <span style={{color:'var(--text-dim)',fontSize:12}}>None</span>}
           {cleanList(row.effects).map(effect => (
-            <button key={effect.id || effect.name} type="button" onClick={() => onRemoveEffect(row, effect)} style={{textAlign:'left',border:'1px solid var(--border)',background:'var(--bg-primary)',color:'var(--text-primary)',borderRadius:4,padding:5,cursor:'pointer'}}>
+            <button key={effect.id || effect.name} type="button" onClick={() => onRemoveEffect(row, effect)} style={{textAlign:'left',border:'1px solid rgba(230,57,70,0.55)',background:'rgba(230,57,70,0.18)',color:'var(--text-primary)',borderRadius:4,padding:5,cursor:'pointer'}}>
               <div style={{fontWeight:700,fontSize:12}}>{effect.name}</div>
               <div style={{color:'var(--text-dim)',fontSize:10}}>{effect.source_name || effect.type || ''}{effect.duration ? ` · ${effect.duration}` : ''}</div>
             </button>
@@ -387,8 +426,8 @@ export default function EncounterRunnerModal({
   const activeId = selectedTurnId || combatants[0]?.id;
 
   return (
-    <div className="modal-overlay" style={{zIndex:2000}}>
-      <div className="modal" onClick={e => e.stopPropagation()} style={{width:'96vw',maxWidth:'none',height:'92vh',display:'flex',flexDirection:'column',padding:14}}>
+    <div className="modal-overlay" style={{zIndex:2600,background:'var(--bg-primary)',padding:0}}>
+      <div className="modal" onClick={e => e.stopPropagation()} style={{width:'100vw',maxWidth:'none',height:'100vh',borderRadius:0,border:0,display:'flex',flexDirection:'column',padding:14,background:'var(--bg-primary)'}}>
         <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:12,borderBottom:'1px solid var(--border)',paddingBottom:10}}>
           <div>
@@ -426,8 +465,10 @@ export default function EncounterRunnerModal({
             <section style={{border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',padding:10}}>
               <div style={{color:'var(--accent-light)',fontWeight:800,marginBottom:8}}>Add Enemies</div>
               <input value={monsterSearch} onChange={e => setMonsterSearch(e.target.value)} placeholder="Search bestiary" />
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6,marginTop:6}}>
-                <input value={quantity} onChange={e => setQuantity(e.target.value)} placeholder="Qty" />
+              <div style={{display:'grid',gridTemplateColumns:'32px 1fr 32px 1fr',gap:6,marginTop:6}}>
+                <MiniButton onClick={() => setQuantity(String(Math.max(1, toNumber(quantity, 1) - 1)))}>-</MiniButton>
+                <input value={quantity} onChange={e => setQuantity(e.target.value)} placeholder="Qty" style={{textAlign:'center'}} />
+                <MiniButton onClick={() => setQuantity(String(Math.min(30, toNumber(quantity, 1) + 1)))}>+</MiniButton>
                 <input value={initiative} onChange={e => setInitiative(e.target.value)} placeholder="Init" />
               </div>
               <label style={{display:'flex',gap:8,alignItems:'center',color:'var(--text-secondary)',fontSize:12,margin:'8px 0'}}>
@@ -454,7 +495,7 @@ export default function EncounterRunnerModal({
               ))}
             </section>
 
-            <section style={{border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',padding:10}}>
+            <section style={{border:'1px solid rgba(230,57,70,0.38)',borderRadius:'var(--radius-sm)',padding:10,background:'rgba(230,57,70,0.08)'}}>
               <div style={{color:'var(--accent-light)',fontWeight:800,marginBottom:8}}>Add Effect</div>
               <div style={{display:'grid',gap:6}}>
                 <select value={effectForm.source_id} onChange={e => setEffectForm(f => ({ ...f, source_id: e.target.value }))}>
@@ -489,7 +530,7 @@ export default function EncounterRunnerModal({
           </aside>
 
           <main style={{display:'flex',flexDirection:'column',gap:10,minHeight:0,overflowY:'auto',paddingRight:4}}>
-            <div style={{display:'flex',gap:6,alignItems:'center',flexWrap:'wrap',paddingBottom:4,borderBottom:'1px solid var(--border)'}}>
+            <div style={{position:'sticky',top:0,zIndex:3,display:'flex',gap:6,alignItems:'center',flexWrap:'wrap',padding:'6px 0',borderBottom:'1px solid var(--border)',background:'var(--bg-primary)'}}>
               <span style={{color:'var(--text-secondary)',fontSize:11,fontWeight:800,textTransform:'uppercase'}}>Initiative</span>
               {combatants.map(row => (
                 <button key={row.id} type="button" onClick={() => setSelectedTurnId(row.id)} className={sameId(activeId, row.id) ? 'btn btn-primary btn-sm' : 'btn btn-secondary btn-sm'}>

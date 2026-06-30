@@ -120,3 +120,42 @@ two functions, and updating the effect's ledger status (`pending` -> `applied` /
 ### Other open items
 
 - Encounter builder is still v1. Next tracker improvements: round/turn advancement, active-turn highlighting, richer enemy grouping controls, bulk damage/healing, condition pickers, concentration break prompts, enemy death-state handling, and live updates/permissions for connected players.
+
+## Claude Character-Sheet Data Contract For Campaign V1
+
+Codex is building the campaign/encounter side on `feature/campaigns`. Claude can keep character-sheet work moving, but these fields/events need to exist or remain stable so campaign spell integration and encounter sync work.
+
+Character sheets should expose a compact campaign snapshot whenever a character is attached to a campaign and whenever the sheet meaningfully changes:
+
+- `hp`: `{ current, max, temp }`
+- `ac`
+- `conditions`: visible condition names
+- `concentration_slots`: array of up to two slots, each like `{ spell, source, started_at, metadata }`
+- `active_effects`: visible effects/buffs/debuffs currently applied to the character
+- `prepared_spells`: spell names or objects with `{ name, level, casting_time, concentration, school }`
+- `spell_slots`: current slot availability by level
+- `action_economy`: current combat action state if initiative tracking is active, including action/bonus/reaction/movement/haste availability
+
+Spell casting from a character sheet should optionally emit a campaign effect payload when a target is an ally or campaign combatant:
+
+- `source_character_id`
+- `target_character_id` or encounter combatant id
+- `name`
+- `effect_type`: spell, condition, item, feature, note
+- `duration`
+- `concentration`
+- `status`: pending or applied
+- `payload`: spell level, upcast level, save DC/attack info, notes, and any mechanical tags such as `grants_haste_action`, `polymorph_form`, `temp_hp`, or `roll_modifier`
+
+For V1 spell integration, character sheets should support accepting/appling campaign effects and removing them without overwriting local character data. Haste should set concentration on caster and a visible target effect. Polymorph should preserve the original sheet state, apply beast temp HP/form metadata, and surface a drop-shape reminder when temp HP hits 0.
+
+Player-facing campaign view should be reachable from the character sheet only when the user has campaign membership. If the character/user is in multiple campaigns, open a selector first. The player-facing view should show campaign/encounter enemy statuses that players are allowed to know: enemy names, visible conditions, concentration/effects, and public notes, but not enemy HP.
+
+Do not make death saves public. Encounter death-save handling should become a private flow between the affected player and DM.
+
+## Encounter/Campaign TODO Kept Intentionally Pending
+
+- Add 15-second campaign/encounter refresh loop for DM-side live sync.
+- Make PC status updates from character sheets reliably refresh encounter HP, temp HP, conditions, concentration, Haste, and active effects.
+- Improve the full running encounter layout beyond the current modal/docked-panel V1.
+- Polish death saves into a secret player/DM workflow instead of simple visible counters.

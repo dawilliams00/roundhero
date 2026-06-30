@@ -93,7 +93,8 @@ export default function MonsterDetailModal({ monster: m, onClose, onSummon, onDu
   const isCustom = m._source === 'custom';
 
   return (
-    <div className="modal-overlay">
+    <div className="modal-overlay" onClick={onClose} style={{zIndex:2800}}>
+
       <div className="modal modal-flex modal-lg" onClick={e => e.stopPropagation()}>
         <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
         <div className="modal-header">

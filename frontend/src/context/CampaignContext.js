@@ -88,6 +88,13 @@ export function CampaignProvider({ children }) {
     return r.data;
   }, []);
 
+  const transferCampaignOwner = useCallback(async (campaignId, email) => {
+    const r = await api.post(`/campaigns/${campaignId}/owner/transfer`, { email });
+    setCampaign(r.data);
+    setCampaigns(prev => prev.map(c => c.id === campaignId ? { ...c, ...r.data } : c));
+    return r.data;
+  }, []);
+
   const removeMember = useCallback(async (campaignId, memberId) => {
     const r = await api.delete(`/campaigns/${campaignId}/members/${memberId}`);
     setCampaign(r.data);
@@ -152,6 +159,7 @@ export function CampaignProvider({ children }) {
       setCampaignCharacterActive,
       setPrimaryCharacter,
       updateMemberRole,
+      transferCampaignOwner,
       removeMember,
       leaveCampaign,
       createEffect,
