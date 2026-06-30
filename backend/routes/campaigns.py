@@ -1,4 +1,7 @@
 from secrets import token_urlsafe
+import os
+import smtplib
+from email.mime.text import MIMEText
 
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
@@ -6,6 +9,7 @@ from flask_jwt_extended import get_jwt_identity, jwt_required
 from database import db
 from models.campaign import Campaign, CampaignCharacter, CampaignEffect, CampaignEncounter, CampaignMember
 from models.character import Character
+from models.user import User
 
 
 campaigns_bp = Blueprint("campaigns", __name__)
@@ -46,6 +50,23 @@ def _campaign_response(campaign, member, include_detail=True):
         "is_dm": _is_dm(campaign, member),
         "is_owner": campaign.owner_user_id == member.user_id,
     }
+
+
+def _send_smtp_email(to_addr, subject, body):
+    smtp_user = os.environ.get("FEEDBACK_SMTP_USER")
+    smtp_password = os.environ.get("FEEDBACK_SMTP_PASSWORD")
+    if not smtp_user or not smtp_password:
+        raise RuntimeError("Campaign invite email is not configured on the server.")
+
+    msg = MIMEText(body, "plain")
+    msg["Subject"] = subject
+    msg["From"] = smtp_user
+    msg["To"] = to_addr
+
+    with smtplib.SMTP("smtp.gmail.com", 587) as server:
+        server.starttls()
+        server.login(smtp_user, smtp_password)
+        server.sendmail(smtp_user, to_addr, msg.as_string())
 
 
 def _character_in_campaign(campaign_id, character_id):
@@ -223,6 +244,39 @@ def regenerate_invite(campaign_id):
     campaign.invite_code = _make_unique_invite_code()
     db.session.commit()
     return jsonify({"invite_code": campaign.invite_code}), 200
+
+
+@campaigns_bp.route("/<int:campaign_id>/invite/email", methods=["POST"])
+@jwt_required()
+def email_invite(campaign_id):
+    user_id = int(get_jwt_identity())
+    campaign, member = _campaign_for_user(campaign_id, user_id)
+    if not campaign:
+        return jsonify({"error": "Campaign not found"}), 404
+
+    data = request.get_json() or {}
+    to_addr = (data.get("email") or "").strip()
+    invite_url = (data.get("invite_url") or "").strip() or f"{request.host_url.rstrip('/')}/campaigns?join={campaign.invite_code}"
+    if not to_addr or "@" not in to_addr:
+        return jsonify({"error": "Valid recipient email required"}), 400
+
+    sender = User.query.get(user_id)
+    subject = f"Join my RoundHero campaign: {campaign.name}"
+    body = (
+        f"{sender.username if sender else 'A RoundHero user'} invited you to join {campaign.name}.\n\n"
+        f"Invite code: {campaign.invite_code}\n\n"
+        "Open this link, sign in or create an account, and join the campaign:\n"
+        f"{invite_url}\n"
+    )
+
+    try:
+        _send_smtp_email(to_addr, subject, body)
+    except RuntimeError as exc:
+        return jsonify({"error": str(exc)}), 500
+    except Exception:
+        return jsonify({"error": "Could not send the campaign invite email - check the server's SMTP configuration."}), 500
+
+    return jsonify({"ok": True}), 200
 
 
 @campaigns_bp.route("/<int:campaign_id>/characters", methods=["POST"])
