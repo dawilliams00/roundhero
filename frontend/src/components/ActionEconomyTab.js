@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
-import { SECTION_ORDER, SECTION_COLORS, slotBadgeTextColor, concentrationSlotCount, HASTED_EFFECT, LETHARGIC_CONDITION, maxAttacksForCharacter, isItemActive, formatItemBuff, spellCastBucket, martialArtsDie, sorceryDisplayName, activeCompanionKey } from '../utils/dnd';
+import { SECTION_ORDER, SECTION_COLORS, slotBadgeTextColor, concentrationSlotCount, HASTED_EFFECT, LETHARGIC_CONDITION, maxAttacksForCharacter, isItemActive, formatItemBuff, martialArtsDie, sorceryDisplayName, activeCompanionKey } from '../utils/dnd';
 import AbilityDetailModal from './AbilityDetailModal';
 import CastSpellPickerModal from './CastSpellPickerModal';
 import ItemSpellsModal from './ItemSpellsModal';
@@ -406,21 +406,11 @@ export default function ActionEconomyTab() {
           // feat added twice via Browse Feats, or a PDF-imported descriptive feature and
           // a separately-added custom functional version sharing a name) - only the first
           // occurrence of a given tracker_key/name renders, so the player only ever sees one.
-          // The stock "Cast a Spell" entry exists in every section's ae_data regardless of
-          // what the character actually knows - hide it for Bonus Action/Reaction
-          // specifically when nothing known is actually castable in that bucket, so a
-          // character with zero bonus-action or reaction spells doesn't see a dead CAST
-          // button sitting there. Action keeps it unconditionally (everyone effectively
-          // has some 1-action spell option via cantrips/rituals/etc. often enough that
-          // hiding it there risked more confusion than it solved).
-          const hasSpellForBucket = (bucket) => knownSpells.some(s => spellCastBucket(s.casting_time) === bucket);
+          // Keep stock CAST rows visible in Action/Bonus/Reaction. The picker itself
+          // filters spells by casting time and can show an empty state when none match.
           const abilities = (ae[section] || []).filter((a, i, arr) =>
             arr.findIndex(b => (b.tracker_key || b.name) === (a.tracker_key || a.name)) === i
-          ).filter(a => {
-            if (a.cost_type !== 'cast_spell') return true;
-            if (section !== 'Bonus Action' && section !== 'Reaction') return true;
-            return hasSpellForBucket(section);
-          });
+          );
           if (!abilities || abilities.length === 0) return null;
           return (
             <div key={section}>
