@@ -87,19 +87,20 @@ export default function ModifiersEditor({ buffs, onChange, allowWeapon = false, 
                 {CONDITIONS.map(c => <option key={c}>{c}</option>)}
               </select>
             )}
-            {isSetAbilityMode && (
-              <select value={b.ability || 'DEX'} onChange={e => updateModifier(i, { ability: e.target.value })} style={{width:64}}>
-                {ABILITY_KEYS.map(k => <option key={k} value={k}>{k}</option>)}
-              </select>
-            )}
             {!isAdvSave && !isDamageBuff && !isCondImmune && (
               <>
                 <span style={{fontSize:12,color:'var(--text-dim)'}}>{(isSetMode || isSetAbilityMode) ? '=' : '+'}</span>
                 <input type="number" value={b.value} onChange={e => updateModifier(i, { value: parseInt(e.target.value) || 0 })} style={{width:56}} />
-                {isSetAbilityMode && <span style={{fontSize:11,color:'var(--text-dim)'}}>+ mod, max</span>}
                 {isSetAbilityMode && (
-                  <input type="number" min={0} placeholder="∞" value={b.cap ?? ''} title="Max ability bonus allowed (blank = uncapped, like light armor). Use 2 for medium-armor-style items (Dragon Scale Mail, Rare Barrier Tattoo)."
-                    onChange={e => updateModifier(i, { cap: e.target.value === '' ? null : parseInt(e.target.value) || 0 })} style={{width:48}} />
+                  <>
+                    <span style={{fontSize:11,color:'var(--text-dim)'}}>+ mod</span>
+                    <select value={b.ability || 'DEX'} onChange={e => updateModifier(i, { ability: e.target.value })} style={{width:64}}>
+                      {ABILITY_KEYS.map(k => <option key={k} value={k}>{k}</option>)}
+                    </select>
+                    <span style={{fontSize:11,color:'var(--text-dim)'}}>max</span>
+                    <input type="number" min={0} placeholder="∞" value={b.cap ?? ''} title="Max ability bonus allowed (blank = uncapped, like light armor). Use 2 for medium-armor-style items (Dragon Scale Mail, Rare Barrier Tattoo)."
+                      onChange={e => updateModifier(i, { cap: e.target.value === '' ? null : parseInt(e.target.value) || 0 })} style={{width:48}} />
+                  </>
                 )}
               </>
             )}
