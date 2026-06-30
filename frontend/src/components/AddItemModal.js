@@ -122,11 +122,14 @@ export default function AddItemModal({ item, onSave, onClose }) {
       // in dnd.js) - grants a second concentration slot while equipped+attuned, on top of
       // the wearer's own base slot if they're a caster at all.
       grants_concentration_slot: !!form.grants_concentration_slot,
-      // Weapon fields - always include is_weapon explicitly (even false) so
-      // changing item_type away from Weapon on an edit actually clears weapon-ness
-      // rather than leaving stale fields from before.
-      is_weapon: form.item_type === 'Weapon',
-      ...(form.item_type === 'Weapon' ? {
+      // is_weapon is its own explicit checkbox, independent of item_type - a Staff or Rod
+      // can be a real spellcasting focus (item_type='Staff', granted spells, charges) AND
+      // a wieldable quarterstaff at the same time (e.g. Staff of Power: +2 attack/damage
+      // as a weapon, +2 spell attack/DC while held). Tying is_weapon to item_type==='Weapon'
+      // made that combination impossible to model - this field always saves explicitly
+      // (even false) so unchecking it on an edit actually clears weapon-ness.
+      is_weapon: !!form.is_weapon,
+      ...(form.is_weapon ? {
         weapon_category: form.weapon_category,
         weapon_range: form.weapon_range,
         damage_dice: form.damage_dice,
@@ -230,8 +233,11 @@ export default function AddItemModal({ item, onSave, onClose }) {
             )}
           </div>
         )}
-        <div className="form-group"><label>Item Type</label><select value={form.item_type} onChange={e=>set('item_type',e.target.value)}>{ITEM_TYPES.map(t=><option key={t}>{t}</option>)}</select></div>
-        {form.item_type === 'Weapon' && (
+        <div className="form-group"><label>Item Type</label><select value={form.item_type} onChange={e=>setForm(f=>({...f, item_type:e.target.value, is_weapon: e.target.value === 'Weapon' ? true : f.is_weapon}))}>{ITEM_TYPES.map(t=><option key={t}>{t}</option>)}</select></div>
+        <label style={{display:'flex',alignItems:'center',gap:6,marginBottom:8}} title="Independent of Item Type - a Staff or Rod can be both a spellcasting focus AND a wieldable weapon at the same time (e.g. Staff of Power)">
+          <input type="checkbox" checked={form.is_weapon} onChange={e=>set('is_weapon',e.target.checked)} /> Can Also Be Wielded as a Weapon
+        </label>
+        {form.is_weapon && (
           <div style={{border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',padding:10,marginBottom:8}}>
             <div className="form-row">
               <div className="form-group"><label>Category</label><select value={form.weapon_category} onChange={e=>set('weapon_category',e.target.value)}>{WEAPON_CATEGORIES.map(c=><option key={c}>{c}</option>)}</select></div>
@@ -293,7 +299,7 @@ export default function AddItemModal({ item, onSave, onClose }) {
         <ModifiersEditor
           buffs={form.buffs}
           onChange={(buffs) => set('buffs', buffs)}
-          allowWeapon={form.item_type === 'Weapon'}
+          allowWeapon={form.is_weapon}
           activeWhileText="Only applies while the item is Equipped (and Attuned, if attunement is required)."
         />
         <div className="form-group">
