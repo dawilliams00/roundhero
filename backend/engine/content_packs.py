@@ -431,18 +431,21 @@ def get_spell_slots(class_name, level):
 def get_proficiency_bonus(level):
     return PROFICIENCY_BONUS.get(level, 2)
 
+# Third-caster subclasses (Eldritch Knight Fighter, Arcane Trickster Rogue) count 1/3 their
+# class level, rounded down, toward the multiclass spellcaster table per RAW - detected by
+# subclass name since the base class (Fighter/Rogue) is otherwise SPELLCASTER_TYPE "none".
+THIRD_CASTER_SUBCLASSES = {"Fighter": "Eldritch Knight", "Rogue": "Arcane Trickster"}
+
 # RAW multiclass spellcaster table: full casters count their whole class level, half
-# casters (Paladin/Ranger/Artificer) count half (rounded down), then the combined
-# "effective caster level" indexes into the SAME progression the single-class "full"
-# caster table already uses (PHB's Multiclass Spellcaster table is literally that table
-# reused). Warlock is excluded entirely - Pact Magic is its own separate slot pool that
-# never feeds into or draws from the shared table, returned separately as pact_slots.
+# casters (Paladin/Ranger/Artificer) count half (rounded down), third casters (Eldritch
+# Knight/Arcane Trickster) count a third (rounded down), then the combined "effective
+# caster level" indexes into the SAME progression the single-class "full" caster table
+# already uses (PHB's Multiclass Spellcaster table is literally that table reused).
+# Warlock is excluded entirely - Pact Magic is its own separate slot pool that never feeds
+# into or draws from the shared table, returned separately as pact_slots.
 def get_multiclass_spell_slots(classes):
-    """classes: list of {class_name, level}. Returns (spell_slots, pact_slots) - pact_slots
-    is None if no class in the list is a Warlock. Third-caster subclasses (Eldritch Knight
-    Fighter, Arcane Trickster Rogue) aren't counted - this app has no subclass-mechanics
-    model for base classes, so a character relying on one will under-count slightly until
-    that's modeled; a known, documented limitation rather than a silent guess."""
+    """classes: list of {class_name, level, subclass}. Returns (spell_slots, pact_slots) -
+    pact_slots is None if no class in the list is a Warlock."""
     effective = 0
     warlock_level = 0
     for c in classes:
@@ -453,6 +456,8 @@ def get_multiclass_spell_slots(classes):
             effective += c["level"] // 2
         elif caster_type == "warlock":
             warlock_level += c["level"]
+        elif THIRD_CASTER_SUBCLASSES.get(c["class_name"]) == c.get("subclass"):
+            effective += c["level"] // 3
     spell_slots = {}
     if effective > 0:
         raw = SPELL_SLOTS["full"].get(min(effective, 20), {})

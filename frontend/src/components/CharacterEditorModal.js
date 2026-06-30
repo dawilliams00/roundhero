@@ -21,6 +21,13 @@ export default function CharacterEditorModal({ onClose }) {
   const [rollingBack, setRollingBack] = useState(false);
   const [recalculating, setRecalculating] = useState(false);
   const [settingSubclassFor, setSettingSubclassFor] = useState(null);
+  // A freshly-added "+ Add Another Class" row with no class_name picked yet is local-only
+  // (saveClasses deliberately never persists it) - but starting a Level Up or Subclass
+  // pick on a DIFFERENT row forces a server round-trip (commitClasses -> saveClasses ->
+  // setCharacter), and the subsequent resync from that server response has no idea the
+  // blank row ever existed, so it silently vanished. Stashed here right before any such
+  // round-trip and re-appended after, so it survives.
+  const [preservedBlankRows, setPreservedBlankRows] = useState([]);
 
   const td = character?.tracker_data || {};
   const [identity, setIdentity] = useState(character ? {
@@ -109,7 +116,11 @@ export default function CharacterEditorModal({ onClose }) {
   // server resyncs through this one place afterward instead of three slightly different
   // copies of the same re-sync logic drifting apart.
   const syncDraftFromCharacter = (c) => {
-    setClassesDraft(c.tracker_data.classes ? c.tracker_data.classes.map(x => ({ ...x })) : null);
+    const fresh = c.tracker_data.classes ? c.tracker_data.classes.map(x => ({ ...x })) : null;
+    // Re-appends any blank "+ Add Another Class" row stashed before this round-trip
+    // (startLevelUpForRow) - see preservedBlankRows above for why this is needed at all.
+    setClassesDraft(fresh && preservedBlankRows.length ? [...fresh, ...preservedBlankRows] : fresh);
+    if (preservedBlankRows.length) setPreservedBlankRows([]);
     setScores({ ...c.ability_scores });
   };
 
@@ -159,17 +170,22 @@ export default function CharacterEditorModal({ onClose }) {
   const setRowSubclass = async (idx, subclassName) => {
     const cls = classesDraft[idx];
     setSettingSubclassFor(cls.class_name);
+    // Local var, not state - this whole round-trip happens within one function call, so
+    // there's no render-boundary gap to survive (unlike startLevelUpForRow below, where
+    // LevelUpFlowModal opens as a separate component and its onClose fires much later).
+    const blankRows = classesDraft.filter(c => !c.class_name);
     try {
       await commitClasses(); // flush any pending edit (e.g. an unblurred Level change) first
       const r = await api.post(`/characters/${character.id}/classes/subclass`, { class_name: cls.class_name, subclass_name: subclassName });
       setCharacter(r.data);
-      setClassesDraft((r.data.tracker_data.classes || []).map(c => ({ ...c })));
+      setClassesDraft([...(r.data.tracker_data.classes || []).map(c => ({ ...c })), ...blankRows]);
     } finally {
       setSettingSubclassFor(null);
     }
   };
 
   const startLevelUpForRow = async (className) => {
+    setPreservedBlankRows(classesDraft.filter(c => !c.class_name));
     await commitClasses(); // flush any pending edit first - see saveClasses above
     setLevelingUpClass(className);
   };
