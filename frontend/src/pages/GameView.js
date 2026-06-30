@@ -61,7 +61,10 @@ export default function GameView() {
   const activeCompanion = activeKey === 'companion2' ? companion2 : companion;
   const hasSyricModule = modules.some(module => module.id === 'syric_arcane');
   const tabs = [
-    { label: '⚔️ Actions', Component: ActionEconomyTab },
+    // Syric's own AE replacement (Syric AE tab) covers everything the standard Actions
+    // tab does plus his Codex/Shadow-specific mechanics - showing both was redundant and
+    // confusing (two separate action-economy trackers for one character).
+    ...(hasSyricModule ? [] : [{ label: '⚔️ Actions', Component: ActionEconomyTab }]),
     ...(hasSyricModule ? [
       { label: '🔮 Syric', Component: SyricConsoleTab },
       { label: '⚡ Syric AE', Component: SyricActionsTab },
