@@ -9,6 +9,7 @@ class Character(db.Model):
     name            = db.Column(db.String(120), nullable=False)
     class_name      = db.Column(db.String(80), nullable=False)
     subclass        = db.Column(db.String(120))
+    background      = db.Column(db.String(80), nullable=True)
     race            = db.Column(db.String(80), nullable=False)
     level           = db.Column(db.Integer, default=1)
     _ability_scores = db.Column("ability_scores", db.Text, default="{}")
@@ -61,6 +62,7 @@ class Character(db.Model):
             "name":           self.name,
             "class_name":     self.class_name,
             "subclass":       self.subclass,
+            "background":     self.background,
             "race":           self.race,
             "level":          self.level,
             "ability_scores": self.ability_scores,

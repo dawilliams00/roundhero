@@ -12,6 +12,7 @@ import os
 PENDING_COLUMNS = [
     ("characters", "source_pdf", "BYTEA", "BLOB"),
     ("campaign_characters", "is_primary", "BOOLEAN DEFAULT FALSE", "BOOLEAN DEFAULT 0"),
+    ("characters", "background", "VARCHAR(80)", "VARCHAR(80)"),
 ]
 
 def _apply_pending_migrations(app):

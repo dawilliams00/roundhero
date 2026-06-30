@@ -4,6 +4,7 @@ import api from '../utils/api';
 import LevelUpFlowModal from './LevelUpFlowModal';
 import ClassFeatureBrowserModal from './ClassFeatureBrowserModal';
 import RaceInfoModal from './RaceInfoModal';
+import BackgroundSelectModal from './BackgroundSelectModal';
 import { ABILITY_KEYS, ABILITY_LABELS, SAVE_PROFS, SKILL_MAP, suspectedAbilityContamination, featBuffItems, parseClassLevels, raceBuffItems, computeItemBonuses, RACE_ABILITY_BONUSES, matchSrdRace, modifier, unarmoredAC, cappedModifier } from '../utils/dnd';
 
 // Full base-stat editor - identity, ability scores, and save/skill proficiencies, on top
@@ -79,6 +80,7 @@ export default function CharacterEditorModal({ onClose }) {
   const [srdRaces, setSrdRaces] = useState([]);
   const [srdSubraces, setSrdSubraces] = useState([]);
   const [showRaceInfo, setShowRaceInfo] = useState(false);
+  const [showBackgroundSelect, setShowBackgroundSelect] = useState(false);
 
   // Intentionally runs once on mount only - this modal remounts fresh every time it's
   // opened (SettingsModal renders it behind `showEditor &&`), so `character` here is
@@ -281,6 +283,14 @@ export default function CharacterEditorModal({ onClose }) {
                 </button>
               )}
             </div>
+          </div>
+          <div className="form-group">
+            <label>Background</label>
+            <div style={{fontSize:13,color:'var(--text-primary)',padding:'7px 0'}}>{character.background || '—'}</div>
+            <button type="button" className="btn-link" style={{fontSize:11,color:'var(--accent-light)',background:'none',border:'none',padding:0,cursor:'pointer',textDecoration:'underline',marginTop:4}}
+              onClick={() => setShowBackgroundSelect(true)}>
+              {character.background ? 'Change Background' : '+ Choose Background'}
+            </button>
           </div>
         </div>
         <div style={{display:'flex',alignItems:'baseline',gap:8,marginBottom:8,marginTop:8}}>
@@ -545,6 +555,7 @@ export default function CharacterEditorModal({ onClose }) {
         const match = matchSrdRace(identity.race, srdRaces, srdSubraces);
         return match ? <RaceInfoModal baseRace={match.baseRace} subrace={match.subrace} onClose={() => setShowRaceInfo(false)} /> : null;
       })()}
+      {showBackgroundSelect && <BackgroundSelectModal onClose={() => setShowBackgroundSelect(false)} />}
     </div>
   );
 }

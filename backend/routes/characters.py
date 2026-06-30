@@ -292,7 +292,7 @@ def update_character(char_id):
     user_id = int(get_jwt_identity())
     char = Character.query.filter_by(id=char_id, user_id=user_id).first_or_404()
     data = request.get_json()
-    for field in ["name", "class_name", "subclass", "race", "level"]:
+    for field in ["name", "class_name", "subclass", "background", "race", "level"]:
         if field in data:
             setattr(char, field, data[field])
     if "ability_scores" in data: char.ability_scores = data["ability_scores"]
