@@ -8,6 +8,13 @@ const COMMON_CONDITIONS = [
   'Restrained', 'Stunned', 'Unconscious', 'Hexed', 'Blessed', 'Baned', 'Hasted', 'Slowed'
 ];
 
+const KNOWN_CONCENTRATION_EFFECTS = new Set([
+  'bane', 'bless', 'blur', 'darkness', 'detect magic', 'enlarge/reduce',
+  'faerie fire', 'fly', 'greater invisibility', 'haste', 'hex', 'hold person',
+  'hunter’s mark', "hunter's mark", 'invisibility', 'polymorph', 'protection from energy',
+  'slow', 'spirit guardians', 'summon shadowspawn', 'web'
+]);
+
 function sameId(left, right) {
   return String(left) === String(right);
 }
@@ -28,6 +35,10 @@ function initiativeValue(value) {
 
 function cleanList(value) {
   return Array.isArray(value) ? value.filter(Boolean) : [];
+}
+
+function isConcentrationEffect(name, manuallyFlagged = false) {
+  return manuallyFlagged || KNOWN_CONCENTRATION_EFFECTS.has(String(name || '').trim().toLowerCase());
 }
 
 function normalizeCombatant(row) {
@@ -125,32 +136,7 @@ function MiniButton({ children, onClick, variant = 'secondary', disabled }) {
   );
 }
 
-function StatusBadge({ children, tone = 'neutral', onClick }) {
-  const bg = {
-    danger: 'rgba(230,57,70,0.24)',
-    warning: 'rgba(255,184,77,0.18)',
-    success: 'rgba(32,201,151,0.18)',
-    effect: 'rgba(124,92,252,0.24)',
-    neutral: 'rgba(255,255,255,0.08)',
-  }[tone] || 'rgba(255,255,255,0.08)';
-  return (
-    <button type="button" onClick={onClick} disabled={!onClick} style={{
-      border:'1px solid var(--border)',
-      background:bg,
-      color:'var(--text-primary)',
-      borderRadius:4,
-      padding:'3px 7px',
-      fontSize:11,
-      cursor:onClick ? 'pointer' : 'default',
-      fontWeight:800,
-    }}>
-      {children}
-    </button>
-  );
-}
-
 function HpControls({ row, onUpdate }) {
-  const [amount, setAmount] = useState('');
   const [openCalc, setOpenCalc] = useState(null);
   const applyDelta = delta => {
     let current = toNumber(row.hp_current, 0);
@@ -170,9 +156,8 @@ function HpControls({ row, onUpdate }) {
   const applyTempDelta = delta => {
     onUpdate(row.id, { temp_hp: Math.max(0, toNumber(row.temp_hp, 0) + delta) });
   };
-  const amt = Math.max(0, toNumber(amount, 0));
   return (
-    <div style={{display:'grid',gridTemplateColumns:'28px 1fr 28px',gap:6,alignItems:'center',position:'relative'}}>
+    <div style={{display:'grid',gridTemplateColumns:'30px minmax(92px,1fr) 30px',gap:6,alignItems:'center',position:'relative',minWidth:0}}>
       <MiniButton onClick={() => applyDelta(-1)} variant="danger">-</MiniButton>
       <div style={{textAlign:'center'}}>
         <button type="button" onClick={() => setOpenCalc(openCalc === 'current' ? null : 'current')} style={{background:'transparent',border:0,color:'var(--accent-light)',fontWeight:900,fontSize:18,cursor:'pointer',padding:0}}>
@@ -189,37 +174,33 @@ function HpControls({ row, onUpdate }) {
       {openCalc === 'temp' && (
         <NumberPadPopover label={`${row.name} Temp HP`} value={row.temp_hp || 0} color="var(--accent-light)" onApply={applyTempDelta} onClose={() => setOpenCalc(null)} />
       )}
-      <input value={amount} onChange={e => setAmount(e.target.value)} placeholder="Amount" style={{gridColumn:'1 / -1',textAlign:'center'}} />
-      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:4,gridColumn:'1 / -1'}}>
-        <MiniButton onClick={() => { applyDelta(-amt); setAmount(''); }} variant="danger" disabled={!amt}>Damage</MiniButton>
-        <MiniButton onClick={() => { applyDelta(amt); setAmount(''); }} variant="success" disabled={!amt}>Heal</MiniButton>
-        <MiniButton onClick={() => { onUpdate(row.id, { temp_hp: Math.max(0, toNumber(row.temp_hp, 0) + amt) }); setAmount(''); }} disabled={!amt}>Temp</MiniButton>
-      </div>
     </div>
   );
 }
 
 function CombatantCard({ row, active, onUpdate, onRemove, onViewMonster, onAddCondition, onRemoveCondition, onRemoveEffect, onDeathSave }) {
   return (
-    <div style={{border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',background:active ? 'rgba(124,92,252,0.14)' : 'var(--bg-secondary)',padding:10,display:'grid',gridTemplateColumns:'74px minmax(160px,1.15fr) 170px minmax(190px,1fr) 160px',gap:10,alignItems:'start'}}>
-      <div>
-        <label style={{fontSize:10,color:'var(--text-dim)'}}>INIT</label>
-        <input value={row.initiative} onChange={e => onUpdate(row.id, { initiative: e.target.value })} style={{textAlign:'center',fontWeight:800}} />
-      </div>
-      <div>
-        <div style={{display:'flex',gap:6,alignItems:'center',flexWrap:'wrap'}}>
-          <input value={row.name} onChange={e => onUpdate(row.id, { name: e.target.value })} style={{fontWeight:800}} />
-          <span style={{color:row.type === 'player' ? 'var(--success)' : 'var(--warning)',fontSize:11,fontWeight:800,textTransform:'uppercase'}}>{row.type}</span>
+    <div style={{border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',background:active ? 'rgba(124,92,252,0.14)' : 'var(--bg-secondary)',padding:10,display:'grid',gridTemplateColumns:'minmax(230px,1.15fr) 170px minmax(260px,1.35fr) minmax(150px,0.8fr)',gap:12,alignItems:'start',minWidth:0}}>
+      <div style={{minWidth:0}}>
+        <div style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) auto',gap:6,alignItems:'center'}}>
+          <input value={row.name} onChange={e => onUpdate(row.id, { name: e.target.value })} style={{fontWeight:800,minWidth:0}} />
+          <span style={{color:row.type === 'player' ? 'var(--success)' : 'var(--warning)',fontSize:11,fontWeight:900,textTransform:'uppercase',whiteSpace:'nowrap'}}>{row.type}</span>
         </div>
-        <div style={{display:'flex',gap:6,alignItems:'center',marginTop:6,flexWrap:'wrap'}}>
-          <span style={{color:'var(--text-secondary)',fontSize:12}}>AC</span>
-          <input value={row.ac} onChange={e => onUpdate(row.id, { ac: e.target.value })} style={{width:58,textAlign:'center'}} />
-          {row.monster && <MiniButton onClick={() => onViewMonster(row.monster)}>[STAT]</MiniButton>}
+        <div style={{display:'grid',gridTemplateColumns:'minmax(64px,78px) minmax(54px,64px) auto',gap:6,alignItems:'end',marginTop:8}}>
+          <label style={{display:'grid',gap:3,fontSize:10,color:'var(--text-dim)'}}>
+            INIT
+            <input value={row.initiative} onChange={e => onUpdate(row.id, { initiative: e.target.value })} style={{textAlign:'center',fontWeight:800}} />
+          </label>
+          <label style={{display:'grid',gap:3,fontSize:10,color:'var(--text-dim)'}}>
+            AC
+            <input value={row.ac} onChange={e => onUpdate(row.id, { ac: e.target.value })} style={{textAlign:'center',fontWeight:800}} />
+          </label>
+          {row.monster && <div style={{alignSelf:'end'}}><MiniButton onClick={() => onViewMonster(row.monster)}>[STAT]</MiniButton></div>}
         </div>
         <div style={{color:'var(--text-dim)',fontSize:11,marginTop:6}}>{row.group_key ? `Group: ${enemyGroupLabel(row)}` : 'No group'}</div>
       </div>
       <HpControls row={row} onUpdate={onUpdate} />
-      <div>
+      <div style={{minWidth:0}}>
         <div style={{display:'grid',gridTemplateColumns:'1fr auto',gap:6,marginBottom:7}}>
           <select onChange={e => { if (e.target.value) onAddCondition(row, e.target.value); e.target.value = ''; }} defaultValue="">
             <option value="">Add condition</option>
@@ -240,7 +221,7 @@ function CombatantCard({ row, active, onUpdate, onRemove, onViewMonster, onAddCo
           <input value={row.concentration} onChange={e => onUpdate(row.id, { concentration: e.target.value })} placeholder="Spell or effect" />
         </div>
       </div>
-      <div>
+      <div style={{minWidth:0}}>
         <div style={{color:'var(--text-secondary)',fontSize:11,fontWeight:800,marginBottom:5}}>EFFECTS</div>
         <div style={{display:'flex',flexDirection:'column',gap:4,maxHeight:98,overflowY:'auto'}}>
           {cleanList(row.effects).length === 0 && <span style={{color:'var(--text-dim)',fontSize:12}}>None</span>}
@@ -379,7 +360,20 @@ export default function EncounterRunnerModal({
   };
 
   const removeEffect = (row, effect) => {
-    updateCombatant(row.id, { effects: cleanList(row.effects).filter(entry => (entry.id || entry.name) !== (effect.id || effect.name)) });
+    const next = (data.combatants || []).map(entry => {
+      const normalized = normalizeCombatant(entry);
+      if (normalized.id === row.id) {
+        return normalizeCombatant({
+          ...normalized,
+          effects: cleanList(normalized.effects).filter(item => (item.id || item.name) !== (effect.id || effect.name)),
+        });
+      }
+      if (effect.concentration && effect.source_id && normalized.id === effect.source_id && normalized.concentration === effect.name) {
+        return normalizeCombatant({ ...normalized, concentration: '' });
+      }
+      return normalized;
+    });
+    patchCombatants(next);
   };
 
   const setDeathSave = (row, key, delta) => {
@@ -393,6 +387,7 @@ export default function EncounterRunnerModal({
     const source = combatants.find(row => row.id === effectForm.source_id);
     const name = (effectForm.custom || effectForm.name || '').trim();
     if (!name) return;
+    const concentration = isConcentrationEffect(name, effectForm.concentration);
     const effect = {
       id: combatantId(),
       name,
@@ -400,19 +395,20 @@ export default function EncounterRunnerModal({
       source_id: source?.id || '',
       source_name: source?.name || '',
       duration: effectForm.duration,
-      concentration: effectForm.concentration,
+      concentration,
     };
     const patch = { effects: [...cleanList(target.effects), effect] };
     if (effectForm.type === 'condition') {
       patch.conditions = cleanList(target.conditions).includes(name) ? cleanList(target.conditions) : [...cleanList(target.conditions), name];
     }
     const next = (data.combatants || []).map(row => {
-      if (row.id === target.id) return normalizeCombatant({ ...row, ...patch });
-      if (effectForm.concentration && source && row.id === source.id) return normalizeCombatant({ ...row, concentration: name });
-      return normalizeCombatant(row);
+      let nextRow = normalizeCombatant(row);
+      if (nextRow.id === target.id) nextRow = normalizeCombatant({ ...nextRow, ...patch });
+      if (concentration && source && nextRow.id === source.id) nextRow = normalizeCombatant({ ...nextRow, concentration: name });
+      return nextRow;
     });
     patchCombatants(next);
-    setEffectForm(form => ({ ...form, name: '', custom: '', target_id: '' }));
+    setEffectForm(form => ({ ...form, name: '', custom: '', target_id: '', concentration: false }));
   };
 
   const groups = combatants
@@ -424,6 +420,9 @@ export default function EncounterRunnerModal({
     }, {});
 
   const activeId = selectedTurnId || combatants[0]?.id;
+  const primaryStatusAction = encounter.status === 'running'
+    ? { label: 'Stop', status: 'paused', variant: 'danger' }
+    : { label: encounter.status === 'paused' ? 'Resume' : 'Start', status: 'running', variant: 'success' };
 
   return (
     <div className="modal-overlay" style={{zIndex:2600,background:'var(--bg-primary)',padding:0}}>
@@ -435,8 +434,7 @@ export default function EncounterRunnerModal({
             <div style={{color:'var(--text-secondary)',fontSize:12}}>{combatants.length} combatants · {encounter.status}</div>
           </div>
           <div style={{display:'flex',gap:6,flexWrap:'wrap',justifyContent:'flex-end'}}>
-            <MiniButton onClick={() => onStatus(encounter.id, 'running')} variant="success">Start</MiniButton>
-            <MiniButton onClick={() => onStatus(encounter.id, encounter.status === 'paused' ? 'running' : 'paused')}>{encounter.status === 'paused' ? 'Resume' : 'Pause'}</MiniButton>
+            <MiniButton onClick={() => onStatus(encounter.id, primaryStatusAction.status)} variant={primaryStatusAction.variant}>{primaryStatusAction.label}</MiniButton>
             <MiniButton onClick={() => onStatus(encounter.id, 'complete')}>Complete</MiniButton>
             <MiniButton onClick={syncPartyStats}>Sync PCs</MiniButton>
             <MiniButton onClick={() => onDelete(encounter.id)} variant="danger">Delete</MiniButton>

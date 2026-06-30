@@ -58,6 +58,13 @@ export default function GameView() {
     return () => { cancelled = true; };
   }, [character?.id]);
 
+  const activeEncounterViews = campaignViews
+    .map(view => ({
+      ...view,
+      encounters: (view.encounters || []).filter(encounter => encounter.status === 'running'),
+    }))
+    .filter(view => view.encounters.length > 0);
+
   const openCampaignView = async () => {
     if (!character?.id) return;
     try {
@@ -126,7 +133,7 @@ export default function GameView() {
             }}>{t.label}</button>
           ))}
         </div>
-        {campaignViews.some(v => v.encounters && v.encounters.length > 0) && (
+        {activeEncounterViews.length > 0 && (
           <button className="btn btn-secondary btn-sm" style={{margin:6,flexShrink:0}} onClick={openCampaignView}>
             Encounter
           </button>
@@ -138,8 +145,8 @@ export default function GameView() {
       {showConfirmClasses && (
         <LevelUpFlowModal mode="confirm_classes" onClose={() => { setShowConfirmClasses(false); setNeedsClassConfirm(false); }} />
       )}
-      {showCampaignView && campaignViews.some(v => v.encounters && v.encounters.length > 0) && (
-        <CampaignPlayerViewModal views={campaignViews} onClose={() => setShowCampaignView(false)} />
+      {showCampaignView && activeEncounterViews.length > 0 && (
+        <CampaignPlayerViewModal views={activeEncounterViews} onClose={() => setShowCampaignView(false)} />
       )}
     </div>
   );

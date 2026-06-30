@@ -12,6 +12,88 @@ import { fetchSyricReferences } from '../utils/characterModules';
 
 const TABS = ['Party', 'Effects', 'Encounters', 'DM References'];
 const ENCOUNTER_STATUSES = ['planned', 'running', 'paused', 'complete'];
+const EFFECT_PRESETS = [
+  {
+    id: 'heroes_feast',
+    name: 'Heroes Feast',
+    effect_type: 'party_buff',
+    duration: '24 hr',
+    target_scope: 'party',
+    notes: 'Maximum HP increases by the rolled feast value. Also helps track immunity/advantage reminders from the feast.',
+    modifiers: [
+      { type: 'max_hp_bonus', value: 25, detail: 'Feast HP roll', label: 'Max HP +25' },
+      { type: 'immunity', detail: 'poison', label: 'Immune: poison' },
+      { type: 'immunity', detail: 'frightened', label: 'Immune: frightened' },
+      { type: 'advantage', detail: 'Wisdom saving throws', label: 'Advantage: Wisdom saves' },
+    ],
+  },
+  {
+    id: 'bless',
+    name: 'Bless',
+    effect_type: 'spell',
+    duration: '1 min',
+    target_scope: 'selected',
+    concentration: true,
+    notes: 'Add 1d4 to attack rolls and saving throws while active.',
+    modifiers: [
+      { type: 'bonus_dice', value: '1d4', detail: 'attack rolls and saving throws', label: '+1d4 attacks/saves' },
+    ],
+  },
+  {
+    id: 'bane',
+    name: 'Bane',
+    effect_type: 'spell',
+    duration: '1 min',
+    target_scope: 'selected',
+    concentration: true,
+    notes: 'Subtract 1d4 from attack rolls and saving throws while active.',
+    modifiers: [
+      { type: 'penalty_dice', value: '1d4', detail: 'attack rolls and saving throws', label: '-1d4 attacks/saves' },
+    ],
+  },
+  {
+    id: 'fire_resistance',
+    name: 'Fire Resistance',
+    effect_type: 'buff',
+    duration: 'Until removed',
+    target_scope: 'selected',
+    modifiers: [
+      { type: 'resistance', detail: 'fire', label: 'Resistant: fire' },
+    ],
+  },
+];
+const MODIFIER_TYPES = [
+  { value: 'max_hp_bonus', label: 'Max HP Bonus', needsValue: true, valuePlaceholder: '+25', detailPlaceholder: 'Feast HP roll' },
+  { value: 'temp_hp', label: 'Temp HP', needsValue: true, valuePlaceholder: '12', detailPlaceholder: 'Source/reason' },
+  { value: 'advantage', label: 'Advantage', detailPlaceholder: 'poison saves' },
+  { value: 'disadvantage', label: 'Disadvantage', detailPlaceholder: 'Stealth checks' },
+  { value: 'immunity', label: 'Immunity', detailPlaceholder: 'fire, poison, frightened' },
+  { value: 'resistance', label: 'Resistance', detailPlaceholder: 'cold' },
+  { value: 'vulnerability', label: 'Vulnerability', detailPlaceholder: 'radiant' },
+  { value: 'bonus_dice', label: 'Bonus Dice', needsValue: true, valuePlaceholder: '1d4', detailPlaceholder: 'saving throws' },
+  { value: 'penalty_dice', label: 'Penalty Dice', needsValue: true, valuePlaceholder: '1d4', detailPlaceholder: 'attack rolls' },
+  { value: 'condition', label: 'Condition', detailPlaceholder: 'poisoned' },
+  { value: 'note', label: 'Reminder', detailPlaceholder: 'Custom reminder' },
+];
+
+function blankCampaignEffectForm() {
+  return {
+    preset_id: 'custom',
+    name: '',
+    source_character_id: '',
+    target_character_id: '',
+    target_character_ids: [],
+    target_scope: 'single',
+    effect_type: 'campaign_effect',
+    duration: '',
+    concentration: false,
+    notes: '',
+    modifier_type: 'max_hp_bonus',
+    modifier_value: '',
+    modifier_detail: '',
+    modifiers: [],
+  };
+}
 
 function sameId(left, right) {
   return String(left) === String(right);
@@ -183,6 +265,34 @@ function preparedSpellsForRosterEntry(entry) {
     .sort((a, b) => String(a.level ?? 0).localeCompare(String(b.level ?? 0), undefined, { numeric: true }) || a.name.localeCompare(b.name));
 }
 
+function effectTargetIds(form, roster) {
+  if (form.target_scope === 'party') return roster.map(entry => Number(entry.character_id)).filter(Boolean);
+  if (form.target_scope === 'selected') return (form.target_character_ids || []).map(Number).filter(Boolean);
+  return form.target_character_id ? [Number(form.target_character_id)] : [];
+}
+
+function modifierLabel(modifier) {
+  if (modifier.label) return modifier.label;
+  const option = MODIFIER_TYPES.find(entry => entry.value === modifier.type);
+  const name = option?.label || modifier.type || 'Modifier';
+  const value = modifier.value ? ` ${modifier.value}` : '';
+  const detail = modifier.detail ? `: ${modifier.detail}` : '';
+  return `${name}${value}${detail}`;
+}
+
+function campaignEffectSummary(effect, roster) {
+  const payload = effect.payload || {};
+  const targetIds = payload.target_character_ids || (effect.target_character_id ? [effect.target_character_id] : []);
+  if (payload.target_scope === 'party') return 'Entire active party';
+  if (targetIds.length > 1) {
+    const names = targetIds
+      .map(id => roster.find(entry => sameId(entry.character_id, id))?.name)
+      .filter(Boolean);
+    return names.length ? names.join(', ') : `${targetIds.length} targets`;
+  }
+  return effect.target_character_name || 'Unassigned';
+}
+
 function combatantFromRosterEntry(entry) {
   const snapshot = entry.sheet_snapshot || {};
   const hp = snapshot.hp || {};
@@ -318,7 +428,7 @@ function RosterRow({ entry, campaign, user, onPrimary, onActive, onDetach }) {
   );
 }
 
-function EffectRow({ effect, onStatus }) {
+function EffectRow({ effect, roster, onStatus }) {
   const statusColor = effect.status === 'applied'
     ? 'var(--success)'
     : effect.status === 'pending'
@@ -326,6 +436,7 @@ function EffectRow({ effect, onStatus }) {
       : 'var(--text-secondary)';
   const concentration = effect.payload?.concentration ? 'Concentration' : '';
   const duration = effect.payload?.duration || '';
+  const modifiers = Array.isArray(effect.payload?.modifiers) ? effect.payload.modifiers : [];
   return (
     <div style={{display:'grid',gridTemplateColumns:'1fr auto',gap:10,padding:'10px 0',borderBottom:'1px solid var(--border)'}}>
       <div>
@@ -335,9 +446,18 @@ function EffectRow({ effect, onStatus }) {
           {concentration && <span style={{color:'var(--accent-light)',fontSize:11,fontWeight:700}}>{concentration}</span>}
         </div>
         <div style={{color:'var(--text-secondary)',fontSize:12,marginTop:3}}>
-          {effect.source_character_name || 'Unknown'} → {effect.target_character_name || 'Unassigned'}
+          {effect.source_character_name || 'DM'} → {campaignEffectSummary(effect, roster)}
           {duration ? ` · ${duration}` : ''}
         </div>
+        {modifiers.length > 0 && (
+          <div style={{display:'flex',gap:5,flexWrap:'wrap',marginTop:6}}>
+            {modifiers.map((modifier, index) => (
+              <span key={`${modifier.type}_${index}`} style={{border:'1px solid rgba(124,92,252,0.45)',background:'rgba(124,92,252,0.16)',color:'var(--text-primary)',borderRadius:4,padding:'3px 6px',fontSize:11,fontWeight:800}}>
+                {modifierLabel(modifier)}
+              </span>
+            ))}
+          </div>
+        )}
         {effect.payload?.notes && <div style={{color:'var(--text-dim)',fontSize:12,marginTop:4}}>{effect.payload.notes}</div>}
       </div>
       <div style={{display:'flex',gap:6,alignItems:'center'}}>
@@ -352,10 +472,10 @@ function EffectRow({ effect, onStatus }) {
   );
 }
 
-function EncounterRow({ encounter, selected, isDm, onStatus, onDelete, onSelect, onRun }) {
+function EncounterRow({ encounter, selected, isDm, onStatus, onDelete, onSetup, onRun }) {
   const nextActions = {
     planned: [['Start', 'running']],
-    running: [['Pause', 'paused'], ['Complete', 'complete']],
+    running: [['Stop', 'paused'], ['Complete', 'complete']],
     paused: [['Resume', 'running'], ['Complete', 'complete']],
     complete: [],
   }[encounter.status] || [];
@@ -375,7 +495,9 @@ function EncounterRow({ encounter, selected, isDm, onStatus, onDelete, onSelect,
       </div>
       {isDm && (
         <div style={{display:'flex',gap:6}}>
-          <button className="btn btn-secondary btn-sm" onClick={() => onSelect(encounter.id)}>Setup</button>
+          <button className={selected ? 'btn btn-primary btn-sm' : 'btn btn-secondary btn-sm'} onClick={() => onSetup(encounter.id)}>
+            {selected ? 'Minimize Setup' : 'Setup'}
+          </button>
           <button className="btn btn-primary btn-sm" onClick={() => onRun(encounter.id)}>Open</button>
           {nextActions.map(([label, status]) => (
             <button key={status} className="btn btn-secondary btn-sm" onClick={() => onStatus(encounter.id, status)}>{label}</button>
@@ -391,6 +513,7 @@ function EncounterBuilder({
   campaign,
   encounter,
   roster,
+  activeEffects,
   monsters,
   monsterSearch,
   setMonsterSearch,
@@ -402,6 +525,7 @@ function EncounterBuilder({
   setSharedInitiative,
   onPatchData,
   onStatus,
+  onEffectStatus,
   onDelete,
   onViewMonster,
 }) {
@@ -497,7 +621,8 @@ function EncounterBuilder({
       </div>
 
       {campaign.is_dm && (
-        <div style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) minmax(0,1.3fr)',gap:12}}>
+        <div style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) 340px',gap:12,alignItems:'start'}}>
+          <div style={{display:'flex',flexDirection:'column',gap:12,minWidth:0}}>
           <div style={{border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',padding:10}}>
             <div style={{color:'var(--text-secondary)',fontSize:11,fontWeight:800,textTransform:'uppercase',marginBottom:8}}>Add Players</div>
             <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
@@ -509,78 +634,99 @@ function EncounterBuilder({
             </div>
           </div>
 
-          <div style={{border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',padding:10}}>
+          <div style={{overflowX:'auto',border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',background:'var(--bg-secondary)'}}>
+            <div style={{minWidth:860}}>
+              <div style={{position:'sticky',top:0,zIndex:2,display:'grid',gridTemplateColumns:'64px 1.3fr 130px 110px 1.1fr 1fr 110px 86px',gap:6,color:'var(--text-secondary)',fontSize:11,fontWeight:800,textTransform:'uppercase',padding:'8px 10px',background:'var(--bg-primary)',borderBottom:'1px solid var(--border)'}}>
+                <div>Init</div>
+                <div>Name</div>
+                <div>HP / Temp</div>
+                <div>AC / Type</div>
+                <div>Conditions</div>
+                <div>Concentration</div>
+                <div>Death Saves</div>
+                <div />
+              </div>
+              {combatants.length === 0 ? (
+                <div style={{color:'var(--text-secondary)',fontSize:13,padding:20}}>No combatants yet.</div>
+              ) : combatants.map(row => (
+                <div key={row.id} style={{display:'grid',gridTemplateColumns:'64px 1.3fr 130px 110px 1.1fr 1fr 110px 86px',gap:6,alignItems:'center',padding:'8px 10px',borderTop:'1px solid var(--border)'}}>
+                  <input value={row.initiative} onChange={e => updateCombatant(row.id, { initiative: e.target.value })} />
+                  <div>
+                    <input value={row.name} onChange={e => updateCombatant(row.id, { name: e.target.value })} />
+                    <div style={{color:'var(--text-dim)',fontSize:11,marginTop:2}}>
+                      {row.group_key ? `Group: ${row.group_key.split('_')[0]}` : row.type}
+                    </div>
+                  </div>
+                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:4}}>
+                    <input value={row.hp_current} onChange={e => updateCombatant(row.id, { hp_current: e.target.value })} placeholder="HP" />
+                    <input value={row.temp_hp} onChange={e => updateCombatant(row.id, { temp_hp: e.target.value })} placeholder="Temp" />
+                    <button className="btn btn-secondary btn-sm" onClick={() => updateCombatant(row.id, { hp_current: Math.max(0, toNumber(row.hp_current) - 1) })}>-1</button>
+                    <button className="btn btn-secondary btn-sm" onClick={() => updateCombatant(row.id, { hp_current: toNumber(row.hp_current) + 1 })}>+1</button>
+                  </div>
+                  <div>
+                    <input value={row.ac} onChange={e => updateCombatant(row.id, { ac: e.target.value })} placeholder="AC" />
+                    <div style={{color:row.type === 'player' ? 'var(--accent-light)' : 'var(--warning)',fontSize:11,marginTop:3}}>{row.type}</div>
+                  </div>
+                  <input value={(row.conditions || []).join(', ')} onChange={e => updateConditionText(row, e.target.value)} placeholder="poisoned, hexed" />
+                  <input value={row.concentration} onChange={e => updateCombatant(row.id, { concentration: e.target.value })} placeholder="Spell or effect" />
+                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:4}}>
+                    <button className="btn btn-secondary btn-sm" onClick={() => setDeathSave(row, 'successes', 1)}>S {row.death_saves?.successes || 0}</button>
+                    <button className="btn btn-secondary btn-sm" onClick={() => setDeathSave(row, 'failures', 1)}>F {row.death_saves?.failures || 0}</button>
+                    <button className="btn btn-secondary btn-sm" onClick={() => updateCombatant(row.id, { death_saves: { successes: 0, failures: 0 } })} style={{gridColumn:'1 / -1'}}>Reset</button>
+                  </div>
+                  <div style={{display:'flex',gap:4}}>
+                    {row.monster && <button className="btn btn-secondary btn-sm" onClick={() => onViewMonster(row.monster)}>Stats</button>}
+                    {campaign.is_dm && <button className="btn btn-danger btn-sm" onClick={() => removeCombatant(row.id)}>X</button>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          </div>
+
+          <aside style={{border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',padding:10,position:'sticky',top:12,alignSelf:'start',background:'var(--bg-secondary)'}}>
+            <div style={{borderBottom:'1px solid var(--border)',paddingBottom:10,marginBottom:10}}>
+              <div style={{color:'var(--text-secondary)',fontSize:11,fontWeight:800,textTransform:'uppercase',marginBottom:8}}>Prepared Effects</div>
+              {(activeEffects || []).filter(effect => effect.status === 'pending').length === 0 ? (
+                <div style={{color:'var(--text-dim)',fontSize:12}}>No pending effects queued.</div>
+              ) : (activeEffects || []).filter(effect => effect.status === 'pending').map(effect => (
+                <div key={effect.id} style={{display:'grid',gridTemplateColumns:'1fr auto',gap:6,alignItems:'center',marginBottom:6}}>
+                  <div style={{minWidth:0}}>
+                    <div style={{color:'var(--text-primary)',fontWeight:800,fontSize:12}}>{effect.name}</div>
+                    <div style={{color:'var(--text-dim)',fontSize:11}}>{campaignEffectSummary(effect, roster)}</div>
+                  </div>
+                  <button type="button" className="btn btn-success btn-sm" onClick={() => onEffectStatus(effect.id, 'applied')}>Apply</button>
+                </div>
+              ))}
+            </div>
             <div style={{color:'var(--text-secondary)',fontSize:11,fontWeight:800,textTransform:'uppercase',marginBottom:8}}>Pull Enemy</div>
-            <div style={{display:'grid',gridTemplateColumns:'1fr 32px 64px 32px 88px',gap:6,marginBottom:8}}>
+            <div style={{display:'grid',gridTemplateColumns:'1fr',gap:6,marginBottom:8}}>
               <input value={monsterSearch} onChange={e => setMonsterSearch(e.target.value)} placeholder="Search bestiary" />
+              <div style={{display:'grid',gridTemplateColumns:'32px 1fr 32px 78px',gap:6}}>
               <button type="button" className="btn btn-secondary btn-sm" onClick={() => setAddMonsterQuantity(String(Math.max(1, toNumber(addMonsterQuantity, 1) - 1)))}>-</button>
               <input value={addMonsterQuantity} onChange={e => setAddMonsterQuantity(e.target.value)} placeholder="Qty" style={{textAlign:'center'}} />
               <button type="button" className="btn btn-secondary btn-sm" onClick={() => setAddMonsterQuantity(String(Math.min(30, toNumber(addMonsterQuantity, 1) + 1)))}>+</button>
               <input value={addMonsterInitiative} onChange={e => setAddMonsterInitiative(e.target.value)} placeholder="Init" />
+              </div>
             </div>
             <label style={{display:'flex',alignItems:'center',gap:8,color:'var(--text-secondary)',fontSize:12,marginBottom:8}}>
               <input type="checkbox" checked={sharedInitiative} onChange={e => setSharedInitiative(e.target.checked)} style={{width:'auto'}} />
               Shared initiative for this group
             </label>
-            <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))',gap:6}}>
+            <div style={{display:'flex',flexDirection:'column',gap:6,maxHeight:430,overflowY:'auto'}}>
               {filteredMonsters.map(monster => (
-                <button key={monster._custom_id ? `custom_${monster._custom_id}` : monster.name} className="btn btn-secondary btn-sm" onClick={() => addMonster(monster)} style={{textAlign:'left'}}>
-                  {monster.name} <span style={{color:'var(--text-dim)'}}>CR {monster.challenge_rating}</span>
-                </button>
+                <div key={monster._custom_id ? `custom_${monster._custom_id}` : monster.name} style={{display:'grid',gridTemplateColumns:'1fr auto auto',gap:5}}>
+                  <div style={{border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',padding:'6px 8px',background:'var(--bg-card)',color:'var(--text-primary)',fontSize:12,fontWeight:800,minWidth:0}}>
+                    {monster.name} <span style={{color:'var(--text-dim)'}}>CR {monster.challenge_rating}</span>
+                  </div>
+                  <button type="button" className="btn btn-primary btn-sm" onClick={() => addMonster(monster)}>Add</button>
+                  <button type="button" className="btn btn-secondary btn-sm" onClick={() => onViewMonster(monster)}>Stat</button>
+                </div>
               ))}
             </div>
-          </div>
+          </aside>
         </div>
       )}
-
-      <div style={{overflowX:'auto',border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',background:'var(--bg-secondary)'}}>
-        <div style={{minWidth:860}}>
-          <div style={{position:'sticky',top:0,zIndex:2,display:'grid',gridTemplateColumns:'64px 1.3fr 130px 110px 1.1fr 1fr 110px 86px',gap:6,color:'var(--text-secondary)',fontSize:11,fontWeight:800,textTransform:'uppercase',padding:'8px 10px',background:'var(--bg-primary)',borderBottom:'1px solid var(--border)'}}>
-            <div>Init</div>
-            <div>Name</div>
-            <div>HP / Temp</div>
-            <div>AC / Type</div>
-            <div>Conditions</div>
-            <div>Concentration</div>
-            <div>Death Saves</div>
-            <div />
-          </div>
-          {combatants.length === 0 ? (
-            <div style={{color:'var(--text-secondary)',fontSize:13,padding:20}}>No combatants yet.</div>
-          ) : combatants.map(row => (
-            <div key={row.id} style={{display:'grid',gridTemplateColumns:'64px 1.3fr 130px 110px 1.1fr 1fr 110px 86px',gap:6,alignItems:'center',padding:'8px 10px',borderTop:'1px solid var(--border)'}}>
-              <input value={row.initiative} onChange={e => updateCombatant(row.id, { initiative: e.target.value })} />
-              <div>
-                <input value={row.name} onChange={e => updateCombatant(row.id, { name: e.target.value })} />
-                <div style={{color:'var(--text-dim)',fontSize:11,marginTop:2}}>
-                  {row.group_key ? `Group: ${row.group_key.split('_')[0]}` : row.type}
-                </div>
-              </div>
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:4}}>
-                <input value={row.hp_current} onChange={e => updateCombatant(row.id, { hp_current: e.target.value })} placeholder="HP" />
-                <input value={row.temp_hp} onChange={e => updateCombatant(row.id, { temp_hp: e.target.value })} placeholder="Temp" />
-                <button className="btn btn-secondary btn-sm" onClick={() => updateCombatant(row.id, { hp_current: Math.max(0, toNumber(row.hp_current) - 1) })}>-1</button>
-                <button className="btn btn-secondary btn-sm" onClick={() => updateCombatant(row.id, { hp_current: toNumber(row.hp_current) + 1 })}>+1</button>
-              </div>
-              <div>
-                <input value={row.ac} onChange={e => updateCombatant(row.id, { ac: e.target.value })} placeholder="AC" />
-                <div style={{color:row.type === 'player' ? 'var(--accent-light)' : 'var(--warning)',fontSize:11,marginTop:3}}>{row.type}</div>
-              </div>
-              <input value={(row.conditions || []).join(', ')} onChange={e => updateConditionText(row, e.target.value)} placeholder="poisoned, hexed" />
-              <input value={row.concentration} onChange={e => updateCombatant(row.id, { concentration: e.target.value })} placeholder="Spell or effect" />
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:4}}>
-                <button className="btn btn-secondary btn-sm" onClick={() => setDeathSave(row, 'successes', 1)}>S {row.death_saves?.successes || 0}</button>
-                <button className="btn btn-secondary btn-sm" onClick={() => setDeathSave(row, 'failures', 1)}>F {row.death_saves?.failures || 0}</button>
-                <button className="btn btn-secondary btn-sm" onClick={() => updateCombatant(row.id, { death_saves: { successes: 0, failures: 0 } })} style={{gridColumn:'1 / -1'}}>Reset</button>
-              </div>
-              <div style={{display:'flex',gap:4}}>
-                {row.monster && <button className="btn btn-secondary btn-sm" onClick={() => onViewMonster(row.monster)}>Stats</button>}
-                {campaign.is_dm && <button className="btn btn-danger btn-sm" onClick={() => removeCombatant(row.id)}>X</button>}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }
@@ -618,15 +764,7 @@ export default function CampaignsPage() {
   const [name, setName] = useState('');
   const [inviteCode, setInviteCode] = useState('');
   const [selectedCharacterId, setSelectedCharacterId] = useState('');
-  const [effectForm, setEffectForm] = useState({
-    name: '',
-    source_character_id: '',
-    target_character_id: '',
-    effect_type: 'spell',
-    duration: '',
-    concentration: false,
-    notes: '',
-  });
+  const [effectForm, setEffectForm] = useState(blankCampaignEffectForm());
   const [spellEffectForm, setSpellEffectForm] = useState({
     source_character_id: '',
     spell_name: '',
@@ -706,8 +844,11 @@ export default function CampaignsPage() {
   const inactiveRoster = allRoster.filter(entry => !entry.active);
   const activeEffects = (campaign?.effects || []).filter(effect => effect.status !== 'removed');
   const encounters = campaign?.encounters || [];
-  const selectedEncounter = encounters.find(entry => entry.id === selectedEncounterId) || encounters[0] || null;
+  const selectedEncounter = selectedEncounterId
+    ? encounters.find(entry => entry.id === selectedEncounterId) || null
+    : null;
   const runningEncounter = encounters.find(entry => entry.id === runningEncounterId) || null;
+  const encounterSetupMode = activeTab === 'Encounters' && campaign?.is_dm && !!selectedEncounter;
   const attached = useMemo(
     () => new Set(activeRoster.map(entry => entry.character_id)),
     [activeRoster]
@@ -719,6 +860,121 @@ export default function CampaignsPage() {
   const selectedSpellSource = activeRoster.find(entry => sameId(entry.character_id, spellEffectForm.source_character_id));
   const preparedSpellOptions = preparedSpellsForRosterEntry(selectedSpellSource);
   const selectedPreparedSpell = preparedSpellOptions.find(spell => spell.name === spellEffectForm.spell_name);
+  const selectedModifierType = MODIFIER_TYPES.find(entry => entry.value === effectForm.modifier_type) || MODIFIER_TYPES[0];
+  const selectedEffectTargetIds = effectTargetIds(effectForm, activeRoster);
+
+  const resetEffectForm = () => setEffectForm(blankCampaignEffectForm());
+
+  const applyEffectPreset = presetId => {
+    const preset = EFFECT_PRESETS.find(entry => entry.id === presetId);
+    if (!preset) {
+      setEffectForm(form => ({ ...blankCampaignEffectForm(), source_character_id: form.source_character_id }));
+      return;
+    }
+    setEffectForm(form => ({
+      ...blankCampaignEffectForm(),
+      preset_id: preset.id,
+      name: preset.name,
+      source_character_id: form.source_character_id,
+      target_scope: preset.target_scope || 'selected',
+      effect_type: preset.effect_type || 'campaign_effect',
+      duration: preset.duration || '',
+      concentration: !!preset.concentration,
+      notes: preset.notes || '',
+      modifiers: preset.modifiers || [],
+    }));
+  };
+
+  const toggleEffectTarget = characterId => {
+    setEffectForm(form => {
+      const exists = (form.target_character_ids || []).some(id => sameId(id, characterId));
+      return {
+        ...form,
+        target_character_ids: exists
+          ? (form.target_character_ids || []).filter(id => !sameId(id, characterId))
+          : [...(form.target_character_ids || []), Number(characterId)],
+      };
+    });
+  };
+
+  const addEffectModifier = () => {
+    const type = effectForm.modifier_type;
+    const option = MODIFIER_TYPES.find(entry => entry.value === type);
+    if (!option) return;
+    const value = (effectForm.modifier_value || '').trim();
+    const detail = (effectForm.modifier_detail || '').trim();
+    if (option.needsValue && !value) return;
+    if (!option.needsValue && !detail) return;
+    const modifier = {
+      type,
+      value,
+      detail,
+      label: modifierLabel({ type, value, detail }),
+    };
+    setEffectForm(form => ({
+      ...form,
+      modifiers: [...(form.modifiers || []), modifier],
+      modifier_value: '',
+      modifier_detail: '',
+    }));
+  };
+
+  const removeEffectModifier = index => {
+    setEffectForm(form => ({
+      ...form,
+      modifiers: (form.modifiers || []).filter((_, currentIndex) => currentIndex !== index),
+    }));
+  };
+
+  const applyCampaignEffectToEncounters = async effect => {
+    const payload = effect.payload || {};
+    const targetIds = payload.target_character_ids || (effect.target_character_id ? [effect.target_character_id] : []);
+    if (!targetIds.length) return;
+    const modifiers = Array.isArray(payload.modifiers) ? payload.modifiers : [];
+    const hpBonus = modifiers
+      .filter(modifier => modifier.type === 'max_hp_bonus')
+      .reduce((sum, modifier) => sum + toNumber(modifier.value, 0), 0);
+    const tempHp = modifiers
+      .filter(modifier => modifier.type === 'temp_hp')
+      .reduce((max, modifier) => Math.max(max, toNumber(modifier.value, 0)), 0);
+    const effectId = `campaign_effect_${effect.id}`;
+    const effectTag = {
+      id: effectId,
+      name: effect.name,
+      type: effect.effect_type || 'campaign_effect',
+      duration: payload.duration || '',
+      modifiers,
+      source_name: effect.source_character_name || 'DM',
+    };
+    const openEncounters = encounters.filter(entry => entry.status !== 'complete');
+    for (const encounter of openEncounters) {
+      const data = encounter.data || {};
+      const rows = Array.isArray(data.combatants) ? data.combatants : [];
+      let changed = false;
+      const combatants = rows.map(row => {
+        if (row.type !== 'player' || !targetIds.some(id => sameId(id, row.character_id))) return row;
+        const effects = Array.isArray(row.effects) ? row.effects : [];
+        const alreadyApplied = effects.some(item => item.id === effectId);
+        if (alreadyApplied) return row;
+        changed = true;
+        const patch = {
+          ...row,
+          effects: [...effects, effectTag],
+        };
+        if (hpBonus) {
+          patch.hp_current = toNumber(row.hp_current, 0) + hpBonus;
+          patch.hp_max = toNumber(row.hp_max, 0) + hpBonus;
+        }
+        if (tempHp) {
+          patch.temp_hp = Math.max(toNumber(row.temp_hp, 0), tempHp);
+        }
+        return patch;
+      });
+      if (changed) {
+        await patchEncounterData(encounter.id, { ...data, combatants });
+      }
+    }
+  };
 
   const submitCreate = async e => {
     e.preventDefault();
@@ -761,14 +1017,30 @@ export default function CampaignsPage() {
   const submitEffect = async e => {
     e.preventDefault();
     if (!campaign || !effectForm.name.trim()) return;
+    const targetIds = effectTargetIds(effectForm, activeRoster);
+    if (!targetIds.length) {
+      setError('Choose at least one effect target');
+      return;
+    }
     setError('');
     try {
       await createEffect(campaign.id, {
-        ...effectForm,
+        name: effectForm.name,
+        effect_type: effectForm.effect_type,
+        status: 'pending',
         source_character_id: effectForm.source_character_id ? Number(effectForm.source_character_id) : null,
-        target_character_id: effectForm.target_character_id ? Number(effectForm.target_character_id) : null,
+        target_character_id: targetIds.length === 1 ? targetIds[0] : null,
+        payload: {
+          preset_id: effectForm.preset_id,
+          target_scope: effectForm.target_scope,
+          target_character_ids: targetIds,
+          duration: effectForm.duration,
+          concentration: effectForm.concentration,
+          notes: effectForm.notes,
+          modifiers: effectForm.modifiers || [],
+        },
       });
-      setEffectForm({ name: '', source_character_id: '', target_character_id: '', effect_type: 'spell', duration: '', concentration: false, notes: '' });
+      resetEffectForm();
     } catch (err) {
       setError(err.response?.data?.error || 'Could not create effect');
     }
@@ -864,7 +1136,10 @@ export default function CampaignsPage() {
 
   const setEffectStatus = async (effectId, status) => {
     if (!campaign) return;
-    await updateEffectStatus(campaign.id, effectId, status);
+    const updated = await updateEffectStatus(campaign.id, effectId, status);
+    if (status === 'applied') {
+      await applyCampaignEffectToEncounters(updated);
+    }
   };
 
   const setEncounterStatus = async (encounterId, status) => {
@@ -885,7 +1160,7 @@ export default function CampaignsPage() {
 
   return (
     <div style={{minHeight:'100vh',background:'var(--bg-primary)',padding:24}}>
-      <div style={{maxWidth:1100,margin:'0 auto'}}>
+      <div style={{maxWidth:encounterSetupMode ? 'none' : 1100,margin:'0 auto'}}>
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:24,gap:12}}>
           <div>
             <div style={{fontFamily:"'Cinzel',serif",fontSize:22,color:'var(--accent-light)'}}>RoundHero</div>
@@ -905,7 +1180,8 @@ export default function CampaignsPage() {
           </div>
         )}
 
-        <div style={{display:'grid',gridTemplateColumns:'320px minmax(0,1fr)',gap:16,alignItems:'start'}}>
+        <div style={{display:'grid',gridTemplateColumns:encounterSetupMode ? 'minmax(0,1fr)' : '320px minmax(0,1fr)',gap:16,alignItems:'start'}}>
+          {!encounterSetupMode && (
           <div style={{display:'flex',flexDirection:'column',gap:12}}>
             <div className="card">
               <form onSubmit={submitCreate}>
@@ -942,6 +1218,7 @@ export default function CampaignsPage() {
               ))}
             </div>
           </div>
+          )}
 
           <div className="card" style={{minHeight:540}}>
             {!campaign ? (
@@ -1096,28 +1373,102 @@ export default function CampaignsPage() {
                         </div>
                       )}
                     </form>
-                    <form onSubmit={submitEffect} style={{display:'grid',gridTemplateColumns:'1.2fr 1fr 1fr',gap:8,marginBottom:8}}>
-                      <input value={effectForm.name} onChange={e => setEffectForm(f => ({ ...f, name: e.target.value }))} placeholder="Effect or spell" />
-                      <select value={effectForm.source_character_id} onChange={e => setEffectForm(f => ({ ...f, source_character_id: e.target.value }))}>
-                        <option value="">Source</option>
-                        {activeRoster.map(entry => <option key={entry.id} value={entry.character_id}>{entry.name}</option>)}
-                      </select>
-                      <select value={effectForm.target_character_id} onChange={e => setEffectForm(f => ({ ...f, target_character_id: e.target.value }))}>
-                        <option value="">Target</option>
-                        {activeRoster.map(entry => <option key={entry.id} value={entry.character_id}>{entry.name}</option>)}
-                      </select>
-                      <input value={effectForm.duration} onChange={e => setEffectForm(f => ({ ...f, duration: e.target.value }))} placeholder="Duration" />
-                      <label style={{display:'flex',alignItems:'center',gap:8,color:'var(--text-secondary)',fontSize:13}}>
-                        <input type="checkbox" checked={effectForm.concentration} onChange={e => setEffectForm(f => ({ ...f, concentration: e.target.checked }))} style={{width:'auto'}} />
-                        Concentration
-                      </label>
-                      <button className="btn btn-primary" disabled={!effectForm.name.trim()}>Add Effect</button>
-                      <input style={{gridColumn:'1 / -1'}} value={effectForm.notes} onChange={e => setEffectForm(f => ({ ...f, notes: e.target.value }))} placeholder="Notes or reminders" />
+                    <form onSubmit={submitEffect} style={{border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',padding:10,background:'var(--bg-secondary)',display:'grid',gap:10,marginBottom:10}}>
+                      <div style={{display:'grid',gridTemplateColumns:'1fr 1.2fr 1fr 0.8fr',gap:8}}>
+                        <div className="form-group" style={{marginBottom:0}}>
+                          <label>Canned Effect</label>
+                          <select value={effectForm.preset_id} onChange={e => applyEffectPreset(e.target.value)}>
+                            <option value="custom">Custom Effect</option>
+                            {EFFECT_PRESETS.map(preset => <option key={preset.id} value={preset.id}>{preset.name}</option>)}
+                          </select>
+                        </div>
+                        <div className="form-group" style={{marginBottom:0}}>
+                          <label>Name</label>
+                          <input value={effectForm.name} onChange={e => setEffectForm(f => ({ ...f, name: e.target.value, preset_id: 'custom' }))} placeholder="Heroes Feast, poison cloud, boon..." />
+                        </div>
+                        <div className="form-group" style={{marginBottom:0}}>
+                          <label>Source</label>
+                          <select value={effectForm.source_character_id} onChange={e => setEffectForm(f => ({ ...f, source_character_id: e.target.value }))}>
+                            <option value="">DM / Environment</option>
+                            {activeRoster.map(entry => <option key={entry.id} value={entry.character_id}>{entry.name}</option>)}
+                          </select>
+                        </div>
+                        <div className="form-group" style={{marginBottom:0}}>
+                          <label>Duration</label>
+                          <input value={effectForm.duration} onChange={e => setEffectForm(f => ({ ...f, duration: e.target.value }))} placeholder="24 hr" />
+                        </div>
+                      </div>
+
+                      <div style={{display:'grid',gridTemplateColumns:'180px minmax(0,1fr)',gap:10,alignItems:'start'}}>
+                        <div className="form-group" style={{marginBottom:0}}>
+                          <label>Targets</label>
+                          <select value={effectForm.target_scope} onChange={e => setEffectForm(f => ({ ...f, target_scope: e.target.value, target_character_id: '', target_character_ids: [] }))}>
+                            <option value="single">Single player</option>
+                            <option value="selected">Selected players</option>
+                            <option value="party">Entire active party</option>
+                          </select>
+                        </div>
+                        <div>
+                          {effectForm.target_scope === 'single' && (
+                            <select value={effectForm.target_character_id} onChange={e => setEffectForm(f => ({ ...f, target_character_id: e.target.value }))}>
+                              <option value="">Target</option>
+                              {activeRoster.map(entry => <option key={entry.id} value={entry.character_id}>{entry.name}</option>)}
+                            </select>
+                          )}
+                          {effectForm.target_scope === 'selected' && (
+                            <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+                              {activeRoster.map(entry => {
+                                const active = (effectForm.target_character_ids || []).some(id => sameId(id, entry.character_id));
+                                return (
+                                  <button key={entry.id} type="button" className={active ? 'btn btn-primary btn-sm' : 'btn btn-secondary btn-sm'} onClick={() => toggleEffectTarget(entry.character_id)}>
+                                    {entry.name}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
+                          {effectForm.target_scope === 'party' && (
+                            <div style={{color:'var(--text-secondary)',fontSize:12,padding:'9px 0'}}>
+                              Applies to {activeRoster.length} active party member{activeRoster.length === 1 ? '' : 's'}.
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div style={{border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',padding:8,display:'grid',gap:8}}>
+                        <div style={{color:'var(--text-secondary)',fontSize:11,fontWeight:800,textTransform:'uppercase'}}>Buffs / Debuffs</div>
+                        <div style={{display:'grid',gridTemplateColumns:'1fr 0.65fr 1.4fr auto',gap:6}}>
+                          <select value={effectForm.modifier_type} onChange={e => setEffectForm(f => ({ ...f, modifier_type: e.target.value, modifier_value: '', modifier_detail: '' }))}>
+                            {MODIFIER_TYPES.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+                          </select>
+                          <input value={effectForm.modifier_value} onChange={e => setEffectForm(f => ({ ...f, modifier_value: e.target.value }))} placeholder={selectedModifierType.valuePlaceholder || 'Value'} disabled={!selectedModifierType.needsValue} />
+                          <input value={effectForm.modifier_detail} onChange={e => setEffectForm(f => ({ ...f, modifier_detail: e.target.value }))} placeholder={selectedModifierType.detailPlaceholder || 'Detail'} />
+                          <button type="button" className="btn btn-secondary btn-sm" onClick={addEffectModifier}>Add Mod</button>
+                        </div>
+                        <div style={{display:'flex',gap:5,flexWrap:'wrap',minHeight:26}}>
+                          {(effectForm.modifiers || []).length === 0 ? (
+                            <span style={{color:'var(--text-dim)',fontSize:12}}>No modifiers yet. You can still add a reminder-only effect.</span>
+                          ) : effectForm.modifiers.map((modifier, index) => (
+                            <button key={`${modifier.type}_${index}`} type="button" onClick={() => removeEffectModifier(index)} style={{border:'1px solid rgba(124,92,252,0.45)',background:'rgba(124,92,252,0.18)',color:'var(--text-primary)',borderRadius:4,padding:'4px 7px',fontSize:11,fontWeight:800,cursor:'pointer'}}>
+                              {modifierLabel(modifier)} x
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div style={{display:'grid',gridTemplateColumns:'1fr auto auto',gap:8,alignItems:'center'}}>
+                        <input value={effectForm.notes} onChange={e => setEffectForm(f => ({ ...f, notes: e.target.value }))} placeholder="Notes or reminders" />
+                        <label style={{display:'flex',alignItems:'center',gap:8,color:'var(--text-secondary)',fontSize:13,whiteSpace:'nowrap'}}>
+                          <input type="checkbox" checked={effectForm.concentration} onChange={e => setEffectForm(f => ({ ...f, concentration: e.target.checked }))} style={{width:'auto'}} />
+                          Concentration
+                        </label>
+                        <button className="btn btn-primary" disabled={!effectForm.name.trim() || selectedEffectTargetIds.length === 0}>Queue Effect</button>
+                      </div>
                     </form>
                     {activeEffects.length === 0 ? (
                       <div style={{color:'var(--text-secondary)',fontSize:13}}>No active or pending effects.</div>
                     ) : activeEffects.map(effect => (
-                      <EffectRow key={effect.id} effect={effect} onStatus={setEffectStatus} />
+                      <EffectRow key={effect.id} effect={effect} roster={activeRoster} onStatus={setEffectStatus} />
                     ))}
                   </div>
                 )}
@@ -1148,7 +1499,7 @@ export default function CampaignsPage() {
                         isDm={campaign.is_dm}
                         onStatus={setEncounterStatus}
                         onDelete={removeEncounter}
-                        onSelect={setSelectedEncounterId}
+                        onSetup={id => setSelectedEncounterId(current => current === id ? null : id)}
                         onRun={setRunningEncounterId}
                       />
                     ))}
@@ -1157,6 +1508,7 @@ export default function CampaignsPage() {
                         campaign={campaign}
                         encounter={selectedEncounter}
                         roster={activeRoster}
+                        activeEffects={activeEffects}
                         monsters={monsters}
                         monsterSearch={monsterSearch}
                         setMonsterSearch={setMonsterSearch}
@@ -1168,6 +1520,7 @@ export default function CampaignsPage() {
                         setSharedInitiative={setSharedInitiative}
                         onPatchData={patchEncounterData}
                         onStatus={setEncounterStatus}
+                        onEffectStatus={setEffectStatus}
                         onDelete={removeEncounter}
                         onViewMonster={setViewingMonster}
                       />
