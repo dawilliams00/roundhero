@@ -289,6 +289,12 @@ export default function AddItemModal({ item, onSave, onClose }) {
         <div className="form-group"><label>Description</label><textarea value={form.description} onChange={e=>set('description',e.target.value)} rows={3} style={{width:'100%',resize:'vertical'}} /></div>
 
         <div style={{color:'var(--text-dim)',fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:1,margin:'12px 0 6px'}}>Granted Spells</div>
+        {form.granted_spells.length > 0 && (
+          <div style={{display:'flex',gap:6,marginBottom:4,paddingRight:30}}>
+            <div style={{flex:1}} />
+            <div style={{width:56,textAlign:'center',fontSize:10,color:'var(--text-dim)',textTransform:'uppercase',letterSpacing:0.5}}>Charge Cost</div>
+          </div>
+        )}
         {form.granted_spells.map((s, i) => {
           const query = s.name.trim().toLowerCase();
           const matches = activeSpellRow === i && query
