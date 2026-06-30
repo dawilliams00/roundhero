@@ -87,6 +87,26 @@ export const modifier = score => Math.floor((score - 10) / 2);
 export const modStr   = score => { const m = modifier(score); return m >= 0 ? `+${m}` : `${m}`; };
 export const profBonus = level => PROF_BONUS[level] || 2;
 
+// Unarmored base AC formula - varies by class. A "Set Base AC To" item buff (heavy
+// armor, medium armor, light armor) overrides this entirely while equipped; this is the
+// fallback when no such override is present (i.e. the character is unarmored). The
+// features arg allows detecting Draconic Resilience specifically even if the subclass
+// string doesn't contain "Draconic" (PDF-imported characters may have the feature listed).
+export const unarmoredAC = (classNameRaw, abilityScores, features) => {
+  const dexMod = modifier(abilityScores?.DEX ?? 10);
+  const classLower = (classNameRaw || '').toLowerCase();
+  if (classLower.includes('barbarian')) {
+    return { formula: '10 + DEX + CON', ac: 10 + dexMod + modifier(abilityScores?.CON ?? 10) };
+  }
+  if (classLower.includes('monk')) {
+    return { formula: '10 + DEX + WIS', ac: 10 + dexMod + modifier(abilityScores?.WIS ?? 10) };
+  }
+  if (Object.keys(features || {}).some(n => n.toLowerCase().includes('draconic resilience'))) {
+    return { formula: '13 + DEX (Draconic Resilience)', ac: 13 + dexMod };
+  }
+  return { formula: '10 + DEX', ac: 10 + dexMod };
+};
+
 export const calcSaves = (abilityScores, className, level, explicitProfs, items) => {
   const prof = profBonus(level);
   const profs = explicitProfs && explicitProfs.length ? explicitProfs : (SAVE_PROFS[className] || []);

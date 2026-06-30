@@ -267,6 +267,11 @@ export default function CharacterSelect() {
                 </div>
               </div>
             )}
+            {importSummary.summary.printed_ac != null && importSummary.summary.printed_ac !== importSummary.summary.stored_ac && (
+              <div style={{color:'var(--text-dim)',fontSize:11,marginTop:8,lineHeight:1.5}}>
+                ℹ PDF shows AC {importSummary.summary.printed_ac} — stored your unarmored base ({importSummary.summary.stored_ac}) instead. Add your armor as an item with "Set Base AC To" and your shield with a plain "+AC" modifier and the total will auto-calculate.
+              </div>
+            )}
             <div style={{color:'var(--text-dim)',fontSize:11,marginTop:8}}>
               Parsed {importSummary.summary.features_found} features, {importSummary.summary.spells_found} spells, {importSummary.summary.items_found} items.
             </div>

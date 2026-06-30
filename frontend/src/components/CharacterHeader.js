@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useCharacter } from '../context/CharacterContext';
 import api from '../utils/api';
-import { modifier, modStr, hpColor, profBonus, ABILITY_KEYS, getSpellcastingBlocks, computeItemBonuses, effectiveAbilityScores, suspectedAbilityContamination, featBuffItems, raceBuffItems, HASTED_EFFECT, HARDCODED_CONDITION_INFO, EXHAUSTION_RAW_TEXT } from '../utils/dnd';
+import { modifier, modStr, hpColor, profBonus, ABILITY_KEYS, getSpellcastingBlocks, computeItemBonuses, effectiveAbilityScores, suspectedAbilityContamination, featBuffItems, raceBuffItems, HASTED_EFFECT, HARDCODED_CONDITION_INFO, EXHAUSTION_RAW_TEXT, unarmoredAC } from '../utils/dnd';
 import SavesModal from './SavesModal';
 import SkillsModal from './SkillsModal';
 import TraitsModal from './TraitsModal';
@@ -230,7 +230,11 @@ export default function CharacterHeader({ onBack }) {
   // aggregation a second time for feats specifically.
   const buffItems = [...invItems, ...featBuffItems(td?.features), ...raceBuffItems(character.race)];
   const itemBonuses = computeItemBonuses(buffItems);
-  const effAb  = effectiveAbilityScores(ab, buffItems);
+  const effAbBase  = effectiveAbilityScores(ab, buffItems);
+  // ability_score_misc: per-ability misc adjustments stored in tracker_data (spells like
+  // Bull's Strength, manual corrections, anything not from a real item/race/feat buff).
+  const abMisc = td?.ability_score_misc || {};
+  const effAb = Object.fromEntries(ABILITY_KEYS.map(k => [k, effAbBase[k] + (abMisc[k] || 0)]));
   const abilityContamination = suspectedAbilityContamination(ab, buffItems);
   const dexMod = modifier(effAb.DEX || 10);
   const attunedCount = invItems.filter(it => it.attunement && it.attuned).length;
@@ -252,8 +256,12 @@ export default function CharacterHeader({ onBack }) {
   // entirely rather than adding to it - takes priority over the manually-entered/saved
   // td.ac while equipped+attuned, and falls back to it the instant the armor comes off.
   const armorOverride = itemBonuses.acOverride;
-  const baseAc = armorOverride != null ? armorOverride : (td?.ac ?? (10 + dexMod));
-  const ac     = baseAc + itemBonuses.ac_base + hasteAcBonus;
+  const { ac: unarmoredBase } = unarmoredAC(class_name, effAb, td?.features);
+  // Priority: equipped armor's Set-Base-AC-To override → manually stored td.ac (e.g.
+  // Mage Armor) → auto-computed unarmored formula (10+DEX, or class variant).
+  const baseAc = armorOverride != null ? armorOverride : (td?.ac != null ? td.ac : unarmoredBase);
+  const acMisc = td?.ac_misc || 0;
+  const ac     = baseAc + itemBonuses.ac_base + acMisc + hasteAcBonus;
   const init   = td?.initiative ?? dexMod;
   // Speed is stored as a free-form string from PDF import ("30 ft.") or a plain number
   // once edited here - parseInt handles either. Haste doubles it (RAW) the same way it
@@ -307,7 +315,7 @@ export default function CharacterHeader({ onBack }) {
 
   // The AC stat box shows/edits the full total; back out the item and Haste bonuses so
   // the stored base (armor + dex) doesn't end up double-counting them on the next render.
-  const setAc     = (v) => saveTrackerData({ ...td, ac: v - itemBonuses.ac_base - hasteAcBonus });
+  const setAc     = (v) => saveTrackerData({ ...td, ac: v - itemBonuses.ac_base - acMisc - hasteAcBonus });
   const setInit   = (v) => saveTrackerData({ ...td, initiative: v });
   const toggleInspiration = () => saveTrackerData({ ...td, inspiration: !insp });
   const setCurrencyCoin = (k, v) => saveTrackerData({ ...td, inventory: { ...inventory, currency: { ...currency, [k]: v } } });
@@ -342,7 +350,7 @@ export default function CharacterHeader({ onBack }) {
               </div>
               {tempHp > 0 && <PMStat label="Temp HP" value={tempHp} color={hpCol} onAdjust={adjustTempHp} />}
 
-              <EditableStat label="AC" value={ac} onSave={setAc} color={STAT_COLORS.AC} title={(armorOverride != null || itemBonuses.ac_base || hasteAcBonus) ? `${baseAc} base${armorOverride != null ? ' (set by equipped armor)' : ''}${itemBonuses.ac_base ? ` + ${itemBonuses.ac_base} items` : ''}${hasteAcBonus ? ` + ${hasteAcBonus} Hasted` : ''}${armorOverride != null ? ' — editing this box has no effect until that armor is unequipped' : ''}` : undefined} />
+              <EditableStat label="AC" value={ac} onSave={setAc} color={STAT_COLORS.AC} title={(armorOverride != null || itemBonuses.ac_base || acMisc || hasteAcBonus) ? `${baseAc} base${armorOverride != null ? ' (armor)' : ''}${itemBonuses.ac_base ? ` + ${itemBonuses.ac_base} items` : ''}${acMisc ? ` + ${acMisc} misc` : ''}${hasteAcBonus ? ` + ${hasteAcBonus} Hasted` : ''}${armorOverride != null ? ' — edit only when armor is unequipped' : ''}` : undefined} />
               <EditableStat label="INIT" value={init} onSave={setInit} color={STAT_COLORS.INIT} />
               <EditableStat label="SPEED" value={speed} onSave={setSpeed} color={STAT_COLORS.SPEED} title={isHasted ? `${baseSpeed} ft. base, doubled while Hasted` : undefined} />
               <div className="stat-box" style={{borderColor: STAT_COLORS.PROF}}>

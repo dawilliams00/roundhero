@@ -151,7 +151,22 @@ def parse_character_pdf(file_bytes, spell_db_by_name=None):
         if (val or "").strip():
             skill_proficiencies.append(skill)
 
-    ac = _parse_int(fields.get("AC"), 10)
+    # Store the unarmored base AC formula rather than the printed total - the printed
+    # AC already includes armor (which should instead come from the item's "Set Base AC To"
+    # buff) and a shield (which should be the item's additive +AC buff). Storing the raw
+    # printed total contaminates td.ac the same way printed ability scores contaminate
+    # ability_scores - it becomes wrong the moment the player adds their armor as an item.
+    printed_ac = _parse_int(fields.get("AC"), 10)
+    dex_mod = (ability_scores.get("DEX", 10) - 10) // 2
+    class_lower = class_level_raw.lower()
+    if "barbarian" in class_lower:
+        con_mod = (ability_scores.get("CON", 10) - 10) // 2
+        ac = 10 + dex_mod + con_mod
+    elif "monk" in class_lower:
+        wis_mod = (ability_scores.get("WIS", 10) - 10) // 2
+        ac = 10 + dex_mod + wis_mod
+    else:
+        ac = 10 + dex_mod  # Draconic Bloodline check done later after features are parsed
     initiative = _parse_int(fields.get("Init"), 0)
     max_hp = _parse_int(fields.get("MaxHP"), 1)
     current_hp_raw = (fields.get("CurrentHP") or "").strip()
@@ -417,6 +432,8 @@ def parse_character_pdf(file_bytes, spell_db_by_name=None):
         "spells_found": len(known_spells),
         "items_found": len(items),
         "is_multiclass": "/" in class_level_raw,
+        "printed_ac": printed_ac,
+        "stored_ac": ac,
     }
 
     return {

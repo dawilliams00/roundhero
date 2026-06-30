@@ -3,7 +3,7 @@ import { useCharacter } from '../context/CharacterContext';
 import api from '../utils/api';
 import LevelUpFlowModal from './LevelUpFlowModal';
 import ClassFeatureBrowserModal from './ClassFeatureBrowserModal';
-import { ABILITY_KEYS, ABILITY_LABELS, SAVE_PROFS, SKILL_MAP, suspectedAbilityContamination, featBuffItems, parseClassLevels, raceBuffItems, computeItemBonuses, RACE_ABILITY_BONUSES, modifier } from '../utils/dnd';
+import { ABILITY_KEYS, ABILITY_LABELS, SAVE_PROFS, SKILL_MAP, suspectedAbilityContamination, featBuffItems, parseClassLevels, raceBuffItems, computeItemBonuses, RACE_ABILITY_BONUSES, modifier, unarmoredAC } from '../utils/dnd';
 
 // Full base-stat editor - identity, ability scores, and save/skill proficiencies, on top
 // of the original v1 level-up-only framework. This is the one place all of the
@@ -34,6 +34,8 @@ export default function CharacterEditorModal({ onClose }) {
   const [classesDraft, setClassesDraft] = useState(character && td.classes ? td.classes.map(c => ({...c})) : null);
   const [classSubOptions, setClassSubOptions] = useState({});
   const [scores, setScores] = useState(character ? { ...character.ability_scores } : null);
+  const [abMisc, setAbMisc] = useState(character ? { ...( td.ability_score_misc || {}) } : null);
+  const [acMisc, setAcMisc] = useState(td.ac_misc || 0);
   // Falls back to the class's RAW default saves when the character has no explicit
   // save_proficiencies yet (true for every manually-created character before this editor
   // existed) so the checkboxes don't just look empty for someone who's always had them.
@@ -207,6 +209,8 @@ export default function CharacterEditorModal({ onClose }) {
         save_proficiencies: saveProfs,
         skill_proficiencies: skillProfs,
         skill_expertise: skillExpertise,
+        ability_score_misc: Object.fromEntries(ABILITY_KEYS.map(k => [k, parseInt(abMisc[k]) || 0])),
+        ac_misc: parseInt(acMisc) || 0,
       });
       onClose();
     } catch (err) {
@@ -329,8 +333,9 @@ export default function CharacterEditorModal({ onClose }) {
                 const base = parseInt(scores[k]) || 10;
                 const raceBonus = raceBonuses[k] || 0;
                 const itemAdd = itemFeatAdds[k] || 0;
+                const miscVal = parseInt(abMisc[k]) || 0;
                 const setOverride = itemFeatOverrides[k] ?? null;
-                let total = base + raceBonus + itemAdd;
+                let total = base + raceBonus + itemAdd + miscVal;
                 if (setOverride !== null) total = Math.max(total, setOverride);
                 const mod = modifier(total);
                 const isContaminated = !!contamination[k];
@@ -368,6 +373,12 @@ export default function CharacterEditorModal({ onClose }) {
                           <span style={{fontSize:11,color:'var(--accent-light)'}}>{setOverride}</span>
                         </div>
                       )}
+                      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                        <span style={{fontSize:10,color:'var(--text-dim)'}}>Misc</span>
+                        <input type="number" value={abMisc[k] ?? 0}
+                          onChange={e => setAbMisc(m => ({...m,[k]:e.target.value}))}
+                          style={{width:48,textAlign:'center',padding:'2px 4px',fontSize:12,border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',background:'var(--bg-card)',color:'var(--text-primary)'}} />
+                      </div>
                     </div>
                     {isContaminated && (
                       <div style={{fontSize:10,color:'var(--warning)',marginTop:6,lineHeight:1.3}}>
@@ -377,6 +388,48 @@ export default function CharacterEditorModal({ onClose }) {
                   </div>
                 );
               })}
+            </div>
+          );
+        })()}
+
+        <div style={{fontSize:12,color:'var(--text-dim)',textTransform:'uppercase',letterSpacing:1,marginBottom:8,marginTop:8}}>Armor Class</div>
+        {(() => {
+          const normScores = Object.fromEntries(ABILITY_KEYS.map(k => [k, parseInt(scores[k]) || 10]));
+          const normMisc = Object.fromEntries(ABILITY_KEYS.map(k => [k, parseInt(abMisc[k]) || 0]));
+          const { abilityAdds, abilityOverrides } = computeItemBonuses(buffItems);
+          const effScores = Object.fromEntries(ABILITY_KEYS.map(k => {
+            let v = normScores[k] + (normMisc[k] || 0) + (abilityAdds[k] || 0);
+            if (abilityOverrides[k] != null) v = Math.max(v, abilityOverrides[k]);
+            return [k, v];
+          }));
+          const { formula: unarmoredFormula, ac: unarmoredBase } = unarmoredAC(character.class_name, effScores, td.features);
+          const { acOverride, ac_base: itemAddAc } = computeItemBonuses(buffItems);
+          const baseAcDisplay = acOverride != null ? acOverride : unarmoredBase;
+          const totalAc = baseAcDisplay + (itemAddAc || 0) + (parseInt(acMisc) || 0);
+          const Row = ({label, value, editable, onChange, dim}) => (
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'4px 0',borderBottom:'1px solid var(--border)'}}>
+              <span style={{fontSize:12,color: dim ? 'var(--text-dim)' : 'var(--text-secondary)'}}>{label}</span>
+              {editable
+                ? <input type="number" value={value} onChange={onChange} style={{width:56,textAlign:'center',padding:'2px 4px',fontSize:12,border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',background:'var(--bg-card)',color:'var(--text-primary)'}} />
+                : <span style={{fontSize:12,fontWeight: !dim ? 600 : 400,color: dim ? 'var(--text-dim)' : 'var(--text-primary)'}}>{value}</span>}
+            </div>
+          );
+          return (
+            <div style={{background:'var(--bg-primary)',borderRadius:'var(--radius-md)',padding:12,marginBottom:16}}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:10}}>
+                <span style={{fontSize:11,color:'var(--text-dim)',fontWeight:700,textTransform:'uppercase',letterSpacing:1}}>AC</span>
+                <div style={{textAlign:'right'}}>
+                  <div style={{fontSize:26,fontWeight:700,color:'var(--accent-light)',lineHeight:1}}>{totalAc}</div>
+                </div>
+              </div>
+              {acOverride != null
+                ? <Row label={`Armor (Set to ${acOverride})`} value={acOverride} dim />
+                : <Row label={`Unarmored (${unarmoredFormula})`} value={unarmoredBase} dim />}
+              {(itemAddAc||0) !== 0 && <Row label="Shield / Items" value={`+${itemAddAc}`} dim />}
+              <Row label="Misc (spells, natural armor…)" value={acMisc} editable onChange={e => setAcMisc(e.target.value)} />
+              <div style={{fontSize:10,color:'var(--text-dim)',marginTop:6}}>
+                Use the "Set Base AC To" item modifier on armor items to model equipped armor. Misc covers anything else that doesn't come from an item — Mage Armor (13+DEX), Natural Armor, Barkskin, Shield of Faith, etc.
+              </div>
             </div>
           );
         })()}
