@@ -190,6 +190,24 @@ function deathSaveResultLabel(result) {
   }[result] || result || '';
 }
 
+function deathSaveCounts(row) {
+  const saves = row?.death_saves || {};
+  return {
+    successes: toNumber(saves.successes, 0),
+    failures: toNumber(saves.failures, 0),
+  };
+}
+
+function isDeadCombatant(row) {
+  return !!row?.dead || deathSaveCounts(row).failures >= 3;
+}
+
+function isInDeathSaves(row) {
+  if (row?.type !== 'player' || isDeadCombatant(row)) return false;
+  const saves = deathSaveCounts(row);
+  return toNumber(row.hp_current, 0) <= 0 || saves.successes > 0 || saves.failures > 0;
+}
+
 function modifierNumber(modifier) {
   const parsed = Number(modifier?.value);
   return Number.isFinite(parsed) ? parsed : 0;
@@ -365,6 +383,8 @@ function normalizeCombatant(row) {
     death_saves: row.death_saves || { successes: 0, failures: 0 },
     last_death_save: row.last_death_save || null,
     death_save_rolls: Array.isArray(row.death_save_rolls) ? row.death_save_rolls : [],
+    hidden_from_players: !!row.hidden_from_players,
+    dead: !!row.dead,
     group_key: row.group_key || '',
     monster_name: row.monster_name || '',
     monster: row.monster || null,
@@ -530,7 +550,7 @@ function MemberRow({ member, campaign, onRole, onRemove }) {
   );
 }
 
-function RosterRow({ entry, campaign, user, onPrimary, onActive, onDetach }) {
+function RosterRow({ entry, campaign, user, onActive, onDetach }) {
   const canManage = campaign.is_dm || sameId(entry.user_id, user?.id);
   const conditions = entry.sheet_snapshot?.conditions || [];
   const activeEffects = entry.sheet_snapshot?.active_effects || [];
@@ -540,7 +560,6 @@ function RosterRow({ entry, campaign, user, onPrimary, onActive, onDetach }) {
       <div>
         <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
           <span style={{color:'var(--text-primary)',fontWeight:600}}>{entry.name}</span>
-          {entry.is_primary && <span style={{color:'var(--success)',fontSize:11,textTransform:'uppercase',fontWeight:800}}>Primary</span>}
           <span style={{color:entry.active ? 'var(--success)' : 'var(--text-dim)',fontSize:11,textTransform:'uppercase',fontWeight:800}}>
             {entry.active ? 'Active' : 'Inactive'}
           </span>
@@ -558,7 +577,6 @@ function RosterRow({ entry, campaign, user, onPrimary, onActive, onDetach }) {
       </div>
       {canManage && (
         <div style={{display:'flex',gap:6}}>
-          {entry.active && !entry.is_primary && <button className="btn btn-secondary btn-sm" onClick={() => onPrimary(entry)}>Set Primary</button>}
           <button className={entry.active ? 'btn btn-secondary btn-sm' : 'btn btn-primary btn-sm'} onClick={() => onActive(entry, !entry.active)}>
             {entry.active ? 'Inactivate' : 'Reactivate'}
           </button>
@@ -664,6 +682,8 @@ function EncounterBuilder({
   setAddMonsterInitiative,
   sharedInitiative,
   setSharedInitiative,
+  addMonsterHidden,
+  setAddMonsterHidden,
   onPatchData,
   onEffectStatus,
   onDelete,
@@ -719,6 +739,7 @@ function EncounterBuilder({
       hp_max: monster.hit_points || 0,
       temp_hp: 0,
       ac: monster.armor_class || '',
+      hidden_from_players: addMonsterHidden,
     }));
     patchCombatants([...(data.combatants || []), ...added]);
   };
@@ -731,11 +752,22 @@ function EncounterBuilder({
 
   const setDeathSave = (row, key, delta) => {
     const current = row.death_saves || { successes: 0, failures: 0 };
+    const nextSaves = {
+      ...current,
+      [key]: Math.max(0, Math.min(3, toNumber(current[key], 0) + delta)),
+    };
     updateCombatant(row.id, {
-      death_saves: {
-        ...current,
-        [key]: Math.max(0, Math.min(3, toNumber(current[key], 0) + delta)),
-      },
+      death_saves: nextSaves,
+      dead: toNumber(nextSaves.failures, 0) >= 3 ? true : row.dead,
+    });
+  };
+
+  const resetDeathSave = row => {
+    updateCombatant(row.id, {
+      death_saves: { successes: 0, failures: 0 },
+      last_death_save: null,
+      death_save_rolls: [],
+      dead: false,
     });
   };
 
@@ -788,11 +820,26 @@ function EncounterBuilder({
               <div style={{display:'grid',gap:7,minWidth:900}}>
                 {combatants.map(row => {
                   const statMonster = monsterForCombatant(row, monsters);
+                  const dead = isDeadCombatant(row);
+                  const dying = isInDeathSaves(row);
+                  const rowBackground = dead
+                    ? 'linear-gradient(90deg, rgba(230,57,70,0.20), rgba(82,17,24,0.86))'
+                    : dying
+                      ? 'linear-gradient(90deg, rgba(255,193,7,0.16), rgba(42,37,26,0.86))'
+                      : 'var(--bg-card)';
                   return (
-                  <div key={row.id} style={{display:'grid',gridTemplateColumns:'minmax(220px,1fr) 214px minmax(260px,1.1fr) auto',gap:8,padding:8,border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',background:'var(--bg-card)',alignItems:'start'}}>
+                  <div key={row.id} style={{display:'grid',gridTemplateColumns:'minmax(220px,1fr) 214px minmax(260px,1.1fr) auto',gap:8,padding:8,border:dead ? '1px solid var(--danger)' : dying ? '1px solid var(--warning)' : '1px solid var(--border)',borderRadius:'var(--radius-sm)',background:rowBackground,alignItems:'start'}}>
                     <div style={{display:'grid',gap:5,minWidth:0}}>
-                      <input value={row.name} onChange={e => updateCombatant(row.id, { name: e.target.value })} style={{fontWeight:800,minWidth:0}} />
+                      <input value={row.name} onChange={e => updateCombatant(row.id, { name: e.target.value })} style={{fontWeight:800,minWidth:0,textDecoration:dead ? 'line-through' : 'none',color:dead ? 'var(--danger)' : undefined}} />
                       <div style={{display:'flex',gap:6,alignItems:'center',minWidth:0}}>
+                        {row.type === 'enemy' && (
+                          <label style={{display:'flex',gap:4,alignItems:'center',color:'var(--text-secondary)',fontSize:11,fontWeight:800,textTransform:'uppercase'}}>
+                            <input type="checkbox" checked={!!row.hidden_from_players} onChange={e => updateCombatant(row.id, { hidden_from_players: e.target.checked })} style={{width:'auto'}} />
+                            Hidden
+                          </label>
+                        )}
+                        {dead && <span style={{color:'var(--danger)',fontSize:11,fontWeight:900,textTransform:'uppercase'}}>Dead</span>}
+                        {dying && <span style={{color:'var(--warning)',fontSize:11,fontWeight:900,textTransform:'uppercase'}}>Death saves</span>}
                         <span style={{color:row.type === 'player' ? 'var(--accent-light)' : 'var(--warning)',fontSize:11,fontWeight:900,textTransform:'uppercase'}}>{row.type}</span>
                         <span style={{color:'var(--text-dim)',fontSize:11,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
                           {row.group_key ? `Group: ${row.group_key.split('_')[0]}` : 'No group'}
@@ -831,6 +878,8 @@ function EncounterBuilder({
                       <div style={{gridColumn:'1 / -1',color:'var(--text-secondary)',fontSize:10,fontWeight:800,textTransform:'uppercase'}}>Death Saves</div>
                       <button className="btn btn-secondary btn-sm" onClick={() => setDeathSave(row, 'successes', 1)}>Pass {row.death_saves?.successes || 0}</button>
                       <button className="btn btn-secondary btn-sm" onClick={() => setDeathSave(row, 'failures', 1)}>Fail {row.death_saves?.failures || 0}</button>
+                      <button className="btn btn-secondary btn-sm" onClick={() => resetDeathSave(row)}>Reset</button>
+                      <button className={dead ? 'btn btn-secondary btn-sm' : 'btn btn-danger btn-sm'} onClick={() => updateCombatant(row.id, { dead: !dead })}>{dead ? 'Alive' : 'Dead'}</button>
                       {row.last_death_save && (
                         <div style={{gridColumn:'1 / -1',border:'1px solid rgba(154,128,255,0.42)',background:'rgba(124,92,252,0.16)',borderRadius:4,padding:'5px 6px',fontSize:11,color:'var(--text-secondary)',lineHeight:1.35}}>
                           <div style={{color:'var(--accent-light)',fontWeight:900}}>Last: d20 {row.last_death_save.roll} - {deathSaveResultLabel(row.last_death_save.result)}</div>
@@ -877,6 +926,10 @@ function EncounterBuilder({
               <input type="checkbox" checked={sharedInitiative} onChange={e => setSharedInitiative(e.target.checked)} style={{width:'auto'}} />
               Shared initiative for this group
             </label>
+            <label style={{display:'flex',alignItems:'center',gap:8,color:'var(--text-secondary)',fontSize:12,marginBottom:8}}>
+              <input type="checkbox" checked={addMonsterHidden} onChange={e => setAddMonsterHidden(e.target.checked)} style={{width:'auto'}} />
+              Add hidden from players
+            </label>
             <div style={{color:'var(--text-dim)',fontSize:11,marginBottom:5}}>{filteredMonsters.length} monster{filteredMonsters.length === 1 ? '' : 's'}</div>
             <div style={{flex:'1 1 240px',minHeight:160,overflowY:'auto',paddingRight:3,border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',background:'rgba(0,0,0,0.12)'}}>
               {filteredMonsters.map(monster => (
@@ -913,7 +966,6 @@ export default function CampaignsPage() {
     attachCharacter,
     detachCharacter,
     setCampaignCharacterActive,
-    setPrimaryCharacter,
     updateMemberRole,
     transferCampaignOwner,
     removeMember,
@@ -948,6 +1000,7 @@ export default function CampaignsPage() {
   const [addMonsterQuantity, setAddMonsterQuantity] = useState('1');
   const [addMonsterInitiative, setAddMonsterInitiative] = useState('');
   const [sharedInitiative, setSharedInitiative] = useState(true);
+  const [addMonsterHidden, setAddMonsterHidden] = useState(true);
   const [viewingMonster, setViewingMonster] = useState(null);
   const [showFeedback, setShowFeedback] = useState(false);
   const [showInviteEmail, setShowInviteEmail] = useState(false);
@@ -1503,7 +1556,6 @@ export default function CampaignsPage() {
                           entry={entry}
                           campaign={campaign}
                           user={user}
-                          onPrimary={row => setPrimaryCharacter(campaign.id, row.id)}
                           onActive={toggleRosterActive}
                           onDetach={detachRosterCharacter}
                         />
@@ -1517,7 +1569,6 @@ export default function CampaignsPage() {
                               entry={entry}
                               campaign={campaign}
                               user={user}
-                              onPrimary={row => setPrimaryCharacter(campaign.id, row.id)}
                               onActive={toggleRosterActive}
                               onDetach={detachRosterCharacter}
                             />
@@ -1715,6 +1766,8 @@ export default function CampaignsPage() {
                         setAddMonsterInitiative={setAddMonsterInitiative}
                         sharedInitiative={sharedInitiative}
                         setSharedInitiative={setSharedInitiative}
+                        addMonsterHidden={addMonsterHidden}
+                        setAddMonsterHidden={setAddMonsterHidden}
                         onPatchData={patchEncounterData}
                         onEffectStatus={setEffectStatus}
                         onDelete={removeEncounter}

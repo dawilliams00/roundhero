@@ -88,6 +88,7 @@ def _public_combatant(row):
         "conditions": row.get("conditions") if isinstance(row.get("conditions"), list) else [],
         "concentration": row.get("concentration") or "",
         "effects": row.get("effects") if isinstance(row.get("effects"), list) else [],
+        "dead": bool(row.get("dead")),
         "notes": row.get("public_notes") or "",
     }
     if row_type == "player":
@@ -138,13 +139,17 @@ def _clean_campaign_rules(value):
 def _player_encounter_view(encounter):
     data = encounter.data or {}
     combatants = data.get("combatants") if isinstance(data.get("combatants"), list) else []
+    visible_combatants = [
+        row for row in combatants
+        if not (row.get("type") != "player" and row.get("hidden_from_players"))
+    ]
     return {
         "id": encounter.id,
         "name": encounter.name,
         "status": encounter.status,
         "updated_at": encounter.updated_at.isoformat(),
         "campaign_rules": _clean_campaign_rules(encounter.campaign.rules if encounter.campaign else {}),
-        "combatants": [_public_combatant(row) for row in combatants],
+        "combatants": [_public_combatant(row) for row in visible_combatants],
     }
 
 
@@ -648,6 +653,7 @@ def roll_player_death_save(character_id):
                     row["death_saves"] = death_saves
                     row["last_death_save"] = record
                     row["death_save_rolls"] = [*history[-9:], record]
+                    row["dead"] = death_saves.get("failures", 0) >= 3 or bool(row.get("dead"))
                     visible_death_saves = death_saves
                     changed = True
                 next_rows.append(row)
@@ -680,6 +686,60 @@ def roll_player_death_save(character_id):
             "tracker_data": character.tracker_data,
         })
     return jsonify(response), 200
+
+
+@campaigns_bp.route("/player-view/<int:character_id>/death-save/reset", methods=["POST"])
+@jwt_required()
+def reset_player_death_save(character_id):
+    user_id = int(get_jwt_identity())
+    character = Character.query.filter_by(id=character_id, user_id=user_id).first()
+    if not character:
+        return jsonify({"error": "Character not found"}), 404
+
+    reset_saves = {"successes": 0, "failures": 0}
+    td = dict(character.tracker_data or {})
+    td["death_saves"] = reset_saves
+    td.pop("last_death_save", None)
+    td["death_save_rolls"] = []
+    character.tracker_data = td
+
+    updated_encounters = []
+    roster_entries = CampaignCharacter.query.filter_by(
+        character_id=character.id,
+        user_id=user_id,
+        active=True,
+    ).all()
+    for entry in roster_entries:
+        campaign = entry.campaign
+        if not campaign:
+            continue
+        for encounter in campaign.encounters:
+            if encounter.status not in {"running", "paused"}:
+                continue
+            encounter_data = encounter.data or {}
+            rows = encounter_data.get("combatants") if isinstance(encounter_data.get("combatants"), list) else []
+            changed = False
+            next_rows = []
+            for row in rows:
+                if str(row.get("character_id")) == str(character.id):
+                    row = dict(row)
+                    row["death_saves"] = reset_saves
+                    row.pop("last_death_save", None)
+                    row["death_save_rolls"] = []
+                    row["dead"] = False
+                    changed = True
+                next_rows.append(row)
+            if changed:
+                encounter_data["combatants"] = next_rows
+                encounter.data = encounter_data
+                updated_encounters.append({"campaign_id": campaign.id, "encounter_id": encounter.id})
+
+    db.session.commit()
+    return jsonify({
+        "death_saves": reset_saves,
+        "tracker_data": character.tracker_data,
+        "updated_encounters": updated_encounters,
+    }), 200
 
 
 @campaigns_bp.route("/<int:campaign_id>", methods=["PUT"])

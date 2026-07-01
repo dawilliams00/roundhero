@@ -52,6 +52,38 @@ function deathSaveResultLabel(result) {
   }[result] || result || '';
 }
 
+function deathSaveCounts(row) {
+  const saves = row?.death_saves || {};
+  return {
+    successes: toNumber(saves.successes, 0),
+    failures: toNumber(saves.failures, 0),
+  };
+}
+
+function isDeadCombatant(row) {
+  return !!row?.dead || deathSaveCounts(row).failures >= 3;
+}
+
+function isInDeathSaves(row) {
+  if (row?.type !== 'player' || isDeadCombatant(row)) return false;
+  const saves = deathSaveCounts(row);
+  return toNumber(row.hp_current, 0) <= 0 || saves.successes > 0 || saves.failures > 0;
+}
+
+function conditionHint(condition) {
+  const key = String(condition || '').trim().toLowerCase();
+  const hints = {
+    baned: 'Bane: subtract 1d4 from attack rolls and saving throws while the spell lasts.',
+    blessed: 'Bless: add 1d4 to attack rolls and saving throws while the spell lasts.',
+    hasted: 'Haste: extra limited action, doubled speed, +2 AC, advantage on Dexterity saves. Lethargy applies when it ends.',
+    hexed: 'Hex: extra necrotic damage from the caster and disadvantage on one chosen ability check type.',
+    lethargic: 'Haste ended: cannot move or take actions until after the next turn.',
+    slowed: 'Slow: reduced speed/AC/Dex saves and limited actions while the spell lasts.',
+    unconscious: 'Unconscious: incapacitated, drops prone, auto-fails STR/DEX saves, nearby attacks can crit.',
+  };
+  return hints[key] || `${condition}: click to remove from this encounter row.`;
+}
+
 function isConcentrationEffect(name, manuallyFlagged = false) {
   return manuallyFlagged || KNOWN_CONCENTRATION_EFFECTS.has(String(name || '').trim().toLowerCase());
 }
@@ -102,6 +134,8 @@ function normalizeCombatant(row) {
     death_saves: row.death_saves || { successes: 0, failures: 0 },
     last_death_save: row.last_death_save || null,
     death_save_rolls: cleanList(row.death_save_rolls),
+    hidden_from_players: !!row.hidden_from_players,
+    dead: !!row.dead,
     group_key: row.group_key || '',
     monster_name: row.monster_name || '',
     monster: row.monster || null,
@@ -300,12 +334,21 @@ function MiniField({ label, value, onChange, width = 58 }) {
   );
 }
 
-function CombatantCard({ row, active, statMonster, onUpdate, onRemove, onViewMonster, onAddCondition, onRemoveCondition, onRemoveEffect, onDeathSave, rowRef }) {
+function CombatantCard({ row, active, statMonster, onUpdate, onRemove, onViewMonster, onAddCondition, onRemoveCondition, onRemoveEffect, onDeathSave, onResetDeathSaves, rowRef }) {
+  const dead = isDeadCombatant(row);
+  const dying = isInDeathSaves(row);
+  const dangerBackground = dead
+    ? 'linear-gradient(90deg, rgba(230,57,70,0.24), rgba(82,17,24,0.92))'
+    : dying
+      ? 'linear-gradient(90deg, rgba(255,193,7,0.18), rgba(42,37,26,0.92))'
+      : active
+        ? 'linear-gradient(90deg, rgba(124,92,252,0.24), rgba(30,41,78,0.92))'
+        : 'var(--bg-secondary)';
   return (
     <div ref={rowRef} style={{
-      border:active ? '2px solid var(--accent)' : '1px solid var(--border)',
+      border:dead ? '2px solid var(--danger)' : active ? '2px solid var(--accent)' : dying ? '2px solid var(--warning)' : '1px solid var(--border)',
       borderRadius:'var(--radius-sm)',
-      background:active ? 'linear-gradient(90deg, rgba(124,92,252,0.24), rgba(30,41,78,0.92))' : 'var(--bg-secondary)',
+      background:dangerBackground,
       boxShadow:active ? '0 0 0 2px rgba(124,92,252,0.18), 0 0 24px rgba(124,92,252,0.2)' : 'none',
       padding:8,
       display:'grid',
@@ -317,12 +360,22 @@ function CombatantCard({ row, active, statMonster, onUpdate, onRemove, onViewMon
       scrollMarginTop:72,
     }}>
       <div style={{gridArea:'identity',display:'grid',gap:5,minWidth:0}}>
-        <input value={row.name} onChange={e => onUpdate(row.id, { name: e.target.value })} style={{fontWeight:800,minWidth:120,width:'100%'}} />
+        <div style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) auto',gap:6,alignItems:'center'}}>
+          <input value={row.name} onChange={e => onUpdate(row.id, { name: e.target.value })} style={{fontWeight:800,minWidth:120,width:'100%',textDecoration:dead ? 'line-through' : 'none',color:dead ? 'var(--danger)' : undefined}} />
+          <MiniButton onClick={() => onRemove(row.id)} variant="danger">Remove from Encounter</MiniButton>
+        </div>
         <div style={{display:'flex',gap:6,alignItems:'flex-end',minWidth:0,flexWrap:'wrap'}}>
           <MiniField label="INIT" value={row.initiative} onChange={e => onUpdate(row.id, { initiative: e.target.value })} />
           <MiniField label="AC" value={row.ac} onChange={e => onUpdate(row.id, { ac: e.target.value })} />
           <div style={{display:'flex',gap:6,alignItems:'center',flexWrap:'wrap',minWidth:0,paddingBottom:4}}>
             {statMonster && <MiniButton onClick={() => onViewMonster(statMonster)}>Stat Block</MiniButton>}
+            {row.type === 'enemy' && (
+              <MiniButton onClick={() => onUpdate(row.id, { hidden_from_players: !row.hidden_from_players })}>
+                {row.hidden_from_players ? 'Hidden' : 'Visible'}
+              </MiniButton>
+            )}
+            {dead && <span style={{color:'var(--danger)',fontSize:11,fontWeight:900,textTransform:'uppercase'}}>Dead</span>}
+            {dying && <span style={{color:'var(--warning)',fontSize:11,fontWeight:900,textTransform:'uppercase'}}>Death saves</span>}
             <span style={{color:row.type === 'player' ? 'var(--success)' : 'var(--warning)',fontSize:11,fontWeight:900,textTransform:'uppercase'}}>{row.type}</span>
           </div>
         </div>
@@ -344,7 +397,7 @@ function CombatantCard({ row, active, statMonster, onUpdate, onRemove, onViewMon
         <div style={{display:'flex',gap:5,flexWrap:'wrap',minHeight:24}}>
           {cleanList(row.conditions).length === 0 && <span style={{color:'var(--text-dim)',fontSize:12}}>No conditions</span>}
           {cleanList(row.conditions).map(condition => (
-            <button key={condition} type="button" onClick={() => onRemoveCondition(row, condition)} style={{border:'1px solid rgba(230,57,70,0.65)',background:'rgba(230,57,70,0.24)',color:'var(--text-primary)',borderRadius:4,padding:'3px 6px',fontSize:11,cursor:'pointer',fontWeight:800}}>
+            <button key={condition} type="button" title={conditionHint(condition)} onClick={() => onRemoveCondition(row, condition)} style={{border:'1px solid rgba(230,57,70,0.65)',background:'rgba(230,57,70,0.24)',color:'var(--text-primary)',borderRadius:4,padding:'3px 6px',fontSize:11,cursor:'pointer',fontWeight:800}}>
               {condition} x
             </button>
           ))}
@@ -375,6 +428,8 @@ function CombatantCard({ row, active, statMonster, onUpdate, onRemove, onViewMon
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:5}}>
               <MiniButton onClick={() => onDeathSave(row, 'successes', 1)}>Pass {row.death_saves?.successes || 0}</MiniButton>
               <MiniButton onClick={() => onDeathSave(row, 'failures', 1)}>Fail {row.death_saves?.failures || 0}</MiniButton>
+              <MiniButton onClick={() => onResetDeathSaves(row)}>Reset</MiniButton>
+              <MiniButton onClick={() => onUpdate(row.id, { dead: !dead })} variant={dead ? 'secondary' : 'danger'}>{dead ? 'Alive' : 'Dead'}</MiniButton>
             </div>
             {row.last_death_save && (
               <div style={{border:'1px solid rgba(154,128,255,0.42)',background:'rgba(124,92,252,0.16)',borderRadius:4,padding:'5px 6px',fontSize:11,color:'var(--text-secondary)',lineHeight:1.35}}>
@@ -386,7 +441,6 @@ function CombatantCard({ row, active, statMonster, onUpdate, onRemove, onViewMon
             )}
             </>
           )}
-          <MiniButton onClick={() => onRemove(row.id)} variant="danger">Remove</MiniButton>
       </div>
     </div>
   );
@@ -410,6 +464,7 @@ export default function EncounterRunnerModal({
   const [quantity, setQuantity] = useState('1');
   const [initiative, setInitiative] = useState('');
   const [sharedInitiative, setSharedInitiative] = useState(true);
+  const [hideNewEnemies, setHideNewEnemies] = useState(true);
   const [selectedTurnId, setSelectedTurnId] = useState(combatants[0]?.id || null);
   const [viewingMonster, setViewingMonster] = useState(null);
   const [rulesPopup, setRulesPopup] = useState(null);
@@ -502,6 +557,7 @@ export default function EncounterRunnerModal({
       hp_max: monster.hit_points || 0,
       temp_hp: 0,
       ac: monster.armor_class || '',
+      hidden_from_players: hideNewEnemies,
     }));
     patchCombatants([...currentRows, ...added]);
   };
@@ -521,6 +577,8 @@ export default function EncounterRunnerModal({
       conditions: [],
       effects: [],
       concentration: '',
+      hidden_from_players: sample.hidden_from_players,
+      dead: false,
     })]);
   };
 
@@ -561,11 +619,22 @@ export default function EncounterRunnerModal({
   const setDeathSave = (row, key, delta) => {
     const latest = (dataRef.current?.combatants || []).find(entry => sameId(entry.id, row.id)) || row;
     const current = latest.death_saves || { successes: 0, failures: 0 };
+    const nextSaves = {
+      ...current,
+      [key]: Math.max(0, Math.min(3, toNumber(current[key], 0) + delta)),
+    };
     updateCombatant(row.id, {
-      death_saves: {
-        ...current,
-        [key]: Math.max(0, Math.min(3, toNumber(current[key], 0) + delta)),
-      },
+      death_saves: nextSaves,
+      dead: toNumber(nextSaves.failures, 0) >= 3 ? true : latest.dead,
+    });
+  };
+
+  const resetDeathSaves = row => {
+    updateCombatant(row.id, {
+      death_saves: { successes: 0, failures: 0 },
+      last_death_save: null,
+      death_save_rolls: [],
+      dead: false,
     });
   };
 
@@ -695,6 +764,10 @@ export default function EncounterRunnerModal({
                 <input type="checkbox" checked={sharedInitiative} onChange={e => setSharedInitiative(e.target.checked)} style={{width:'auto'}} />
                 Shared initiative
               </label>
+              <label style={{display:'flex',gap:8,alignItems:'center',color:'var(--text-secondary)',fontSize:12,marginBottom:8}}>
+                <input type="checkbox" checked={hideNewEnemies} onChange={e => setHideNewEnemies(e.target.checked)} style={{width:'auto'}} />
+                Add enemies hidden from players
+              </label>
               <div style={{color:'var(--text-dim)',fontSize:11,marginBottom:5}}>{filteredMonsters.length} monster{filteredMonsters.length === 1 ? '' : 's'}</div>
               <div style={{flex:1,minHeight:210,overflowY:'auto',paddingRight:3,border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',background:'rgba(0,0,0,0.12)'}}>
                 {filteredMonsters.map(monster => (
@@ -787,6 +860,7 @@ export default function EncounterRunnerModal({
                   onRemoveCondition={removeCondition}
                   onRemoveEffect={removeEffect}
                   onDeathSave={setDeathSave}
+                  onResetDeathSaves={resetDeathSaves}
                 />
               );
             })}

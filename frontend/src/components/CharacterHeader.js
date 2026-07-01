@@ -295,6 +295,9 @@ export default function CharacterHeader({ onBack }) {
   const exhaustion = td?.exhaustion || 0;
   const deathSaves = td?.death_saves || { successes: 0, failures: 0 };
   const deathSaveBlind = !!td?.settings?.death_save_roll_blind;
+  const deathSaveTitle = deathSaveBlind
+    ? 'Death saves are set to blind roll: the DM sees the roll and counters from an active encounter.'
+    : 'Open death save roller. Tracks successes/failures and sends rolls to the DM when you are in an active encounter.';
   const exhaustionRules = td?.settings?.exhaustion_rules || { mode: 'raw' };
   const exhaustionTitle = exhaustionRules.mode === 'homebrew'
     ? `${exhaustionRules.name || 'Homebrew exhaustion'}${exhaustionRules.description ? `: ${exhaustionRules.description}` : ''}`
@@ -475,7 +478,7 @@ export default function CharacterHeader({ onBack }) {
           </div>
 
           <div style={{flexShrink:0,display:'flex',gap:14,flexWrap:'wrap',alignItems:'flex-start',paddingTop:2}}>
-            <div className="stat-box" onClick={() => setShowDeathSaves(true)} style={{cursor:'pointer',minWidth:78}}>
+            <div className="stat-box" onClick={() => setShowDeathSaves(true)} title={deathSaveTitle} style={{cursor:'pointer',minWidth:78}}>
               <div className="stat-value" style={{fontSize:deathSaveBlind ? 13 : 14,color:deathSaveBlind ? 'var(--text-secondary)' : 'var(--accent-light)'}}>
                 {deathSaveBlind ? 'Blind' : `${deathSaves.successes || 0}/${deathSaves.failures || 0}`}
               </div>

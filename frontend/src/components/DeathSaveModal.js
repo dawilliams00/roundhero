@@ -21,6 +21,7 @@ export default function DeathSaveModal({ onClose }) {
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
   const [campaignRules, setCampaignRules] = useState(null);
+  const [showRules, setShowRules] = useState(false);
 
   useEffect(() => {
     if (!character?.id) return undefined;
@@ -56,6 +57,23 @@ export default function DeathSaveModal({ onClose }) {
     }
   };
 
+  const resetDeathSaves = async () => {
+    if (!character?.id || rolling) return;
+    setRolling(true);
+    setError('');
+    try {
+      const r = await api.post(`/campaigns/player-view/${character.id}/death-save/reset`);
+      setResult(null);
+      if (r.data?.tracker_data) {
+        setCharacter(prev => prev ? { ...prev, tracker_data: r.data.tracker_data } : prev);
+      }
+    } catch (err) {
+      setError(err.response?.data?.error || 'Could not reset death saves.');
+    } finally {
+      setRolling(false);
+    }
+  };
+
   const shownSaves = result?.death_saves || saved;
   const sentToDm = (result?.updated_encounters || []).length > 0;
 
@@ -79,9 +97,20 @@ export default function DeathSaveModal({ onClose }) {
         </div>
 
         {campaignRules?.death_saves && (
-          <div style={{border:'1px solid rgba(255,193,7,0.35)',background:'rgba(255,193,7,0.08)',borderRadius:'var(--radius-sm)',padding:10,color:'var(--text-secondary)',fontSize:12,lineHeight:1.45,whiteSpace:'pre-wrap',marginBottom:12}}>
-            <div style={{color:'var(--warning)',fontWeight:900,marginBottom:3}}>Campaign Death Save Rules</div>
-            {campaignRules.death_saves}
+          <div style={{border:'1px solid rgba(255,193,7,0.35)',background:'rgba(255,193,7,0.08)',borderRadius:'var(--radius-sm)',padding:10,color:'var(--text-secondary)',fontSize:12,lineHeight:1.45,marginBottom:12}}>
+            <button
+              type="button"
+              onClick={() => setShowRules(open => !open)}
+              style={{width:'100%',display:'flex',justifyContent:'space-between',alignItems:'center',gap:8,border:0,background:'transparent',color:'var(--warning)',fontWeight:900,padding:0,cursor:'pointer',textAlign:'left'}}
+            >
+              <span>Campaign Death Save Rules</span>
+              <span>{showRules ? '▼' : '▶'}</span>
+            </button>
+            {showRules && (
+              <div style={{whiteSpace:'pre-wrap',marginTop:8}}>
+                {campaignRules.death_saves}
+              </div>
+            )}
           </div>
         )}
 
@@ -124,6 +153,7 @@ export default function DeathSaveModal({ onClose }) {
 
         <div style={{display:'flex',gap:8}}>
           <button className="btn btn-secondary" style={{flex:1}} onClick={onClose}>Close</button>
+          <button className="btn btn-secondary" style={{flex:1}} disabled={rolling} onClick={resetDeathSaves}>Reset</button>
           <button className="btn btn-primary" style={{flex:1}} disabled={rolling} onClick={rollDeathSave}>
             {rolling ? 'Rolling...' : 'Roll d20'}
           </button>

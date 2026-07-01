@@ -170,3 +170,29 @@ Do not make death saves public. Encounter death-save handling should become a pr
 - Make PC status updates from character sheets reliably refresh encounter HP, temp HP, conditions, concentration, Haste, and active effects.
 - Improve the full running encounter layout beyond the current modal/docked-panel V1.
 - Death saves now have a player-sheet popup and DM encounter roll handoff, but still need deeper polish: secret DM-only death-save history, clearer reset/clear controls, active dying-state prompts, and campaign-rule-driven defaults for blind/open rolling.
+
+## 2026-07-01 Campaign/Encounter Follow-Up Contract
+
+Shipped in the current Codex pass:
+
+- Encounter combatants now carry `hidden_from_players` and `dead` flags in encounter JSON.
+- Player-facing encounter payloads filter hidden enemies server-side, so future enemies can sit in setup/runner without leaking to players.
+- DM setup and runner can toggle enemy hidden/visible state.
+- DM setup and runner can reset death saves, manually mark dead/alive, and failures reaching 3 mark the row dead.
+- Dead rows are red/struck through; death-save danger rows are yellow.
+- Player death-save popup rules are collapsed behind an arrow, and the popup has a reset path.
+- Campaign party roster no longer shows `Set Primary`; campaign sheet editing should use an explicit authorized-editor model instead.
+
+Still pending and should be treated as real feature work, not small UI cleanup:
+
+- **Authorized editor model:** add campaign-scoped permission rows or payload fields so a DM can edit player sheets only from the Campaign Party tab. This should be based on logged-in email/user id and explicit campaign membership/DM authorization. Do not use `primary character` for this. Backend character update routes are currently owner-gated, so cross-user editing requires a deliberate campaign-authorized endpoint or a player-approved edit request flow.
+- **Player sheet edit button:** once the backend permission model exists, add `[Player Sheet Edit]` next to campaign roster rows for DMs/authorized editors only. It should open the existing character editor surface against that player sheet and should not appear inside encounter setup or active encounters.
+- **Duplicate/edit monster from encounter setup:** reuse the existing bestiary duplicate/edit modal flow from player monster edits. Encounter setup should allow reviewing a stat block, duplicating it, editing the duplicate, then adding that modified creature to the encounter.
+- **Animate dead / similar effects:** dead encounter rows should expose an Animate option only if a visible combatant can plausibly animate/reanimate/summon from dead based on prepared spells/features/items. Clicking it should choose the animator, spell/feature/item, duration, and created creature/stat block. This needs a spell/feature scan and should not be hardcoded to only Animate Dead.
+- **Active encounter attack/save resolution:** when a character attacks, casts, or uses an object during an active encounter, prompt for target combatant. For attack rolls, reveal only hit/miss to players while using hidden AC internally. For save spells, notify the DM to roll/input the save, then calculate pass/fail from caster DC. Damage application should respect resistance, immunity, vulnerability, and damage type before changing encounter HP. This is a rules engine, likely several versions.
+- **DM death-save notification:** player death-save rolls currently update encounter rows and preserve last-roll notes. Add a DM-visible popup/toast when a new death save arrives, with blind/open visibility respected.
+- **Campaign homebrew rules auto-apply:** campaign death-save and exhaustion rules should apply to attached characters or clearly override character settings while they are in that campaign. Preserve a player's personal override when leaving or switching campaigns.
+- **Character AE movement:** normal Action Economy tab needs movement tracking while in initiative, matching the Syric AE movement affordance.
+- **Syric-specific backlog:** move Codex Sync from Syric AE to Syric tab; add Codex Dice to Syric spell-cast flow like Smite with Syric rules; include bonus-action Codex Surge options in casting; allow editing Syric/Shadow abilities and feats through the normal editor path.
+- **Reference expansion:** DM References should use collapsible sections for long content, matching the death-save rules collapse pattern.
+- **Condition hints:** keep extending hover hints for nonstandard condition/effect names such as Lethargic, Hexed, Hasted, Blessed, Baned, etc.

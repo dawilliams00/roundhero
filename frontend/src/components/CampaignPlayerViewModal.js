@@ -7,6 +7,7 @@ function cleanList(value) {
 function EffectPill({ children, tone = 'neutral' }) {
   const colors = {
     enemy: { bg: 'rgba(230,57,70,0.26)', border: 'rgba(230,57,70,0.65)', color: '#ffd1d6' },
+    dead: { bg: 'rgba(230,57,70,0.42)', border: 'rgba(230,57,70,0.9)', color: '#ffd1d6' },
     player: { bg: 'rgba(32,201,151,0.22)', border: 'rgba(32,201,151,0.60)', color: '#c9fff0' },
     effect: { bg: 'rgba(124,92,252,0.28)', border: 'rgba(154,128,255,0.70)', color: '#e4dcff' },
     neutral: { bg: 'rgba(255,255,255,0.09)', border: 'rgba(255,255,255,0.18)', color: 'var(--text-primary)' },
@@ -23,21 +24,22 @@ function CombatantPublicRow({ row }) {
   const isPlayer = row.type === 'player';
   const conditions = cleanList(row.conditions);
   const effects = cleanList(row.effects);
-  const hasVisibleStatus = conditions.length > 0 || effects.length > 0 || row.concentration;
+  const hasVisibleStatus = conditions.length > 0 || effects.length > 0 || row.concentration || row.dead;
   return (
     <div style={{
       border:`1px solid ${isPlayer ? 'rgba(32,201,151,0.44)' : 'rgba(230,57,70,0.36)'}`,
       borderRadius:'var(--radius-sm)',
       padding:10,
-      background:isPlayer ? 'rgba(19,48,64,0.82)' : 'rgba(39,29,58,0.82)',
+      background:row.dead ? 'rgba(64,19,28,0.86)' : isPlayer ? 'rgba(19,48,64,0.82)' : 'rgba(39,29,58,0.82)',
       boxShadow:hasVisibleStatus ? 'inset 0 0 0 1px rgba(154,128,255,0.18)' : 'none',
       minHeight:96,
     }}>
       <div style={{display:'flex',justifyContent:'space-between',gap:10,alignItems:'flex-start'}}>
         <div style={{minWidth:0}}>
           <div style={{display:'flex',gap:7,alignItems:'center',flexWrap:'wrap'}}>
-            <span style={{color:'var(--text-primary)',fontWeight:900}}>{row.name}</span>
+            <span style={{color:row.dead ? 'var(--danger)' : 'var(--text-primary)',fontWeight:900,textDecoration:row.dead ? 'line-through' : 'none'}}>{row.name}</span>
             <EffectPill tone={isPlayer ? 'player' : 'enemy'}>{isPlayer ? 'Ally' : 'Enemy'}</EffectPill>
+            {row.dead && <EffectPill tone="dead">Dead</EffectPill>}
             {row.initiative !== '' && <span style={{color:'var(--text-dim)',fontSize:11}}>Init {row.initiative}</span>}
           </div>
           {isPlayer && (
@@ -52,7 +54,7 @@ function CombatantPublicRow({ row }) {
         {row.concentration && <EffectPill tone="effect">Con: {row.concentration}</EffectPill>}
       </div>
       <div style={{display:'flex',gap:5,flexWrap:'wrap',marginTop:8,minHeight:22}}>
-        {conditions.length === 0 && effects.length === 0 && !row.concentration && <span style={{color:'var(--text-dim)',fontSize:12}}>No visible statuses</span>}
+        {conditions.length === 0 && effects.length === 0 && !row.concentration && !row.dead && <span style={{color:'var(--text-dim)',fontSize:12}}>No visible statuses</span>}
         {conditions.map(condition => <EffectPill key={condition} tone={isPlayer ? 'player' : 'enemy'}>{condition}</EffectPill>)}
         {effects.map(effect => (
           <EffectPill key={effect.id || effect.name} tone="effect">
