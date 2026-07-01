@@ -451,6 +451,16 @@ function sortedCombatants(encounter) {
     .sort((a, b) => initiativeValue(b.initiative) - initiativeValue(a.initiative) || a.name.localeCompare(b.name));
 }
 
+function monsterForCombatant(row, monsters) {
+  if (row.monster) return row.monster;
+  const names = [
+    row.monster_name,
+    row.group_key ? String(row.group_key).split('_')[0] : '',
+    String(row.name || '').replace(/\s+#\d+$/, ''),
+  ].filter(Boolean).map(name => String(name).trim().toLowerCase());
+  return monsters.find(monster => names.includes(String(monster.name || '').trim().toLowerCase())) || null;
+}
+
 function RoleBadge({ role, isOwner }) {
   const label = isOwner ? 'Owner DM' : role === 'dm' ? 'DM' : 'Player';
   return (
@@ -776,7 +786,9 @@ function EncounterBuilder({
               <div style={{color:'var(--text-secondary)',fontSize:13,padding:20}}>No combatants yet.</div>
             ) : (
               <div style={{display:'grid',gap:7,minWidth:900}}>
-                {combatants.map(row => (
+                {combatants.map(row => {
+                  const statMonster = monsterForCombatant(row, monsters);
+                  return (
                   <div key={row.id} style={{display:'grid',gridTemplateColumns:'minmax(220px,1fr) 214px minmax(260px,1.1fr) auto',gap:8,padding:8,border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',background:'var(--bg-card)',alignItems:'start'}}>
                     <div style={{display:'grid',gap:5,minWidth:0}}>
                       <input value={row.name} onChange={e => updateCombatant(row.id, { name: e.target.value })} style={{fontWeight:800,minWidth:0}} />
@@ -825,11 +837,12 @@ function EncounterBuilder({
                           {row.last_death_save.blind && <div>Blind roll. Player did not see this.</div>}
                         </div>
                       )}
-                      {row.monster && <button className="btn btn-secondary btn-sm" onClick={() => onViewMonster(row.monster)}>Stats</button>}
+                      {statMonster && <button className="btn btn-secondary btn-sm" onClick={() => onViewMonster(statMonster)}>Stats</button>}
                       {campaign.is_dm && <button className="btn btn-danger btn-sm" onClick={() => removeCombatant(row.id)}>Remove</button>}
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

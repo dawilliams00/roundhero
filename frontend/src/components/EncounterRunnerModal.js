@@ -173,6 +173,41 @@ function enemyGroupLabel(row) {
   return row.group_key.split('_')[0] || row.monster_name || row.name;
 }
 
+function monsterForRow(row, monsters) {
+  if (row.monster) return row.monster;
+  const names = [
+    row.monster_name,
+    enemyGroupLabel(row),
+    String(row.name || '').replace(/\s+#\d+$/, ''),
+  ].filter(Boolean).map(name => String(name).trim().toLowerCase());
+  return monsters.find(monster => names.includes(String(monster.name || '').trim().toLowerCase())) || null;
+}
+
+function RulePopup({ title, text, onClose }) {
+  return (
+    <div style={{
+      position:'absolute',
+      top:58,
+      right:14,
+      zIndex:12,
+      width:'min(480px, calc(100vw - 32px))',
+      border:'1px solid rgba(154,128,255,0.45)',
+      borderRadius:'var(--radius-md)',
+      background:'linear-gradient(180deg, rgba(26,25,48,0.98), rgba(13,17,34,0.98))',
+      boxShadow:'0 18px 60px rgba(0,0,0,0.62)',
+      padding:12,
+    }}>
+      <div style={{display:'flex',justifyContent:'space-between',gap:10,alignItems:'flex-start',borderBottom:'1px solid var(--border)',paddingBottom:8,marginBottom:10}}>
+        <div style={{color:'var(--accent-light)',fontFamily:"'Cinzel',serif",fontWeight:800}}>{title}</div>
+        <button type="button" className="btn btn-secondary btn-sm" onClick={onClose}>Close</button>
+      </div>
+      <div style={{color:text ? 'var(--text-secondary)' : 'var(--text-dim)',fontSize:13,lineHeight:1.55,whiteSpace:'pre-wrap'}}>
+        {text || 'No campaign rule text has been set yet.'}
+      </div>
+    </div>
+  );
+}
+
 function makeEffectOptions(roster) {
   const spells = [];
   const effects = [];
@@ -265,7 +300,7 @@ function MiniField({ label, value, onChange, width = 58 }) {
   );
 }
 
-function CombatantCard({ row, active, campaignRules, onUpdate, onRemove, onViewMonster, onAddCondition, onRemoveCondition, onRemoveEffect, onDeathSave, rowRef }) {
+function CombatantCard({ row, active, statMonster, onUpdate, onRemove, onViewMonster, onAddCondition, onRemoveCondition, onRemoveEffect, onDeathSave, rowRef }) {
   return (
     <div ref={rowRef} style={{
       border:active ? '2px solid var(--accent)' : '1px solid var(--border)',
@@ -287,7 +322,7 @@ function CombatantCard({ row, active, campaignRules, onUpdate, onRemove, onViewM
           <MiniField label="INIT" value={row.initiative} onChange={e => onUpdate(row.id, { initiative: e.target.value })} />
           <MiniField label="AC" value={row.ac} onChange={e => onUpdate(row.id, { ac: e.target.value })} />
           <div style={{display:'flex',gap:6,alignItems:'center',flexWrap:'wrap',minWidth:0,paddingBottom:4}}>
-            {row.monster && <MiniButton onClick={() => onViewMonster(row.monster)}>Stat</MiniButton>}
+            {statMonster && <MiniButton onClick={() => onViewMonster(statMonster)}>Stat Block</MiniButton>}
             <span style={{color:row.type === 'player' ? 'var(--success)' : 'var(--warning)',fontSize:11,fontWeight:900,textTransform:'uppercase'}}>{row.type}</span>
           </div>
         </div>
@@ -341,11 +376,6 @@ function CombatantCard({ row, active, campaignRules, onUpdate, onRemove, onViewM
               <MiniButton onClick={() => onDeathSave(row, 'successes', 1)}>Pass {row.death_saves?.successes || 0}</MiniButton>
               <MiniButton onClick={() => onDeathSave(row, 'failures', 1)}>Fail {row.death_saves?.failures || 0}</MiniButton>
             </div>
-            {campaignRules?.death_saves && (
-              <div style={{border:'1px solid rgba(255,193,7,0.35)',background:'rgba(255,193,7,0.08)',borderRadius:4,padding:'5px 6px',fontSize:11,color:'var(--text-secondary)',lineHeight:1.35,whiteSpace:'pre-wrap'}}>
-                <strong style={{color:'var(--warning)'}}>Rules:</strong> {campaignRules.death_saves}
-              </div>
-            )}
             {row.last_death_save && (
               <div style={{border:'1px solid rgba(154,128,255,0.42)',background:'rgba(124,92,252,0.16)',borderRadius:4,padding:'5px 6px',fontSize:11,color:'var(--text-secondary)',lineHeight:1.35}}>
                 <div style={{color:'var(--accent-light)',fontWeight:900}}>
@@ -382,6 +412,7 @@ export default function EncounterRunnerModal({
   const [sharedInitiative, setSharedInitiative] = useState(true);
   const [selectedTurnId, setSelectedTurnId] = useState(combatants[0]?.id || null);
   const [viewingMonster, setViewingMonster] = useState(null);
+  const [rulesPopup, setRulesPopup] = useState(null);
   const [effectForm, setEffectForm] = useState({ type: 'condition', name: '', custom: '', source_id: '', target_ids: [], duration: '1 min', concentration: false });
   const rowRefs = useRef({});
   const dataRef = useRef(data);
@@ -598,20 +629,16 @@ export default function EncounterRunnerModal({
 
   return (
     <div className="modal-overlay" style={{zIndex:2600,background:'var(--bg-primary)',padding:0}}>
-      <div className="modal" onClick={e => e.stopPropagation()} style={{width:'100vw',maxWidth:'none',height:'100vh',borderRadius:0,border:0,display:'flex',flexDirection:'column',padding:14,background:'var(--bg-primary)'}}>
+      <div className="modal" onClick={e => e.stopPropagation()} style={{width:'100vw',maxWidth:'none',height:'100vh',borderRadius:0,border:0,display:'flex',flexDirection:'column',padding:14,background:'var(--bg-primary)',position:'relative'}}>
         <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:12,borderBottom:'1px solid var(--border)',paddingBottom:10}}>
           <div>
             <h2 style={{marginBottom:2}}>Encounter Tracker: {encounter.name}</h2>
             <div style={{color:'var(--text-secondary)',fontSize:12}}>{combatants.length} combatants · {encounter.status}</div>
-            {(campaignRules.death_saves || campaignRules.exhaustion) && (
-              <div style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:6}}>
-                {campaignRules.death_saves && <span style={{color:'var(--warning)',fontSize:11,fontWeight:800}}>Death Save Rules Active</span>}
-                {campaignRules.exhaustion && <span style={{color:'var(--warning)',fontSize:11,fontWeight:800}}>Exhaustion Rules Active</span>}
-              </div>
-            )}
           </div>
           <div style={{display:'flex',gap:6,flexWrap:'wrap',justifyContent:'flex-end'}}>
+            <MiniButton onClick={() => setRulesPopup(rulesPopup === 'exhaustion' ? null : 'exhaustion')}>Exhaustion</MiniButton>
+            <MiniButton onClick={() => setRulesPopup(rulesPopup === 'death_saves' ? null : 'death_saves')}>Death Saves</MiniButton>
             <MiniButton onClick={() => onStatus(encounter.id, primaryStatusAction.status)} variant={primaryStatusAction.variant}>{primaryStatusAction.label}</MiniButton>
             <MiniButton onClick={() => onStatus(encounter.id, 'complete')}>Conclude Encounter</MiniButton>
             <MiniButton onClick={syncPartyStats}>Sync PCs</MiniButton>
@@ -619,6 +646,12 @@ export default function EncounterRunnerModal({
             <MiniButton onClick={onClose}>Close</MiniButton>
           </div>
         </div>
+        {rulesPopup === 'exhaustion' && (
+          <RulePopup title="Campaign Exhaustion Rules" text={campaignRules.exhaustion} onClose={() => setRulesPopup(null)} />
+        )}
+        {rulesPopup === 'death_saves' && (
+          <RulePopup title="Campaign Death Save Rules" text={campaignRules.death_saves} onClose={() => setRulesPopup(null)} />
+        )}
 
         <div style={{
           display:'grid',
@@ -735,25 +768,28 @@ export default function EncounterRunnerModal({
             </div>
             {combatants.length === 0 ? (
               <div style={{color:'var(--text-secondary)',fontSize:14,textAlign:'center',padding:60}}>Add characters and enemies to begin running this encounter.</div>
-            ) : combatants.map(row => (
-              <CombatantCard
-                key={row.id}
-                row={row}
-                rowRef={element => { rowRefs.current[row.id] = element; }}
-                active={sameId(activeId, row.id)}
-                onUpdate={updateCombatant}
-                onRemove={removeCombatant}
-                onViewMonster={(monster) => {
-                  focusCombatant(row.id);
-                  setViewingMonster(monster);
-                }}
-                onAddCondition={addCondition}
-                onRemoveCondition={removeCondition}
-                onRemoveEffect={removeEffect}
-                onDeathSave={setDeathSave}
-                campaignRules={campaignRules}
-              />
-            ))}
+            ) : combatants.map(row => {
+              const statMonster = monsterForRow(row, monsters);
+              return (
+                <CombatantCard
+                  key={row.id}
+                  row={row}
+                  statMonster={statMonster}
+                  rowRef={element => { rowRefs.current[row.id] = element; }}
+                  active={sameId(activeId, row.id)}
+                  onUpdate={updateCombatant}
+                  onRemove={removeCombatant}
+                  onViewMonster={(monster) => {
+                    focusCombatant(row.id);
+                    setViewingMonster(monster);
+                  }}
+                  onAddCondition={addCondition}
+                  onRemoveCondition={removeCondition}
+                  onRemoveEffect={removeEffect}
+                  onDeathSave={setDeathSave}
+                />
+              );
+            })}
           </main>
 
           {viewingMonster && (
