@@ -221,3 +221,14 @@ Still intentionally pending:
 - **Collapsible DM references:** long DM reference material should use collapsed sections by default, like the death-save rules popup.
 - **Campaign rules auto-apply:** campaign-wide death-save/exhaustion/homebrew rules should either auto-apply to attached character sheets or clearly override those sheets while in the campaign, without silently destroying personal overrides.
 - **Better full character editor reuse for DM sheet edit:** current V1 works, but the long-term goal is to open the normal character editor surface with campaign-authorized permissions rather than a small JSON-heavy editor.
+
+## 2026-07-01 No Visible JSON Editors Rule
+
+The owner explicitly wants user-facing editors to be UI forms, not backend JSON surfaces. Keep flexible JSON/object storage internally, but do not expose raw JSON textareas or "Advanced JSON" buttons to players or DMs.
+
+Updated in this pass:
+
+- Campaign DM `Player Sheet Edit` is now a form for identity, HP/status, ability scores, saves, skills/expertise, conditions/effects, death-save settings, and DM notes. It preserves untouched spell/action data internally without showing JSON.
+- Homebrew creature editing is now a stat-block form for core creature data, speed, ability scores, saves/skills, defenses, senses/languages, environments, traits/actions/reactions/legendary actions. It still saves to the same custom monster database used by Bestiary and encounters.
+- Spell editing no longer exposes the previous Advanced JSON editor toggle.
+- Encounter setup combatant rows were widened into explicit separated columns for identity, INIT/AC/HP/TEMP, conditions/concentration, and death saves/actions. Keep this separated-control pattern; do not compress those fields back into overlapping boxes.

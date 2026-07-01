@@ -6,9 +6,8 @@ const SCHOOLS = ['Abjuration','Conjuration','Divination','Enchantment','Evocatio
 const DAMAGE_TYPES = ['Acid','Bludgeoning','Cold','Fire','Force','Lightning','Necrotic','Piercing','Poison','Psychic','Radiant','Slashing','Thunder'];
 const SAVE_TYPES = ['STR','DEX','CON','INT','WIS','CHA'];
 
-// Structured spell editor replacing the old raw JSON textarea. All commonly-needed fields
-// have dedicated inputs; an "Advanced JSON" toggle is still available for anything not
-// covered (custom fields, edge-case flags, etc.) without requiring a raw-JSON-only workflow.
+// Structured spell editor. All commonly-needed fields have dedicated inputs so users
+// never have to edit backend data directly.
 export default function SpellEditModal({ spell, mode, onSave, onDelete, onClose }) {
   const { _custom_id, _source, _override_id, name: origName, ...rest } = spell;
   const [editName, setEditName] = useState(mode === 'duplicate' ? `${origName} (Homebrew)` : origName);
@@ -33,8 +32,6 @@ export default function SpellEditModal({ spell, mode, onSave, onDelete, onClose 
     classes:       Array.isArray(rest.classes) ? rest.classes.join(', ') : (rest.classes || ''),
     description:   rest.description || '',
   });
-  const [showAdvanced, setShowAdvanced] = useState(false);
-  // Keep advanced JSON in sync with the structured fields so switching back and forth works
   const structuredToObj = () => ({
     ...rest,
     level_int: parseInt(fields.level_int) || 0,
@@ -58,7 +55,6 @@ export default function SpellEditModal({ spell, mode, onSave, onDelete, onClose 
     classes: fields.classes ? fields.classes.split(',').map(s => s.trim()).filter(Boolean) : rest.classes,
     description: fields.description,
   });
-  const [json, setJson] = useState(() => JSON.stringify(structuredToObj(), null, 2));
   const [error, setError] = useState(null);
 
   const set = (k, v) => setFields(f => ({ ...f, [k]: v }));
@@ -66,10 +62,9 @@ export default function SpellEditModal({ spell, mode, onSave, onDelete, onClose 
   const submit = () => {
     if (!editName.trim()) return;
     try {
-      const payload = showAdvanced ? JSON.parse(json) : structuredToObj();
-      onSave({ ...payload, name: editName.trim() });
+      onSave({ ...structuredToObj(), name: editName.trim() });
     } catch (e) {
-      setError(`Invalid JSON in advanced editor: ${e.message}`);
+      setError(`Could not save spell: ${e.message}`);
     }
   };
 
@@ -94,7 +89,7 @@ export default function SpellEditModal({ spell, mode, onSave, onDelete, onClose 
           <Row label="Name">
             <input value={editName} onChange={e => setEditName(e.target.value)} />
           </Row>
-          {!showAdvanced && (<>
+          <>
             <Row label="Level">
               <select value={fields.level_int} onChange={e => set('level_int', parseInt(e.target.value))}>
                 <option value={0}>Cantrip</option>
@@ -164,17 +159,7 @@ export default function SpellEditModal({ spell, mode, onSave, onDelete, onClose 
               <label style={{fontSize:12,color:'var(--text-secondary)'}}>Description</label>
               <textarea value={fields.description} onChange={e => set('description', e.target.value)} rows={6} style={{width:'100%',marginTop:4,resize:'vertical'}} />
             </div>
-          </>)}
-          {showAdvanced && (<>
-            <div className="form-group">
-              <label>Advanced JSON (all fields)</label>
-              <textarea value={json} onChange={e => setJson(e.target.value)} rows={16} style={{width:'100%',resize:'vertical',fontFamily:'monospace',fontSize:11}} />
-            </div>
-          </>)}
-          <button className="btn btn-secondary btn-sm" onClick={() => {
-            if (!showAdvanced) setJson(JSON.stringify(structuredToObj(), null, 2));
-            setShowAdvanced(v => !v);
-          }}>{showAdvanced ? 'Switch to Form View' : 'Advanced JSON Editor'}</button>
+          </>
         </div>
         <div className="modal-footer">
           {mode === 'customEdit' && onDelete && <button className="btn btn-danger" onClick={onDelete}>Delete</button>}

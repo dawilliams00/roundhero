@@ -11,6 +11,7 @@ import MonsterEditModal from '../components/MonsterEditModal';
 import { ReferenceLibraryContent } from '../components/ReferenceLibrary';
 import api from '../utils/api';
 import { fetchSyricReferences } from '../utils/characterModules';
+import { ABILITY_KEYS, ABILITY_LABELS, SAVE_PROFS, SKILL_MAP } from '../utils/dnd';
 
 const TABS = ['Party', 'Effects', 'Encounters', 'Rules', 'DM References'];
 const EFFECT_PRESETS = [
@@ -370,15 +371,12 @@ function ConfirmActionModal({ title, message, confirmLabel = 'Delete', onCancel,
   );
 }
 
+const SHEET_SKILLS = Object.keys(SKILL_MAP);
+const csvToList = text => String(text || '').split(',').map(part => part.trim()).filter(Boolean);
+const listToCsv = list => Array.isArray(list) ? list.join(', ') : '';
+
 function CampaignSheetEditorModal({ campaignId, rosterEntry, onClose, onSaved }) {
   const [sheet, setSheet] = useState(null);
-  const [jsonDrafts, setJsonDrafts] = useState({
-    ability_scores: '{}',
-    tracker_data: '{}',
-    spell_data: '{}',
-    ae_data: '{}',
-    notes: '{}',
-  });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -387,13 +385,14 @@ function CampaignSheetEditorModal({ campaignId, rosterEntry, onClose, onSaved })
     api.get(`/campaigns/${campaignId}/characters/${rosterEntry.id}/sheet`)
       .then(r => {
         if (cancelled) return;
-        setSheet(r.data);
-        setJsonDrafts({
-          ability_scores: JSON.stringify(r.data.ability_scores || {}, null, 2),
-          tracker_data: JSON.stringify(r.data.tracker_data || {}, null, 2),
-          spell_data: JSON.stringify(r.data.spell_data || {}, null, 2),
-          ae_data: JSON.stringify(r.data.ae_data || {}, null, 2),
-          notes: JSON.stringify(r.data.notes || {}, null, 2),
+        const data = r.data || {};
+        setSheet({
+          ...data,
+          ability_scores: { STR: 10, DEX: 10, CON: 10, INT: 10, WIS: 10, CHA: 10, ...(data.ability_scores || {}) },
+          tracker_data: data.tracker_data || {},
+          spell_data: data.spell_data || {},
+          ae_data: data.ae_data || {},
+          notes: data.notes || {},
         });
       })
       .catch(err => setError(err.response?.data?.error || 'Could not load this sheet for campaign editing.'));
@@ -403,13 +402,41 @@ function CampaignSheetEditorModal({ campaignId, rosterEntry, onClose, onSaved })
   }, [campaignId, rosterEntry.id]);
 
   const setField = (field, value) => setSheet(prev => ({ ...prev, [field]: value }));
-  const setJson = (field, value) => setJsonDrafts(prev => ({ ...prev, [field]: value }));
+  const setAbility = (ability, value) => setSheet(prev => ({
+    ...prev,
+    ability_scores: { ...(prev.ability_scores || {}), [ability]: value },
+  }));
+  const patchTracker = patch => setSheet(prev => ({
+    ...prev,
+    tracker_data: { ...(prev.tracker_data || {}), ...patch },
+  }));
+  const patchHp = patch => setSheet(prev => ({
+    ...prev,
+    tracker_data: {
+      ...(prev.tracker_data || {}),
+      hp: { ...((prev.tracker_data || {}).hp || {}), ...patch },
+    },
+  }));
+  const patchSettings = patch => setSheet(prev => ({
+    ...prev,
+    tracker_data: {
+      ...(prev.tracker_data || {}),
+      settings: { ...((prev.tracker_data || {}).settings || {}), ...patch },
+    },
+  }));
+  const toggleListValue = (field, value) => setSheet(prev => {
+    const td = prev.tracker_data || {};
+    const current = Array.isArray(td[field]) ? td[field] : [];
+    const next = current.includes(value) ? current.filter(item => item !== value) : [...current, value];
+    return { ...prev, tracker_data: { ...td, [field]: next } };
+  });
 
   const submit = async () => {
     if (!sheet || saving) return;
     setSaving(true);
     setError('');
     try {
+      const trackerData = sheet.tracker_data || {};
       const payload = {
         name: sheet.name,
         class_name: sheet.class_name,
@@ -417,19 +444,50 @@ function CampaignSheetEditorModal({ campaignId, rosterEntry, onClose, onSaved })
         background: sheet.background || '',
         race: sheet.race,
         level: Number(sheet.level) || 1,
+        ability_scores: Object.fromEntries(ABILITY_KEYS.map(key => [key, parseInt(sheet.ability_scores?.[key], 10) || 10])),
+        tracker_data: {
+          ...trackerData,
+          ac_misc: parseInt(trackerData.ac_misc, 10) || 0,
+          exhaustion: Math.max(0, Math.min(6, parseInt(trackerData.exhaustion, 10) || 0)),
+          hp: {
+            ...(trackerData.hp || {}),
+            current: parseInt(trackerData.hp?.current, 10) || 0,
+            max: parseInt(trackerData.hp?.max, 10) || 0,
+            max_override: parseInt(trackerData.hp?.max_override, 10) || 0,
+            temp: parseInt(trackerData.hp?.temp, 10) || 0,
+          },
+          death_saves: {
+            successes: Math.max(0, Math.min(3, parseInt(trackerData.death_saves?.successes, 10) || 0)),
+            failures: Math.max(0, Math.min(3, parseInt(trackerData.death_saves?.failures, 10) || 0)),
+          },
+          conditions: cleanList(trackerData.conditions),
+          active_effects: cleanList(trackerData.active_effects),
+          save_proficiencies: cleanList(trackerData.save_proficiencies),
+          skill_proficiencies: cleanList(trackerData.skill_proficiencies),
+          skill_expertise: cleanList(trackerData.skill_expertise),
+        },
+        spell_data: sheet.spell_data || {},
+        ae_data: sheet.ae_data || {},
+        notes: sheet.notes || {},
       };
-      for (const field of Object.keys(jsonDrafts)) {
-        payload[field] = JSON.parse(jsonDrafts[field] || '{}');
-      }
       await api.put(`/campaigns/${campaignId}/characters/${rosterEntry.id}/sheet`, payload);
       await onSaved?.();
       onClose();
     } catch (err) {
-      setError(err instanceof SyntaxError ? `Invalid JSON: ${err.message}` : (err.response?.data?.error || 'Could not save campaign sheet edits.'));
+      setError(err.response?.data?.error || 'Could not save campaign sheet edits.');
     } finally {
       setSaving(false);
     }
   };
+
+  const td = sheet?.tracker_data || {};
+  const hp = td.hp || {};
+  const saves = td.death_saves || {};
+  const settings = td.settings || {};
+  const noteText = sheet?.notes?.campaign_dm_notes || '';
+  const setNoteText = value => setSheet(prev => ({ ...prev, notes: { ...(prev.notes || {}), campaign_dm_notes: value } }));
+  const sectionStyle = {border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',padding:10,background:'var(--bg-secondary)'};
+  const sectionTitle = {color:'var(--accent-light)',fontSize:13,fontWeight:900,marginBottom:8,textTransform:'uppercase'};
 
   return (
     <div className="modal-overlay" style={{zIndex:3300}} onClick={onClose}>
@@ -445,44 +503,134 @@ function CampaignSheetEditorModal({ campaignId, rosterEntry, onClose, onSaved })
           {!sheet && !error && <div style={{color:'var(--text-secondary)'}}>Loading sheet...</div>}
           {sheet && (
             <div style={{display:'grid',gap:12}}>
-              <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(160px,1fr))',gap:8}}>
-                <label style={{display:'grid',gap:4}}>
-                  <span style={{color:'var(--text-secondary)',fontSize:11,fontWeight:800,textTransform:'uppercase'}}>Name</span>
-                  <input value={sheet.name || ''} onChange={e => setField('name', e.target.value)} />
-                </label>
-                <label style={{display:'grid',gap:4}}>
-                  <span style={{color:'var(--text-secondary)',fontSize:11,fontWeight:800,textTransform:'uppercase'}}>Race</span>
-                  <input value={sheet.race || ''} onChange={e => setField('race', e.target.value)} />
-                </label>
-                <label style={{display:'grid',gap:4}}>
-                  <span style={{color:'var(--text-secondary)',fontSize:11,fontWeight:800,textTransform:'uppercase'}}>Class</span>
-                  <input value={sheet.class_name || ''} onChange={e => setField('class_name', e.target.value)} />
-                </label>
-                <label style={{display:'grid',gap:4}}>
-                  <span style={{color:'var(--text-secondary)',fontSize:11,fontWeight:800,textTransform:'uppercase'}}>Subclass</span>
-                  <input value={sheet.subclass || ''} onChange={e => setField('subclass', e.target.value)} />
-                </label>
-                <label style={{display:'grid',gap:4}}>
-                  <span style={{color:'var(--text-secondary)',fontSize:11,fontWeight:800,textTransform:'uppercase'}}>Background</span>
-                  <input value={sheet.background || ''} onChange={e => setField('background', e.target.value)} />
-                </label>
-                <label style={{display:'grid',gap:4}}>
-                  <span style={{color:'var(--text-secondary)',fontSize:11,fontWeight:800,textTransform:'uppercase'}}>Level</span>
-                  <input type="number" min="1" max="20" value={sheet.level || 1} onChange={e => setField('level', e.target.value)} />
-                </label>
-              </div>
-              {[
-                ['ability_scores', 'Ability Scores'],
-                ['tracker_data', 'Tracker Data'],
-                ['spell_data', 'Spell Data'],
-                ['ae_data', 'Action Economy Data'],
-                ['notes', 'Notes'],
-              ].map(([field, label]) => (
-                <label key={field} style={{display:'grid',gap:4}}>
-                  <span style={{color:'var(--text-secondary)',fontSize:11,fontWeight:800,textTransform:'uppercase'}}>{label}</span>
-                  <textarea value={jsonDrafts[field]} onChange={e => setJson(field, e.target.value)} rows={field === 'tracker_data' ? 10 : 5} style={{fontFamily:'monospace',fontSize:12}} />
-                </label>
-              ))}
+              <section style={sectionStyle}>
+                <div style={sectionTitle}>Identity</div>
+                <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(150px,1fr))',gap:8}}>
+                  {[
+                    ['name', 'Name'],
+                    ['race', 'Race'],
+                    ['class_name', 'Class'],
+                    ['subclass', 'Subclass'],
+                    ['background', 'Background'],
+                  ].map(([field, label]) => (
+                    <label key={field} style={{display:'grid',gap:4}}>
+                      <span style={{color:'var(--text-secondary)',fontSize:11,fontWeight:800,textTransform:'uppercase'}}>{label}</span>
+                      <input value={sheet[field] || ''} onChange={e => setField(field, e.target.value)} />
+                    </label>
+                  ))}
+                  <label style={{display:'grid',gap:4}}>
+                    <span style={{color:'var(--text-secondary)',fontSize:11,fontWeight:800,textTransform:'uppercase'}}>Level</span>
+                    <input type="number" min="1" max="20" value={sheet.level || 1} onChange={e => setField('level', e.target.value)} />
+                  </label>
+                </div>
+              </section>
+
+              <section style={sectionStyle}>
+                <div style={sectionTitle}>HP / Status</div>
+                <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(110px,1fr))',gap:8}}>
+                  {[
+                    ['current', 'Current HP'],
+                    ['max', 'Max HP'],
+                    ['max_override', 'Max Override'],
+                    ['temp', 'Temp HP'],
+                  ].map(([field, label]) => (
+                    <label key={field} style={{display:'grid',gap:4}}>
+                      <span style={{color:'var(--text-secondary)',fontSize:11,fontWeight:800,textTransform:'uppercase'}}>{label}</span>
+                      <input type="number" value={hp[field] ?? 0} onChange={e => patchHp({ [field]: e.target.value })} />
+                    </label>
+                  ))}
+                  <label style={{display:'grid',gap:4}}>
+                    <span style={{color:'var(--text-secondary)',fontSize:11,fontWeight:800,textTransform:'uppercase'}}>AC Misc</span>
+                    <input type="number" value={td.ac_misc ?? 0} onChange={e => patchTracker({ ac_misc: e.target.value })} />
+                  </label>
+                  <label style={{display:'grid',gap:4}}>
+                    <span style={{color:'var(--text-secondary)',fontSize:11,fontWeight:800,textTransform:'uppercase'}}>Exhaustion</span>
+                    <input type="number" min="0" max="6" value={td.exhaustion ?? 0} onChange={e => patchTracker({ exhaustion: e.target.value })} />
+                  </label>
+                </div>
+              </section>
+
+              <section style={sectionStyle}>
+                <div style={sectionTitle}>Ability Scores</div>
+                <div style={{display:'grid',gridTemplateColumns:'repeat(6,minmax(72px,1fr))',gap:8}}>
+                  {ABILITY_KEYS.map(key => (
+                    <label key={key} style={{display:'grid',gap:4}}>
+                      <span style={{color:'var(--text-secondary)',fontSize:11,fontWeight:800,textTransform:'uppercase'}}>{key}</span>
+                      <input type="number" value={sheet.ability_scores?.[key] ?? 10} onChange={e => setAbility(key, e.target.value)} style={{textAlign:'center',fontWeight:800}} title={ABILITY_LABELS[key]} />
+                    </label>
+                  ))}
+                </div>
+              </section>
+
+              <section style={sectionStyle}>
+                <div style={sectionTitle}>Saves / Skills</div>
+                <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(190px,1fr))',gap:10}}>
+                  <div>
+                    <div style={{color:'var(--text-secondary)',fontSize:11,fontWeight:900,marginBottom:6}}>Saving Throws</div>
+                    <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:5}}>
+                      {ABILITY_KEYS.map(key => (
+                        <label key={key} style={{display:'flex',gap:5,alignItems:'center',fontSize:12}}>
+                          <input type="checkbox" checked={cleanList(td.save_proficiencies).includes(key)} onChange={() => toggleListValue('save_proficiencies', key)} />
+                          {key}
+                        </label>
+                      ))}
+                    </div>
+                    <div style={{color:'var(--text-dim)',fontSize:10,marginTop:6}}>Class defaults: {(SAVE_PROFS[sheet.class_name] || []).join(', ') || 'none listed'}</div>
+                  </div>
+                  <div>
+                    <div style={{color:'var(--text-secondary)',fontSize:11,fontWeight:900,marginBottom:6}}>Skills</div>
+                    <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(150px,1fr))',gap:5,maxHeight:220,overflowY:'auto',paddingRight:3}}>
+                      {SHEET_SKILLS.map(skill => (
+                        <label key={skill} style={{display:'grid',gridTemplateColumns:'18px 18px 1fr auto',gap:4,alignItems:'center',fontSize:12}}>
+                          <input type="checkbox" checked={cleanList(td.skill_proficiencies).includes(skill)} onChange={() => toggleListValue('skill_proficiencies', skill)} title="Proficient" />
+                          <input type="checkbox" checked={cleanList(td.skill_expertise).includes(skill)} onChange={() => toggleListValue('skill_expertise', skill)} title="Expertise" />
+                          <span>{skill}</span>
+                          <span style={{color:'var(--text-dim)',fontSize:10}}>{SKILL_MAP[skill]}</span>
+                        </label>
+                      ))}
+                    </div>
+                    <div style={{color:'var(--text-dim)',fontSize:10,marginTop:5}}>First box = proficient, second box = expertise.</div>
+                  </div>
+                </div>
+              </section>
+
+              <section style={sectionStyle}>
+                <div style={sectionTitle}>Conditions / Effects</div>
+                <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))',gap:8}}>
+                  <label style={{display:'grid',gap:4}}>
+                    <span style={{color:'var(--text-secondary)',fontSize:11,fontWeight:800,textTransform:'uppercase'}}>Conditions</span>
+                    <input value={listToCsv(td.conditions)} onChange={e => patchTracker({ conditions: csvToList(e.target.value) })} placeholder="Lethargic, Poisoned" />
+                  </label>
+                  <label style={{display:'grid',gap:4}}>
+                    <span style={{color:'var(--text-secondary)',fontSize:11,fontWeight:800,textTransform:'uppercase'}}>Active Effects</span>
+                    <input value={listToCsv(td.active_effects)} onChange={e => patchTracker({ active_effects: csvToList(e.target.value) })} placeholder="Hasted, Bless" />
+                  </label>
+                </div>
+              </section>
+
+              <section style={sectionStyle}>
+                <div style={sectionTitle}>Death Saves</div>
+                <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(130px,1fr))',gap:8,alignItems:'end'}}>
+                  <label style={{display:'grid',gap:4}}>
+                    <span style={{color:'var(--text-secondary)',fontSize:11,fontWeight:800,textTransform:'uppercase'}}>Successes</span>
+                    <input type="number" min="0" max="3" value={saves.successes ?? 0} onChange={e => patchTracker({ death_saves: { ...saves, successes: e.target.value } })} />
+                  </label>
+                  <label style={{display:'grid',gap:4}}>
+                    <span style={{color:'var(--text-secondary)',fontSize:11,fontWeight:800,textTransform:'uppercase'}}>Failures</span>
+                    <input type="number" min="0" max="3" value={saves.failures ?? 0} onChange={e => patchTracker({ death_saves: { ...saves, failures: e.target.value } })} />
+                  </label>
+                  <label style={{display:'flex',gap:6,alignItems:'center',fontSize:12,color:'var(--text-secondary)'}}>
+                    <input type="checkbox" checked={!!settings.death_save_roll_blind} onChange={e => patchSettings({ death_save_roll_blind: e.target.checked })} />
+                    Blind death saves
+                  </label>
+                  <button type="button" className="btn btn-secondary btn-sm" onClick={() => patchTracker({ death_saves: { successes: 0, failures: 0 }, last_death_save: null })}>Reset Death Saves</button>
+                </div>
+              </section>
+
+              <section style={sectionStyle}>
+                <div style={sectionTitle}>DM Notes</div>
+                <textarea value={noteText} onChange={e => setNoteText(e.target.value)} rows={4} placeholder="Private campaign-facing notes for this character." style={{width:'100%',resize:'vertical'}} />
+              </section>
             </div>
           )}
           {error && <div style={{color:'var(--danger)',fontSize:12,marginTop:8}}>{error}</div>}
@@ -977,7 +1125,7 @@ function EncounterBuilder({
             {combatants.length === 0 ? (
               <div style={{color:'var(--text-secondary)',fontSize:13,padding:20}}>No combatants yet.</div>
             ) : (
-              <div style={{display:'grid',gap:7,minWidth:900}}>
+              <div style={{display:'grid',gap:7,minWidth:1180}}>
                 {combatants.map(row => {
                   const statMonster = monsterForCombatant(row, monsters);
                   const dead = isDeadCombatant(row);
@@ -988,7 +1136,16 @@ function EncounterBuilder({
                       ? 'linear-gradient(90deg, rgba(255,193,7,0.16), rgba(42,37,26,0.86))'
                       : 'var(--bg-card)';
                   return (
-                  <div key={row.id} style={{display:'grid',gridTemplateColumns:'minmax(220px,1fr) 214px minmax(260px,1.1fr) auto',gap:8,padding:8,border:dead ? '1px solid var(--danger)' : dying ? '1px solid var(--warning)' : '1px solid var(--border)',borderRadius:'var(--radius-sm)',background:rowBackground,alignItems:'start'}}>
+                  <div key={row.id} style={{
+                    display:'grid',
+                    gridTemplateColumns:'minmax(260px,1.05fr) 244px minmax(360px,1.35fr) 154px',
+                    gap:10,
+                    padding:8,
+                    border:dead ? '1px solid var(--danger)' : dying ? '1px solid var(--warning)' : '1px solid var(--border)',
+                    borderRadius:'var(--radius-sm)',
+                    background:rowBackground,
+                    alignItems:'start',
+                  }}>
                     <div style={{display:'grid',gap:5,minWidth:0}}>
                       <DraftInput value={row.name} onCommit={value => updateCombatant(row.id, { name: value })} style={{fontWeight:800,minWidth:0,textDecoration:dead ? 'line-through' : 'none',color:dead ? 'var(--danger)' : undefined}} />
                       <div style={{display:'flex',gap:6,alignItems:'center',minWidth:0}}>
@@ -1006,7 +1163,7 @@ function EncounterBuilder({
                         </span>
                       </div>
                     </div>
-                    <div style={{display:'grid',gridTemplateColumns:'48px 48px 54px 54px',gap:5,alignItems:'end'}}>
+                    <div style={{display:'grid',gridTemplateColumns:'54px 54px 62px 62px',gap:6,alignItems:'end'}}>
                       <label style={setupFieldLabel}>
                         Init
                         <DraftInput value={row.initiative} onCommit={value => updateCombatant(row.id, { initiative: value })} style={{textAlign:'center',fontWeight:800}} />
@@ -1024,7 +1181,7 @@ function EncounterBuilder({
                         <DraftInput value={row.temp_hp} onCommit={value => updateCombatant(row.id, { temp_hp: value })} />
                       </label>
                     </div>
-                    <div style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) minmax(0,1fr)',gap:6}}>
+                    <div style={{display:'grid',gridTemplateColumns:'minmax(170px,1fr) minmax(170px,1fr)',gap:8,minWidth:0}}>
                       <label style={setupFieldLabel}>
                         Conditions
                         <DraftInput value={(row.conditions || []).join(', ')} onCommit={value => updateConditionText(row, value)} placeholder="poisoned, hexed" />
