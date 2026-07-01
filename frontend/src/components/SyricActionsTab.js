@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
-import { SECTION_COLORS, HASTED_EFFECT, concentrationSlotCount, formatItemBuff, isItemActive, slotBadgeTextColor, availableSpellsForBucket } from '../utils/dnd';
-import { fetchCharacterModule, fetchSyricReferences, findTrackerCounter, runSyricAction, syncSyricCodexPages, updateTrackerCounter } from '../utils/characterModules';
+import { SECTION_COLORS, HASTED_EFFECT, concentrationSlotCount, formatItemBuff, isItemActive, slotBadgeTextColor, availableSpellsForBucket, profBonus } from '../utils/dnd';
+import { fetchCharacterModule, fetchSyricReferences, findTrackerCounter, runSyricAction, updateTrackerCounter } from '../utils/characterModules';
 import AbilityDetailModal from './AbilityDetailModal';
 import CastSpellPickerModal from './CastSpellPickerModal';
 import ConcentrationModal from './ConcentrationModal';
@@ -508,7 +508,6 @@ export default function SyricActionsTab() {
   const [error, setError] = useState('');
   const [detail, setDetail] = useState(null);
   const [castingBucket, setCastingBucket] = useState(null);
-  const [pendingPages, setPendingPages] = useState([]);
   const [notice, setNotice] = useState('');
   const [overload, setOverload] = useState(null);
   const [discharge, setDischarge] = useState(null);
@@ -533,10 +532,6 @@ export default function SyricActionsTab() {
   }, [character?.id]);
 
   useEffect(() => {
-    setPendingPages(module?.unlocked_codex_pages || []);
-  }, [module?.unlocked_codex_pages]);
-
-  useEffect(() => {
     fetchSyricReferences().then(setReferences).catch(() => {});
   }, []);
 
@@ -552,6 +547,12 @@ export default function SyricActionsTab() {
   const arcaneCharge = useMemo(() => (module?.counters || []).find(counter => /arcane charge/i.test(counter.name || '')), [module]);
   const arcaneMatch = findTrackerCounter(trackerData, arcaneCharge);
   const arcaneValue = arcaneMatch?.value || arcaneCharge;
+  const codexDice = useMemo(() => (module?.counters || []).find(counter => /codex dice/i.test(counter.name || '')), [module]);
+  const codexMatch = findTrackerCounter(trackerData, codexDice);
+  const codexValue = codexMatch?.value || codexDice;
+  const codexSurgeActions = useMemo(() => (
+    (module?.action_sections || []).flatMap(section => section.actions || []).filter(action => /codex surge/i.test(action.name || ''))
+  ), [module]);
 
   const resetRound = () => {
     setTurnUsed({ Action: false, 'Bonus Action': false, Reaction: false, Haste: false, Movement: false, Attacks: 0 });
@@ -583,13 +584,6 @@ export default function SyricActionsTab() {
   const runAction = async (action, payload = {}) => {
     const data = await runSyricAction(character.id, action, payload);
     return applyModuleResult(data);
-  };
-
-  const syncPages = async () => {
-    const data = await syncSyricCodexPages(character.id, pendingPages);
-    if (data.tracker_data) setCharacter(prev => ({ ...prev, tracker_data: data.tracker_data }));
-    if (data.module) setModule(data.module);
-    setNotice(`Synced Codex pages: ${pendingPages.join(', ') || 'none'}.`);
   };
 
   const handleSpecial = async (action, section, bucket) => {
@@ -650,6 +644,20 @@ export default function SyricActionsTab() {
     if (!inInitiative || !bucket) return;
     setTurnUsed(prev => ({ ...prev, [bucket]: true }));
   };
+  const spendCodexForCast = async (mode, amount) => {
+    const action = codexSurgeActions.find(candidate => (
+      mode === 'bonus_d10'
+        ? /d10/i.test(candidate.name || '')
+        : /d6/i.test(candidate.name || '')
+    )) || codexSurgeActions[0] || codexDice;
+    const result = await runAction('spend', {
+      tracker_key: action?.tracker_key,
+      tracker_aliases: action?.tracker_aliases || codexDice?.tracker_aliases || [],
+      amount,
+    });
+    if (mode === 'bonus_d10' && result?.spent && inInitiative) markCharacterBucket('Bonus Action');
+    return result;
+  };
   const canCastInSection = (section) => availableSpellsForBucket(character?.spell_data || {}, section).length > 0;
 
   const handleItemUse = async (idx, itemBucket) => {
@@ -707,7 +715,6 @@ export default function SyricActionsTab() {
             Arcane Charge <span style={{color:'var(--accent-light)'}}>{arcaneValue.current ?? 0}/{arcaneValue.max ?? '-'}</span>
           </div>
         )}
-        <PageRail pages={module.codex_pages || []} pendingPages={pendingPages} setPendingPages={setPendingPages} onSync={syncPages} onReadPage={(page) => setReferenceView({ docId: 'codex_mechanics', page })} />
       </div>
 
       {slotLevels.length > 0 && (
@@ -847,6 +854,12 @@ export default function SyricActionsTab() {
       {castingBucket && (
         <CastSpellPickerModal
           bucket={castingBucket}
+          syricCodex={codexDice ? {
+            current: codexValue?.current,
+            max: codexValue?.max,
+            freeMax: profBonus(character.level),
+            onSpend: spendCodexForCast,
+          } : null}
           onCast={async (meta) => {
             markCharacterBucket(castBucket);
             const spell = meta?.spell || {};

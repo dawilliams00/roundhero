@@ -3,7 +3,7 @@ import { useCharacter } from '../context/CharacterContext';
 import { availableSpellsForBucket, schoolColor, slotBadgeTextColor } from '../utils/dnd';
 import SpellDetailModal from './SpellDetailModal';
 
-export default function CastSpellPickerModal({ onClose, bucket, onCast }) {
+export default function CastSpellPickerModal({ onClose, bucket, onCast, syricCodex }) {
   const { character } = useCharacter();
   const [search, setSearch] = useState('');
   const [viewing, setViewing] = useState(null);
@@ -49,6 +49,7 @@ export default function CastSpellPickerModal({ onClose, bucket, onCast }) {
         <SpellDetailModal
           spell={viewing}
           onClose={() => setViewing(null)}
+          syricCodex={syricCodex}
           onCastSuccess={async (meta) => { if (onCast) await onCast(meta); onClose(); }}
         />
       )}

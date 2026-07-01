@@ -6,6 +6,8 @@ import { useCharacter } from '../context/CharacterContext';
 import FeedbackModal from '../components/FeedbackModal';
 import EncounterRunnerModal from '../components/EncounterRunnerModal';
 import MonsterDetailModal from '../components/MonsterDetailModal';
+import DuplicateMonsterModal from '../components/DuplicateMonsterModal';
+import MonsterEditModal from '../components/MonsterEditModal';
 import { ReferenceLibraryContent } from '../components/ReferenceLibrary';
 import api from '../utils/api';
 import { fetchSyricReferences } from '../utils/characterModules';
@@ -368,6 +370,132 @@ function ConfirmActionModal({ title, message, confirmLabel = 'Delete', onCancel,
   );
 }
 
+function CampaignSheetEditorModal({ campaignId, rosterEntry, onClose, onSaved }) {
+  const [sheet, setSheet] = useState(null);
+  const [jsonDrafts, setJsonDrafts] = useState({
+    ability_scores: '{}',
+    tracker_data: '{}',
+    spell_data: '{}',
+    ae_data: '{}',
+    notes: '{}',
+  });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+    api.get(`/campaigns/${campaignId}/characters/${rosterEntry.id}/sheet`)
+      .then(r => {
+        if (cancelled) return;
+        setSheet(r.data);
+        setJsonDrafts({
+          ability_scores: JSON.stringify(r.data.ability_scores || {}, null, 2),
+          tracker_data: JSON.stringify(r.data.tracker_data || {}, null, 2),
+          spell_data: JSON.stringify(r.data.spell_data || {}, null, 2),
+          ae_data: JSON.stringify(r.data.ae_data || {}, null, 2),
+          notes: JSON.stringify(r.data.notes || {}, null, 2),
+        });
+      })
+      .catch(err => setError(err.response?.data?.error || 'Could not load this sheet for campaign editing.'));
+    return () => {
+      cancelled = true;
+    };
+  }, [campaignId, rosterEntry.id]);
+
+  const setField = (field, value) => setSheet(prev => ({ ...prev, [field]: value }));
+  const setJson = (field, value) => setJsonDrafts(prev => ({ ...prev, [field]: value }));
+
+  const submit = async () => {
+    if (!sheet || saving) return;
+    setSaving(true);
+    setError('');
+    try {
+      const payload = {
+        name: sheet.name,
+        class_name: sheet.class_name,
+        subclass: sheet.subclass || '',
+        background: sheet.background || '',
+        race: sheet.race,
+        level: Number(sheet.level) || 1,
+      };
+      for (const field of Object.keys(jsonDrafts)) {
+        payload[field] = JSON.parse(jsonDrafts[field] || '{}');
+      }
+      await api.put(`/campaigns/${campaignId}/characters/${rosterEntry.id}/sheet`, payload);
+      await onSaved?.();
+      onClose();
+    } catch (err) {
+      setError(err instanceof SyntaxError ? `Invalid JSON: ${err.message}` : (err.response?.data?.error || 'Could not save campaign sheet edits.'));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="modal-overlay" style={{zIndex:3300}} onClick={onClose}>
+      <div className="modal modal-flex modal-lg" onClick={e => e.stopPropagation()}>
+        <button type="button" className="modal-close-x" onClick={onClose} aria-label="Close">×</button>
+        <div className="modal-header">
+          <h2>Player Sheet Edit</h2>
+          <div style={{color:'var(--text-secondary)',fontSize:12}}>
+            Campaign-authorized DM edit for {rosterEntry.name}. This does not open from encounters.
+          </div>
+        </div>
+        <div className="modal-body">
+          {!sheet && !error && <div style={{color:'var(--text-secondary)'}}>Loading sheet...</div>}
+          {sheet && (
+            <div style={{display:'grid',gap:12}}>
+              <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(160px,1fr))',gap:8}}>
+                <label style={{display:'grid',gap:4}}>
+                  <span style={{color:'var(--text-secondary)',fontSize:11,fontWeight:800,textTransform:'uppercase'}}>Name</span>
+                  <input value={sheet.name || ''} onChange={e => setField('name', e.target.value)} />
+                </label>
+                <label style={{display:'grid',gap:4}}>
+                  <span style={{color:'var(--text-secondary)',fontSize:11,fontWeight:800,textTransform:'uppercase'}}>Race</span>
+                  <input value={sheet.race || ''} onChange={e => setField('race', e.target.value)} />
+                </label>
+                <label style={{display:'grid',gap:4}}>
+                  <span style={{color:'var(--text-secondary)',fontSize:11,fontWeight:800,textTransform:'uppercase'}}>Class</span>
+                  <input value={sheet.class_name || ''} onChange={e => setField('class_name', e.target.value)} />
+                </label>
+                <label style={{display:'grid',gap:4}}>
+                  <span style={{color:'var(--text-secondary)',fontSize:11,fontWeight:800,textTransform:'uppercase'}}>Subclass</span>
+                  <input value={sheet.subclass || ''} onChange={e => setField('subclass', e.target.value)} />
+                </label>
+                <label style={{display:'grid',gap:4}}>
+                  <span style={{color:'var(--text-secondary)',fontSize:11,fontWeight:800,textTransform:'uppercase'}}>Background</span>
+                  <input value={sheet.background || ''} onChange={e => setField('background', e.target.value)} />
+                </label>
+                <label style={{display:'grid',gap:4}}>
+                  <span style={{color:'var(--text-secondary)',fontSize:11,fontWeight:800,textTransform:'uppercase'}}>Level</span>
+                  <input type="number" min="1" max="20" value={sheet.level || 1} onChange={e => setField('level', e.target.value)} />
+                </label>
+              </div>
+              {[
+                ['ability_scores', 'Ability Scores'],
+                ['tracker_data', 'Tracker Data'],
+                ['spell_data', 'Spell Data'],
+                ['ae_data', 'Action Economy Data'],
+                ['notes', 'Notes'],
+              ].map(([field, label]) => (
+                <label key={field} style={{display:'grid',gap:4}}>
+                  <span style={{color:'var(--text-secondary)',fontSize:11,fontWeight:800,textTransform:'uppercase'}}>{label}</span>
+                  <textarea value={jsonDrafts[field]} onChange={e => setJson(field, e.target.value)} rows={field === 'tracker_data' ? 10 : 5} style={{fontFamily:'monospace',fontSize:12}} />
+                </label>
+              ))}
+            </div>
+          )}
+          {error && <div style={{color:'var(--danger)',fontSize:12,marginTop:8}}>{error}</div>}
+        </div>
+        <div className="modal-footer">
+          <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
+          <button className="btn btn-primary" disabled={!sheet || saving} onClick={submit}>{saving ? 'Saving...' : 'Save Sheet'}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function normalizeCombatant(row) {
   return {
     id: row.id || combatantId(),
@@ -502,6 +630,33 @@ function TabButton({ active, label, onClick }) {
   );
 }
 
+function DraftInput({ value, onCommit, parse = v => v, ...props }) {
+  const [draft, setDraft] = useState(value ?? '');
+
+  useEffect(() => {
+    setDraft(value ?? '');
+  }, [value]);
+
+  const commit = () => {
+    const next = parse(draft);
+    if (String(next ?? '') !== String(value ?? '')) onCommit(next);
+  };
+
+  return (
+    <input
+      {...props}
+      value={draft}
+      onChange={e => setDraft(e.target.value)}
+      onBlur={commit}
+      onKeyDown={e => {
+        if (e.key === 'Enter') {
+          e.currentTarget.blur();
+        }
+      }}
+    />
+  );
+}
+
 function CampaignCard({ campaign, selected, onSelect }) {
   return (
     <button
@@ -550,7 +705,7 @@ function MemberRow({ member, campaign, onRole, onRemove }) {
   );
 }
 
-function RosterRow({ entry, campaign, user, onActive, onDetach }) {
+function RosterRow({ entry, campaign, user, onActive, onDetach, onEditSheet }) {
   const canManage = campaign.is_dm || sameId(entry.user_id, user?.id);
   const conditions = entry.sheet_snapshot?.conditions || [];
   const activeEffects = entry.sheet_snapshot?.active_effects || [];
@@ -577,6 +732,9 @@ function RosterRow({ entry, campaign, user, onActive, onDetach }) {
       </div>
       {canManage && (
         <div style={{display:'flex',gap:6}}>
+          {campaign.is_dm && (
+            <button className="btn btn-secondary btn-sm" onClick={() => onEditSheet(entry)}>Player Sheet Edit</button>
+          )}
           <button className={entry.active ? 'btn btn-secondary btn-sm' : 'btn btn-primary btn-sm'} onClick={() => onActive(entry, !entry.active)}>
             {entry.active ? 'Inactivate' : 'Reactivate'}
           </button>
@@ -688,6 +846,8 @@ function EncounterBuilder({
   onEffectStatus,
   onDelete,
   onViewMonster,
+  onDuplicateMonster,
+  onEditMonster,
   onCloseSetup,
 }) {
   const data = encounter?.data || {};
@@ -830,7 +990,7 @@ function EncounterBuilder({
                   return (
                   <div key={row.id} style={{display:'grid',gridTemplateColumns:'minmax(220px,1fr) 214px minmax(260px,1.1fr) auto',gap:8,padding:8,border:dead ? '1px solid var(--danger)' : dying ? '1px solid var(--warning)' : '1px solid var(--border)',borderRadius:'var(--radius-sm)',background:rowBackground,alignItems:'start'}}>
                     <div style={{display:'grid',gap:5,minWidth:0}}>
-                      <input value={row.name} onChange={e => updateCombatant(row.id, { name: e.target.value })} style={{fontWeight:800,minWidth:0,textDecoration:dead ? 'line-through' : 'none',color:dead ? 'var(--danger)' : undefined}} />
+                      <DraftInput value={row.name} onCommit={value => updateCombatant(row.id, { name: value })} style={{fontWeight:800,minWidth:0,textDecoration:dead ? 'line-through' : 'none',color:dead ? 'var(--danger)' : undefined}} />
                       <div style={{display:'flex',gap:6,alignItems:'center',minWidth:0}}>
                         {row.type === 'enemy' && (
                           <label style={{display:'flex',gap:4,alignItems:'center',color:'var(--text-secondary)',fontSize:11,fontWeight:800,textTransform:'uppercase'}}>
@@ -849,29 +1009,29 @@ function EncounterBuilder({
                     <div style={{display:'grid',gridTemplateColumns:'48px 48px 54px 54px',gap:5,alignItems:'end'}}>
                       <label style={setupFieldLabel}>
                         Init
-                        <input value={row.initiative} onChange={e => updateCombatant(row.id, { initiative: e.target.value })} style={{textAlign:'center',fontWeight:800}} />
+                        <DraftInput value={row.initiative} onCommit={value => updateCombatant(row.id, { initiative: value })} style={{textAlign:'center',fontWeight:800}} />
                       </label>
                       <label style={setupFieldLabel}>
                         AC
-                        <input value={row.ac} onChange={e => updateCombatant(row.id, { ac: e.target.value })} style={{textAlign:'center',fontWeight:800}} />
+                        <DraftInput value={row.ac} onCommit={value => updateCombatant(row.id, { ac: value })} style={{textAlign:'center',fontWeight:800}} />
                       </label>
                       <label style={setupFieldLabel}>
                         HP
-                        <input value={row.hp_current} onChange={e => updateCombatant(row.id, { hp_current: e.target.value })} />
+                        <DraftInput value={row.hp_current} onCommit={value => updateCombatant(row.id, { hp_current: value })} />
                       </label>
                       <label style={setupFieldLabel}>
                         Temp
-                        <input value={row.temp_hp} onChange={e => updateCombatant(row.id, { temp_hp: e.target.value })} />
+                        <DraftInput value={row.temp_hp} onCommit={value => updateCombatant(row.id, { temp_hp: value })} />
                       </label>
                     </div>
                     <div style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) minmax(0,1fr)',gap:6}}>
                       <label style={setupFieldLabel}>
                         Conditions
-                        <input value={(row.conditions || []).join(', ')} onChange={e => updateConditionText(row, e.target.value)} placeholder="poisoned, hexed" />
+                        <DraftInput value={(row.conditions || []).join(', ')} onCommit={value => updateConditionText(row, value)} placeholder="poisoned, hexed" />
                       </label>
                       <label style={setupFieldLabel}>
                         Concentration
-                        <input value={row.concentration} onChange={e => updateCombatant(row.id, { concentration: e.target.value })} placeholder="Spell or effect" />
+                        <DraftInput value={row.concentration} onCommit={value => updateCombatant(row.id, { concentration: value })} placeholder="Spell or effect" />
                       </label>
                     </div>
                     <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:5,minWidth:124}}>
@@ -933,12 +1093,16 @@ function EncounterBuilder({
             <div style={{color:'var(--text-dim)',fontSize:11,marginBottom:5}}>{filteredMonsters.length} monster{filteredMonsters.length === 1 ? '' : 's'}</div>
             <div style={{flex:'1 1 240px',minHeight:160,overflowY:'auto',paddingRight:3,border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',background:'rgba(0,0,0,0.12)'}}>
               {filteredMonsters.map(monster => (
-                <div key={monster._custom_id ? `custom_${monster._custom_id}` : monster.name} style={{display:'grid',gridTemplateColumns:'1fr auto auto',gap:5}}>
+                <div key={monster._custom_id ? `custom_${monster._custom_id}` : monster.name} style={{display:'grid',gridTemplateColumns:'1fr auto auto auto auto',gap:5}}>
                   <div style={{border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',padding:'6px 8px',background:'var(--bg-card)',color:'var(--text-primary)',fontSize:12,fontWeight:800,minWidth:0}}>
                     {monster.name} <span style={{color:'var(--text-dim)'}}>CR {monster.challenge_rating}</span>
                   </div>
                   <button type="button" className="btn btn-primary btn-sm" onClick={() => addMonster(monster)}>Add</button>
                   <button type="button" className="btn btn-secondary btn-sm" onClick={() => onViewMonster(monster)}>Stat</button>
+                  <button type="button" className="btn btn-secondary btn-sm" onClick={() => onDuplicateMonster(monster)}>Dup</button>
+                  {monster._source === 'custom' && (
+                    <button type="button" className="btn btn-secondary btn-sm" onClick={() => onEditMonster(monster)}>Edit</button>
+                  )}
                 </div>
               ))}
             </div>
@@ -1002,6 +1166,9 @@ export default function CampaignsPage() {
   const [sharedInitiative, setSharedInitiative] = useState(true);
   const [addMonsterHidden, setAddMonsterHidden] = useState(true);
   const [viewingMonster, setViewingMonster] = useState(null);
+  const [duplicatingMonster, setDuplicatingMonster] = useState(null);
+  const [editingMonster, setEditingMonster] = useState(null);
+  const [editingRosterSheet, setEditingRosterSheet] = useState(null);
   const [showFeedback, setShowFeedback] = useState(false);
   const [showInviteEmail, setShowInviteEmail] = useState(false);
   const [showTransferOwner, setShowTransferOwner] = useState(false);
@@ -1038,11 +1205,36 @@ export default function CampaignsPage() {
       });
   }, [handledJoinCode, joinCampaign, loadCampaign, nav, params]);
 
-  useEffect(() => {
+  const loadMonsters = () => (
     api.get('/content/monsters')
       .then(r => setMonsters(r.data))
-      .catch(() => setMonsters([]));
+      .catch(() => setMonsters([]))
+  );
+
+  useEffect(() => {
+    loadMonsters();
   }, []);
+
+  const submitMonsterDuplicate = async (newMonster) => {
+    await api.post('/content/monsters', newMonster);
+    await loadMonsters();
+    setDuplicatingMonster(null);
+    setViewingMonster(null);
+  };
+
+  const saveEditedMonster = async (data) => {
+    await api.put(`/content/monsters/${editingMonster._custom_id}`, data);
+    await loadMonsters();
+    setEditingMonster(null);
+    setViewingMonster(null);
+  };
+
+  const deleteEditedMonster = async () => {
+    await api.delete(`/content/monsters/${editingMonster._custom_id}`);
+    await loadMonsters();
+    setEditingMonster(null);
+    setViewingMonster(null);
+  };
 
   useEffect(() => {
     fetchSyricReferences().then(setReferenceDocs).catch(() => {});
@@ -1558,6 +1750,7 @@ export default function CampaignsPage() {
                           user={user}
                           onActive={toggleRosterActive}
                           onDetach={detachRosterCharacter}
+                          onEditSheet={setEditingRosterSheet}
                         />
                       ))}
                       {inactiveRoster.length > 0 && (
@@ -1571,6 +1764,7 @@ export default function CampaignsPage() {
                               user={user}
                               onActive={toggleRosterActive}
                               onDetach={detachRosterCharacter}
+                              onEditSheet={setEditingRosterSheet}
                             />
                           ))}
                         </div>
@@ -1772,6 +1966,8 @@ export default function CampaignsPage() {
                         onEffectStatus={setEffectStatus}
                         onDelete={removeEncounter}
                         onViewMonster={setViewingMonster}
+                        onDuplicateMonster={setDuplicatingMonster}
+                        onEditMonster={setEditingMonster}
                         onCloseSetup={() => setSelectedEncounterId(null)}
                       />
                     )}
@@ -1849,7 +2045,40 @@ export default function CampaignsPage() {
           campaignRules={campaign.rules || {}}
         />
       )}
-      {viewingMonster && <MonsterDetailModal monster={viewingMonster} onClose={() => setViewingMonster(null)} />}
+      {viewingMonster && (
+        <MonsterDetailModal
+          monster={viewingMonster}
+          onClose={() => setViewingMonster(null)}
+          onDuplicate={monster => setDuplicatingMonster(monster)}
+          onEdit={monster => {
+            setEditingMonster(monster);
+            setViewingMonster(null);
+          }}
+        />
+      )}
+      {duplicatingMonster && (
+        <DuplicateMonsterModal
+          monster={duplicatingMonster}
+          onDuplicate={submitMonsterDuplicate}
+          onClose={() => setDuplicatingMonster(null)}
+        />
+      )}
+      {editingMonster && (
+        <MonsterEditModal
+          monster={editingMonster}
+          onSave={saveEditedMonster}
+          onDelete={deleteEditedMonster}
+          onClose={() => setEditingMonster(null)}
+        />
+      )}
+      {editingRosterSheet && campaign && (
+        <CampaignSheetEditorModal
+          campaignId={campaign.id}
+          rosterEntry={editingRosterSheet}
+          onClose={() => setEditingRosterSheet(null)}
+          onSaved={() => loadCampaign(campaign.id)}
+        />
+      )}
       {showInviteEmail && campaign && <CampaignInviteEmailModal campaign={campaign} onClose={() => setShowInviteEmail(false)} />}
       {showTransferOwner && campaign && <TransferOwnerModal campaign={campaign} onClose={() => setShowTransferOwner(false)} onTransfer={handleTransferOwner} />}
       {confirmAction && <ConfirmActionModal {...confirmAction} onCancel={() => setConfirmAction(null)} />}

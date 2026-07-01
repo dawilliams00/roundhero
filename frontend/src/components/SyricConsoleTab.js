@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
 import { fetchCharacterModule, fetchSyricReferences, findTrackerCounter, syncSyricCodexPages, updateTrackerCounter } from '../utils/characterModules';
 import ReferenceLibraryModal from './ReferenceLibrary';
+import FeatureEditModal from './FeatureEditModal';
 
 function CounterCard({ counter, trackerData, onAdjust }) {
   const match = findTrackerCounter(trackerData, counter);
@@ -27,7 +28,7 @@ function CounterCard({ counter, trackerData, onAdjust }) {
   );
 }
 
-function FeatureList({ title, features, limit = 10 }) {
+function FeatureList({ title, features, limit = 10, onEdit }) {
   const [expanded, setExpanded] = useState(false);
   const rows = expanded ? features : features.slice(0, limit);
   return (
@@ -43,9 +44,12 @@ function FeatureList({ title, features, limit = 10 }) {
       {rows.map(row => (
         <details key={row.tracker_key || row.name} style={{borderTop:'1px solid var(--border)',paddingTop:7}}>
           <summary style={{cursor:'pointer',color:'var(--text-primary)',fontWeight:700}}>
-            {row.name}
+            <span>{row.name}</span>
             <span style={{color:'var(--text-dim)',fontSize:11,fontWeight:500}}> · {row.action || 'Reference'} {row.max ? `· ${row.current ?? 0}/${row.max}` : ''}</span>
           </summary>
+          {onEdit && (
+            <button className="btn btn-secondary btn-sm" style={{marginTop:7}} onClick={() => onEdit(row)}>Edit in Feature Editor</button>
+          )}
           <div style={{whiteSpace:'pre-wrap',color:'var(--text-secondary)',fontSize:12,lineHeight:1.45,marginTop:7}}>
             {row.description || 'No description.'}
           </div>
@@ -86,6 +90,8 @@ export default function SyricConsoleTab() {
   const [notice, setNotice] = useState('');
   const [references, setReferences] = useState(null);
   const [referenceView, setReferenceView] = useState(null);
+  const [editingFeature, setEditingFeature] = useState(null);
+  const [editingFeaturePayload, setEditingFeaturePayload] = useState(null);
 
   useEffect(() => {
     if (!character?.id) return;
@@ -114,6 +120,31 @@ export default function SyricConsoleTab() {
   const adjustCounter = async (match, delta) => {
     if (!match) return;
     await saveTrackerData(updateTrackerCounter(trackerData, match, delta));
+  };
+
+  const editModuleFeature = async (feature) => {
+    const key = feature.tracker_key || feature.name;
+    const currentFeatures = trackerData.features || {};
+    const nextFeature = currentFeatures[key] || {
+      current: feature.current ?? feature.max ?? 0,
+      max: feature.max ?? 0,
+      rest: feature.rest || feature.rest_type || '',
+      rest_type: feature.rest_type || feature.rest || 'none',
+      description: feature.description || '',
+      source: feature.source || 'Syric Arcane Module',
+      reminder: !!feature.reminder,
+    };
+    if (!currentFeatures[key]) {
+      await saveTrackerData({
+        ...trackerData,
+        features: {
+          ...currentFeatures,
+          [key]: nextFeature,
+        },
+      });
+    }
+    setEditingFeaturePayload(nextFeature);
+    setEditingFeature(key);
   };
 
   const togglePage = (pageNum) => {
@@ -215,14 +246,24 @@ export default function SyricConsoleTab() {
       </div>
 
       <ActionSections sections={module.action_sections || []} />
-      <FeatureList title="Syric Features" features={module.features || []} />
-      <FeatureList title="Shadow Full Reference" features={module.shadow?.features || []} limit={8} />
+      <FeatureList title="Syric Features" features={module.features || []} onEdit={editModuleFeature} />
+      <FeatureList title="Shadow Full Reference" features={module.shadow?.features || []} limit={8} onEdit={editModuleFeature} />
       {referenceView && references && (
         <ReferenceLibraryModal
           docsPayload={references}
           initialDocId={referenceView.docId}
           initialPage={referenceView.page || 1}
           onClose={() => setReferenceView(null)}
+        />
+      )}
+      {editingFeature && (
+        <FeatureEditModal
+          name={editingFeature}
+          feature={(character?.tracker_data?.features || {})[editingFeature] || (trackerData.features || {})[editingFeature] || editingFeaturePayload}
+          onClose={() => {
+            setEditingFeature(null);
+            setEditingFeaturePayload(null);
+          }}
         />
       )}
     </div>

@@ -272,6 +272,30 @@ function MiniButton({ children, onClick, variant = 'secondary', disabled }) {
   );
 }
 
+function DraftInput({ value, onCommit, ...props }) {
+  const [draft, setDraft] = useState(value ?? '');
+
+  useEffect(() => {
+    setDraft(value ?? '');
+  }, [value]);
+
+  const commit = () => {
+    if (String(draft ?? '') !== String(value ?? '')) onCommit(draft);
+  };
+
+  return (
+    <input
+      {...props}
+      value={draft}
+      onChange={e => setDraft(e.target.value)}
+      onBlur={commit}
+      onKeyDown={e => {
+        if (e.key === 'Enter') e.currentTarget.blur();
+      }}
+    />
+  );
+}
+
 function HpControls({ row, onUpdate }) {
   const [openCalc, setOpenCalc] = useState(null);
   const applyDelta = delta => {
@@ -314,13 +338,13 @@ function HpControls({ row, onUpdate }) {
   );
 }
 
-function MiniField({ label, value, onChange, width = 58 }) {
+function MiniField({ label, value, onCommit, width = 58 }) {
   return (
     <div style={{display:'grid',gap:2,width,flex:'0 0 auto'}}>
       <div style={{color:'var(--text-dim)',fontSize:10,lineHeight:1,fontWeight:800,textTransform:'uppercase'}}>{label}</div>
-      <input
+      <DraftInput
         value={value}
-        onChange={onChange}
+        onCommit={onCommit}
         style={{
           width:'100%',
           height:28,
@@ -361,18 +385,23 @@ function CombatantCard({ row, active, statMonster, onUpdate, onRemove, onViewMon
     }}>
       <div style={{gridArea:'identity',display:'grid',gap:5,minWidth:0}}>
         <div style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) auto',gap:6,alignItems:'center'}}>
-          <input value={row.name} onChange={e => onUpdate(row.id, { name: e.target.value })} style={{fontWeight:800,minWidth:120,width:'100%',textDecoration:dead ? 'line-through' : 'none',color:dead ? 'var(--danger)' : undefined}} />
+          <DraftInput value={row.name} onCommit={value => onUpdate(row.id, { name: value })} style={{fontWeight:800,minWidth:120,width:'100%',textDecoration:dead ? 'line-through' : 'none',color:dead ? 'var(--danger)' : undefined}} />
           <MiniButton onClick={() => onRemove(row.id)} variant="danger">Remove from Encounter</MiniButton>
         </div>
         <div style={{display:'flex',gap:6,alignItems:'flex-end',minWidth:0,flexWrap:'wrap'}}>
-          <MiniField label="INIT" value={row.initiative} onChange={e => onUpdate(row.id, { initiative: e.target.value })} />
-          <MiniField label="AC" value={row.ac} onChange={e => onUpdate(row.id, { ac: e.target.value })} />
+          <MiniField label="INIT" value={row.initiative} onCommit={value => onUpdate(row.id, { initiative: value })} />
+          <MiniField label="AC" value={row.ac} onCommit={value => onUpdate(row.id, { ac: value })} />
           <div style={{display:'flex',gap:6,alignItems:'center',flexWrap:'wrap',minWidth:0,paddingBottom:4}}>
             {statMonster && <MiniButton onClick={() => onViewMonster(statMonster)}>Stat Block</MiniButton>}
             {row.type === 'enemy' && (
-              <MiniButton onClick={() => onUpdate(row.id, { hidden_from_players: !row.hidden_from_players })}>
-                {row.hidden_from_players ? 'Hidden' : 'Visible'}
-              </MiniButton>
+              <>
+                <MiniButton onClick={() => onUpdate(row.id, { hidden_from_players: !row.hidden_from_players })}>
+                  {row.hidden_from_players ? 'Hidden' : 'Visible'}
+                </MiniButton>
+                <MiniButton onClick={() => onUpdate(row.id, { dead: !dead })} variant={dead ? 'secondary' : 'danger'}>
+                  {dead ? 'Alive' : 'Dead'}
+                </MiniButton>
+              </>
             )}
             {dead && <span style={{color:'var(--danger)',fontSize:11,fontWeight:900,textTransform:'uppercase'}}>Dead</span>}
             {dying && <span style={{color:'var(--warning)',fontSize:11,fontWeight:900,textTransform:'uppercase'}}>Death saves</span>}
@@ -404,7 +433,7 @@ function CombatantCard({ row, active, statMonster, onUpdate, onRemove, onViewMon
         </div>
         <div style={{marginTop:5,display:'grid',gridTemplateColumns:'82px minmax(0,1fr)',gap:5,alignItems:'center'}}>
           <label style={{fontSize:10,color:'var(--text-dim)'}}>CONCENTRATION</label>
-          <input value={row.concentration} onChange={e => onUpdate(row.id, { concentration: e.target.value })} placeholder="Spell or effect" />
+          <DraftInput value={row.concentration} onCommit={value => onUpdate(row.id, { concentration: value })} placeholder="Spell or effect" />
         </div>
       </div>
 
@@ -468,8 +497,11 @@ export default function EncounterRunnerModal({
   const [selectedTurnId, setSelectedTurnId] = useState(combatants[0]?.id || null);
   const [viewingMonster, setViewingMonster] = useState(null);
   const [rulesPopup, setRulesPopup] = useState(null);
+  const [deathSaveAlert, setDeathSaveAlert] = useState(null);
   const [effectForm, setEffectForm] = useState({ type: 'condition', name: '', custom: '', source_id: '', target_ids: [], duration: '1 min', concentration: false });
   const rowRefs = useRef({});
+  const seenDeathSavesRef = useRef(new Set());
+  const seededDeathSavesRef = useRef(false);
   const dataRef = useRef(data);
   dataRef.current = data;
 
@@ -533,6 +565,20 @@ export default function EncounterRunnerModal({
     }, 15000);
     return () => clearInterval(timer);
   }, [encounter.id, encounter.status, reloadCampaign]);
+
+  useEffect(() => {
+    const records = combatants
+      .filter(row => row.last_death_save)
+      .map(row => ({ row, key: `${row.id}:${JSON.stringify(row.last_death_save)}` }));
+    if (!seededDeathSavesRef.current) {
+      records.forEach(record => seenDeathSavesRef.current.add(record.key));
+      seededDeathSavesRef.current = true;
+      return;
+    }
+    const fresh = records.find(record => !seenDeathSavesRef.current.has(record.key));
+    records.forEach(record => seenDeathSavesRef.current.add(record.key));
+    if (fresh) setDeathSaveAlert({ row: fresh.row, record: fresh.row.last_death_save });
+  }, [combatants]);
 
   const focusCombatant = id => {
     setSelectedTurnId(id);
@@ -721,6 +767,13 @@ export default function EncounterRunnerModal({
         {rulesPopup === 'death_saves' && (
           <RulePopup title="Campaign Death Save Rules" text={campaignRules.death_saves} onClose={() => setRulesPopup(null)} />
         )}
+        {deathSaveAlert && (
+          <RulePopup
+            title="Death Save Rolled"
+            text={`${deathSaveAlert.row.name}\nD20 ${deathSaveAlert.record.roll} - ${deathSaveResultLabel(deathSaveAlert.record.result)}\n${deathSaveAlert.record.note || ''}\n\nCurrent: ${deathSaveAlert.record.successes || 0} success / ${deathSaveAlert.record.failures || 0} fail${deathSaveAlert.record.blind ? '\nBlind roll: player did not see this result.' : ''}`}
+            onClose={() => setDeathSaveAlert(null)}
+          />
+        )}
 
         <div style={{
           display:'grid',
@@ -833,11 +886,27 @@ export default function EncounterRunnerModal({
           <main style={{display:'flex',flexDirection:'column',gap:10,minHeight:0,overflowY:'auto',paddingRight:4}}>
             <div style={{position:'sticky',top:0,zIndex:3,display:'flex',gap:6,alignItems:'center',flexWrap:'wrap',padding:'6px 0',borderBottom:'1px solid var(--border)',background:'var(--bg-primary)'}}>
               <span style={{color:'var(--text-secondary)',fontSize:11,fontWeight:800,textTransform:'uppercase'}}>Initiative</span>
-              {combatants.map(row => (
-                <button key={row.id} type="button" onClick={() => focusCombatant(row.id)} className={sameId(activeId, row.id) ? 'btn btn-primary btn-sm' : 'btn btn-secondary btn-sm'}>
-                  {row.initiative || '?'} {row.name}
-                </button>
-              ))}
+              {combatants.map(row => {
+                const dead = isDeadCombatant(row);
+                const dying = isInDeathSaves(row);
+                return (
+                  <button
+                    key={row.id}
+                    type="button"
+                    onClick={() => focusCombatant(row.id)}
+                    className={sameId(activeId, row.id) ? 'btn btn-primary btn-sm' : 'btn btn-secondary btn-sm'}
+                    style={{
+                      background: dead ? 'rgba(230,57,70,0.88)' : dying ? 'rgba(255,193,7,0.86)' : undefined,
+                      color: (dead || dying) ? '#05060d' : undefined,
+                      borderColor: dead ? 'var(--danger)' : dying ? 'var(--warning)' : undefined,
+                      textDecoration: dead ? 'line-through' : 'none',
+                      fontWeight: (dead || dying) ? 900 : undefined,
+                    }}
+                  >
+                    {row.initiative || '?'} {row.name}
+                  </button>
+                );
+              })}
             </div>
             {combatants.length === 0 ? (
               <div style={{color:'var(--text-secondary)',fontSize:14,textAlign:'center',padding:60}}>Add characters and enemies to begin running this encounter.</div>

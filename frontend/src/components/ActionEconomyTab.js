@@ -144,8 +144,8 @@ export default function ActionEconomyTab() {
   // simplest stand-in for "a turn has passed") clears it. Simplified, but matches the
   // rest of this app's philosophy of tracking state rather than enforcing exact timing.
   const resetTurn = () => {
-    setTurnUsed({ Action: false, 'Bonus Action': false, Reaction: false, Haste: false, Attacks: 0 });
-    setCompanionTurnUsed({ Action: false, 'Bonus Action': false, Reaction: false });
+    setTurnUsed({ Action: false, 'Bonus Action': false, Reaction: false, Haste: false, Movement: false, Attacks: 0 });
+    setCompanionTurnUsed({ Action: false, 'Bonus Action': false, Reaction: false, Movement: false });
     setDismissedReminders({});
     const conditions = td.conditions || [];
     if (conditions.includes(LETHARGIC_CONDITION)) {
@@ -311,9 +311,9 @@ export default function ActionEconomyTab() {
         )}
         {inInitiative && (
           <div style={{display:'flex',gap:4}}>
-            {(isHasted ? ['Action','Bonus Action','Reaction','Haste'] : ['Action','Bonus Action','Reaction']).map(s => (
+            {(isHasted ? ['Action','Bonus Action','Reaction','Haste','Movement'] : ['Action','Bonus Action','Reaction','Movement']).map(s => (
               <div key={s} style={{fontSize:11,padding:'3px 8px',borderRadius:12,
-                background: turnUsed[s] ? 'var(--border)' : SECTION_COLORS[s],
+                background: turnUsed[s] ? 'var(--border)' : (SECTION_COLORS[s] || '#455a64'),
                 color: turnUsed[s] ? 'var(--text-dim)' : '#fff',
                 textDecoration: turnUsed[s] ? 'line-through' : 'none',
                 transition:'all 0.2s', cursor:'pointer',

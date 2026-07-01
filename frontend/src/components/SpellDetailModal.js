@@ -6,7 +6,7 @@ import WeaponAttackModal from './WeaponAttackModal';
 
 const SELF_TARGET_EFFECTS = { haste: HASTED_EFFECT };
 
-export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuccess, prepared = true }) {
+export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuccess, prepared = true, syricCodex = null }) {
   const { character, useSlot, useFeature, saveTrackerData, setConcentration, replaceConcentration, spendFeatureCharges, turnUsed, setTurnUsed } = useCharacter();
   const [casting, setCasting] = useState(false);
   const [cast, setCast]       = useState(null);
@@ -17,6 +17,8 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
   const [concSlotIdx, setConcSlotIdx] = useState(null);
   const [hasteEndedMessage, setHasteEndedMessage] = useState(null);
   const [metamagicChoice, setMetamagicChoice] = useState('');
+  const [codexMode, setCodexMode] = useState('');
+  const [codexDiceCount, setCodexDiceCount] = useState(1);
   // Weapon-attack cantrips (Booming Blade, Green-Flame Blade, etc.) - flagged on the
   // spell with requires_weapon_attack, set via the spell editor - hand off to
   // WeaponAttackModal instead of this modal's own damage roll, since the actual damage is
@@ -147,6 +149,13 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
           metaNote = ` + ${metamagicChoice} (${cost} SP)`;
         }
       }
+      if (syricCodex && codexMode) {
+        const amount = Math.max(1, parseInt(codexDiceCount, 10) || 1);
+        const spent = await syricCodex.onSpend(codexMode, amount);
+        if (spent?.spent !== false) {
+          metaNote += ` + Codex ${codexMode === 'bonus_d10' ? `${amount}d10` : `${amount}d6`}`;
+        }
+      }
       if (chargeMode) {
         await chargeMode.onCast();
         setCast(`Cast using ${chargeMode.chargeCost} charge${chargeMode.chargeCost===1?'':'s'}!${metaNote}`);
@@ -168,8 +177,16 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
   const doFreeCast = async () => {
     setCasting(true);
     try {
+      let metaNote = '';
+      if (syricCodex && codexMode) {
+        const amount = Math.max(1, parseInt(codexDiceCount, 10) || 1);
+        const spent = await syricCodex.onSpend(codexMode, amount);
+        if (spent?.spent !== false) {
+          metaNote = ` + Codex ${codexMode === 'bonus_d10' ? `${amount}d10` : `${amount}d6`}`;
+        }
+      }
       await useFeature(freeUseFeature);
-      setCast(`Cast free (${freeUseFeature})!`);
+      setCast(`Cast free (${freeUseFeature})!${metaNote}`);
       castMetaRef.current = { spell, level: spell.level_int, freeUseFeature };
       const tracked = await tryTrackConcentration(spell.level_int);
       if (tracked) continueAfterCast(spell.level_int);
@@ -358,6 +375,36 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
                         </div>
                         {metamagicChoice && (
                           <div style={{color:'var(--accent-light)',fontSize:11,marginTop:4}}>{METAMAGIC_OPTIONS[metamagicChoice]?.text}</div>
+                        )}
+                      </div>
+                    )}
+                    {syricCodex && (
+                      <div style={{marginBottom:8,border:'1px solid rgba(124,92,252,0.38)',borderRadius:'var(--radius-sm)',padding:8,background:'rgba(124,92,252,0.10)'}}>
+                        <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
+                          <span style={{color:'var(--text-dim)',fontSize:12}}>Codex Dice:</span>
+                          <select value={codexMode} onChange={e => setCodexMode(e.target.value)}>
+                            <option value="">None</option>
+                            <option value="free_d6">d6 Surge (Free)</option>
+                            <option value="bonus_d10">d10 Surge (Bonus)</option>
+                          </select>
+                          <input
+                            type="number"
+                            min="1"
+                            max={codexMode === 'free_d6' ? (syricCodex.freeMax || 6) : 99}
+                            value={codexDiceCount}
+                            disabled={!codexMode}
+                            onChange={e => setCodexDiceCount(e.target.value)}
+                            style={{width:72,textAlign:'center'}}
+                          />
+                          <span style={{color:'var(--text-dim)',fontSize:11}}>
+                            {syricCodex.current ?? 0}/{syricCodex.max ?? '-'} available
+                          </span>
+                        </div>
+                        {codexMode === 'free_d6' && (
+                          <div style={{color:'var(--accent-light)',fontSize:11,marginTop:4}}>Free action d6 surge. Limit shown by Syric rules/proficiency.</div>
+                        )}
+                        {codexMode === 'bonus_d10' && (
+                          <div style={{color:'var(--warning)',fontSize:11,marginTop:4}}>Bonus action d10 surge. This will mark Bonus used in Syric AE if initiative is active.</div>
                         )}
                       </div>
                     )}

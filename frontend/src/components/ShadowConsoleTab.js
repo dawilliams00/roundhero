@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
 import { fetchCharacterModule, findTrackerCounter, runSyricAction, syncSyricShadowLevel, updateTrackerCounter } from '../utils/characterModules';
 import NumberPadPopover from './NumberPadPopover';
+import FeatureEditModal from './FeatureEditModal';
 
 const actionOrder = ['Action', 'Bonus Action', 'Reaction', 'Movement', 'Free Action', 'Passive'];
 const POPOVER_RESERVE = 300;
@@ -163,7 +164,7 @@ function ShadowStatBlockModal({ shadow, maxHp, currentHp, tempHp, onClose }) {
   );
 }
 
-function FeatureBlock({ title, features }) {
+function FeatureBlock({ title, features, onEdit }) {
   if (!features.length) return null;
   return (
     <section className="card" style={{padding:0,overflow:'hidden'}}>
@@ -179,6 +180,11 @@ function FeatureBlock({ title, features }) {
           <div style={{whiteSpace:'pre-wrap',color:'var(--text-secondary)',fontSize:12,lineHeight:1.45,marginTop:8}}>
             {feature.description || 'No description.'}
           </div>
+          {onEdit && (
+            <button className="btn btn-secondary btn-sm" style={{marginTop:8}} onClick={() => onEdit(feature)}>
+              Edit in Feature Editor
+            </button>
+          )}
         </details>
       ))}
     </section>
@@ -194,6 +200,8 @@ export default function ShadowConsoleTab() {
   const [notice, setNotice] = useState('');
   const [showHP, setShowHP] = useState(false);
   const [showStatBlock, setShowStatBlock] = useState(false);
+  const [editingFeature, setEditingFeature] = useState(null);
+  const [editingFeaturePayload, setEditingFeaturePayload] = useState(null);
 
   useEffect(() => {
     if (!character?.id) return;
@@ -253,6 +261,31 @@ export default function ShadowConsoleTab() {
   const adjustCounter = async (match, delta) => {
     if (!match) return;
     await saveTrackerData(updateTrackerCounter(trackerData, match, delta));
+  };
+
+  const editShadowFeature = async (feature) => {
+    const key = feature.tracker_key || feature.name;
+    const currentFeatures = trackerData.features || {};
+    const nextFeature = currentFeatures[key] || {
+      current: feature.current ?? feature.max ?? 0,
+      max: feature.max ?? 0,
+      rest: feature.rest || feature.rest_type || '',
+      rest_type: feature.rest_type || feature.rest || 'none',
+      description: feature.description || '',
+      source: feature.source || 'Syric Shadow Module',
+      reminder: !!feature.reminder,
+    };
+    if (!currentFeatures[key]) {
+      await saveTrackerData({
+        ...trackerData,
+        features: {
+          ...currentFeatures,
+          [key]: nextFeature,
+        },
+      });
+    }
+    setEditingFeaturePayload(nextFeature);
+    setEditingFeature(key);
   };
 
   if (loading) return <div style={{padding:16,color:'var(--text-secondary)'}}>Loading Shadow...</div>;
@@ -316,7 +349,7 @@ export default function ShadowConsoleTab() {
 
       <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(300px,1fr))',gap:12}}>
         {actionOrder.map(action => (
-          <FeatureBlock key={action} title={action} features={grouped[action] || []} />
+          <FeatureBlock key={action} title={action} features={grouped[action] || []} onEdit={editShadowFeature} />
         ))}
       </div>
       {showHP && (
@@ -338,6 +371,16 @@ export default function ShadowConsoleTab() {
           maxHp={maxHp}
           tempHp={tempHp}
           onClose={() => setShowStatBlock(false)}
+        />
+      )}
+      {editingFeature && (
+        <FeatureEditModal
+          name={editingFeature}
+          feature={(character?.tracker_data?.features || {})[editingFeature] || (trackerData.features || {})[editingFeature] || editingFeaturePayload}
+          onClose={() => {
+            setEditingFeature(null);
+            setEditingFeaturePayload(null);
+          }}
         />
       )}
     </div>

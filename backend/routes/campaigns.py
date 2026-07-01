@@ -864,6 +864,49 @@ def attach_character(campaign_id):
     return jsonify(_campaign_response(campaign, member)), 200
 
 
+@campaigns_bp.route("/<int:campaign_id>/characters/<int:campaign_character_id>/sheet", methods=["GET", "PUT"])
+@jwt_required()
+def campaign_character_sheet(campaign_id, campaign_character_id):
+    user_id = int(get_jwt_identity())
+    campaign, member = _campaign_for_user(campaign_id, user_id)
+    if not campaign:
+        return jsonify({"error": "Campaign not found"}), 404
+    if not _is_dm(campaign, member):
+        return jsonify({"error": "Only campaign DMs can edit party sheets"}), 403
+
+    entry = CampaignCharacter.query.filter_by(
+        id=campaign_character_id,
+        campaign_id=campaign.id,
+    ).first_or_404()
+    character = entry.character
+    if not character:
+        return jsonify({"error": "Character not found"}), 404
+
+    if request.method == "GET":
+        return jsonify(character.to_dict()), 200
+
+    data = request.get_json() or {}
+    for field in ["name", "class_name", "subclass", "background", "race", "level"]:
+        if field in data:
+            setattr(character, field, data[field])
+    if "ability_scores" in data:
+        character.ability_scores = data["ability_scores"]
+    if "tracker_data" in data:
+        character.tracker_data = data["tracker_data"]
+    if "spell_data" in data:
+        character.spell_data = data["spell_data"]
+    if "ae_data" in data:
+        character.ae_data = data["ae_data"]
+    if "notes" in data:
+        character.notes = data["notes"]
+
+    db.session.commit()
+    return jsonify({
+        "character": character.to_dict(),
+        "campaign": _campaign_response(campaign, member),
+    }), 200
+
+
 @campaigns_bp.route("/<int:campaign_id>/characters/<int:campaign_character_id>", methods=["DELETE"])
 @jwt_required()
 def detach_character(campaign_id, campaign_character_id):

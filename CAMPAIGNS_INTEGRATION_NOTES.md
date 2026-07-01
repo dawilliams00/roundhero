@@ -196,3 +196,28 @@ Still pending and should be treated as real feature work, not small UI cleanup:
 - **Syric-specific backlog:** move Codex Sync from Syric AE to Syric tab; add Codex Dice to Syric spell-cast flow like Smite with Syric rules; include bonus-action Codex Surge options in casting; allow editing Syric/Shadow abilities and feats through the normal editor path.
 - **Reference expansion:** DM References should use collapsible sections for long content, matching the death-save rules collapse pattern.
 - **Condition hints:** keep extending hover hints for nonstandard condition/effect names such as Lethargic, Hexed, Hasted, Blessed, Baned, etc.
+
+## 2026-07-01 Later Codex Pass - Fresh Handoff
+
+Shipped/implemented in this pass:
+
+- **Campaign DM sheet edit V1:** backend route `GET/PUT /api/campaigns/<campaign_id>/characters/<campaign_character_id>/sheet` lets campaign DMs edit attached player character data from the Campaign Party tab only. The frontend has a `Player Sheet Edit` button on roster rows for campaign DMs. This is a structured V1 editor for identity plus advanced JSON fields; a full reuse of the normal character editor remains a later polish item.
+- **Encounter typing fix:** setup and runner free-text fields now use local draft inputs and commit on blur/Enter. Do not return to save-on-every-keystroke for encounter name/init/ac/hp/temp/condition/concentration fields; it causes slow typing and dropped characters.
+- **Encounter death states:** NPC/enemy rows now have Dead/Alive controls, player death-save rows can reset, dead rows are red/struck through, dying rows are yellow, and the initiative header chips mirror those yellow/red states.
+- **DM death-save alert:** when a new player death-save roll arrives in the runner, show a DM popup with roll/pass/fail visibility. Initial encounter load seeds existing rolls so stale history does not spam the DM.
+- **Monster duplicate/edit from setup V1:** encounter setup can open stat details, duplicate monsters, and edit custom monster duplicates using the existing bestiary duplicate/edit modals.
+- **Normal character AE movement:** the regular Action Economy tab now tracks Movement while in initiative, matching the Syric AE expectation.
+- **Syric updates:** Codex Sync belongs on Syric tab, not Syric AE. Syric spell-cast flow has Codex Dice options for d6/free and d10/bonus surge, and bonus-action surge marks the Bonus Action bucket used in initiative. Syric and Shadow module features can be sent into the normal Feature Editor.
+
+Layout rule that must be preserved:
+
+- Encounter setup/runner rows should keep Claude's separated-field method: separate labeled INIT, AC, HP, TEMP, conditions, concentration, and death-save controls with fixed/min widths. If the row layout is too tall or cramped, adjust grid/spacing/min heights; do not combine fields into overlapping compound boxes. This rule is also recorded in `CODEX_SETTINGS.json`.
+
+Still intentionally pending:
+
+- **Animate dead / use-dead-creature workflow:** dead encounter rows should expose an Animate option only when a combatant has a relevant spell/feature/item. The flow should choose animator, source ability, duration, and resulting stat block.
+- **Active encounter target selection:** when a player attacks, casts, or uses an item in an active encounter, prompt for target combatant. Players should see hit/miss or public save outcome without revealing hidden HP/AC.
+- **Automatic attack/save/damage math:** handle hit/miss, save DC prompts to DM, manual roll override, damage application, and resistance/immunity/vulnerability by damage type.
+- **Collapsible DM references:** long DM reference material should use collapsed sections by default, like the death-save rules popup.
+- **Campaign rules auto-apply:** campaign-wide death-save/exhaustion/homebrew rules should either auto-apply to attached character sheets or clearly override those sheets while in the campaign, without silently destroying personal overrides.
+- **Better full character editor reuse for DM sheet edit:** current V1 works, but the long-term goal is to open the normal character editor surface with campaign-authorized permissions rather than a small JSON-heavy editor.
