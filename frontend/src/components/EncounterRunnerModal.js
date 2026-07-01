@@ -376,7 +376,7 @@ function CombatantCard({ row, active, statMonster, onUpdate, onRemove, onViewMon
       boxShadow:active ? '0 0 0 2px rgba(124,92,252,0.18), 0 0 24px rgba(124,92,252,0.2)' : 'none',
       padding:8,
       display:'grid',
-      gridTemplateColumns:'minmax(260px,1.25fr) 150px minmax(300px,1.2fr) minmax(170px,0.65fr) auto',
+      gridTemplateColumns:'minmax(260px,1.25fr) 150px minmax(300px,1.2fr) minmax(130px,0.45fr) auto',
       gridTemplateAreas:'"identity hp status effects actions"',
       gap:8,
       alignItems:'start',
@@ -398,11 +398,11 @@ function CombatantCard({ row, active, statMonster, onUpdate, onRemove, onViewMon
                 <MiniButton onClick={() => onUpdate(row.id, { hidden_from_players: !row.hidden_from_players })}>
                   {row.hidden_from_players ? 'Hidden' : 'Visible'}
                 </MiniButton>
-                <MiniButton onClick={() => onUpdate(row.id, { dead: !dead })} variant={dead ? 'secondary' : 'danger'}>
-                  {dead ? 'Alive' : 'Dead'}
-                </MiniButton>
               </>
             )}
+            <MiniButton onClick={() => onUpdate(row.id, { dead: !dead })} variant={dead ? 'secondary' : 'danger'}>
+              {dead ? 'Alive' : 'Dead'}
+            </MiniButton>
             {dead && <span style={{color:'var(--danger)',fontSize:11,fontWeight:900,textTransform:'uppercase'}}>Dead</span>}
             {dying && <span style={{color:'var(--warning)',fontSize:11,fontWeight:900,textTransform:'uppercase'}}>Death saves</span>}
             <span style={{color:row.type === 'player' ? 'var(--success)' : 'var(--warning)',fontSize:11,fontWeight:900,textTransform:'uppercase'}}>{row.type}</span>
@@ -439,12 +439,32 @@ function CombatantCard({ row, active, statMonster, onUpdate, onRemove, onViewMon
 
       <div style={{gridArea:'effects',minWidth:0}}>
         <div style={{color:'var(--text-secondary)',fontSize:10,fontWeight:800,marginBottom:4}}>EFFECTS</div>
-        <div style={{display:'flex',flexDirection:'column',gap:4,maxHeight:54,overflowY:'auto'}}>
+        <div style={{display:'flex',gap:4,flexWrap:'wrap',maxHeight:42,overflowY:'auto',alignContent:'flex-start'}}>
           {cleanList(row.effects).length === 0 && <span style={{color:'var(--text-dim)',fontSize:12}}>None</span>}
           {cleanList(row.effects).map(effect => (
-            <button key={effect.id || effect.name} type="button" onClick={() => onRemoveEffect(row, effect)} style={{textAlign:'left',border:'1px solid rgba(230,57,70,0.55)',background:'rgba(230,57,70,0.18)',color:'var(--text-primary)',borderRadius:4,padding:5,cursor:'pointer'}}>
-              <div style={{fontWeight:700,fontSize:12}}>{effect.name}</div>
-              <div style={{color:'var(--text-dim)',fontSize:10}}>{effect.source_name || effect.type || ''}{effect.duration ? ` · ${effect.duration}` : ''}</div>
+            <button
+              key={effect.id || effect.name}
+              type="button"
+              title={`${effect.name}${effect.source_name ? `\n${effect.source_name}` : ''}${effect.duration ? `\n${effect.duration}` : ''}`}
+              onClick={() => onRemoveEffect(row, effect)}
+              style={{
+                textAlign:'left',
+                border:'1px solid rgba(230,57,70,0.55)',
+                background:'rgba(230,57,70,0.18)',
+                color:'var(--text-primary)',
+                borderRadius:4,
+                padding:'2px 5px',
+                cursor:'pointer',
+                fontSize:10,
+                fontWeight:800,
+                lineHeight:1.15,
+                maxWidth:'100%',
+                overflow:'hidden',
+                textOverflow:'ellipsis',
+                whiteSpace:'nowrap',
+              }}
+            >
+              {effect.name}
             </button>
           ))}
         </div>
@@ -458,7 +478,6 @@ function CombatantCard({ row, active, statMonster, onUpdate, onRemove, onViewMon
               <MiniButton onClick={() => onDeathSave(row, 'successes', 1)}>Pass {row.death_saves?.successes || 0}</MiniButton>
               <MiniButton onClick={() => onDeathSave(row, 'failures', 1)}>Fail {row.death_saves?.failures || 0}</MiniButton>
               <MiniButton onClick={() => onResetDeathSaves(row)}>Reset</MiniButton>
-              <MiniButton onClick={() => onUpdate(row.id, { dead: !dead })} variant={dead ? 'secondary' : 'danger'}>{dead ? 'Alive' : 'Dead'}</MiniButton>
             </div>
             {row.last_death_save && (
               <div style={{border:'1px solid rgba(154,128,255,0.42)',background:'rgba(124,92,252,0.16)',borderRadius:4,padding:'5px 6px',fontSize:11,color:'var(--text-secondary)',lineHeight:1.35}}>
