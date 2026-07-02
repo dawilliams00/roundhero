@@ -511,8 +511,11 @@ export default function WeaponAttackModal({ itemIndex, weaponOverride, onClose, 
               )}
               {selectedTarget && (
                 <div style={{borderTop:'1px solid var(--border)',marginTop:10,paddingTop:8,textAlign:'left'}}>
+                  {/* Player sees hit/miss only - never the HP applied to the creature.
+                      The DM tracks enemy HP; leaking the applied number here would reveal
+                      hidden resistances/immunities and the enemy's health. */}
                   <div style={{color: resolvingTarget ? 'var(--text-dim)' : encounterResolution?.error ? 'var(--danger)' : 'var(--success)',fontSize:12}}>
-                    {resolvingTarget ? 'Applying damage...' : encounterResolution?.error || `${encounterResolution?.hit === false ? 'Miss' : encounterResolution?.hit === true ? 'Hit' : 'Resolved'} · ${encounterResolution?.damage_applied || 0} damage applied to ${selectedTarget.label.split(': ').slice(1).join(': ')}`}
+                    {resolvingTarget ? 'Resolving...' : encounterResolution?.error || `${encounterResolution?.hit === false ? 'Missed.' : encounterResolution?.hit === true ? 'Hit!' : 'Resolved.'}`}
                   </div>
                   {encounterResolution?.error && (
                     <button className="btn btn-secondary btn-sm" style={{marginTop:6}} onClick={() => applyDamageToTarget(attackResult?.total, damageResult)}>Retry</button>
