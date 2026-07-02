@@ -777,6 +777,10 @@ def resolve_encounter_action(campaign_id, encounter_id):
         "resolves_event_id": resolves_event_id,
     }
 
+    # target_defeated: True only when THIS hit drops a non-player target to 0 (not if it
+    # was already dead). Surfaced so the caster's client can show a "How do you want to do
+    # this?" kill prompt WITHOUT ever exposing the target's HP numbers.
+    target_defeated = False
     next_rows = []
     for row in rows:
         if str(row.get("id")) != target_id or not should_apply_damage or applied_damage <= 0:
@@ -792,8 +796,11 @@ def resolve_encounter_action(campaign_id, encounter_id):
         patched["temp_hp"] = temp
         patched["hp_current"] = max(0, current - remaining)
         if patched["hp_current"] <= 0 and patched.get("type") != "player":
+            if not row.get("dead"):
+                target_defeated = True
             patched["dead"] = True
         next_rows.append(patched)
+    event["target_defeated"] = target_defeated
 
     events = encounter_data.get("resolution_events") if isinstance(encounter_data.get("resolution_events"), list) else []
     if resolves_event_id:

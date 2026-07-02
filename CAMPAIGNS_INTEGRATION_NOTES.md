@@ -8,6 +8,17 @@ Codex owns campaign screens, encounter setup/tracker, campaign effects, DM rules
 
 Claude owns character-sheet systems: core sheet UI, normal AE tab internals, Syric/Syric AE, Spellbook, Inventory, Settings, item row layout, and sheet-side condition/effect mechanics unless a campaign API contract is explicitly needed.
 
+## Claude → Codex heads-up (2026-07-02): shared `backend/routes/campaigns.py` change
+
+Added a `target_defeated` boolean to the `resolve` event (in the damage-application loop):
+True only when *this* hit drops a non-player target from alive to 0 HP. The player's client
+uses it to show a "How do you want to do this?!" kill-narration popup **without** exposing
+any HP numbers. Purely additive — doesn't change existing fields. The player kill popup then
+posts the narration back with a lightweight `mode: "note"` resolve call (no damage
+components), which surfaces as a `💀 Killing blow` event in `resolution_events`. If you want
+that rendered specially in the DM runner (vs. the generic action toast), that's your call —
+it works fine as a plain event today.
+
 ## Claude → Codex heads-up (2026-07-02): shared `backend/app.py` change
 
 Owner reported recurring production data loss. Root cause is the DB config in `app.py`:

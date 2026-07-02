@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
 import api from '../utils/api';
+import KillPromptModal from './KillPromptModal';
 import { effectiveAbilityScores, weaponAbilityMod, weaponItemBonus, weaponDamageDice, profBonus, rollD20, rollDamageDetailed, modifier, cantripHitBonusForLevel, fightingStyleBonus, featWeaponBonus, featBuffItems, raceBuffItems, hybridFormWeaponBonus } from '../utils/dnd';
 
 // Equipment.json weapon damage strings are always plain "NdM" (or, for things like
@@ -36,6 +37,7 @@ export default function WeaponAttackModal({ itemIndex, weaponOverride, onClose, 
   const [selectedTargetKey, setSelectedTargetKey] = useState('');
   const [resolvingTarget, setResolvingTarget] = useState(false);
   const [encounterResolution, setEncounterResolution] = useState(null);
+  const [killPrompt, setKillPrompt] = useState(null);
   // "I'll roll in person" against an encounter target still needs both numbers (the
   // backend compares attack total to a hidden AC, so the app can't skip asking) - this
   // drives that two-step manual entry instead of the old single-click shortcut.
@@ -137,6 +139,22 @@ export default function WeaponAttackModal({ itemIndex, weaponOverride, onClose, 
   // gone out against a target, the target picker locks (see the dropdown's `disabled`
   // below) so a mid-swing target swap can't desync the attack roll from the damage roll.
   const selectedTarget = encounterTargets.find(row => row.key === selectedTargetKey);
+  // "Encounter: Lich (enemy)" -> "Lich" for the kill prompt / friendlier display.
+  const targetDisplayName = () => selectedTarget ? selectedTarget.label.split(': ').slice(1).join(': ').replace(/ \(enemy\)$/, '') : 'Your enemy';
+
+  // Sends the player's kill narration to the encounter as a note (flavor for the DM/table).
+  // Reuses the resolve endpoint with a note-only payload (no damage); failures are ignored.
+  const narrateKill = async (text) => {
+    if (!selectedTarget) return;
+    await api.post(`/campaigns/${selectedTarget.campaignId}/encounters/${selectedTarget.encounterId}/resolve`, {
+      source_character_id: character.id,
+      target_id: selectedTarget.targetId,
+      label: '💀 Killing blow',
+      mode: 'note',
+      notes: text,
+      damage_components: [],
+    }, { suppressGlobalError: true });
+  };
 
   const damageComponentsFor = (result) => {
     if (!result) return [];
@@ -190,6 +208,7 @@ export default function WeaponAttackModal({ itemIndex, weaponOverride, onClose, 
         damage_components: damageComponentsFor(result),
       }, { suppressGlobalError: true });
       setEncounterResolution(r.data.resolution);
+      if (r.data.resolution?.target_defeated) setKillPrompt(targetDisplayName());
       return r.data.resolution;
     } catch (err) {
       setEncounterResolution({ error: err.response?.data?.error || 'Could not apply damage to encounter target.' });
@@ -668,6 +687,9 @@ export default function WeaponAttackModal({ itemIndex, weaponOverride, onClose, 
           )}
         </div>
       </div>
+      {killPrompt && (
+        <KillPromptModal targetName={killPrompt} onNarrate={narrateKill} onClose={() => setKillPrompt(null)} />
+      )}
     </div>
   );
 }

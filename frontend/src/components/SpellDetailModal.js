@@ -4,6 +4,7 @@ import api from '../utils/api';
 import { schoolColor, getSpellcastingBlocks, getAbilityOverrideBlock, scaleSpellDamage, rollDamageDetailed, concentrationSlotCount, isCharacterCaster, maxAttacksForCharacter, HASTED_EFFECT, METAMAGIC_OPTIONS, metamagicCost, featBuffItems, raceBuffItems } from '../utils/dnd';
 import InfoModal from './InfoModal';
 import WeaponAttackModal from './WeaponAttackModal';
+import KillPromptModal from './KillPromptModal';
 
 const SELF_TARGET_EFFECTS = { haste: HASTED_EFFECT };
 
@@ -29,6 +30,7 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
   const [encounterTargets, setEncounterTargets] = useState([]);
   const [selectedTargetKey, setSelectedTargetKey] = useState('');
   const [resolvingTarget, setResolvingTarget] = useState(false);
+  const [killPrompt, setKillPrompt] = useState(null);
   const [encounterResolution, setEncounterResolution] = useState(null);
   // "I'll roll in person" for spell damage - the player rolls physical dice and types the
   // total, instead of the app rolling for them. Flows into the same damageResult screen
@@ -153,6 +155,20 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
   // body) rather than after damage is already rolled - the picker locks once damage has
   // been rolled against it so switching targets mid-cast can't desync things.
   const selectedTarget = encounterTargets.find(row => row.key === selectedTargetKey);
+  const targetDisplayName = () => selectedTarget ? selectedTarget.label.split(': ').slice(1).join(': ').replace(/ \(enemy\)$/, '') : 'Your enemy';
+  // Kill narration note to the encounter (flavor for the DM). Save spells never reach this
+  // - the DM applies their damage, so the caster's client never learns the target fell.
+  const narrateKill = async (text) => {
+    if (!selectedTarget) return;
+    await api.post(`/campaigns/${selectedTarget.campaignId}/encounters/${selectedTarget.encounterId}/resolve`, {
+      source_character_id: character.id,
+      target_id: selectedTarget.targetId,
+      label: '💀 Killing blow',
+      mode: 'note',
+      notes: text,
+      damage_components: [],
+    }, { suppressGlobalError: true });
+  };
 
   const damageComponentsFor = (result) => {
     if (!result) return [];
@@ -188,6 +204,7 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
         damage_components: damageComponentsFor(result),
       }, { suppressGlobalError: true });
       setEncounterResolution(r.data.resolution);
+      if (r.data.resolution?.target_defeated) setKillPrompt(targetDisplayName());
       return r.data.resolution;
     } catch (err) {
       const res = { error: err.response?.data?.error || 'Could not resolve against encounter target.' };
@@ -665,6 +682,9 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
         </div>
       </div>
       {hasteEndedMessage && <InfoModal title="Haste Ended" message={hasteEndedMessage} onClose={() => setHasteEndedMessage(null)} />}
+      {killPrompt && (
+        <KillPromptModal targetName={killPrompt} onNarrate={narrateKill} onClose={() => setKillPrompt(null)} />
+      )}
       {pickedWeaponIdx != null && (
         <WeaponAttackModal
           itemIndex={pickedWeaponIdx}
