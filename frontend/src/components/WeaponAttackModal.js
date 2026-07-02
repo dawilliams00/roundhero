@@ -605,7 +605,14 @@ export default function WeaponAttackModal({ itemIndex, weaponOverride, onClose, 
                   onClick={rollDamageNow}
                 >Roll Damage?</button>
               </div>
-              {td.in_initiative && (
+              {/* Manual "rolled in person" path. Available whenever the player is in
+                  their own initiative OR there's an encounter target to resolve against -
+                  a campaign encounter doesn't necessarily set the character's personal
+                  in_initiative flag, and gating only on that used to hide this button
+                  exactly when attacking an encounter target, which is when it's most
+                  wanted. With a target it opens the two-step manual attack/damage entry;
+                  without one it keeps the old "just log the attack" behavior. */}
+              {(td.in_initiative || selectedTarget) && (
                 <button className="btn btn-secondary" style={{width:'100%',marginTop:8}} disabled={attacksExhausted} onClick={async () => {
                   if (!thisAttackCounted) { onAttack(); setThisAttackCounted(true); }
                   if (smiteOn && smiteLevel && !smiteApplied) { await useSlot(smiteLevel); setSmiteApplied(true); }
@@ -617,7 +624,7 @@ export default function WeaponAttackModal({ itemIndex, weaponOverride, onClose, 
                     onClose();
                   }
                 }}>
-                  ✓ I'll roll in person - log an attack{smitePreview() ? ` (+ spend smite slot)` : ''}
+                  ✓ I'll roll in person{selectedTarget ? ' - enter my rolls' : ' - log an attack'}{smitePreview() ? ` (+ spend smite slot)` : ''}
                 </button>
               )}
               <button className="btn btn-secondary" style={{width:'100%',marginTop:8}} onClick={onClose}>Close</button>

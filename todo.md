@@ -32,11 +32,29 @@ auto-applies the moment it's rolled/entered instead of needing a separate manual
 weapon had no heal-or-advantage rider — now closes properly, and when a target is
 selected it prompts for manual attack total then manual damage total instead of skipping
 encounter resolution entirely. No backend changes — reuses the existing
+`/api/campaigns/<campaign_id>/encounters/<encounter_id>/resolve` route. Follow-up needed:
+spell save payloads should include `save_type` / `save_type_abbr` (`DEX`, `WIS`, etc.)
+so the DM runner's digital save roller can choose the target's save modifier. Manual DM
+save total input works without that field.
 `/campaigns/<id>/encounters/<id>/resolve` contract, just called at two points (attack-only,
 then attack+damage) instead of once at the end. **Next session should click through this
 on the live app**: roll a weapon attack against an encounter target end-to-end, try "I'll
 roll in person" against a target, and cast a damaging spell against a target, since there
 was no browser access to verify in this sandbox.
+
+Two follow-up fixes after the first pass (same not-yet-live-verified caveat):
+- Restored the save-spell **Ask DM / Resolve** button in `SpellDetailModal.js` (the first
+  pass had collapsed it into the auto-fire status line, which broke the deliberate two-step
+  DM save flow). Save spells now do NOT auto-resolve on damage roll — they show an explicit
+  Ask DM (blank save → queue DM) / Resolve (save entered → finalize) button, and the
+  save-roll input stays editable until finalized so the real roll can be entered once the
+  DM has it. Plain damage/attack spells still auto-apply on roll.
+- Restored/extended the **"I'll roll in person"** manual option. In `WeaponAttackModal.js`
+  it was gated only on `td.in_initiative`, which hid it in a campaign encounter (personal
+  in_initiative often isn't set there) — now shows when `in_initiative || selectedTarget`.
+  Added an equivalent "I'll roll in person - enter damage" path to `SpellDetailModal.js`'s
+  pending-damage screen (spells had no manual-damage entry before), feeding the same
+  resolution/Ask-DM path as a digital roll.
 
 The encounter-target list looking stale/pulling from old encounters (flagged in the same
 report) was NOT investigated — the user said to stand by on that one, it may be user
