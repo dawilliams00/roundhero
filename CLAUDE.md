@@ -8,6 +8,34 @@ handoff lives in `CAMPAIGNS_INTEGRATION_NOTES.md`, while shipped campaign histor
 in `CAMPAIGNS_PROGRESS.md`. Keep facts in one place where possible; don't let them drift
 into duplicates.
 
+## New Feature Planning Prompt
+
+Use this only when starting a new feature, new product direction, or major uncertain build. Do not interrupt an already-running task with this prompt for every small implementation decision.
+
+Before you build anything, write me a spec for this project.
+
+What does it do? Who is it for? Who is it NOT for?
+
+What does success look like? What's out of scope?
+
+Then walk me through each step of how you'd build it,
+
+and for each step show me the key decisions you'd make
+
+and what you'd default to. Don't build anything yet.
+
+## New Direction Interview Me Prompt
+
+Use this only when starting a new feature, new product direction, or major uncertain build. Do not interrupt an already-running task with this prompt for every small implementation decision.
+
+Before we start building, interview me about what we're trying to build.
+
+Work with me to identify the core problem we're solving, who it is and isn't for.
+
+As part of the interview, let's work through any key decisions together to help inform the implementation strategy.
+
+Then summarize it back to me as an implementation spec before we write any code.
+
 ## What this is
 
 RoundHero is a D&D 5e character tracker: Flask/SQLAlchemy backend, React frontend,
@@ -118,6 +146,13 @@ files, do a careful frontend diff review (no Node here), then commit and push. C
 tables (`Campaign`, `CampaignMember`, `CampaignCharacter`, `CampaignEffect`,
 `CampaignEncounter`) are new tables — `db.create_all()` creates them fine on Render, no
 `PENDING_COLUMNS` entry needed unless a change adds a column to an *existing* table.
+
+Local Codex shell note: `npm` is not on PATH in this desktop session. Use the bundled
+runtime paths from `load_workspace_dependencies` instead, especially
+`C:\Users\David\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe`
+and `...\dependencies\bin\pnpm.cmd`. If `pnpm run build` blocks on ignored dependency
+build scripts, run the existing local script directly with bundled Node, e.g.
+`node.exe frontend\node_modules\react-scripts\bin\react-scripts.js build`.
 
 Current campaign/encounter feature state (DM-owned, live): invite-code join, DM/player
 roles with promote/demote, character roster with Remove (detach) vs Inactivate (soft

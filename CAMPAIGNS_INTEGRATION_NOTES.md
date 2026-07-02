@@ -45,6 +45,7 @@ persisting (i.e. the paid-Postgres fix above).
 - The header button should open the fuller campaign-style effect composer, not the stripped-down active encounter mini form.
 - Prefer reusing/extracting the Campaign Effects form logic from `frontend/src/pages/CampaignsPage.js` so DM-created effects keep presets, targets, modifiers, notes, concentration, and pending/applied status.
 - Keep the active encounter mini effect form out of the main runner layout once the full composer is available.
+- Triggered-effect V1 is encounter-owned: the active tracker can add `type: "triggered"` effects and render a per-target trigger resolver for Booming Blade-style damage. Triggering posts through the normal encounter resolve route so damage math can still account for resistance/immunity/vulnerability.
 
 ## Active Campaign/Encounter Backlog
 
@@ -61,6 +62,16 @@ persisting (i.e. the paid-Postgres fix above).
 - Improve player-facing encounter view: show visible enemy conditions/concentration/effects, never enemy HP/AC.
 - Keep death-save flow private between the player and DM; no public death-save reveal.
 - Animate dead / use-dead-creature workflow remains paused until explicitly resumed by the owner.
+- Creature action economy V1 should add row-level DM buckets for Action, Bonus Action, Reaction, Movement, and Haste Action when Haste is active. This belongs on encounter rows for every creature/player in active initiative so the DM can track NPCs and monsters the same way players track themselves.
+- Legendary/lair action plan: boss rows need a `legendary_actions` pool and action list copied from the stat block where possible, resetting at that creature's turn start. Lair actions should be encounter-level, usually tied to initiative 20, with a visible `Lair Ready/Used` control when any active creature has lair actions.
+
+## Claude -> Codex Triggered Effect Contract
+
+For Booming Blade-style sheet actions, Claude can attach a triggered encounter effect to the target combatant instead of applying damage immediately. Add an effect object to the target row shaped like:
+
+`{ type: "triggered", name, trigger, source_id, source_name, duration, damage_formula, damage_type, remove_on_trigger, notes }`
+
+Example: `Booming Blade` should use `trigger: "Movement"`, a scaled `damage_formula` from the caster level, `damage_type: "Thunder"`, and `remove_on_trigger: true`. Codex's runner renders the trigger card and applies the damage only when the DM confirms the trigger.
 
 ## Layout Rules
 

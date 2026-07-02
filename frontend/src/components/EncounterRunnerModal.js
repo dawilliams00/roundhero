@@ -15,6 +15,10 @@ const COMMON_SPELL_EFFECTS = [
   'Hunter\'s Mark', 'Polymorph', 'Protection from Energy', 'Slow', 'Web'
 ];
 
+const COMMON_TRIGGERED_EFFECTS = [
+  'Booming Blade', 'Cloud of Daggers', 'Moonbeam', 'Spike Growth', 'Spirit Guardians'
+];
+
 const KNOWN_CONCENTRATION_EFFECTS = new Set([
   'bane', 'bless', 'blur', 'darkness', 'detect magic', 'enlarge/reduce',
   'faerie fire', 'fly', 'greater invisibility', 'haste', 'hex', 'hold person',
@@ -75,6 +79,20 @@ function initiativeValue(value) {
 
 function cleanList(value) {
   return Array.isArray(value) ? value.filter(Boolean) : [];
+}
+
+function rollDiceFormula(formula) {
+  const match = String(formula || '').trim().match(/^(\d*)d(\d+)(?:\s*([+-])\s*(\d+))?$/i);
+  if (!match) return null;
+  const count = Math.max(1, Math.min(40, toNumber(match[1] || 1, 1)));
+  const sides = Math.max(2, Math.min(100, toNumber(match[2], 6)));
+  const bonus = match[3] ? toNumber(match[4], 0) * (match[3] === '-' ? -1 : 1) : 0;
+  const rolls = Array.from({ length: count }, () => Math.floor(Math.random() * sides) + 1);
+  return {
+    rolls,
+    bonus,
+    total: Math.max(0, rolls.reduce((sum, roll) => sum + roll, 0) + bonus),
+  };
 }
 
 function abilityModifier(score) {
@@ -157,6 +175,72 @@ function conditionHint(condition) {
 
 function isConcentrationEffect(name, manuallyFlagged = false) {
   return manuallyFlagged || KNOWN_CONCENTRATION_EFFECTS.has(String(name || '').trim().toLowerCase());
+}
+
+function isTriggeredEffect(effect) {
+  return effect?.type === 'triggered' || !!effect?.trigger;
+}
+
+function triggeredEffectDefaults(name) {
+  const key = String(name || '').trim().toLowerCase();
+  if (key === 'booming blade') {
+    return {
+      trigger: 'Movement',
+      damage_formula: '1d8',
+      damage_type: 'Thunder',
+      duration: 'Until start of caster next turn',
+      remove_on_trigger: true,
+      notes: 'If the target willingly moves 5 feet or more before then, trigger this damage.',
+    };
+  }
+  if (key === 'spike growth') {
+    return {
+      trigger: 'Movement',
+      damage_formula: '2d4',
+      damage_type: 'Piercing',
+      duration: 'Concentration',
+      remove_on_trigger: false,
+      notes: 'Damage is normally per 5 feet traveled through the area.',
+    };
+  }
+  if (key === 'cloud of daggers') {
+    return {
+      trigger: 'Turn start / enter area',
+      damage_formula: '4d4',
+      damage_type: 'Slashing',
+      duration: 'Concentration',
+      remove_on_trigger: false,
+      notes: 'Trigger when the creature enters the area for the first time on a turn or starts there.',
+    };
+  }
+  if (key === 'moonbeam') {
+    return {
+      trigger: 'Turn start / enter area',
+      damage_formula: '2d10',
+      damage_type: 'Radiant',
+      duration: 'Concentration',
+      remove_on_trigger: false,
+      notes: 'Usually requires a Constitution save; use this as a reminder/manual damage trigger.',
+    };
+  }
+  if (key === 'spirit guardians') {
+    return {
+      trigger: 'Turn start / enter area',
+      damage_formula: '3d8',
+      damage_type: 'Radiant/Necrotic',
+      duration: 'Concentration',
+      remove_on_trigger: false,
+      notes: 'Usually requires a Wisdom save; use this as a reminder/manual damage trigger.',
+    };
+  }
+  return {
+    trigger: 'Manual trigger',
+    damage_formula: '1d8',
+    damage_type: 'Damage',
+    duration: '1 round',
+    remove_on_trigger: true,
+    notes: '',
+  };
 }
 
 function modifierNumber(modifier) {
@@ -483,6 +567,84 @@ function PendingSaveResolver({ event, row, onResolveSave }) {
   );
 }
 
+function TriggeredEffectResolver({ effect, row, onTriggerEffect }) {
+  const defaults = triggeredEffectDefaults(effect.name);
+  const formula = effect.damage_formula || defaults.damage_formula;
+  const damageType = effect.damage_type || defaults.damage_type;
+  const trigger = effect.trigger || defaults.trigger;
+  const [amount, setAmount] = useState('');
+  const [rolled, setRolled] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  const rollDigitally = () => {
+    const result = rollDiceFormula(formula);
+    if (!result) {
+      setError(`Cannot roll "${formula}". Enter the damage manually.`);
+      return;
+    }
+    setError('');
+    setRolled(result);
+    setAmount(String(result.total));
+  };
+
+  const submit = async () => {
+    if (!amount) return;
+    setSaving(true);
+    setError('');
+    try {
+      await onTriggerEffect(row, effect, amount);
+      setAmount('');
+      setRolled(null);
+    } catch (err) {
+      setError(err.message || 'Could not trigger effect.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div style={{
+      border:'1px solid rgba(230,57,70,0.7)',
+      background:'rgba(230,57,70,0.14)',
+      borderRadius:5,
+      padding:6,
+      display:'grid',
+      gap:5,
+    }}>
+      <div style={{display:'flex',justifyContent:'space-between',gap:8,alignItems:'center'}}>
+        <div style={{minWidth:0}}>
+          <div style={{color:'var(--danger)',fontSize:11,fontWeight:900,textTransform:'uppercase',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
+            Trigger: {effect.name}
+          </div>
+          <div style={{color:'var(--text-dim)',fontSize:11,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
+            {trigger} · {formula} {damageType}
+          </div>
+        </div>
+        <MiniButton onClick={rollDigitally}>Roll</MiniButton>
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) auto',gap:5}}>
+        <input
+          value={amount}
+          onChange={e => setAmount(e.target.value)}
+          placeholder="Damage"
+          style={{height:28,fontSize:12,fontWeight:800}}
+        />
+        <MiniButton onClick={submit} variant="danger" disabled={saving || !amount}>
+          {saving ? '...' : 'Apply'}
+        </MiniButton>
+      </div>
+      {rolled && (
+        <div style={{color:'var(--text-secondary)',fontSize:11}}>
+          {formula}: {rolled.rolls.join(' + ')}{rolled.bonus ? ` ${rolled.bonus >= 0 ? '+' : '-'} ${Math.abs(rolled.bonus)}` : ''} = {rolled.total}
+        </div>
+      )}
+      {(effect.notes || defaults.notes) && <div style={{color:'var(--text-dim)',fontSize:11,lineHeight:1.35}}>{effect.notes || defaults.notes}</div>}
+      {error && <div style={{color:'var(--danger)',fontSize:11}}>{error}</div>}
+    </div>
+  );
+}
+
 function makeEffectOptions(roster) {
   const spells = [];
   const effects = [];
@@ -501,6 +663,7 @@ function makeEffectOptions(roster) {
     condition: COMMON_CONDITIONS,
     spell: [...new Set([...COMMON_SPELL_EFFECTS, ...spells])].sort((a, b) => a.localeCompare(b)),
     effect: [...new Set([...COMMON_CONDITIONS, ...COMMON_SPELL_EFFECTS, ...effects])].sort((a, b) => a.localeCompare(b)),
+    triggered: COMMON_TRIGGERED_EFFECTS,
     note: [],
   };
 }
@@ -599,9 +762,12 @@ function MiniField({ label, value, onCommit, width = 58 }) {
   );
 }
 
-function CombatantCard({ row, active, statMonster, pendingSaves = [], onUpdate, onRemove, onViewMonster, onAddCondition, onRemoveCondition, onRemoveEffect, onDeathSave, onResetDeathSaves, onResolveSave, rowRef }) {
+function CombatantCard({ row, active, statMonster, pendingSaves = [], onUpdate, onRemove, onViewMonster, onAddCondition, onRemoveCondition, onRemoveEffect, onDeathSave, onResetDeathSaves, onResolveSave, onTriggerEffect, rowRef }) {
   const dead = isDeadCombatant(row);
   const dying = isInDeathSaves(row);
+  const rowEffects = cleanList(row.effects);
+  const triggeredEffects = rowEffects.filter(isTriggeredEffect);
+  const regularEffects = rowEffects.filter(effect => !isTriggeredEffect(effect));
   const dangerBackground = dead
     ? 'linear-gradient(90deg, rgba(230,57,70,0.24), rgba(82,17,24,0.92))'
     : dying
@@ -685,8 +851,8 @@ function CombatantCard({ row, active, statMonster, pendingSaves = [], onUpdate, 
       <div style={{gridArea:'effects',minWidth:0}}>
         <div style={{color:'var(--text-secondary)',fontSize:10,fontWeight:800,marginBottom:4}}>EFFECTS</div>
         <div style={{display:'flex',gap:4,flexWrap:'wrap',maxHeight:42,overflowY:'auto',alignContent:'flex-start'}}>
-          {cleanList(row.effects).length === 0 && <span style={{color:'var(--text-dim)',fontSize:12}}>None</span>}
-          {cleanList(row.effects).map(effect => (
+          {regularEffects.length === 0 && triggeredEffects.length === 0 && <span style={{color:'var(--text-dim)',fontSize:12}}>None</span>}
+          {regularEffects.map(effect => (
             <button
               key={effect.id || effect.name}
               type="button"
@@ -713,6 +879,18 @@ function CombatantCard({ row, active, statMonster, pendingSaves = [], onUpdate, 
             </button>
           ))}
         </div>
+        {triggeredEffects.length > 0 && (
+          <div style={{display:'grid',gap:5,marginTop:6}}>
+            {triggeredEffects.map(effect => (
+              <TriggeredEffectResolver
+                key={effect.id || effect.name}
+                effect={effect}
+                row={row}
+                onTriggerEffect={onTriggerEffect}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       <div style={{gridArea:'actions',display:'flex',gap:5,flexDirection:'column',alignItems:'stretch',minWidth:94}}>
@@ -760,7 +938,20 @@ export default function EncounterRunnerModal({
   const [rulesPopup, setRulesPopup] = useState(null);
   const [deathSaveAlert, setDeathSaveAlert] = useState(null);
   const [resolutionAlert, setResolutionAlert] = useState(null);
-  const [effectForm, setEffectForm] = useState({ type: 'condition', name: '', custom: '', source_id: '', target_ids: [], duration: '1 min', concentration: false });
+  const [effectForm, setEffectForm] = useState({
+    type: 'condition',
+    name: '',
+    custom: '',
+    source_id: '',
+    target_ids: [],
+    duration: '1 min',
+    concentration: false,
+    trigger: 'Movement',
+    damage_formula: '1d8',
+    damage_type: 'Thunder',
+    remove_on_trigger: true,
+    notes: '',
+  });
   const rowRefs = useRef({});
   const seenDeathSavesRef = useRef(new Set());
   const seenResolutionEventsRef = useRef(new Set());
@@ -998,6 +1189,7 @@ export default function EncounterRunnerModal({
     const source = combatants.find(row => row.id === effectForm.source_id);
     const name = (effectForm.custom || effectForm.name || '').trim();
     if (!name) return;
+    const triggeredDefaults = triggeredEffectDefaults(name);
     const concentration = isConcentrationEffect(name, effectForm.concentration);
     const effect = {
       id: combatantId(),
@@ -1005,9 +1197,16 @@ export default function EncounterRunnerModal({
       type: effectForm.type,
       source_id: source?.id || '',
       source_name: source?.name || '',
-      duration: effectForm.duration,
+      duration: effectForm.duration || (effectForm.type === 'triggered' ? triggeredDefaults.duration : ''),
       concentration,
     };
+    if (effectForm.type === 'triggered') {
+      effect.trigger = effectForm.trigger || triggeredDefaults.trigger;
+      effect.damage_formula = effectForm.damage_formula || triggeredDefaults.damage_formula;
+      effect.damage_type = effectForm.damage_type || triggeredDefaults.damage_type;
+      effect.remove_on_trigger = effectForm.remove_on_trigger !== false;
+      effect.notes = effectForm.notes || triggeredDefaults.notes;
+    }
     const currentRows = dataRef.current?.combatants || [];
     const next = currentRows.map(row => {
       let nextRow = normalizeCombatant(row);
@@ -1022,7 +1221,39 @@ export default function EncounterRunnerModal({
       return nextRow;
     });
     patchCombatants(next);
-    setEffectForm(form => ({ ...form, name: '', custom: '', target_ids: [], concentration: false }));
+    setEffectForm(form => ({ ...form, name: '', custom: '', target_ids: [], concentration: false, notes: '' }));
+  };
+
+  const triggerEffect = async (row, effect, amount) => {
+    const damageAmount = toNumber(amount, 0);
+    if (damageAmount <= 0) throw new Error('Enter a damage amount greater than 0.');
+    const damageType = effect.damage_type || triggeredEffectDefaults(effect.name).damage_type || 'Damage';
+    const response = await api.post(`/campaigns/${campaign.id}/encounters/${encounter.id}/resolve`, {
+      source_name: effect.source_name || 'Encounter effect',
+      target_id: row.id,
+      label: `${effect.name || 'Triggered effect'} triggered`,
+      mode: 'damage',
+      damage_components: [{ amount: damageAmount, damage_type: damageType }],
+      notes: `${effect.trigger || 'Manual trigger'}${effect.notes ? ` - ${effect.notes}` : ''}`,
+    }, { suppressGlobalError: true });
+    const resolvedData = response.data?.encounter?.data;
+    let nextData = resolvedData || dataRef.current || {};
+    if (effect.remove_on_trigger !== false) {
+      nextData = {
+        ...nextData,
+        combatants: cleanList(nextData.combatants).map(entry => {
+          const normalized = normalizeCombatant(entry);
+          if (!sameId(normalized.id, row.id)) return normalized;
+          return normalizeCombatant({
+            ...normalized,
+            effects: cleanList(normalized.effects).filter(item => (item.id || item.name) !== (effect.id || effect.name)),
+          });
+        }),
+      };
+    }
+    dataRef.current = nextData;
+    await onPatchData(encounter.id, nextData);
+    setResolutionAlert(response.data?.resolution || null);
   };
 
   const resolvePendingSave = async (event, saveRoll) => {
@@ -1181,20 +1412,64 @@ export default function EncounterRunnerModal({
                   <option value="">Source</option>
                   {combatants.map(row => <option key={row.id} value={row.id}>{row.name}</option>)}
                 </select>
-                <select value={effectForm.type} onChange={e => setEffectForm(f => ({ ...f, type: e.target.value, name: '', custom: '' }))}>
+                <select value={effectForm.type} onChange={e => setEffectForm(f => {
+                  const type = e.target.value;
+                  const defaults = triggeredEffectDefaults('');
+                  return {
+                    ...f,
+                    type,
+                    name: '',
+                    custom: '',
+                    duration: type === 'triggered' ? defaults.duration : f.duration,
+                    trigger: defaults.trigger,
+                    damage_formula: defaults.damage_formula,
+                    damage_type: defaults.damage_type,
+                    remove_on_trigger: defaults.remove_on_trigger,
+                    notes: '',
+                  };
+                })}>
                   <option value="condition">Condition</option>
                   <option value="spell">Spell</option>
                   <option value="effect">Active Effect</option>
+                  <option value="triggered">Triggered Damage</option>
                   <option value="note">Custom/Note</option>
                 </select>
                 {effectNames.length > 0 ? (
-                  <select value={effectForm.name} onChange={e => setEffectForm(f => ({ ...f, name: e.target.value, custom: '' }))}>
+                  <select value={effectForm.name} onChange={e => setEffectForm(f => {
+                    const name = e.target.value;
+                    const defaults = triggeredEffectDefaults(name);
+                    return {
+                      ...f,
+                      name,
+                      custom: '',
+                      duration: f.type === 'triggered' ? defaults.duration : f.duration,
+                      trigger: f.type === 'triggered' ? defaults.trigger : f.trigger,
+                      damage_formula: f.type === 'triggered' ? defaults.damage_formula : f.damage_formula,
+                      damage_type: f.type === 'triggered' ? defaults.damage_type : f.damage_type,
+                      remove_on_trigger: f.type === 'triggered' ? defaults.remove_on_trigger : f.remove_on_trigger,
+                      notes: f.type === 'triggered' ? defaults.notes : f.notes,
+                    };
+                  })}>
                     <option value="">Choose {effectForm.type}</option>
                     {effectNames.map(name => <option key={name} value={name}>{name}</option>)}
                   </select>
                 ) : null}
                 <input value={effectForm.custom} onChange={e => setEffectForm(f => ({ ...f, custom: e.target.value }))} placeholder={effectNames.length ? 'Or custom effect' : 'Effect name'} />
                 <input value={effectForm.duration} onChange={e => setEffectForm(f => ({ ...f, duration: e.target.value }))} placeholder="Duration" />
+                {effectForm.type === 'triggered' && (
+                  <div style={{display:'grid',gap:6}}>
+                    <input value={effectForm.trigger} onChange={e => setEffectForm(f => ({ ...f, trigger: e.target.value }))} placeholder="Trigger, e.g. Movement" />
+                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6}}>
+                      <input value={effectForm.damage_formula} onChange={e => setEffectForm(f => ({ ...f, damage_formula: e.target.value }))} placeholder="Damage, e.g. 1d8" />
+                      <input value={effectForm.damage_type} onChange={e => setEffectForm(f => ({ ...f, damage_type: e.target.value }))} placeholder="Damage type" />
+                    </div>
+                    <label style={{display:'flex',gap:8,alignItems:'center',color:'var(--text-secondary)',fontSize:12}}>
+                      <input type="checkbox" checked={effectForm.remove_on_trigger} onChange={e => setEffectForm(f => ({ ...f, remove_on_trigger: e.target.checked }))} style={{width:'auto'}} />
+                      Remove after trigger
+                    </label>
+                    <input value={effectForm.notes} onChange={e => setEffectForm(f => ({ ...f, notes: e.target.value }))} placeholder="Trigger reminder" />
+                  </div>
+                )}
                 <label style={{display:'flex',gap:8,alignItems:'center',color:'var(--text-secondary)',fontSize:12}}>
                   <input type="checkbox" checked={effectForm.concentration} onChange={e => setEffectForm(f => ({ ...f, concentration: e.target.checked }))} style={{width:'auto'}} />
                   Concentration
@@ -1263,6 +1538,7 @@ export default function EncounterRunnerModal({
                   onDeathSave={setDeathSave}
                   onResetDeathSaves={resetDeathSaves}
                   onResolveSave={resolvePendingSave}
+                  onTriggerEffect={triggerEffect}
                 />
               );
             })}

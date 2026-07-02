@@ -1,5 +1,33 @@
 # Active TODO
 
+## New Feature Planning Prompt
+
+Use this only when starting a new feature, new product direction, or major uncertain build. Do not interrupt an already-running task with this prompt for every small implementation decision.
+
+Before you build anything, write me a spec for this project.
+
+What does it do? Who is it for? Who is it NOT for?
+
+What does success look like? What's out of scope?
+
+Then walk me through each step of how you'd build it,
+
+and for each step show me the key decisions you'd make
+
+and what you'd default to. Don't build anything yet.
+
+## New Direction Interview Me Prompt
+
+Use this only when starting a new feature, new product direction, or major uncertain build. Do not interrupt an already-running task with this prompt for every small implementation decision.
+
+Before we start building, interview me about what we're trying to build.
+
+Work with me to identify the core problem we're solving, who it is and isn't for.
+
+As part of the interview, let's work through any key decisions together to help inform the implementation strategy.
+
+Then summarize it back to me as an implementation spec before we write any code.
+
 This file tracks only what's **actively being worked on right now**. `CLAUDE.md` is the
 master log of previous, current, and future plans — fold a short summary in there at the
 end of a session once something here ships and gets verified; don't duplicate long-form
@@ -16,6 +44,12 @@ allow pattern instead of prompting. See the same note in `CLAUDE.md`'s Deploy se
 - **Add Effect button in the active encounter tracker.** Adding an "Add Effect" header
   button next to Exhaustion in the active encounter tracker that opens the fuller
   campaign-style Add Effect screen instead of the stripped-down active-encounter version.
+- **Creature action economy in the DM runner.** Add encounter-row buckets for Action,
+  Bonus Action, Reaction, Movement, Haste Action, plus a plan/UI for legendary action pools
+  and lair actions (initiative 20 style) for boss creatures.
+- **Triggered effect polish.** V1 is in the encounter runner for Booming Blade-style
+  movement triggers; next pass should connect character-sheet casts to create those
+  triggered target effects automatically and verify scaling.
 
 Ownership reconfirmed 2026-07-01 (see `CLAUDE.md`'s Parallel Claude/Codex workflow
 section): Codex owns campaign screens, encounter setup/tracker, campaign effects, DM
@@ -131,17 +165,30 @@ The encounter-target list looking stale/pulling from old encounters (flagged in 
 report) was NOT investigated — the user said to stand by on that one, it may be user
 error rather than a real bug.
 
+## Shipped 2026-07-02 (not yet live-verified — no browser in sandbox)
+
+- Kill prompt: "How do you want to do this?!" popup (`KillPromptModal.js`) when a weapon
+  attack / non-save damage spell defeats an encounter target. Backend `resolve` returns
+  `target_defeated` (no HP exposed); narration posts back as a `💀 Killing blow` note.
+- Spell picker auto-closes after a weapon-attack cantrip's attack completes (was leaving
+  the player on the spell list).
+- Metamagic selection moved into the character editor (Font-of-Magic chars only); sheet's
+  Sorcery Points popup Metamagic tab is now read-only reference.
+- AE `(Sorcery Points)` label regression fixed (undefined===undefined tracker_key match).
+- Weapon-modal applied-damage number hidden from the player (only Hit!/Missed.).
+
 ## Next up (pull from here when starting new work)
 
-1. **Audit items/feats edited via `ModifiersEditor.js` for the index-key corruption bug**
-   (confirmed real — doubled Staff of the Magi's spell attack bonus). Start with any
-   item/feat with 3+ modifier rows.
-2. Action Economy label regression — `(Sorcery Points)` wrongly appended to stock actions
-   (Attack/Dash/Disengage/etc).
-3. Consolidate the 8 separate stock-action AE rows into one compact picker/dropdown.
-4. Spell-add eligibility — grey out Add for spells above the character's accessible level
+1. **`ModifiersEditor.js` corruption re-save** — the CODE fix is already in (stable
+   per-row id). What's left is an OWNER-manual pass: reopen + re-save any item/feat with
+   3+ modifier rows in the live UI to confirm/correct old data. Not codeable from here.
+2. Consolidate the 8 separate stock-action AE rows into one compact picker/dropdown.
+3. Spell-add eligibility — grey out Add for spells above the character's accessible level
    instead of hiding them.
-5. Syric AE item-charge `[-]` button placement (see `CAMPAIGNS_INTEGRATION_NOTES.md`).
+4. Syric AE item-charge `[-]` button placement (see `CAMPAIGNS_INTEGRATION_NOTES.md`).
+5. Death Saves on the character sheet itself (roll popup near Exhaustion + "Roll Blind").
+6. Item activation audit — no buff/passive applies unless equipped (+attuned); require
+   Equip before Attune is offered.
 6. **Concentration/ongoing spells that grant a recurring bonus-action (or action) use
    should surface in the Action Economy tab while active.** Example: Animate Objects —
    once cast and active, commanding the objects each round is a bonus action, so it should
