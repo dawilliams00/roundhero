@@ -153,6 +153,79 @@ def _player_encounter_view(encounter):
     }
 
 
+def _combatant_damage_profile(row):
+    row = row if isinstance(row, dict) else {}
+    monster = row.get("monster") if isinstance(row.get("monster"), dict) else {}
+    snapshot = row.get("snapshot") if isinstance(row.get("snapshot"), dict) else {}
+    traits = snapshot.get("traits") if isinstance(snapshot.get("traits"), dict) else {}
+    effects = row.get("effects") if isinstance(row.get("effects"), list) else []
+    profile = {
+        "immunities": [monster.get("damage_immunities", "")],
+        "resistances": [monster.get("damage_resistances", "")],
+        "vulnerabilities": [monster.get("damage_vulnerabilities", "")],
+    }
+    for key in ["immunities", "resistances", "vulnerabilities"]:
+        for item in traits.get(key) or []:
+            if isinstance(item, dict):
+                profile[key].append(item.get("name") or item.get("detail") or item.get("description") or "")
+            else:
+                profile[key].append(str(item))
+    for effect in effects:
+        if not isinstance(effect, dict):
+            continue
+        for modifier in effect.get("modifiers") or []:
+            if not isinstance(modifier, dict):
+                continue
+            mod_type = modifier.get("type")
+            if mod_type in {"immunity", "resistance", "vulnerability"}:
+                profile[f"{mod_type}s"].append(modifier.get("detail") or modifier.get("label") or "")
+    return profile
+
+
+def _damage_type_matches(entries, damage_type):
+    damage_type = str(damage_type or "").strip().lower()
+    if not damage_type:
+        return False
+    return any(damage_type in str(entry or "").lower() for entry in entries)
+
+
+def _resolved_damage_for_row(row, components, save_succeeded=False, half_on_success=False):
+    profile = _combatant_damage_profile(row)
+    total = 0
+    details = []
+    for component in components if isinstance(components, list) else []:
+        if not isinstance(component, dict):
+            continue
+        raw = max(0, _safe_int(component.get("amount") or component.get("total") or 0))
+        damage_type = component.get("damage_type") or component.get("type") or ""
+        adjusted = raw // 2 if save_succeeded and half_on_success else raw
+        rule = "normal"
+        if _damage_type_matches(profile["immunities"], damage_type):
+            adjusted = 0
+            rule = "immune"
+        elif _damage_type_matches(profile["resistances"], damage_type):
+            adjusted = adjusted // 2
+            rule = "resistant"
+        elif _damage_type_matches(profile["vulnerabilities"], damage_type):
+            adjusted = adjusted * 2
+            rule = "vulnerable"
+        total += adjusted
+        details.append({
+            "amount": raw,
+            "applied": adjusted,
+            "damage_type": damage_type,
+            "rule": rule,
+        })
+    return total, details
+
+
+def _safe_int(value, fallback=0):
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return fallback
+
+
 def _effect_payload_target_ids(effect):
     payload = effect.payload or {}
     raw_ids = payload.get("target_character_ids") or []
@@ -474,9 +547,8 @@ def leave_campaign(campaign_id):
     if campaign.owner_user_id == user_id:
         return jsonify({"error": "The campaign owner cannot leave until ownership transfer exists"}), 400
 
-    for entry in CampaignCharacter.query.filter_by(campaign_id=campaign.id, user_id=user_id).all():
-        entry.active = False
-        entry.is_primary = False
+    if CampaignCharacter.query.filter_by(campaign_id=campaign.id, user_id=user_id).first():
+        return jsonify({"error": "Remove individual campaign characters from the Party tab before leaving the campaign account membership"}), 400
     db.session.delete(member)
     db.session.commit()
     return jsonify({"message": "Left campaign"}), 200
@@ -598,6 +670,12 @@ def get_player_campaign_view(character_id):
             **_campaign_response(campaign, member, include_detail=False),
             "character_id": character.id,
             "character_name": character.name,
+            "source_combatant_ids": [
+                row.get("id")
+                for encounter in running
+                for row in ((encounter.data or {}).get("combatants") if isinstance((encounter.data or {}).get("combatants"), list) else [])
+                if str(row.get("character_id")) == str(character.id)
+            ],
             "campaign_rules": _clean_campaign_rules(campaign.rules),
             "encounters": [_player_encounter_view(encounter) for encounter in running],
             "effects": [
@@ -606,6 +684,118 @@ def get_player_campaign_view(character_id):
             ],
         })
     return jsonify(views), 200
+
+
+@campaigns_bp.route("/<int:campaign_id>/encounters/<int:encounter_id>/resolve", methods=["POST"])
+@jwt_required()
+def resolve_encounter_action(campaign_id, encounter_id):
+    user_id = int(get_jwt_identity())
+    campaign, member = _campaign_for_user(campaign_id, user_id)
+    if not campaign:
+        return jsonify({"error": "Campaign not found"}), 404
+
+    encounter = CampaignEncounter.query.filter_by(id=encounter_id, campaign_id=campaign.id).first_or_404()
+    data = request.get_json() or {}
+    source_character_id = data.get("source_character_id")
+    target_id = str(data.get("target_id") or "")
+    if not target_id:
+        return jsonify({"error": "Target combatant required"}), 400
+
+    source_entry = _character_in_campaign(campaign.id, source_character_id) if source_character_id else None
+    if not _is_dm(campaign, member):
+        if not source_entry or source_entry.user_id != user_id:
+            return jsonify({"error": "You can only resolve actions for your own campaign character"}), 403
+
+    encounter_data = encounter.data or {}
+    rows = encounter_data.get("combatants") if isinstance(encounter_data.get("combatants"), list) else []
+    target = next((row for row in rows if str(row.get("id")) == target_id), None)
+    if not target:
+        return jsonify({"error": "Target combatant not found"}), 404
+
+    mode = (data.get("mode") or "attack").strip().lower()
+    attack_total = data.get("attack_total")
+    save_roll = data.get("save_roll")
+    save_dc = data.get("save_dc")
+    half_on_success = bool(data.get("half_on_success", True))
+    components = data.get("damage_components") or []
+    hit = None
+    save_succeeded = None
+    pending = False
+
+    if mode == "attack" and attack_total not in {None, ""}:
+        try:
+            hit = int(attack_total) >= int(target.get("ac") or 0)
+        except (TypeError, ValueError):
+            hit = None
+    elif mode == "save":
+        if save_roll in {None, ""} or save_dc in {None, ""}:
+            pending = True
+        else:
+            try:
+                save_succeeded = int(save_roll) >= int(save_dc)
+            except (TypeError, ValueError):
+                save_succeeded = None
+
+    should_apply_damage = not pending and hit is not False
+    applied_damage = 0
+    damage_details = []
+    if should_apply_damage:
+        applied_damage, damage_details = _resolved_damage_for_row(
+            target,
+            components,
+            save_succeeded=save_succeeded is True,
+            half_on_success=half_on_success,
+        )
+
+    event = {
+        "id": token_urlsafe(6),
+        "source_character_id": source_character_id,
+        "source_name": source_entry.character.name if source_entry and source_entry.character else data.get("source_name") or "",
+        "target_id": target_id,
+        "target_name": target.get("name") or "Target",
+        "label": data.get("label") or "Encounter action",
+        "mode": mode,
+        "attack_total": attack_total,
+        "hit": hit,
+        "save_roll": save_roll,
+        "save_dc": save_dc,
+        "save_succeeded": save_succeeded,
+        "pending": pending,
+        "damage_requested": sum(
+            _safe_int(component.get("amount") or component.get("total") or 0)
+            for component in components
+            if isinstance(component, dict)
+        ),
+        "damage_applied": applied_damage,
+        "damage_details": damage_details,
+        "notes": data.get("notes") or "",
+    }
+
+    next_rows = []
+    for row in rows:
+        if str(row.get("id")) != target_id or not should_apply_damage or applied_damage <= 0:
+            next_rows.append(row)
+            continue
+        patched = dict(row)
+        temp = max(0, int(patched.get("temp_hp") or 0))
+        current = max(0, int(patched.get("hp_current") or 0))
+        remaining = applied_damage
+        absorbed = min(temp, remaining)
+        temp -= absorbed
+        remaining -= absorbed
+        patched["temp_hp"] = temp
+        patched["hp_current"] = max(0, current - remaining)
+        if patched["hp_current"] <= 0 and patched.get("type") != "player":
+            patched["dead"] = True
+        next_rows.append(patched)
+
+    events = encounter_data.get("resolution_events") if isinstance(encounter_data.get("resolution_events"), list) else []
+    encounter_data["combatants"] = next_rows
+    encounter_data["resolution_events"] = [*events[-24:], event]
+    encounter.data = encounter_data
+    db.session.commit()
+
+    return jsonify({"resolution": event, "encounter": encounter.to_dict()}), 200
 
 
 @campaigns_bp.route("/player-view/<int:character_id>/death-save", methods=["POST"])
@@ -907,6 +1097,39 @@ def campaign_character_sheet(campaign_id, campaign_character_id):
     }), 200
 
 
+@campaigns_bp.route("/<int:campaign_id>/characters/<int:campaign_character_id>/sheet/rest", methods=["POST"])
+@jwt_required()
+def campaign_character_sheet_rest(campaign_id, campaign_character_id):
+    user_id = int(get_jwt_identity())
+    campaign, member = _campaign_for_user(campaign_id, user_id)
+    if not campaign:
+        return jsonify({"error": "Campaign not found"}), 404
+    if not _is_dm(campaign, member):
+        return jsonify({"error": "Only campaign DMs can rest party sheets"}), 403
+
+    entry = CampaignCharacter.query.filter_by(
+        id=campaign_character_id,
+        campaign_id=campaign.id,
+    ).first_or_404()
+    character = entry.character
+    if not character:
+        return jsonify({"error": "Character not found"}), 404
+
+    data = request.get_json() or {}
+    rest_type = data.get("type", "long")
+    from engine.rest_engine import apply_rest
+    new_td, summary = apply_rest(character.tracker_data, character.spell_data, rest_type)
+    character.tracker_data = new_td
+    db.session.commit()
+    return jsonify({
+        "character": character.to_dict(),
+        "tracker_data": character.tracker_data,
+        "spell_data": character.spell_data,
+        "summary": summary,
+        "campaign": _campaign_response(campaign, member),
+    }), 200
+
+
 @campaigns_bp.route("/<int:campaign_id>/characters/<int:campaign_character_id>", methods=["DELETE"])
 @jwt_required()
 def detach_character(campaign_id, campaign_character_id):
@@ -922,8 +1145,20 @@ def detach_character(campaign_id, campaign_character_id):
     if entry.user_id != user_id and not _is_dm(campaign, member):
         return jsonify({"error": "You can only remove your own character"}), 403
 
-    entry.active = False
-    entry.is_primary = False
+    character_id = entry.character_id
+    db.session.delete(entry)
+    for encounter in campaign.encounters:
+        if encounter.status == "complete":
+            continue
+        data = encounter.data or {}
+        rows = data.get("combatants") if isinstance(data.get("combatants"), list) else []
+        filtered = [
+            row for row in rows
+            if not (row.get("type") == "player" and str(row.get("character_id")) == str(character_id))
+        ]
+        if len(filtered) != len(rows):
+            data["combatants"] = filtered
+            encounter.data = data
     db.session.commit()
     return jsonify(_campaign_response(campaign, member)), 200
 
@@ -976,6 +1211,18 @@ def set_campaign_character_active(campaign_id, campaign_character_id):
     entry.active = active
     if not active:
         entry.is_primary = False
+        for encounter in campaign.encounters:
+            if encounter.status == "complete":
+                continue
+            encounter_data = encounter.data or {}
+            rows = encounter_data.get("combatants") if isinstance(encounter_data.get("combatants"), list) else []
+            filtered = [
+                row for row in rows
+                if not (row.get("type") == "player" and str(row.get("character_id")) == str(entry.character_id))
+            ]
+            if len(filtered) != len(rows):
+                encounter_data["combatants"] = filtered
+                encounter.data = encounter_data
     elif not CampaignCharacter.query.filter_by(campaign_id=campaign.id, user_id=entry.user_id, active=True, is_primary=True).first():
         entry.is_primary = True
     db.session.commit()

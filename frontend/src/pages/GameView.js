@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useCharacter } from '../context/CharacterContext';
 import api from '../utils/api';
 import CharacterHeader from '../components/CharacterHeader';
@@ -20,8 +20,9 @@ import { activeCompanionKey } from '../utils/dnd';
 
 export default function GameView() {
   const { id }                    = useParams();
+  const [searchParams]            = useSearchParams();
   const nav                       = useNavigate();
-  const { character, loadCharacter, loading } = useCharacter();
+  const { character, loadCharacter, loading, campaignEditContext, setCampaignEditContext } = useCharacter();
   const [activeTab, setActiveTab] = useState(0);
   const [needsClassConfirm, setNeedsClassConfirm] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
@@ -30,7 +31,19 @@ export default function GameView() {
   const [campaignViews, setCampaignViews] = useState([]);
   const [showCampaignView, setShowCampaignView] = useState(false);
 
-  useEffect(() => { loadCharacter(parseInt(id)); }, [id, loadCharacter]);
+  const campaignId = searchParams.get('campaign_id');
+  const campaignCharacterId = searchParams.get('campaign_character_id');
+  const dmEdit = searchParams.get('dm_edit') === '1';
+  const returnTo = searchParams.get('return') || '/campaigns';
+
+  useEffect(() => {
+    const ctx = dmEdit && campaignId && campaignCharacterId
+      ? { campaignId, campaignCharacterId, returnTo }
+      : null;
+    setCampaignEditContext(ctx);
+    loadCharacter(parseInt(id), ctx ? { campaignEditContext: ctx } : {});
+    return () => setCampaignEditContext(null);
+  }, [id, loadCharacter, setCampaignEditContext, dmEdit, campaignId, campaignCharacterId, returnTo]);
 
   // Proactively flags a PDF-imported (or otherwise unrecognized) class_name instead of
   // only surfacing it the first time the player happens to click Level Up - the same
@@ -114,7 +127,13 @@ export default function GameView() {
 
   return (
     <div style={{display:'flex',flexDirection:'column',height:'100vh',background:'var(--bg-primary)',overflow:'hidden'}}>
-      <CharacterHeader onBack={() => nav('/characters')} />
+      <CharacterHeader onBack={() => nav(campaignEditContext?.returnTo || '/characters')} />
+      {campaignEditContext && (
+        <div style={{display:'flex',alignItems:'center',gap:10,padding:'8px 16px',background:'rgba(124,92,252,0.18)',borderBottom:'1px solid rgba(124,92,252,0.35)',color:'var(--text-secondary)',flexShrink:0,fontSize:12}}>
+          <span style={{flex:1}}>Campaign DM edit mode. Changes save through campaign authorization for {character.name}.</span>
+          <button className="btn btn-secondary btn-sm" onClick={() => nav(campaignEditContext.returnTo || '/campaigns')}>Back to Campaign</button>
+        </div>
+      )}
       {needsClassConfirm && !bannerDismissed && (
         <div style={{display:'flex',alignItems:'center',gap:10,padding:'8px 16px',background:'var(--warning)',color:'#1a1a1a',flexShrink:0,fontSize:12}}>
           <span style={{flex:1}}>Couldn't confidently detect this character's class(es) from "{character.class_name}" - confirm them to enable level-up, subclass tracking, and ability score improvements.</span>

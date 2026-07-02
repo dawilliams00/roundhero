@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
+import api from '../utils/api';
 import { effectiveAbilityScores, weaponAbilityMod, weaponItemBonus, weaponDamageDice, profBonus, rollD20, rollDamageDetailed, modifier, cantripHitBonusForLevel, fightingStyleBonus, featWeaponBonus, featBuffItems, raceBuffItems, hybridFormWeaponBonus } from '../utils/dnd';
 
 // Equipment.json weapon damage strings are always plain "NdM" (or, for things like
@@ -30,6 +31,41 @@ export default function WeaponAttackModal({ itemIndex, weaponOverride, onClose, 
   // result they got (to apply as healing) instead of rolling it for them.
   const [manualHealAdvOpen, setManualHealAdvOpen] = useState(false);
   const [manualHealAmount, setManualHealAmount] = useState('');
+  const [encounterTargets, setEncounterTargets] = useState([]);
+  const [selectedTargetKey, setSelectedTargetKey] = useState('');
+  const [resolvingTarget, setResolvingTarget] = useState(false);
+  const [encounterResolution, setEncounterResolution] = useState(null);
+
+  useEffect(() => {
+    if (!character?.id) return;
+    let cancelled = false;
+    api.get(`/campaigns/player-view/${character.id}`, { suppressGlobalError: true })
+      .then(r => {
+        if (cancelled) return;
+        const targets = [];
+        (r.data || []).forEach(view => {
+          const sourceIds = (view.source_combatant_ids || []).map(String);
+          (view.encounters || []).filter(enc => enc.status === 'running').forEach(enc => {
+            (enc.combatants || []).forEach(row => {
+              if (row.dead || sourceIds.includes(String(row.id))) return;
+              targets.push({
+                key: `${view.id}:${enc.id}:${row.id}`,
+                campaignId: view.id,
+                encounterId: enc.id,
+                targetId: row.id,
+                label: `${enc.name}: ${row.name}${row.type === 'enemy' ? ' (enemy)' : ''}`,
+              });
+            });
+          });
+        });
+        setEncounterTargets(targets);
+        setSelectedTargetKey(current => current || targets[0]?.key || '');
+      })
+      .catch(() => {
+        if (!cancelled) setEncounterTargets([]);
+      });
+    return () => { cancelled = true; };
+  }, [character?.id]);
 
   if (!character) return null;
   const td = character.tracker_data || {};
@@ -193,6 +229,39 @@ export default function WeaponAttackModal({ itemIndex, weaponOverride, onClose, 
     setDamageResult({ ...buildDamage(), ...dmg, extra, cantrip, smite });
   };
 
+  const damageComponentsForEncounter = () => {
+    if (!damageResult) return [];
+    const components = [
+      { amount: damageResult.total || 0, damage_type: damageResult.damage_type },
+    ];
+    ['extra', 'cantrip', 'smite'].forEach(key => {
+      if (damageResult[key]) components.push({ amount: damageResult[key].total || 0, damage_type: damageResult[key].damage_type });
+    });
+    return components;
+  };
+
+  const resolveEncounterTarget = async () => {
+    const target = encounterTargets.find(row => row.key === selectedTargetKey);
+    if (!target || !damageResult) return;
+    setResolvingTarget(true);
+    setEncounterResolution(null);
+    try {
+      const r = await api.post(`/campaigns/${target.campaignId}/encounters/${target.encounterId}/resolve`, {
+        source_character_id: character.id,
+        target_id: target.targetId,
+        label: weapon.name,
+        mode: attackResult ? 'attack' : 'damage',
+        attack_total: attackResult?.total ?? '',
+        damage_components: damageComponentsForEncounter(),
+      }, { suppressGlobalError: true });
+      setEncounterResolution(r.data.resolution);
+    } catch (err) {
+      setEncounterResolution({ error: err.response?.data?.error || 'Could not resolve against encounter target.' });
+    } finally {
+      setResolvingTarget(false);
+    }
+  };
+
   return (
     <div className="modal-overlay">
       <div className="modal modal-flex modal-lg" onClick={e => e.stopPropagation()}>
@@ -337,6 +406,24 @@ export default function WeaponAttackModal({ itemIndex, weaponOverride, onClose, 
                 <button className="btn btn-secondary" style={{flex:1}} onClick={rerollDamage}>Reroll</button>
                 <button className="btn btn-primary" style={{flex:1}} onClick={onClose}>Done</button>
               </div>
+              {encounterTargets.length > 0 && (
+                <div style={{borderTop:'1px solid var(--border)',marginTop:10,paddingTop:10,textAlign:'left'}}>
+                  <div style={{color:'var(--text-dim)',fontSize:10,textTransform:'uppercase',letterSpacing:1,marginBottom:5}}>Encounter Target</div>
+                  <div style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) auto',gap:8}}>
+                    <select value={selectedTargetKey} onChange={e => setSelectedTargetKey(e.target.value)}>
+                      {encounterTargets.map(target => <option key={target.key} value={target.key}>{target.label}</option>)}
+                    </select>
+                    <button className="btn btn-primary btn-sm" onClick={resolveEncounterTarget} disabled={resolvingTarget || !damageResult}>
+                      {resolvingTarget ? 'Resolving...' : 'Resolve'}
+                    </button>
+                  </div>
+                  {encounterResolution && (
+                    <div style={{color:encounterResolution.error ? 'var(--danger)' : 'var(--success)',fontSize:12,marginTop:6}}>
+                      {encounterResolution.error || `${encounterResolution.hit === false ? 'Miss' : encounterResolution.hit === true ? 'Hit' : 'Resolved'} · ${encounterResolution.damage_applied || 0} damage applied`}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           ) : manualHealAdvOpen ? (
             <div style={{width:'100%',background:'var(--bg-primary)',borderRadius:'var(--radius-sm)',padding:12}}>

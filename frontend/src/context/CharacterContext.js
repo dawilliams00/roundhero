@@ -13,12 +13,18 @@ const EMPTY_TURN = { Action: false, 'Bonus Action': false, Reaction: false, Hast
 // doesn't touch Syric's), but New Turn/a rest resets both at once.
 const EMPTY_COMPANION_TURN = { Action: false, 'Bonus Action': false, Reaction: false };
 
+function intOrZero(value) {
+  const parsed = parseInt(value, 10);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
 export function CharacterProvider({ children }) {
   const [character, setCharacterState] = useState(null);
   const [characters, setCharacters] = useState([]);
   const [loading, setLoading]       = useState(false);
   const [turnUsed, setTurnUsed]     = useState(EMPTY_TURN);
   const [companionTurnUsed, setCompanionTurnUsed] = useState(EMPTY_COMPANION_TURN);
+  const [campaignEditContext, setCampaignEditContext] = useState(null);
 
   // characterRef always holds the LATEST character, updated synchronously in the same
   // tick as setCharacterState (not via a useEffect, which only runs after React commits
@@ -52,23 +58,63 @@ export function CharacterProvider({ children }) {
     } finally { setLoading(false); }
   }, []);
 
-  const loadCharacter = useCallback(async (id) => {
+  const campaignSheetPath = useCallback((ctx = campaignEditContext) => {
+    if (!ctx?.campaignId || !ctx?.campaignCharacterId) return null;
+    return `/campaigns/${ctx.campaignId}/characters/${ctx.campaignCharacterId}/sheet`;
+  }, [campaignEditContext]);
+
+  const normalizeCampaignSheetResponse = (data) => data?.character || data;
+
+  const saveCampaignSheetPatch = useCallback(async (patch) => {
+    const path = campaignSheetPath();
+    if (!path) return null;
+    const r = await api.put(path, patch);
+    const next = normalizeCampaignSheetResponse(r.data);
+    setCharacter(next);
+    return next;
+  }, [campaignSheetPath, setCharacter]);
+
+  const loadCharacter = useCallback(async (id, options = {}) => {
     setLoading(true);
     try {
-      const r = await api.get(`/characters/${id}`);
-      setCharacter(r.data);
-      return r.data;
+      const ctx = options.campaignEditContext;
+      const path = ctx?.campaignId && ctx?.campaignCharacterId
+        ? `/campaigns/${ctx.campaignId}/characters/${ctx.campaignCharacterId}/sheet`
+        : `/characters/${id}`;
+      const r = await api.get(path);
+      const next = normalizeCampaignSheetResponse(r.data);
+      setCharacter(next);
+      return next;
     } finally { setLoading(false); }
   }, []);
 
   const updateCharacter = useCallback(async (id, updates) => {
+    if (campaignEditContext && character?.id === id) {
+      return saveCampaignSheetPatch(updates);
+    }
     const r = await api.put(`/characters/${id}`, updates);
     setCharacter(r.data);
     return r.data;
-  }, []);
+  }, [campaignEditContext, character?.id, saveCampaignSheetPatch, setCharacter]);
 
   const useFeature = useCallback(async (featureName) => {
     if (!character) return;
+    if (campaignEditContext) {
+      const td = character.tracker_data || {};
+      const features = td.features || {};
+      const feat = features[featureName];
+      if (!feat) return;
+      const current = Math.max(0, intOrZero(feat.current) - 1);
+      const nextTd = {
+        ...td,
+        features: {
+          ...features,
+          [featureName]: { ...feat, current },
+        },
+      };
+      await saveCampaignSheetPatch({ tracker_data: nextTd });
+      return { feature: featureName, current, max: feat.max || 0 };
+    }
     const r = await api.post(`/tracker/${character.id}/feature/${encodeURIComponent(featureName)}/use`);
     setCharacter(prev => ({
       ...prev,
@@ -84,10 +130,26 @@ export function CharacterProvider({ children }) {
       }
     }));
     return r.data;
-  }, [character]);
+  }, [character, campaignEditContext, saveCampaignSheetPatch]);
 
   const useSlot = useCallback(async (level) => {
     if (!character) return;
+    if (campaignEditContext) {
+      const td = character.tracker_data || {};
+      const slots = td.spell_slots || {};
+      const slot = slots[String(level)];
+      if (!slot) return;
+      const current = Math.max(0, intOrZero(slot.current) - 1);
+      const nextTd = {
+        ...td,
+        spell_slots: {
+          ...slots,
+          [level]: { ...slot, current },
+        },
+      };
+      await saveCampaignSheetPatch({ tracker_data: nextTd });
+      return { level, current, max: slot.max || 0 };
+    }
     const r = await api.post(`/tracker/${character.id}/slot/${level}/use`);
     setCharacter(prev => ({
       ...prev,
@@ -100,21 +162,32 @@ export function CharacterProvider({ children }) {
       }
     }));
     return r.data;
-  }, [character]);
+  }, [character, campaignEditContext, saveCampaignSheetPatch]);
 
   const doRest = useCallback(async (restType) => {
     if (!character) return;
+    if (campaignEditContext) {
+      const r = await api.post(`${campaignSheetPath()}/rest`, { type: restType });
+      const next = normalizeCampaignSheetResponse(r.data);
+      setCharacter(next);
+      resetTurn();
+      return r.data;
+    }
     const r = await api.post(`/characters/${character.id}/rest`, { type: restType });
     setCharacter(prev => ({ ...prev, tracker_data: r.data.tracker_data }));
     resetTurn();
     return r.data;
-  }, [character, resetTurn]);
+  }, [character, campaignEditContext, campaignSheetPath, resetTurn, setCharacter]);
 
   const saveTrackerData = useCallback(async (trackerData) => {
     if (!character) return;
+    if (campaignEditContext) {
+      await saveCampaignSheetPatch({ tracker_data: trackerData });
+      return;
+    }
     const r = await api.put(`/tracker/${character.id}`, trackerData);
     setCharacter(prev => ({ ...prev, tracker_data: r.data }));
-  }, [character]);
+  }, [character, campaignEditContext, saveCampaignSheetPatch]);
 
   const restoreSlot = useCallback(async (level) => {
     if (!character) return;
@@ -137,9 +210,13 @@ export function CharacterProvider({ children }) {
 
   const saveSpellData = useCallback(async (spellData) => {
     if (!character) return;
+    if (campaignEditContext) {
+      await saveCampaignSheetPatch({ spell_data: spellData });
+      return;
+    }
     const r = await api.put(`/spells/${character.id}`, spellData);
     setCharacter(prev => ({ ...prev, spell_data: r.data }));
-  }, [character]);
+  }, [character, campaignEditContext, saveCampaignSheetPatch]);
 
   const importCharacter = useCallback(async (file) => {
     const formData = new FormData();
@@ -287,6 +364,7 @@ export function CharacterProvider({ children }) {
   return (
     <CharacterContext.Provider value={{
       character, characters, loading, turnUsed, setTurnUsed, companionTurnUsed, setCompanionTurnUsed, resetTurn,
+      campaignEditContext, setCampaignEditContext,
       fetchCharacters, loadCharacter, updateCharacter,
       useFeature, useSlot, restoreSlot, doRest, saveTrackerData, saveSpellData, importCharacter, resyncCharacter, deleteCharacter, duplicateCharacter, rollbackLevelUp, useItemCharge, addActiveEffect, removeActiveEffect, addCondition, removeCondition, setConcentration, setConcentrationTarget, replaceConcentration, spendFeatureCharges, setCharacter,
     }}>

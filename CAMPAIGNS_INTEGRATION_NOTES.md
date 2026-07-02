@@ -232,3 +232,23 @@ Updated in this pass:
 - Homebrew creature editing is now a stat-block form for core creature data, speed, ability scores, saves/skills, defenses, senses/languages, environments, traits/actions/reactions/legendary actions. It still saves to the same custom monster database used by Bestiary and encounters.
 - Spell editing no longer exposes the previous Advanced JSON editor toggle.
 - Encounter setup combatant rows were widened into explicit separated columns for identity, INIT/AC/HP/TEMP, conditions/concentration, and death saves/actions. Keep this separated-control pattern; do not compress those fields back into overlapping boxes.
+
+## 2026-07-01 Targeting / Campaign Cleanup Pass
+
+Shipped/implemented in this pass:
+
+- Campaign roster `Remove` now truly detaches the character from the campaign instead of only marking it inactive. `Inactivate` remains the soft keep-on-roster option.
+- Inactivating or removing a campaign character also removes that PC row from non-completed encounters, so active encounters do not keep stale inactive characters.
+- Player-owned roster rows expose a clear `Leave Campaign` action in addition to the campaign header button.
+- `Leave Campaign` on roster rows is character-specific: it detaches only that one owned character. The legacy account-level leave endpoint now refuses to run while that user still has campaign characters attached, so it cannot accidentally remove every character for the account.
+- Encounter PC sync now treats sheet-sourced conditions, concentration, and active effects as the source of truth. Removed sheet effects such as ended Haste and cleared Lethargic no longer survive forever as stale encounter row effects; DM-added encounter effects remain intact.
+- Campaign DM sheet edit now launches the full character sheet in campaign-edit mode instead of the small campaign form. Saves go through the campaign-authorized sheet endpoint.
+- Campaign DM sheet edit has campaign-authorized rest support.
+- Active encounter target resolution V1 exists for weapon attacks and damaging spells: player picks a visible encounter target, the backend resolves hit/miss or save/pending-save, applies damage, and adjusts for immunity/resistance/vulnerability by damage type.
+- DM encounter runner shows a popup when a player queues/resolves an encounter action, including pending save prompts and damage adjustment details.
+
+Still pending / next:
+
+- Animate dead / use-dead-creature workflow is intentionally paused for now per owner direction. Do not start it until asked again.
+- Target resolution is V1. It still needs richer item/use-object integration, better spell condition application, DM-side save input workflow from the pending event, advantage/disadvantage/cover/modifier handling, attack roll manual override polish, and direct syncing of resulting conditions/effects back to character sheets where appropriate.
+- AE item charge button TODO: Syric AE item rows are missing the `[-]` button for charged items. Normal character AE item rows have the `[-]` button on the far left where `[USE]` or `[CAST]` should be. Item rows should follow the Syric bonus-action pattern: left `[USE]/[CAST]`, item name/details, bucket dropdown if relevant, and right-side `[-] current/max [+]`.

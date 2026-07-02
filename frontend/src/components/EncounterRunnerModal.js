@@ -180,10 +180,15 @@ function combatantFromRoster(entry, existing = {}) {
   const snap = rosterSnapshot(entry);
   const hp = snapshotHpValues(snap, existing);
   const sheetEffects = cleanList(snap.active_effects).map(name => ({ id: `sheet_${name}`, name, type: 'sheet' }));
-  const mergedEffects = [...sheetEffects, ...cleanList(existing.effects)].filter((effect, index, list) => {
+  const encounterOnlyEffects = cleanList(existing.effects).filter(effect => {
+    const id = effect?.id || '';
+    return effect?.type !== 'sheet' && !String(id).startsWith('sheet_');
+  });
+  const mergedEffects = [...sheetEffects, ...encounterOnlyEffects].filter((effect, index, list) => {
     const key = effect.id || effect.name;
     return list.findIndex(item => (item.id || item.name) === key) === index;
   });
+  const con = concentrationText(snap);
   return normalizeCombatant({
     ...existing,
     type: 'player',
@@ -195,8 +200,8 @@ function combatantFromRoster(entry, existing = {}) {
     hp_max: hp.max,
     temp_hp: hp.temp,
     ac: snap.ac ?? existing.ac ?? '',
-    conditions: cleanList(snap.conditions).length ? cleanList(snap.conditions) : cleanList(existing.conditions),
-    concentration: concentrationText(snap) || existing.concentration || '',
+    conditions: cleanList(snap.conditions),
+    concentration: con || '',
     effects: mergedEffects,
     snapshot: snap,
   });
@@ -511,10 +516,13 @@ export default function EncounterRunnerModal({
   const [viewingMonster, setViewingMonster] = useState(null);
   const [rulesPopup, setRulesPopup] = useState(null);
   const [deathSaveAlert, setDeathSaveAlert] = useState(null);
+  const [resolutionAlert, setResolutionAlert] = useState(null);
   const [effectForm, setEffectForm] = useState({ type: 'condition', name: '', custom: '', source_id: '', target_ids: [], duration: '1 min', concentration: false });
   const rowRefs = useRef({});
   const seenDeathSavesRef = useRef(new Set());
+  const seenResolutionEventsRef = useRef(new Set());
   const seededDeathSavesRef = useRef(false);
+  const seededResolutionEventsRef = useRef(false);
   const dataRef = useRef(data);
   dataRef.current = data;
 
@@ -559,7 +567,10 @@ export default function EncounterRunnerModal({
     const sourceRoster = (freshCampaign?.characters || roster || []).filter(entry => entry.active);
     const freshRows = findFreshEncounterData(freshCampaign, encounter.id)?.combatants || [];
     const currentRows = freshRows.length ? freshRows : (dataRef.current?.combatants || []);
-    const next = currentRows.map(row => {
+    const activeCharacterIds = new Set(sourceRoster.map(entry => String(entry.character_id)));
+    const next = currentRows.filter(row => (
+      row.type !== 'player' || !row.character_id || activeCharacterIds.has(String(row.character_id))
+    )).map(row => {
       const serverRow = freshRows.find(candidate => sameId(candidate.id, row.id) || (row.character_id && sameId(candidate.character_id, row.character_id)));
       const stableRow = mergeDeathSaveState(normalizeCombatant(row), serverRow);
       if (stableRow.type !== 'player' || !stableRow.character_id) return stableRow;
@@ -592,6 +603,21 @@ export default function EncounterRunnerModal({
     records.forEach(record => seenDeathSavesRef.current.add(record.key));
     if (fresh) setDeathSaveAlert({ row: fresh.row, record: fresh.row.last_death_save });
   }, [combatants]);
+
+  useEffect(() => {
+    const events = cleanList(data.resolution_events).map(event => ({
+      event,
+      key: `${event.id || ''}:${JSON.stringify(event)}`,
+    }));
+    if (!seededResolutionEventsRef.current) {
+      events.forEach(record => seenResolutionEventsRef.current.add(record.key));
+      seededResolutionEventsRef.current = true;
+      return;
+    }
+    const fresh = events.find(record => !seenResolutionEventsRef.current.has(record.key));
+    events.forEach(record => seenResolutionEventsRef.current.add(record.key));
+    if (fresh) setResolutionAlert(fresh.event);
+  }, [data.resolution_events]);
 
   const focusCombatant = id => {
     setSelectedTurnId(id);
@@ -785,6 +811,13 @@ export default function EncounterRunnerModal({
             title="Death Save Rolled"
             text={`${deathSaveAlert.row.name}\nD20 ${deathSaveAlert.record.roll} - ${deathSaveResultLabel(deathSaveAlert.record.result)}\n${deathSaveAlert.record.note || ''}\n\nCurrent: ${deathSaveAlert.record.successes || 0} success / ${deathSaveAlert.record.failures || 0} fail${deathSaveAlert.record.blind ? '\nBlind roll: player did not see this result.' : ''}`}
             onClose={() => setDeathSaveAlert(null)}
+          />
+        )}
+        {resolutionAlert && (
+          <RulePopup
+            title="Encounter Action"
+            text={`${resolutionAlert.source_name || 'A combatant'} used ${resolutionAlert.label || 'an action'} on ${resolutionAlert.target_name || 'a target'}.\n${resolutionAlert.pending ? 'DM save/input needed before HP changes.' : resolutionAlert.hit === false ? 'Miss. No damage applied.' : `${resolutionAlert.damage_applied || 0} damage applied.`}\n${cleanList(resolutionAlert.damage_details).map(detail => `${detail.damage_type || 'damage'}: ${detail.amount} -> ${detail.applied} (${detail.rule})`).join('\n')}`}
+            onClose={() => setResolutionAlert(null)}
           />
         )}
 

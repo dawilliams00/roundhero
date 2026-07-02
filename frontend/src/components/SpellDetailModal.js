@@ -1,5 +1,6 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
+import api from '../utils/api';
 import { schoolColor, getSpellcastingBlocks, getAbilityOverrideBlock, scaleSpellDamage, rollDamageDetailed, concentrationSlotCount, isCharacterCaster, maxAttacksForCharacter, HASTED_EFFECT, METAMAGIC_OPTIONS, metamagicCost, featBuffItems, raceBuffItems } from '../utils/dnd';
 import InfoModal from './InfoModal';
 import WeaponAttackModal from './WeaponAttackModal';
@@ -25,7 +26,55 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
   // weapon damage + the cantrip's bonus together, not the spell alone.
   const [awaitingWeapon, setAwaitingWeapon] = useState(false);
   const [pickedWeaponIdx, setPickedWeaponIdx] = useState(null);
+  const [encounterTargets, setEncounterTargets] = useState([]);
+  const [selectedTargetKey, setSelectedTargetKey] = useState('');
+  const [manualSaveRoll, setManualSaveRoll] = useState('');
+  const [resolvingTarget, setResolvingTarget] = useState(false);
+  const [encounterResolution, setEncounterResolution] = useState(null);
+  const [castLevel, setCastLevel] = useState(spell?.level_int || 0);
   const castMetaRef = useRef(null);
+
+  useEffect(() => {
+    if (!character?.id) return;
+    let cancelled = false;
+    api.get(`/campaigns/player-view/${character.id}`, { suppressGlobalError: true })
+      .then(r => {
+        if (cancelled) return;
+        const targets = [];
+        (r.data || []).forEach(view => {
+          const sourceIds = (view.source_combatant_ids || []).map(String);
+          (view.encounters || []).filter(enc => enc.status === 'running').forEach(enc => {
+            (enc.combatants || []).forEach(row => {
+              if (row.dead || sourceIds.includes(String(row.id))) return;
+              targets.push({
+                key: `${view.id}:${enc.id}:${row.id}`,
+                campaignId: view.id,
+                encounterId: enc.id,
+                targetId: row.id,
+                label: `${enc.name}: ${row.name}${row.type === 'enemy' ? ' (enemy)' : ''}`,
+              });
+            });
+          });
+        });
+        setEncounterTargets(targets);
+        setSelectedTargetKey(current => current || targets[0]?.key || '');
+      })
+      .catch(() => {
+        if (!cancelled) setEncounterTargets([]);
+      });
+    return () => { cancelled = true; };
+  }, [character?.id]);
+
+  useEffect(() => {
+    if (!character) return;
+    const slots = character.tracker_data?.spell_slots || {};
+    const levels = Object.entries(slots)
+      .filter(([lvl, s]) => parseInt(lvl) >= spell.level_int && (s.current || 0) > 0)
+      .map(([lvl]) => parseInt(lvl))
+      .sort((a,b) => a-b);
+    const next = levels[0] || spell.level_int;
+    setCastLevel(current => (levels.includes(current) || current === spell.level_int ? current : next));
+  }, [character, spell.level_int]);
 
   if (!character) return null;
   const slots = character.tracker_data?.spell_slots || {};
@@ -34,7 +83,6 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
     .filter(([lvl, s]) => parseInt(lvl) >= spell.level_int && (s.current || 0) > 0)
     .map(([lvl]) => parseInt(lvl))
     .sort((a,b) => a-b);
-  const [castLevel, setCastLevel] = useState(availableLevels[0] || spell.level_int);
   const selfEffect = SELF_TARGET_EFFECTS[spell.name?.toLowerCase()];
   const buffItems = [...(character.tracker_data?.inventory?.items || []), ...featBuffItems(character.tracker_data?.features), ...raceBuffItems(character.race)];
   const spellBlocks = getSpellcastingBlocks(character.class_name, character.ability_scores, character.level, buffItems);
@@ -76,6 +124,41 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
     ...rollDamageDetailed(pendingDamage),
     secondaryResult: pendingDamage.secondary ? rollDamageDetailed(pendingDamage.secondary) : undefined,
   });
+
+  const damageComponentsForEncounter = () => {
+    if (!damageResult) return [];
+    const components = [{ amount: damageResult.total || 0, damage_type: spell.damage_type }];
+    if (damageResult.secondaryResult) {
+      components.push({ amount: damageResult.secondaryResult.total || 0, damage_type: damageResult.secondary?.type || spell.damage_type });
+    }
+    return components;
+  };
+
+  const resolveEncounterTarget = async () => {
+    const target = encounterTargets.find(row => row.key === selectedTargetKey);
+    if (!target || !damageResult) return;
+    setResolvingTarget(true);
+    setEncounterResolution(null);
+    try {
+      const saveDC = displayBlocks[0]?.saveDC || '';
+      const r = await api.post(`/campaigns/${target.campaignId}/encounters/${target.encounterId}/resolve`, {
+        source_character_id: character.id,
+        target_id: target.targetId,
+        label: spell.name,
+        mode: spell.save_type_abbr ? 'save' : (spell.is_attack ? 'attack' : 'damage'),
+        attack_total: '',
+        save_dc: saveDC,
+        save_roll: spell.save_type_abbr ? manualSaveRoll : '',
+        half_on_success: true,
+        damage_components: damageComponentsForEncounter(),
+      }, { suppressGlobalError: true });
+      setEncounterResolution(r.data.resolution);
+    } catch (err) {
+      setEncounterResolution({ error: err.response?.data?.error || 'Could not resolve against encounter target.' });
+    } finally {
+      setResolvingTarget(false);
+    }
+  };
 
   const continueAfterCast = (levelUsed) => {
     if (spell.requires_weapon_attack) {
@@ -313,6 +396,32 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
                 <button className="btn btn-secondary" style={{flex:1}} onClick={rollNow}>Reroll</button>
                 <button className="btn btn-primary" style={{flex:1}} onClick={finish}>Done</button>
               </div>
+              {encounterTargets.length > 0 && (
+                <div style={{borderTop:'1px solid var(--border)',marginTop:10,paddingTop:10,textAlign:'left'}}>
+                  <div style={{color:'var(--text-dim)',fontSize:10,textTransform:'uppercase',letterSpacing:1,marginBottom:5}}>Encounter Target</div>
+                  <div style={{display:'grid',gridTemplateColumns:spell.save_type_abbr ? 'minmax(0,1fr) 92px auto' : 'minmax(0,1fr) auto',gap:8}}>
+                    <select value={selectedTargetKey} onChange={e => setSelectedTargetKey(e.target.value)}>
+                      {encounterTargets.map(target => <option key={target.key} value={target.key}>{target.label}</option>)}
+                    </select>
+                    {spell.save_type_abbr && (
+                      <input value={manualSaveRoll} onChange={e => setManualSaveRoll(e.target.value)} placeholder={`${spell.save_type_abbr} roll`} />
+                    )}
+                    <button className="btn btn-primary btn-sm" onClick={resolveEncounterTarget} disabled={resolvingTarget || !damageResult}>
+                      {resolvingTarget ? 'Resolving...' : spell.save_type_abbr && !manualSaveRoll ? 'Ask DM' : 'Resolve'}
+                    </button>
+                  </div>
+                  {spell.save_type_abbr && !manualSaveRoll && (
+                    <div style={{color:'var(--text-dim)',fontSize:11,marginTop:4}}>Leave the save blank to queue a DM save prompt without changing HP yet.</div>
+                  )}
+                  {encounterResolution && (
+                    <div style={{color:encounterResolution.error ? 'var(--danger)' : 'var(--success)',fontSize:12,marginTop:6}}>
+                      {encounterResolution.error || (encounterResolution.pending
+                        ? `DM save queued for ${encounterResolution.target_name}.`
+                        : `${encounterResolution.save_succeeded === true ? 'Save succeeded' : encounterResolution.save_succeeded === false ? 'Save failed' : 'Resolved'} · ${encounterResolution.damage_applied || 0} damage applied`)}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           ) : pendingDamage ? (
             <div style={{width:'100%',background:'var(--bg-primary)',borderRadius:'var(--radius-sm)',padding:12,textAlign:'center'}}>

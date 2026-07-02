@@ -853,8 +853,9 @@ function MemberRow({ member, campaign, onRole, onRemove }) {
   );
 }
 
-function RosterRow({ entry, campaign, user, onActive, onDetach, onEditSheet }) {
-  const canManage = campaign.is_dm || sameId(entry.user_id, user?.id);
+function RosterRow({ entry, campaign, user, onActive, onDetach, onEditSheet, onLeaveCampaign }) {
+  const isOwnCharacter = sameId(entry.user_id, user?.id);
+  const canManage = campaign.is_dm || isOwnCharacter;
   const conditions = entry.sheet_snapshot?.conditions || [];
   const activeEffects = entry.sheet_snapshot?.active_effects || [];
   const conText = rosterConText(entry);
@@ -886,7 +887,12 @@ function RosterRow({ entry, campaign, user, onActive, onDetach, onEditSheet }) {
           <button className={entry.active ? 'btn btn-secondary btn-sm' : 'btn btn-primary btn-sm'} onClick={() => onActive(entry, !entry.active)}>
             {entry.active ? 'Inactivate' : 'Reactivate'}
           </button>
-          <button className="btn btn-danger btn-sm" onClick={() => onDetach(entry)}>Remove</button>
+          {campaign.is_dm && (
+            <button className="btn btn-danger btn-sm" onClick={() => onDetach(entry)}>Remove</button>
+          )}
+          {isOwnCharacter && (
+            <button className="btn btn-danger btn-sm" onClick={() => onLeaveCampaign(entry)}>Leave Campaign</button>
+          )}
         </div>
       )}
     </div>
@@ -1290,7 +1296,6 @@ export default function CampaignsPage() {
     updateMemberRole,
     transferCampaignOwner,
     removeMember,
-    leaveCampaign,
     deleteCampaign,
     createEffect,
     updateEffectStatus,
@@ -1325,7 +1330,6 @@ export default function CampaignsPage() {
   const [viewingMonster, setViewingMonster] = useState(null);
   const [duplicatingMonster, setDuplicatingMonster] = useState(null);
   const [editingMonster, setEditingMonster] = useState(null);
-  const [editingRosterSheet, setEditingRosterSheet] = useState(null);
   const [showFeedback, setShowFeedback] = useState(false);
   const [showInviteEmail, setShowInviteEmail] = useState(false);
   const [showTransferOwner, setShowTransferOwner] = useState(false);
@@ -1652,19 +1656,44 @@ export default function CampaignsPage() {
 
   const detachRosterCharacter = async entry => {
     if (!campaign) return;
-    await detachCharacter(campaign.id, entry.id);
+    setConfirmAction({
+      title: 'Remove Character?',
+      message: `Remove ${entry.name} from ${campaign.name}? This also removes them from any active non-completed encounters.`,
+      confirmLabel: 'Remove Character',
+      onConfirm: async () => {
+        try {
+          await detachCharacter(campaign.id, entry.id);
+          await loadCampaign(campaign.id);
+        } finally {
+          setConfirmAction(null);
+        }
+      },
+    });
   };
 
-  const handleLeave = async () => {
+  const openRosterSheet = entry => {
     if (!campaign) return;
-    setError('');
-    try {
-      await leaveCampaign(campaign.id);
-      await fetchCampaigns();
-      nav('/characters');
-    } catch (err) {
-      setError(err.response?.data?.error || 'Could not leave campaign');
-    }
+    nav(`/play/${entry.character_id}?campaign_id=${campaign.id}&campaign_character_id=${entry.id}&dm_edit=1&return=${encodeURIComponent(`/campaigns?id=${campaign.id}`)}`);
+  };
+
+  const handleLeave = async entry => {
+    if (!campaign) return;
+    setConfirmAction({
+      title: 'Leave Campaign?',
+      message: `Remove ${entry.name} from ${campaign.name}? Only this character will leave the campaign.`,
+      confirmLabel: 'Leave Campaign',
+      onConfirm: async () => {
+        setError('');
+        try {
+          await detachCharacter(campaign.id, entry.id);
+          await loadCampaign(campaign.id);
+        } catch (err) {
+          setError(err.response?.data?.error || 'Could not leave campaign');
+        } finally {
+          setConfirmAction(null);
+        }
+      },
+    });
   };
 
   const handleTransferOwner = async email => {
@@ -1842,7 +1871,6 @@ export default function CampaignsPage() {
                     {campaign.is_dm && <button className="btn btn-secondary btn-sm" onClick={refreshInvite}>New Code</button>}
                     {sameId(campaign.owner_user_id, user?.id) && <button className="btn btn-secondary btn-sm" onClick={() => setShowTransferOwner(true)}>Transfer DM</button>}
                     {sameId(campaign.owner_user_id, user?.id) && <button className="btn btn-danger btn-sm" onClick={requestDeleteCampaign}>Delete Campaign</button>}
-                    {!sameId(campaign.owner_user_id, user?.id) && <button className="btn btn-danger btn-sm" onClick={handleLeave}>Leave Campaign</button>}
                   </div>
                 </div>
 
@@ -1907,7 +1935,8 @@ export default function CampaignsPage() {
                           user={user}
                           onActive={toggleRosterActive}
                           onDetach={detachRosterCharacter}
-                          onEditSheet={setEditingRosterSheet}
+                          onEditSheet={openRosterSheet}
+                          onLeaveCampaign={handleLeave}
                         />
                       ))}
                       {inactiveRoster.length > 0 && (
@@ -1921,7 +1950,8 @@ export default function CampaignsPage() {
                               user={user}
                               onActive={toggleRosterActive}
                               onDetach={detachRosterCharacter}
-                              onEditSheet={setEditingRosterSheet}
+                              onEditSheet={openRosterSheet}
+                              onLeaveCampaign={handleLeave}
                             />
                           ))}
                         </div>
@@ -2226,14 +2256,6 @@ export default function CampaignsPage() {
           onSave={saveEditedMonster}
           onDelete={deleteEditedMonster}
           onClose={() => setEditingMonster(null)}
-        />
-      )}
-      {editingRosterSheet && campaign && (
-        <CampaignSheetEditorModal
-          campaignId={campaign.id}
-          rosterEntry={editingRosterSheet}
-          onClose={() => setEditingRosterSheet(null)}
-          onSaved={() => loadCampaign(campaign.id)}
         />
       )}
       {showInviteEmail && campaign && <CampaignInviteEmailModal campaign={campaign} onClose={() => setShowInviteEmail(false)} />}
