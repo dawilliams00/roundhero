@@ -28,6 +28,23 @@ As part of the interview, let's work through any key decisions together to help 
 
 Then summarize it back to me as an implementation spec before we write any code.
 
+## Skill Creation / Gotcha Capture Prompt
+
+When a workflow repeats, a known mistake recurs, or the owner says "based on this conversation create me a skill", suggest turning the pattern into a reusable skill.
+
+Use this wording when appropriate:
+
+Based on this conversation, create me a skill.
+
+Based on this conversation, enhance any skill I use to include a gotcha section. So we don't make the same mistakes again.
+
+Default behavior:
+- Suggest skills only for repeated workflows, fragile deploy/test routines, recurring UI regressions, recurring ownership/coordination mistakes, or project-specific rules that agents keep forgetting.
+- Do not interrupt active implementation for every minor choice.
+- Gotchas must be concrete: name what went wrong, how to recognize it, and what to do instead.
+- Codex personal skills live under `C:\Users\David\.codex\skills`; Claude should mirror the same durable rules in `CLAUDE.md` because Claude does not automatically load Codex skills.
+- Current Codex skill created from this conversation: `roundhero-collaboration`.
+
 This file tracks only what's **actively being worked on right now**. `CLAUDE.md` is the
 master log of previous, current, and future plans — fold a short summary in there at the
 end of a session once something here ships and gets verified; don't duplicate long-form
