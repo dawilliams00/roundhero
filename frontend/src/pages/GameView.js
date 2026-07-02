@@ -77,6 +77,7 @@ export default function GameView() {
       encounters: (view.encounters || []).filter(encounter => encounter.status === 'running'),
     }))
     .filter(view => view.encounters.length > 0);
+  const hasSyricModule = modules.some(module => module.id === 'syric_arcane');
 
   const openCampaignView = async () => {
     if (!character?.id) return;
@@ -88,6 +89,10 @@ export default function GameView() {
     }
     setShowCampaignView(true);
   };
+
+  useEffect(() => {
+    if (hasSyricModule) setActiveTab(0);
+  }, [character?.id, hasSyricModule]);
 
   if (loading || !character) {
     return <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'100vh',color:'var(--text-secondary)'}}>Loading character...</div>;
@@ -102,15 +107,14 @@ export default function GameView() {
   // Hybrid Transformation) without having to open the tab first.
   const activeKey = activeCompanionKey(td);
   const activeCompanion = activeKey === 'companion2' ? companion2 : companion;
-  const hasSyricModule = modules.some(module => module.id === 'syric_arcane');
   const tabs = [
     // Syric's own AE replacement (Syric AE tab) covers everything the standard Actions
     // tab does plus his Codex/Shadow-specific mechanics - showing both was redundant and
     // confusing (two separate action-economy trackers for one character).
     ...(hasSyricModule ? [] : [{ label: '⚔️ Actions', Component: ActionEconomyTab }]),
     ...(hasSyricModule ? [
-      { label: '🔮 Syric', Component: SyricConsoleTab },
       { label: '⚡ Syric AE', Component: SyricActionsTab },
+      { label: '🔮 Syric', Component: SyricConsoleTab },
       { label: '🌑 Shadow', Component: ShadowConsoleTab },
     ] : []),
     { label: '📋 Feats/Attunement', Component: TrackerTab },
