@@ -142,6 +142,25 @@ error rather than a real bug.
 4. Spell-add eligibility — grey out Add for spells above the character's accessible level
    instead of hiding them.
 5. Syric AE item-charge `[-]` button placement (see `CAMPAIGNS_INTEGRATION_NOTES.md`).
+6. **Concentration/ongoing spells that grant a recurring bonus-action (or action) use
+   should surface in the Action Economy tab while active.** Example: Animate Objects —
+   once cast and active, commanding the objects each round is a bonus action, so it should
+   show as a bonus-action row in the AE tab. This is a general pattern, NOT one-off:
+   Spiritual Weapon (BA to move+attack), Flaming Sphere (BA to move), Bigby's Hand,
+   Call Lightning, Moonbeam (move the beam), etc. all grant a repeatable BA/action while
+   the spell is active. Design a data-driven way to flag a known/cast spell with an
+   "ongoing action economy" cost (e.g. `ongoing_cost_type: bonus_action`) so that while
+   it's in `active_effects`/concentration, a corresponding AE row appears. Compute from
+   spell data, don't hardcode per spell (same standing rule as class-feature scaling).
+7. **AOE multi-target selection in the encounter resolve flow.** Save/AOE spells (Fireball,
+   etc.) hit every creature in the zone, but the encounter target picker only selects ONE
+   combatant. Need multi-select (checkboxes or multi-pick) so the caster can mark all
+   creatures in the area, and each gets its own pending DM save (the DM rolls per creature
+   — AOE saves can pass/fail differently per target). Backend `resolve` currently takes a
+   single `target_id`; this needs either repeated calls per target or a multi-target
+   payload, plus a DM-runner UI that resolves each affected combatant's save individually
+   (already flagged campaign-side in `CAMPAIGNS_INTEGRATION_NOTES.md` — coordinate with
+   Codex on the backend/runner half).
 
 ## Waiting on the owner (manual, non-code steps)
 
