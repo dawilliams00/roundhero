@@ -48,10 +48,8 @@ export default function SorceryPointsModal({ featureName, onClose }) {
     setMessage(`Converted a level ${level} slot into ${level} sorcery points.`);
   };
 
-  const toggleKnown = (name) => {
-    const next = knownMetamagic.includes(name) ? knownMetamagic.filter(n => n !== name) : [...knownMetamagic, name];
-    saveTrackerData({ ...td, metamagic_known: next });
-  };
+  // Which Metamagic options are known is chosen in the character editor now, not here -
+  // this modal's Metamagic tab is read-only reference for what's already selected.
 
   const availableSlotLevels = Object.entries(slots).filter(([,s]) => (s.current||0) > 0).map(([lvl]) => parseInt(lvl)).sort((a,b)=>a-b);
 
@@ -99,20 +97,29 @@ export default function SorceryPointsModal({ featureName, onClose }) {
             </>
           ) : (
             <>
-              <div style={{color:'var(--text-dim)',fontSize:11,marginBottom:10}}>
-                Mark which Metamagic options you know (2 at 3rd level, more from your subclass or feats). Once marked here, you can apply one of these from the Cast popup when you cast a spell.
-              </div>
-              {Object.entries(METAMAGIC_OPTIONS).map(([name, opt]) => (
-                <label key={name} style={{display:'flex',alignItems:'flex-start',gap:8,padding:'8px 0',borderBottom:'1px solid var(--border)',cursor:'pointer'}}>
-                  <input type="checkbox" checked={knownMetamagic.includes(name)} onChange={() => toggleKnown(name)} style={{marginTop:3}} />
-                  <div>
-                    <div style={{color:'var(--text-primary)',fontWeight:500,fontSize:13}}>
-                      {name} <span style={{color:'var(--text-dim)',fontWeight:400,fontSize:11}}>({opt.cost === 'level' ? "SP = spell's level" : `${opt.cost} SP`})</span>
-                    </div>
-                    <div style={{color:'var(--text-dim)',fontSize:11,marginTop:2}}>{opt.text}</div>
+              {knownMetamagic.length === 0 ? (
+                <div style={{color:'var(--text-dim)',fontSize:12,textAlign:'center',padding:'20px 8px'}}>
+                  No Metamagic options selected yet. Choose which ones you know in <b>Settings → Edit Character → Metamagic</b>. They'll then be applyable from the Cast popup.
+                </div>
+              ) : (
+                <>
+                  <div style={{color:'var(--text-dim)',fontSize:11,marginBottom:10}}>
+                    Your known Metamagic — apply one from the Cast popup when you cast a spell. Add or remove options in the character editor.
                   </div>
-                </label>
-              ))}
+                  {knownMetamagic.map(name => {
+                    const opt = METAMAGIC_OPTIONS[name];
+                    if (!opt) return null;
+                    return (
+                      <div key={name} style={{padding:'8px 0',borderBottom:'1px solid var(--border)'}}>
+                        <div style={{color:'var(--text-primary)',fontWeight:500,fontSize:13}}>
+                          {name} <span style={{color:'var(--text-dim)',fontWeight:400,fontSize:11}}>({opt.cost === 'level' ? "SP = spell's level" : `${opt.cost} SP`})</span>
+                        </div>
+                        <div style={{color:'var(--text-dim)',fontSize:11,marginTop:2}}>{opt.text}</div>
+                      </div>
+                    );
+                  })}
+                </>
+              )}
             </>
           )}
           {message && <div style={{color:'var(--success)',fontSize:12,marginTop:12,textAlign:'center'}}>{message}</div>}

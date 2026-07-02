@@ -526,7 +526,11 @@ export default function ActionEconomyTab() {
                 const depleted = uses && uses.current <= 0;
                 const isCastSpell = ability.cost_type === 'cast_spell';
                 const isTuck = !isCastSpell && !!features[ability.tracker_key]?.spell_picker;
-                const isSorcery = !isCastSpell && !isTuck && ability.tracker_key === sorceryFeatureName;
+                // Guard on sorceryFeatureName being truthy first: without it, a character
+                // with no Font of Magic feature (sorceryFeatureName === undefined) matched
+                // every stock action whose tracker_key is also undefined (undefined ===
+                // undefined), tagging Attack/Dash/etc. as "(Sorcery Points)".
+                const isSorcery = !isCastSpell && !isTuck && !!sorceryFeatureName && ability.tracker_key === sorceryFeatureName;
                 const bucket = bucketForAbility(ability, section);
                 const bucketUsed = isBucketUsed(bucket);
                 const unavailable = (depleted && !isSorcery) || bucketUsed;

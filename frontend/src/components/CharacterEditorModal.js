@@ -5,7 +5,7 @@ import LevelUpFlowModal from './LevelUpFlowModal';
 import ClassFeatureBrowserModal from './ClassFeatureBrowserModal';
 import RaceInfoModal from './RaceInfoModal';
 import BackgroundSelectModal from './BackgroundSelectModal';
-import { ABILITY_KEYS, ABILITY_LABELS, SAVE_PROFS, SKILL_MAP, suspectedAbilityContamination, featBuffItems, parseClassLevels, raceBuffItems, computeItemBonuses, RACE_ABILITY_BONUSES, matchSrdRace, modifier, unarmoredAC, cappedModifier, ALIGNMENTS } from '../utils/dnd';
+import { ABILITY_KEYS, ABILITY_LABELS, SAVE_PROFS, SKILL_MAP, suspectedAbilityContamination, featBuffItems, parseClassLevels, raceBuffItems, computeItemBonuses, RACE_ABILITY_BONUSES, matchSrdRace, modifier, unarmoredAC, cappedModifier, ALIGNMENTS, METAMAGIC_OPTIONS } from '../utils/dnd';
 
 // Full base-stat editor - identity, ability scores, and save/skill proficiencies, on top
 // of the original v1 level-up-only framework. This is the one place all of the
@@ -58,6 +58,13 @@ export default function CharacterEditorModal({ onClose }) {
   ) : null);
   const [skillProfs, setSkillProfs] = useState(character ? [...(td.skill_proficiencies || [])] : null);
   const [skillExpertise, setSkillExpertise] = useState(character ? [...(td.skill_expertise || [])] : null);
+  // Known Metamagic is chosen here now (the sheet's Sorcery Points popup shows it read-
+  // only). Part of the Save-Changes draft like the proficiency lists, not an immediate
+  // save. Only surfaced for characters with Font of Magic (substring detection, same as
+  // everywhere else). metamagic_known drives the apply-Metamagic dropdown in the cast flow.
+  const [metamagicKnown, setMetamagicKnown] = useState(character ? [...(td.metamagic_known || [])] : null);
+  const sorceryFeatureName = character ? Object.keys(td.features || {}).find(n => n.toLowerCase().includes('font of magic')) : null;
+  const toggleMetamagic = (name) => setMetamagicKnown(cur => cur.includes(name) ? cur.filter(n => n !== name) : [...cur, name]);
 
   // Flags an ability whose current input value exactly matches some inventory item's
   // Set-To buff value - see suspectedAbilityContamination in dnd.js for why this can't be
@@ -246,6 +253,7 @@ export default function CharacterEditorModal({ onClose }) {
         ability_score_misc: Object.fromEntries(ABILITY_KEYS.map(k => [k, parseInt(abMisc[k]) || 0])),
         ac_misc: parseInt(acMisc) || 0,
         alignment: identity.alignment,
+        ...(sorceryFeatureName ? { metamagic_known: metamagicKnown } : {}),
       });
       onClose();
     } catch (err) {
@@ -545,6 +553,28 @@ export default function CharacterEditorModal({ onClose }) {
             </div>
           ))}
         </div>
+
+        {sorceryFeatureName && (
+          <>
+            <div style={{fontSize:12,color:'var(--text-dim)',textTransform:'uppercase',letterSpacing:1,margin:'16px 0 8px'}}>Metamagic Known</div>
+            <div style={{fontSize:11,color:'var(--text-dim)',marginBottom:8}}>
+              Choose which Metamagic options this character knows (2 at 3rd level, more from subclass/feats). These are what show up to apply from the Cast popup and in the Sorcery Points screen.
+            </div>
+            <div style={{display:'grid',gap:4}}>
+              {Object.entries(METAMAGIC_OPTIONS).map(([name, opt]) => (
+                <label key={name} style={{display:'flex',alignItems:'flex-start',gap:8,padding:'6px 0',borderBottom:'1px solid var(--border)',cursor:'pointer'}}>
+                  <input type="checkbox" style={{width:'auto',flexShrink:0,marginTop:3}} checked={metamagicKnown.includes(name)} onChange={() => toggleMetamagic(name)} />
+                  <div>
+                    <div style={{color:'var(--text-primary)',fontWeight:500,fontSize:13}}>
+                      {name} <span style={{color:'var(--text-dim)',fontWeight:400,fontSize:11}}>({opt.cost === 'level' ? "SP = spell's level" : `${opt.cost} SP`})</span>
+                    </div>
+                    <div style={{color:'var(--text-dim)',fontSize:11,marginTop:2}}>{opt.text}</div>
+                  </div>
+                </label>
+              ))}
+            </div>
+          </>
+        )}
 
         {error && <div style={{color:'var(--danger)',fontSize:12,marginTop:8}}>{error}</div>}
         <div style={{display:'flex',gap:8,marginTop:16}}>

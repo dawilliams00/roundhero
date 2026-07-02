@@ -37,6 +37,12 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
   const [manualDamageTotal, setManualDamageTotal] = useState('');
   const [castLevel, setCastLevel] = useState(spell?.level_int || 0);
   const castMetaRef = useRef(null);
+  // Tracks whether the player actually rolled/logged a weapon attack for a weapon-attack
+  // cantrip (Booming Blade etc.). If they did, closing the weapon modal should finish() -
+  // which fires onCastSuccess so a parent spell-picker closes too, rather than dumping the
+  // player back on the spell list. If they just opened the weapon picker and backed out,
+  // stay on onClose() so nothing is marked. (See the WeaponAttackModal onClose below.)
+  const weaponAttackedRef = useRef(false);
 
   useEffect(() => {
     if (!character?.id) return;
@@ -665,22 +671,24 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
           cantripSpell={spell}
           attacksUsed={turnUsed.Attacks || 0}
           maxAttacks={maxAttacksForCharacter(character.tracker_data?.features)}
-          onAttack={() => setTurnUsed(p => {
-            const used = (p.Attacks || 0) + 1;
-            const max = maxAttacksForCharacter(character.tracker_data?.features);
-            return { ...p, Attacks: used, ...(used >= max ? { Action: true } : {}) };
-          })}
+          onAttack={() => {
+            weaponAttackedRef.current = true;
+            setTurnUsed(p => {
+              const used = (p.Attacks || 0) + 1;
+              const max = maxAttacksForCharacter(character.tracker_data?.features);
+              return { ...p, Attacks: used, ...(used >= max ? { Action: true } : {}) };
+            });
+          }}
           onClose={() => {
-            // Plain onClose(), not finish() - the weapon modal's own onAttack already
-            // marks whatever action-economy bucket needs marking, gated on the player
-            // actually rolling/logging an attack. Calling finish() here (which fires
-            // onCastSuccess) would mark the cast_spell bucket unconditionally just for
-            // opening the weapon picker and backing out, even with nothing rolled - the
-            // exact "looked at my damage then backed out" case that shouldn't cost
-            // anything.
             setPickedWeaponIdx(null);
             setAwaitingWeapon(false);
-            onClose();
+            // If an attack was actually made, finish() the whole cast so a parent spell
+            // picker (CastSpellPickerModal) closes with us instead of leaving the player
+            // back on the spell list - they've committed, there's no going back. If they
+            // only opened the weapon picker and backed out with nothing rolled, plain
+            // onClose() so the cast_spell bucket isn't marked for a no-op.
+            if (weaponAttackedRef.current) finish();
+            else onClose();
           }}
         />
       )}
