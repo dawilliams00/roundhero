@@ -53,6 +53,30 @@ Default behavior:
 - Codex personal skills live under `C:\Users\David\.codex\skills`; Claude should mirror the same durable rules in `CLAUDE.md` because Claude does not automatically load Codex skills.
 - Current Codex skill created from this conversation: `roundhero-collaboration`.
 
+## Product North Star
+
+RoundHero exists to help the table play more D&D and spend less time repeatedly figuring out mechanics. The project should automate gameplay reminders and calculations wherever reasonable so players and the DM can stay in the RPG flow.
+
+The target balance is roughly **75% combat efficiency / quicker combat play** and **25% enabling character, homebrew, campaign, and table workflows that D&D Beyond does not support well**.
+
+Design defaults:
+- Surface triggered options and reminders at the moment they matter: Smite, Arcane Discharge, Booming Blade movement damage, concentration, Haste lethargy, death saves, item charges, action economy, etc.
+- Prefer "make the correct thing obvious" over expecting players to remember every feature.
+- Preserve DM/player secrecy and table trust: automate hidden mechanics only when the right audience can see them.
+- Ask for owner taste when the change affects feel, UX, rules interpretation, table policy, or player-facing experience.
+- Automate without asking when the task is mechanical, reversible, low-taste, and has clear success criteria.
+
+## Automate vs Augment
+
+Before starting a task, classify it:
+
+- **Automate** when the request is mechanical, reversible, low-taste, and has clear success criteria. Examples: parsing data, filling missing structured item/feat/spell fields, syntax/build fixes, scoped consistency cleanup, validations, and explicitly requested doc/todo notes.
+- **Augment / ask for feedback** when the request involves UX feel, layout taste, visible wording, D&D rule interpretation, hidden/player-facing information, campaign policy, permissions/security, destructive edits, or multiple valid product directions.
+
+Default if unsure:
+- Ask one concise question for product/taste/rules uncertainty.
+- Proceed automatically for code/data maintenance with obvious intent.
+
 ## What this is
 
 RoundHero is a D&D 5e character tracker: Flask/SQLAlchemy backend, React frontend,

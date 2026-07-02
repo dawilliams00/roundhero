@@ -45,6 +45,18 @@ Default behavior:
 - Codex personal skills live under `C:\Users\David\.codex\skills`; Claude should mirror the same durable rules in `CLAUDE.md` because Claude does not automatically load Codex skills.
 - Current Codex skill created from this conversation: `roundhero-collaboration`.
 
+## Product North Star
+
+RoundHero exists to help the table play more D&D and spend less time repeatedly figuring out mechanics. Aim for roughly **75% combat efficiency / quicker combat play** and **25% enabling character, homebrew, campaign, and table workflows that D&D Beyond does not support well**.
+
+Default toward surfacing triggered options and reminders at the moment they matter: Smite, Arcane Discharge, Booming Blade movement damage, concentration, Haste lethargy, death saves, item charges, action economy, and similar "don't make the player remember everything" mechanics.
+
+## Automate vs Augment
+
+- **Automate** mechanical, reversible, low-taste work with clear success criteria: data parsing, structured field updates, syntax/build fixes, validations, scoped cleanup, and explicitly requested doc/todo notes.
+- **Augment / ask for feedback** on UX feel, layout taste, visible wording, D&D rule interpretation, hidden/player-facing information, campaign policy, permissions/security, destructive edits, or multiple valid product directions.
+- If unsure, ask one concise product/taste/rules question; otherwise proceed on obvious code/data maintenance.
+
 This file tracks only what's **actively being worked on right now**. `CLAUDE.md` is the
 master log of previous, current, and future plans — fold a short summary in there at the
 end of a session once something here ships and gets verified; don't duplicate long-form
