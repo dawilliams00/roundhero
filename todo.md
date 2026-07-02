@@ -5,6 +5,12 @@ master log of previous, current, and future plans — fold a short summary in th
 end of a session once something here ships and gets verified; don't duplicate long-form
 detail into both files.
 
+**Permissions:** check `.claude/settings.json` (and `.claude/settings.local.json`) before
+asking the owner to approve any tool call — this repo already allowlists `Bash(*)`,
+`Edit(*)`, `Write(*)`, `Read(*)`, and `Bash(git push *)`, so covered actions should just
+run. Run `git push` as its own Bash call (not chained after `cd`/`&&`) so it matches the
+allow pattern instead of prompting. See the same note in `CLAUDE.md`'s Deploy section.
+
 ## In progress — Codex (encounter/campaign)
 
 - **Add Effect button in the active encounter tracker.** Adding an "Add Effect" header
@@ -20,6 +26,15 @@ and item-charge row layout) is back to Claude.
 ## In progress — Claude (character sheet)
 
 *(nothing currently in flight — pull the next item from the queue below when starting)*
+
+**Just shipped, not yet live-verified:** magic-item granted-spell **Cast Level** input in
+`AddItemModal.js`. Each granted-spell row now has a Cast Lvl field next to Charge Cost, so
+an item like Staff of the Magi can force a spell to cast at a fixed slot level (e.g.
+Fireball at 7th) and have damage scale correctly when the player uses the item. Data
+contract already existed end-to-end (`granted.cast_level` → `ItemSpellsModal.resolveSpell`
+→ `base_level_int` preserved for scaling; DB-add and display paths already handled it) —
+only the editor input was missing. Blank = casts at the spell's base level; enforced
+`>=` base level (no downcasting) in `buildOutput`.
 
 **Just shipped, not yet live-verified:** target-first encounter attack/cast flow in
 `WeaponAttackModal.js` and `SpellDetailModal.js`. Target picker now shows up top before

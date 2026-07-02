@@ -74,7 +74,7 @@ export default function AddItemModal({ item, onSave, onClose }) {
   const [activeSpellRow, setActiveSpellRow] = useState(null);
   useEffect(() => { api.get('/content/spells').then(r => setSpellOptions(r.data)).catch(() => {}); }, []);
 
-  const addSpellRow = () => set('granted_spells', [...form.granted_spells, { name: '', level_int: 0, charge_cost: 1 }]);
+  const addSpellRow = () => set('granted_spells', [...form.granted_spells, { name: '', level_int: 0, charge_cost: 1, cast_level: '' }]);
   const updateSpellRow = (i, key, val) => {
     const next = form.granted_spells.map((s, idx) => idx === i ? { ...s, [key]: val } : s);
     set('granted_spells', next);
@@ -105,7 +105,17 @@ export default function AddItemModal({ item, onSave, onClose }) {
       // recharge_mode==='roll' (not just whether the text box happens to be non-empty) so
       // switching the dropdown back to "Full Recharge" reliably clears a stale roll formula.
       charges: form.has_charges ? { current: parseInt(form.charges_current)||0, max: parseInt(form.charges_max)||0, recharge: form.recharge, ...(form.recharge_mode === 'roll' && form.recharge_amount.trim() ? { recharge_amount: form.recharge_amount.trim() } : {}) } : null,
-      granted_spells: form.granted_spells.filter(s => s.name.trim()).map(s => ({ name: s.name.trim(), level_int: parseInt(s.level_int)||0, charge_cost: parseInt(s.charge_cost)||1 })),
+      // cast_level is the slot level the item forces this spell to cast at (e.g. Staff of
+      // the Magi casting Fireball at 7th), independent of the spell's own base level_int.
+      // Left blank => casts at the spell's base level; ItemSpellsModal's resolveSpell reads
+      // `granted.cast_level ?? master.level_int` and preserves base_level_int so damage
+      // scaling stays correct. Only written when it's a real number >= the spell's base
+      // level (you can't downcast), otherwise stored null so the fallback kicks in.
+      granted_spells: form.granted_spells.filter(s => s.name.trim()).map(s => {
+        const baseLvl = parseInt(s.level_int) || 0;
+        const cl = parseInt(s.cast_level);
+        return { name: s.name.trim(), level_int: baseLvl, charge_cost: parseInt(s.charge_cost)||1, cast_level: (!isNaN(cl) && cl >= baseLvl) ? cl : null };
+      }),
       buffs: form.buffs || [],
       item_type: form.item_type,
       // Gloves/gauntlets-style items that boost unarmed strikes specifically (e.g.
@@ -320,7 +330,8 @@ export default function AddItemModal({ item, onSave, onClose }) {
         {form.granted_spells.length > 0 && (
           <div style={{display:'flex',gap:6,marginBottom:4,paddingRight:30}}>
             <div style={{flex:1}} />
-            <div style={{width:56,textAlign:'center',fontSize:10,color:'var(--text-dim)',textTransform:'uppercase',letterSpacing:0.5}}>Charge Cost</div>
+            <div style={{width:56,textAlign:'center',fontSize:10,color:'var(--text-dim)',textTransform:'uppercase',letterSpacing:0.5}}>Cast Lvl</div>
+            <div style={{width:56,textAlign:'center',fontSize:10,color:'var(--text-dim)',textTransform:'uppercase',letterSpacing:0.5}}>Charges</div>
           </div>
         )}
         {form.granted_spells.map((s, i) => {
@@ -349,7 +360,8 @@ export default function AddItemModal({ item, onSave, onClose }) {
                   </div>
                 )}
               </div>
-              <input type="number" min={1} value={s.charge_cost} onChange={e=>updateSpellRow(i,'charge_cost',e.target.value)} title="Charge cost" style={{width:56}} />
+              <input type="number" min={s.level_int || 0} value={s.cast_level ?? ''} onChange={e=>updateSpellRow(i,'cast_level',e.target.value)} title="Cast at this slot level (blank = the spell's own level). Affects damage scaling when the player uses the item." placeholder={s.level_int ? `L${s.level_int}` : 'base'} style={{width:56}} />
+              <input type="number" min={1} value={s.charge_cost} onChange={e=>updateSpellRow(i,'charge_cost',e.target.value)} title="Charges consumed per cast" style={{width:56}} />
               <button className="btn btn-secondary btn-sm" onClick={()=>removeSpellRow(i)}>×</button>
             </div>
           );

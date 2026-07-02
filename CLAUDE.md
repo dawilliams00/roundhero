@@ -68,6 +68,14 @@ Push to `main` — Render auto-deploys both services from GitHub.
   cycle once (a session's fixes sat uncommitted; he re-reported already-fixed bugs as
   broken). Pre-authorized standing policy, same footing as `py_compile` standing in for a
   real test suite — sanity-check, then commit+push immediately, don't batch.
+- **Before asking the owner to approve any tool/permission, check `.claude/settings.json`
+  (and `.claude/settings.local.json`) first.** Those files already grant this repo a broad
+  allowlist (`Bash(*)`, `Edit(*)`, `Write(*)`, `Read(*)`, plus many specific entries incl.
+  `Bash(git push *)`). If what you're about to do is already covered there, just do it —
+  don't surface a needless confirmation. When a `git`/`push` action prompts anyway, it's
+  usually because the command was chained after `cd`/`&&` and didn't match a pattern
+  anchored on `git push`; run `git push` as its own separate Bash call so it matches the
+  existing allow entry cleanly instead of re-prompting.
 - **Outstanding manual step:** `FEEDBACK_SMTP_USER`/`FEEDBACK_SMTP_PASSWORD` env vars on
   `roundhero-api` (feedback button, `routes/feedback.py`) — still not set as of this
   writing. Must be a Gmail **App Password** (2-Step Verification → App passwords), not the
