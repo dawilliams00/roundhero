@@ -7,10 +7,15 @@ detail into both files.
 
 ## In progress — Codex (encounter/campaign)
 
-*(nothing currently in flight — last batch "Add campaign targeting and roster cleanup"
-committed and pushed as `4448c27`, 2026-07-01: character-specific Leave Campaign,
-Remove-vs-Inactivate roster cleanup, encounter sync clearing stale sheet effects, DM sheet
-edit in full campaign-edit mode, weapon/spell active-encounter target resolution V1.)*
+- **Add Effect button in the active encounter tracker.** Adding an "Add Effect" header
+  button next to Exhaustion in the active encounter tracker that opens the fuller
+  campaign-style Add Effect screen instead of the stripped-down active-encounter version.
+
+Ownership reconfirmed 2026-07-01 (see `CLAUDE.md`'s Parallel Claude/Codex workflow
+section): Codex owns campaign screens, encounter setup/tracker, campaign effects, DM
+rules/roster/invites/membership, player-facing campaign popups, and the backend
+campaign/encounter routes. Everything character-sheet-side (including AE tab internals
+and item-charge row layout) is back to Claude.
 
 ## In progress — Claude (character sheet)
 

@@ -81,11 +81,20 @@ though recent batches have landed as ordinary commits merged straight into `main
 `git log`/`git worktree list` for current state rather than assuming the split is exactly
 as last documented. Never put a worktree nested inside the main repo folder.
 
-**Ownership boundaries** (while both agents are active, don't casually cross these):
-- Claude: `CharacterContext.js`, `CharacterHeader.js`, `SpellDetailModal.js`,
-  `ActionEconomyTab.js`, `engine/character_engine.py`, `engine/pdf_import.py`, and related
-  character/spell/action-economy files.
-- Codex: `models/campaign.py`, `routes/campaigns.py`, `context/CampaignContext.js`,
+**Ownership boundaries — reconfirmed 2026-07-01** (while both agents are active, don't
+casually cross these):
+- Claude owns the **character-sheet side**: core character sheet UI, normal AE tab and
+  Syric AE tab internals (including the item-charge row layout), Spellbook/Inventory/
+  Settings/character editor, Syric/Shadow feature polish, and character-sheet condition/
+  effect application mechanics — *except* where campaign sync needs a stable API contract
+  (see the data-contract paragraph above), which stays a shared concern. Key files:
+  `CharacterContext.js`, `CharacterHeader.js`, `SpellDetailModal.js`,
+  `ActionEconomyTab.js`, `engine/character_engine.py`, `engine/pdf_import.py`.
+- Codex owns the **campaign/encounter/DM tooling side**: campaign screen behavior,
+  encounter setup and the active encounter tracker, campaign effects/Add Effect workflow,
+  DM-facing rules/roster/invites/membership, player-facing campaign/encounter popups, and
+  the backend campaign/encounter routes supporting all of that. Key files:
+  `models/campaign.py`, `routes/campaigns.py`, `context/CampaignContext.js`,
   `pages/CampaignsPage.js`, encounter-tracker models/routes/pages/contexts.
 - Shared/integration-only, don't casually edit while both are active: `App.js`,
   `backend/app.py`, `models/__init__.py`, nav/header entry points, shared providers, and
