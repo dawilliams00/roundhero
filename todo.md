@@ -19,7 +19,13 @@ and item-charge row layout) is back to Claude.
 
 ## In progress — Claude (character sheet)
 
-*(nothing currently in flight — pull the next item from the queue below when starting)*
+- **Pre-roll encounter target picker for Attack/Cast/Use flows.** If the character is
+  in a running encounter, open a target picker before the attack roll or spell cast
+  resolution. Include every visible active combatant in that encounter, allies and
+  enemies, because buffs/heals/friendly spells need the same targeting path. Desired
+  sequence: choose target -> roll attack/cast or trigger save -> show hit/miss or DM
+  save-needed result -> then roll/apply damage or effect. Do not wait until after all
+  damage is rolled to ask for the target.
 
 ## Next up (pull from here when starting new work)
 

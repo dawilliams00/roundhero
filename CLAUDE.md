@@ -1,10 +1,12 @@
 # CLAUDE.md
 
 This file provides guidance to Claude Code when working with code in this repository.
-It is the **master log of previous, current, and future plans** — updated at the end of
-a session once something ships and gets verified. `todo.md` (repo root) is the separate,
-much shorter file for what's *actively* in flight right now; check it first each session.
-Keep facts in exactly one of the two files — don't let them drift into duplicates.
+It is the **master log of durable project guidance** — updated at the end of a session
+only with decisions that should survive beyond the current task. `todo.md` (repo root)
+is the short active work list; check it first each session. Campaign/encounter active
+handoff lives in `CAMPAIGNS_INTEGRATION_NOTES.md`, while shipped campaign history lives
+in `CAMPAIGNS_PROGRESS.md`. Keep facts in one place where possible; don't let them drift
+into duplicates.
 
 ## What this is
 
