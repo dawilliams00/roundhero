@@ -716,6 +716,7 @@ def resolve_encounter_action(campaign_id, encounter_id):
     attack_total = data.get("attack_total")
     save_roll = data.get("save_roll")
     save_dc = data.get("save_dc")
+    save_type = data.get("save_type") or data.get("save_type_abbr") or data.get("save_ability") or ""
     half_on_success = bool(data.get("half_on_success", True))
     components = data.get("damage_components") or []
     hit = None
@@ -759,8 +760,11 @@ def resolve_encounter_action(campaign_id, encounter_id):
         "hit": hit,
         "save_roll": save_roll,
         "save_dc": save_dc,
+        "save_type": save_type,
         "save_succeeded": save_succeeded,
         "pending": pending,
+        "half_on_success": half_on_success,
+        "damage_components": components,
         "damage_requested": sum(
             _safe_int(component.get("amount") or component.get("total") or 0)
             for component in components

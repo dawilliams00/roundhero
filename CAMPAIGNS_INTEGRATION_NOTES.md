@@ -18,6 +18,7 @@ Claude owns character-sheet systems: core sheet UI, normal AE tab internals, Syr
 ## Active Campaign/Encounter Backlog
 
 - Target resolution V1 needs a more obvious character-sheet flow owned by Claude: if the character is in a running encounter, attack/cast/use should first ask who is being targeted. The target list should include every visible active combatant, ally and enemy. After target choice, roll attack/cast or queue/save, show hit/miss/save-needed, then roll/apply damage or effects.
+- Spell save payloads should include `save_type` / `save_type_abbr` (`DEX`, `WIS`, etc.) when calling `/api/campaigns/<campaign_id>/encounters/<encounter_id>/resolve`. The DM runner can resolve pending saves manually without it, but digital save rolling needs it to choose the target's save modifier.
 - Add item/use-object encounter targeting.
 - Add DM-side save input workflow for queued save events.
 - Apply spell conditions/effects through encounter targeting where appropriate.

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { MonsterStatBlockContent } from './MonsterDetailModal';
 import NumberPadPopover from './NumberPadPopover';
+import api from '../utils/api';
 
 const COMMON_CONDITIONS = [
   'Blinded', 'Charmed', 'Deafened', 'Exhaustion', 'Frightened', 'Grappled',
@@ -20,6 +21,21 @@ const KNOWN_CONCENTRATION_EFFECTS = new Set([
   'hunter’s mark', "hunter's mark", 'invisibility', 'polymorph', 'protection from energy',
   'slow', 'spirit guardians', 'summon shadowspawn', 'web'
 ]);
+
+const SAVE_ABILITIES = {
+  STR: 'strength',
+  STRENGTH: 'strength',
+  DEX: 'dexterity',
+  DEXTERITY: 'dexterity',
+  CON: 'constitution',
+  CONSTITUTION: 'constitution',
+  INT: 'intelligence',
+  INTELLIGENCE: 'intelligence',
+  WIS: 'wisdom',
+  WISDOM: 'wisdom',
+  CHA: 'charisma',
+  CHARISMA: 'charisma',
+};
 
 function sameId(left, right) {
   return String(left) === String(right);
@@ -41,6 +57,35 @@ function initiativeValue(value) {
 
 function cleanList(value) {
   return Array.isArray(value) ? value.filter(Boolean) : [];
+}
+
+function abilityModifier(score) {
+  return Math.floor((toNumber(score, 10) - 10) / 2);
+}
+
+function saveAbilityKey(saveType) {
+  return SAVE_ABILITIES[String(saveType || '').trim().toUpperCase()] || '';
+}
+
+function saveModifierForRow(row, saveType) {
+  const ability = saveAbilityKey(saveType);
+  if (!ability) return null;
+  const candidates = [row?.monster, row?.snapshot, row];
+  for (const source of candidates) {
+    const saves = source?.saves;
+    if (saves && typeof saves === 'object') {
+      const direct = saves[ability] ?? saves[ability.slice(0, 3)] ?? saves[ability.toUpperCase()] ?? saves[ability.slice(0, 3).toUpperCase()];
+      if (direct !== undefined && direct !== '') return toNumber(direct, 0);
+    }
+  }
+  for (const source of candidates) {
+    const scores = source?.ability_scores || source?.abilities;
+    if (scores && typeof scores === 'object') {
+      const score = scores[ability] ?? scores[ability.slice(0, 3)] ?? scores[ability.toUpperCase()] ?? scores[ability.slice(0, 3).toUpperCase()];
+      if (score !== undefined && score !== '') return abilityModifier(score);
+    }
+  }
+  return null;
 }
 
 function deathSaveResultLabel(result) {
@@ -243,6 +288,107 @@ function RulePopup({ title, text, onClose }) {
       <div style={{color:text ? 'var(--text-secondary)' : 'var(--text-dim)',fontSize:13,lineHeight:1.55,whiteSpace:'pre-wrap'}}>
         {text || 'No campaign rule text has been set yet.'}
       </div>
+    </div>
+  );
+}
+
+function EncounterActionPopup({ event, targetRow, onResolveSave, onClose }) {
+  const [manualRoll, setManualRoll] = useState('');
+  const [rolled, setRolled] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const saveType = event.save_type || event.save_ability || '';
+  const saveMod = saveModifierForRow(targetRow, saveType);
+  const isPendingSave = event.pending && event.mode === 'save';
+  const damageLines = cleanList(event.damage_details)
+    .map(detail => `${detail.damage_type || 'damage'}: ${detail.amount} -> ${detail.applied} (${detail.rule})`);
+
+  const rollDigitally = () => {
+    const d20 = Math.floor(Math.random() * 20) + 1;
+    const mod = saveMod ?? 0;
+    const total = d20 + mod;
+    setRolled({ d20, mod, total });
+    setManualRoll(String(total));
+  };
+
+  const submit = async () => {
+    if (!manualRoll) return;
+    setSaving(true);
+    setError('');
+    try {
+      await onResolveSave(event, manualRoll);
+    } catch (err) {
+      setError(err.message || 'Could not resolve save.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div style={{
+      position:'absolute',
+      top:58,
+      right:14,
+      zIndex:13,
+      width:'min(520px, calc(100vw - 32px))',
+      border:'1px solid rgba(154,128,255,0.55)',
+      borderRadius:'var(--radius-md)',
+      background:'linear-gradient(180deg, rgba(26,25,48,0.98), rgba(13,17,34,0.98))',
+      boxShadow:'0 18px 60px rgba(0,0,0,0.62)',
+      padding:12,
+    }}>
+      <div style={{display:'flex',justifyContent:'space-between',gap:10,alignItems:'flex-start',borderBottom:'1px solid var(--border)',paddingBottom:8,marginBottom:10}}>
+        <div style={{color:'var(--accent-light)',fontFamily:"'Cinzel',serif",fontWeight:800}}>Encounter Action</div>
+        <button type="button" className="btn btn-secondary btn-sm" onClick={onClose}>Close</button>
+      </div>
+
+      <div style={{color:'var(--text-secondary)',fontSize:13,lineHeight:1.5}}>
+        <div><b>{event.source_name || 'A combatant'}</b> used <b>{event.label || 'an action'}</b> on <b>{event.target_name || 'a target'}</b>.</div>
+        {!isPendingSave && (
+          <div style={{marginTop:6}}>
+            {event.hit === false ? 'Miss. No damage applied.' : `${event.damage_applied || 0} damage applied.`}
+            {damageLines.length > 0 && <div style={{whiteSpace:'pre-wrap',marginTop:4}}>{damageLines.join('\n')}</div>}
+          </div>
+        )}
+      </div>
+
+      {isPendingSave && (
+        <div style={{borderTop:'1px solid var(--border)',marginTop:10,paddingTop:10,display:'grid',gap:8}}>
+          <div style={{color:'var(--warning)',fontWeight:800}}>
+            {saveType ? `${saveType} save` : 'Saving throw'} needed vs DC {event.save_dc || '?'} before HP changes.
+          </div>
+          <div style={{color:'var(--text-dim)',fontSize:12}}>
+            Target: {event.target_name || targetRow?.name || 'Target'}
+            {saveMod !== null && <> · Save modifier {saveMod >= 0 ? '+' : ''}{saveMod}</>}
+          </div>
+          <div style={{display:'grid',gridTemplateColumns:'1fr auto auto',gap:8,alignItems:'center'}}>
+            <input
+              value={manualRoll}
+              onChange={e => setManualRoll(e.target.value)}
+              placeholder="Save total"
+              style={{fontWeight:800}}
+            />
+            <button type="button" className="btn btn-secondary btn-sm" onClick={rollDigitally} disabled={!saveType || saveMod === null}>
+              Roll {saveType || 'Save'}
+            </button>
+            <button type="button" className="btn btn-primary btn-sm" onClick={submit} disabled={saving || !manualRoll}>
+              {saving ? 'Resolving...' : 'Resolve Save'}
+            </button>
+          </div>
+          {rolled && (
+            <div style={{color:'var(--text-secondary)',fontSize:12}}>
+              Rolled d20 {rolled.d20} {rolled.mod >= 0 ? '+' : ''}{rolled.mod} = <b>{rolled.total}</b>
+            </div>
+          )}
+          {!saveType && (
+            <div style={{color:'var(--text-dim)',fontSize:12}}>Save type was not included by the character sheet yet, so digital roll is disabled. Enter the total manually.</div>
+          )}
+          {saveType && saveMod === null && (
+            <div style={{color:'var(--text-dim)',fontSize:12}}>No {saveType} save modifier was found for this target. Enter the total manually.</div>
+          )}
+          {error && <div style={{color:'var(--danger)',fontSize:12}}>{error}</div>}
+        </div>
+      )}
     </div>
   );
 }
@@ -768,6 +914,32 @@ export default function EncounterRunnerModal({
     setEffectForm(form => ({ ...form, name: '', custom: '', target_ids: [], concentration: false }));
   };
 
+  const resolvePendingSave = async (event, saveRoll) => {
+    if (!event?.target_id) throw new Error('Pending event is missing a target.');
+    if (!cleanList(event.damage_components).length) {
+      throw new Error('Pending event is missing damage data. Recast after this update so the DM can resolve it.');
+    }
+    const response = await api.post(`/campaigns/${campaign.id}/encounters/${encounter.id}/resolve`, {
+      source_character_id: event.source_character_id,
+      source_name: event.source_name,
+      target_id: event.target_id,
+      label: event.label,
+      mode: 'save',
+      save_type: event.save_type || event.save_ability || '',
+      save_dc: event.save_dc,
+      save_roll: saveRoll,
+      half_on_success: event.half_on_success !== false,
+      damage_components: event.damage_components,
+      notes: `Resolved pending save ${event.id || ''}`.trim(),
+    }, { suppressGlobalError: true });
+    const nextData = response.data?.encounter?.data;
+    if (nextData) {
+      dataRef.current = nextData;
+      await onPatchData(encounter.id, nextData);
+    }
+    setResolutionAlert(response.data?.resolution || null);
+  };
+
   const groups = combatants
     .filter(row => row.type === 'enemy' && row.group_key)
     .reduce((acc, row) => {
@@ -814,9 +986,10 @@ export default function EncounterRunnerModal({
           />
         )}
         {resolutionAlert && (
-          <RulePopup
-            title="Encounter Action"
-            text={`${resolutionAlert.source_name || 'A combatant'} used ${resolutionAlert.label || 'an action'} on ${resolutionAlert.target_name || 'a target'}.\n${resolutionAlert.pending ? 'DM save/input needed before HP changes.' : resolutionAlert.hit === false ? 'Miss. No damage applied.' : `${resolutionAlert.damage_applied || 0} damage applied.`}\n${cleanList(resolutionAlert.damage_details).map(detail => `${detail.damage_type || 'damage'}: ${detail.amount} -> ${detail.applied} (${detail.rule})`).join('\n')}`}
+          <EncounterActionPopup
+            event={resolutionAlert}
+            targetRow={combatants.find(row => sameId(row.id, resolutionAlert.target_id))}
+            onResolveSave={resolvePendingSave}
             onClose={() => setResolutionAlert(null)}
           />
         )}
