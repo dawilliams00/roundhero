@@ -27,6 +27,32 @@ and item-charge row layout) is back to Claude.
 
 *(nothing currently in flight — pull the next item from the queue below when starting)*
 
+**Just shipped, not yet live-verified:** hide combat add-ons from utility spells + fix the
+encounter target/manual-roll gating.
+- `SpellDetailModal.js`: Codex Dice (Syric) now only shows when the spell deals damage
+  (`spellDealsDamage`); Metamagic options are filtered to ones that apply to the spell
+  (Empowered/Transmuted → damage spells, Heightened/Careful → save spells, Seeking →
+  attack spells; the broadly-applicable ones always show). Upcast was already correctly
+  hidden for spells with no `higher_level`. So Haste / Mirror Image / Polymorph no longer
+  show upcast or Codex Dice.
+- Encounter target picker in BOTH modals now only loads when the character is
+  `in_initiative` (was loading whenever a running encounter existed). No initiative → no
+  enemy targets, per owner: "if not in initiative, you shouldn't see an enemy to attack."
+- Weapon modal "I'll roll in person" gate simplified to `td.in_initiative` and no longer
+  disabled by the attack counter, so it can't vanish/grey-out mid-turn (the reported bug —
+  owner was in initiative and lost the button; it was being disabled by `attacksExhausted`).
+- Data fixes in `spells.json`: Mirror Image had a bogus `damage_dice: "1d20"` (from the
+  description's "roll 1d20" image mechanic, not damage) → cleared; Haste had a spurious
+  `save_type_abbr: "DEX"` (from "advantage on dexterity saving throws" text, Haste forces
+  no save) → cleared. **Existing characters who already know these spells must click
+  "Refresh Spell Data" on the Spells tab** to pull the corrected data — known_spells are a
+  snapshot, so the fix doesn't reach an already-owned copy automatically.
+- **Not fixed (out of scope, needs careful per-spell verification):** other buff/utility
+  spells may share Haste's spurious-save parse artifact (Beacon of Hope, Holy Aura are
+  candidates — they grant advantage on saves without forcing one). A blanket heuristic
+  flagged mostly *legitimate* saves (Dominate, Hideous Laughter, etc.), so this needs a
+  hand audit, not a bulk fix.
+
 **Just shipped, not yet live-verified:** magic-item granted-spell **Cast Level** input in
 `AddItemModal.js`. Each granted-spell row now has a Cast Lvl field next to Charge Cost, so
 an item like Staff of the Magi can force a spell to cast at a fixed slot level (e.g.

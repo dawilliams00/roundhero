@@ -4395,13 +4395,13 @@
       "save_type_abbr": "",
       "is_attack": false,
       "attack_type": "",
-      "damage_dice": "1d20",
+      "damage_dice": "",
       "cast_time_short": "1A",
       "range_short": "Self",
       "duration_short": "D: 1 m",
       "components_short": "V/S",
-      "tags_short": "Utility, Damage",
-      "effect_short": "1d20"
+      "tags_short": "Utility",
+      "effect_short": "Utility"
     },
     {
       "name": "Misty Step",
@@ -5817,8 +5817,8 @@
         "Wizard"
       ],
       "spell_index": 126,
-      "save_type": "Dexterity Save",
-      "save_type_abbr": "DEX",
+      "save_type": "",
+      "save_type_abbr": "",
       "is_attack": false,
       "attack_type": "",
       "damage_dice": "",

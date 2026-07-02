@@ -41,6 +41,10 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
 
   useEffect(() => {
     if (!character?.id) return;
+    // Only offer encounter targets while the caster is actually in initiative - you
+    // shouldn't be picking an enemy to hit with a spell if you're not in the fight. No
+    // initiative => no target picker, even when a running encounter exists.
+    if (!character?.tracker_data?.in_initiative) { setEncounterTargets([]); return; }
     let cancelled = false;
     api.get(`/campaigns/player-view/${character.id}`, { suppressGlobalError: true })
       .then(r => {
@@ -68,7 +72,7 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
         if (!cancelled) setEncounterTargets([]);
       });
     return () => { cancelled = true; };
-  }, [character?.id]);
+  }, [character?.id, character?.tracker_data?.in_initiative]);
 
   useEffect(() => {
     if (!character) return;
@@ -121,6 +125,22 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
   // higher level - Haste, Silvery Barbs, etc. have no higher_level text at all, so picking
   // a level for them is a pointless choice that just wastes a bigger slot for nothing.
   const canMeaningfullyUpcast = !!spell.higher_level;
+  // A spell "deals damage" if it has damage dice (scaleSpellDamage returns null for pure
+  // utility spells like Haste/Mirror Image/Polymorph) or is a weapon-attack cantrip. Used
+  // to hide damage-only add-ons (Codex Dice surge, damage-reroll Metamagic) from utility
+  // spells, where they'd be meaningless clutter.
+  const spellDealsDamage = !!previewDamage || !!spell.requires_weapon_attack;
+  // Only show Metamagic options that can actually apply to THIS spell - a damage-reroll
+  // option on a no-damage spell, or a save-messing option on a no-save spell, is just
+  // noise. Broadly-applicable options (Distant/Extended/Quickened/Subtle/Twinned) always
+  // show; the rest are gated on the spell having the thing they act on.
+  const metamagicAppliesToSpell = (name) => {
+    if (name === 'Empowered Spell' || name === 'Transmuted Spell') return spellDealsDamage;
+    if (name === 'Heightened Spell' || name === 'Careful Spell') return !!spell.save_type_abbr;
+    if (name === 'Seeking Spell') return !!spell.is_attack || !!spell.requires_weapon_attack;
+    return true;
+  };
+  const applicableMetamagic = knownMetamagic.filter(metamagicAppliesToSpell);
 
   const finish = () => { onClose(); if (onCastSuccess) onCastSuccess(castMetaRef.current || { spell, level: spell.level_int, chargeMode }); };
 
@@ -550,13 +570,13 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
                         </select>
                       </div>
                     )}
-                    {metamagicAvailable && (
+                    {metamagicAvailable && applicableMetamagic.length > 0 && (
                       <div style={{marginBottom:8}}>
                         <div style={{display:'flex',alignItems:'center',gap:8}}>
                           <span style={{color:'var(--text-dim)',fontSize:12}}>Metamagic:</span>
                           <select value={metamagicChoice} onChange={e => setMetamagicChoice(e.target.value)}>
                             <option value="">None</option>
-                            {knownMetamagic.map(name => {
+                            {applicableMetamagic.map(name => {
                               const cost = metamagicCost(name, { level_int: isCantrip ? 0 : (castLevel || spell.level_int) });
                               return <option key={name} value={name} disabled={sorceryPoints < cost}>{name} ({cost} SP)</option>;
                             })}
@@ -568,7 +588,7 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
                         )}
                       </div>
                     )}
-                    {syricCodex && (
+                    {syricCodex && spellDealsDamage && (
                       <div style={{marginBottom:8,border:'1px solid rgba(124,92,252,0.38)',borderRadius:'var(--radius-sm)',padding:8,background:'rgba(124,92,252,0.10)'}}>
                         <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
                           <span style={{color:'var(--text-dim)',fontSize:12}}>Codex Dice:</span>

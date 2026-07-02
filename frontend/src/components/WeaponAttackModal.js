@@ -45,6 +45,10 @@ export default function WeaponAttackModal({ itemIndex, weaponOverride, onClose, 
 
   useEffect(() => {
     if (!character?.id) return;
+    // Only offer encounter targets while the character is actually in initiative - you
+    // shouldn't be picking an enemy to attack if you're not in the fight. No initiative
+    // => no target picker, even when a running encounter exists.
+    if (!character?.tracker_data?.in_initiative) { setEncounterTargets([]); return; }
     let cancelled = false;
     api.get(`/campaigns/player-view/${character.id}`, { suppressGlobalError: true })
       .then(r => {
@@ -72,7 +76,7 @@ export default function WeaponAttackModal({ itemIndex, weaponOverride, onClose, 
         if (!cancelled) setEncounterTargets([]);
       });
     return () => { cancelled = true; };
-  }, [character?.id]);
+  }, [character?.id, character?.tracker_data?.in_initiative]);
 
   if (!character) return null;
   const td = character.tracker_data || {};
@@ -605,15 +609,17 @@ export default function WeaponAttackModal({ itemIndex, weaponOverride, onClose, 
                   onClick={rollDamageNow}
                 >Roll Damage?</button>
               </div>
-              {/* Manual "rolled in person" path. Available whenever the player is in
-                  their own initiative OR there's an encounter target to resolve against -
-                  a campaign encounter doesn't necessarily set the character's personal
-                  in_initiative flag, and gating only on that used to hide this button
-                  exactly when attacking an encounter target, which is when it's most
-                  wanted. With a target it opens the two-step manual attack/damage entry;
-                  without one it keeps the old "just log the attack" behavior. */}
-              {(td.in_initiative || selectedTarget) && (
-                <button className="btn btn-secondary" style={{width:'100%',marginTop:8}} disabled={attacksExhausted} onClick={async () => {
+              {/* Manual "rolled in person" path - always shown (and never disabled) while
+                  in initiative, so it can't vanish mid-turn the way it did when it was
+                  gated on the attack counter: a player asserting a physical roll should
+                  always be able to log it, including an off-turn/reaction swing after the
+                  tracked attacks are "used". Encounter targets only exist while in
+                  initiative now, so `selectedTarget` already implies `in_initiative` - the
+                  gate is just `in_initiative`. With a target it opens the two-step manual
+                  attack/damage entry; without one it keeps the "just log the attack"
+                  behavior. */}
+              {td.in_initiative && (
+                <button className="btn btn-secondary" style={{width:'100%',marginTop:8}} onClick={async () => {
                   if (!thisAttackCounted) { onAttack(); setThisAttackCounted(true); }
                   if (smiteOn && smiteLevel && !smiteApplied) { await useSlot(smiteLevel); setSmiteApplied(true); }
                   if (selectedTarget) {
