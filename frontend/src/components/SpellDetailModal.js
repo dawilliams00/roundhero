@@ -119,45 +119,63 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
 
   const finish = () => { onClose(); if (onCastSuccess) onCastSuccess(castMetaRef.current || { spell, level: spell.level_int, chargeMode }); };
 
-  const rollNow = () => setDamageResult({
-    ...pendingDamage,
-    ...rollDamageDetailed(pendingDamage),
-    secondaryResult: pendingDamage.secondary ? rollDamageDetailed(pendingDamage.secondary) : undefined,
-  });
+  // Target is picked up front (see the Encounter Target block at the top of the modal
+  // body) rather than after damage is already rolled - the picker locks once a
+  // resolution against it exists so switching targets mid-cast can't desync things.
+  const selectedTarget = encounterTargets.find(row => row.key === selectedTargetKey);
 
-  const damageComponentsForEncounter = () => {
-    if (!damageResult) return [];
-    const components = [{ amount: damageResult.total || 0, damage_type: spell.damage_type }];
-    if (damageResult.secondaryResult) {
-      components.push({ amount: damageResult.secondaryResult.total || 0, damage_type: damageResult.secondary?.type || spell.damage_type });
+  const damageComponentsFor = (result) => {
+    if (!result) return [];
+    const components = [{ amount: result.total || 0, damage_type: spell.damage_type }];
+    if (result.secondaryResult) {
+      components.push({ amount: result.secondaryResult.total || 0, damage_type: result.secondary?.type || spell.damage_type });
     }
     return components;
   };
 
-  const resolveEncounterTarget = async () => {
-    const target = encounterTargets.find(row => row.key === selectedTargetKey);
-    if (!target || !damageResult) return;
+  // Fires automatically right after damage is rolled - there's no separate "now pick a
+  // target and click Resolve" step, since the target was already locked in up top. For a
+  // save spell, leaving the save-roll input blank still queues the DM per the existing
+  // backend contract; this just removes the extra manual click to trigger it.
+  const resolveSpellAgainstTarget = async (result) => {
+    if (!selectedTarget) return null;
     setResolvingTarget(true);
     setEncounterResolution(null);
     try {
       const saveDC = displayBlocks[0]?.saveDC || '';
-      const r = await api.post(`/campaigns/${target.campaignId}/encounters/${target.encounterId}/resolve`, {
+      const r = await api.post(`/campaigns/${selectedTarget.campaignId}/encounters/${selectedTarget.encounterId}/resolve`, {
         source_character_id: character.id,
-        target_id: target.targetId,
+        target_id: selectedTarget.targetId,
         label: spell.name,
         mode: spell.save_type_abbr ? 'save' : (spell.is_attack ? 'attack' : 'damage'),
         attack_total: '',
         save_dc: saveDC,
         save_roll: spell.save_type_abbr ? manualSaveRoll : '',
         half_on_success: true,
-        damage_components: damageComponentsForEncounter(),
+        damage_components: damageComponentsFor(result),
       }, { suppressGlobalError: true });
       setEncounterResolution(r.data.resolution);
+      return r.data.resolution;
     } catch (err) {
-      setEncounterResolution({ error: err.response?.data?.error || 'Could not resolve against encounter target.' });
+      const res = { error: err.response?.data?.error || 'Could not resolve against encounter target.' };
+      setEncounterResolution(res);
+      return res;
     } finally {
       setResolvingTarget(false);
     }
+  };
+
+  // Serves both the first roll (from the pendingDamage screen) and Reroll (from the
+  // damageResult screen) - Reroll disables itself once a target resolution has already
+  // succeeded (see render below) so this never double-applies damage to a target.
+  const rollNow = async () => {
+    const result = {
+      ...pendingDamage,
+      ...rollDamageDetailed(pendingDamage),
+      secondaryResult: pendingDamage.secondary ? rollDamageDetailed(pendingDamage.secondary) : undefined,
+    };
+    setDamageResult(result);
+    if (selectedTarget) await resolveSpellAgainstTarget(result);
   };
 
   const continueAfterCast = (levelUsed) => {
@@ -331,6 +349,27 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
           )}
         </div>
         <div className="modal-body">
+          {encounterTargets.length > 0 && (
+            <div style={{border:'1px solid var(--accent-light)',borderRadius:'var(--radius-sm)',padding:10,marginBottom:12}}>
+              <div style={{color:'var(--text-dim)',fontSize:10,textTransform:'uppercase',letterSpacing:1,marginBottom:5}}>Encounter Target</div>
+              <div style={{display:'grid',gridTemplateColumns: spell.save_type_abbr ? 'minmax(0,1fr) 100px' : '1fr',gap:8}}>
+                <select
+                  value={selectedTargetKey}
+                  onChange={e => { setSelectedTargetKey(e.target.value); setEncounterResolution(null); }}
+                  disabled={!!(damageResult || encounterResolution)}
+                >
+                  <option value="">— No target (just roll) —</option>
+                  {encounterTargets.map(target => <option key={target.key} value={target.key}>{target.label}</option>)}
+                </select>
+                {spell.save_type_abbr && (
+                  <input value={manualSaveRoll} onChange={e => setManualSaveRoll(e.target.value)} placeholder={`${spell.save_type_abbr} roll`} disabled={!!(damageResult || encounterResolution)} />
+                )}
+              </div>
+              {spell.save_type_abbr && !manualSaveRoll && (
+                <div style={{color:'var(--text-dim)',fontSize:11,marginTop:4}}>Leave the save blank to queue a DM save prompt without changing HP yet.</div>
+              )}
+            </div>
+          )}
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,fontSize:12,color:'var(--text-secondary)',marginBottom:12}}>
             <div><b>Casting Time:</b> {spell.casting_time}</div>
             <div><b>Range:</b> {spell.range}</div>
@@ -392,36 +431,22 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
                   </div>
                 )}
               </div>
-              <div style={{display:'flex',gap:8,marginTop:10}}>
-                <button className="btn btn-secondary" style={{flex:1}} onClick={rollNow}>Reroll</button>
-                <button className="btn btn-primary" style={{flex:1}} onClick={finish}>Done</button>
-              </div>
-              {encounterTargets.length > 0 && (
-                <div style={{borderTop:'1px solid var(--border)',marginTop:10,paddingTop:10,textAlign:'left'}}>
-                  <div style={{color:'var(--text-dim)',fontSize:10,textTransform:'uppercase',letterSpacing:1,marginBottom:5}}>Encounter Target</div>
-                  <div style={{display:'grid',gridTemplateColumns:spell.save_type_abbr ? 'minmax(0,1fr) 92px auto' : 'minmax(0,1fr) auto',gap:8}}>
-                    <select value={selectedTargetKey} onChange={e => setSelectedTargetKey(e.target.value)}>
-                      {encounterTargets.map(target => <option key={target.key} value={target.key}>{target.label}</option>)}
-                    </select>
-                    {spell.save_type_abbr && (
-                      <input value={manualSaveRoll} onChange={e => setManualSaveRoll(e.target.value)} placeholder={`${spell.save_type_abbr} roll`} />
-                    )}
-                    <button className="btn btn-primary btn-sm" onClick={resolveEncounterTarget} disabled={resolvingTarget || !damageResult}>
-                      {resolvingTarget ? 'Resolving...' : spell.save_type_abbr && !manualSaveRoll ? 'Ask DM' : 'Resolve'}
-                    </button>
+              {selectedTarget && (
+                <div style={{borderTop:'1px solid var(--border)',marginTop:10,paddingTop:8,textAlign:'left'}}>
+                  <div style={{color: resolvingTarget ? 'var(--text-dim)' : encounterResolution?.error ? 'var(--danger)' : 'var(--success)',fontSize:12}}>
+                    {resolvingTarget ? 'Resolving...' : encounterResolution?.error || (encounterResolution?.pending
+                      ? `DM save queued for ${encounterResolution.target_name}.`
+                      : `${encounterResolution?.save_succeeded === true ? 'Save succeeded' : encounterResolution?.save_succeeded === false ? 'Save failed' : 'Resolved'} · ${encounterResolution?.damage_applied || 0} damage applied`)}
                   </div>
-                  {spell.save_type_abbr && !manualSaveRoll && (
-                    <div style={{color:'var(--text-dim)',fontSize:11,marginTop:4}}>Leave the save blank to queue a DM save prompt without changing HP yet.</div>
-                  )}
-                  {encounterResolution && (
-                    <div style={{color:encounterResolution.error ? 'var(--danger)' : 'var(--success)',fontSize:12,marginTop:6}}>
-                      {encounterResolution.error || (encounterResolution.pending
-                        ? `DM save queued for ${encounterResolution.target_name}.`
-                        : `${encounterResolution.save_succeeded === true ? 'Save succeeded' : encounterResolution.save_succeeded === false ? 'Save failed' : 'Resolved'} · ${encounterResolution.damage_applied || 0} damage applied`)}
-                    </div>
+                  {encounterResolution?.error && (
+                    <button className="btn btn-secondary btn-sm" style={{marginTop:6}} onClick={() => resolveSpellAgainstTarget(damageResult)}>Retry</button>
                   )}
                 </div>
               )}
+              <div style={{display:'flex',gap:8,marginTop:10}}>
+                <button className="btn btn-secondary" style={{flex:1}} disabled={!!(selectedTarget && encounterResolution && !encounterResolution.error)} onClick={rollNow}>Reroll</button>
+                <button className="btn btn-primary" style={{flex:1}} onClick={finish}>Done</button>
+              </div>
             </div>
           ) : pendingDamage ? (
             <div style={{width:'100%',background:'var(--bg-primary)',borderRadius:'var(--radius-sm)',padding:12,textAlign:'center'}}>

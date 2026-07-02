@@ -19,13 +19,28 @@ and item-charge row layout) is back to Claude.
 
 ## In progress — Claude (character sheet)
 
-- **Pre-roll encounter target picker for Attack/Cast/Use flows.** If the character is
-  in a running encounter, open a target picker before the attack roll or spell cast
-  resolution. Include every visible active combatant in that encounter, allies and
-  enemies, because buffs/heals/friendly spells need the same targeting path. Desired
-  sequence: choose target -> roll attack/cast or trigger save -> show hit/miss or DM
-  save-needed result -> then roll/apply damage or effect. Do not wait until after all
-  damage is rolled to ask for the target.
+*(nothing currently in flight — pull the next item from the queue below when starting)*
+
+**Just shipped, not yet live-verified:** target-first encounter attack/cast flow in
+`WeaponAttackModal.js` and `SpellDetailModal.js`. Target picker now shows up top before
+any roll (was previously only offered after damage was already rolled) and locks once a
+roll goes out; attack roll now resolves hit/miss against the target immediately, damage
+auto-applies the moment it's rolled/entered instead of needing a separate manual
+"Resolve" click, and Reroll is disabled once a target resolution has already succeeded
+(prevents double-applying damage). Also fixed: "I'll roll in person" in
+`WeaponAttackModal.js` previously left the modal open with no way to close when the
+weapon had no heal-or-advantage rider — now closes properly, and when a target is
+selected it prompts for manual attack total then manual damage total instead of skipping
+encounter resolution entirely. No backend changes — reuses the existing
+`/campaigns/<id>/encounters/<id>/resolve` contract, just called at two points (attack-only,
+then attack+damage) instead of once at the end. **Next session should click through this
+on the live app**: roll a weapon attack against an encounter target end-to-end, try "I'll
+roll in person" against a target, and cast a damaging spell against a target, since there
+was no browser access to verify in this sandbox.
+
+The encounter-target list looking stale/pulling from old encounters (flagged in the same
+report) was NOT investigated — the user said to stand by on that one, it may be user
+error rather than a real bug.
 
 ## Next up (pull from here when starting new work)
 

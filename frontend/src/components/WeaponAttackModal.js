@@ -35,6 +35,13 @@ export default function WeaponAttackModal({ itemIndex, weaponOverride, onClose, 
   const [selectedTargetKey, setSelectedTargetKey] = useState('');
   const [resolvingTarget, setResolvingTarget] = useState(false);
   const [encounterResolution, setEncounterResolution] = useState(null);
+  // "I'll roll in person" against an encounter target still needs both numbers (the
+  // backend compares attack total to a hidden AC, so the app can't skip asking) - this
+  // drives that two-step manual entry instead of the old single-click shortcut.
+  const [manualLogOpen, setManualLogOpen] = useState(false);
+  const [manualAttackTotal, setManualAttackTotal] = useState('');
+  const [manualAttackSubmitted, setManualAttackSubmitted] = useState(false);
+  const [manualDamageTotal, setManualDamageTotal] = useState('');
 
   useEffect(() => {
     if (!character?.id) return;
@@ -119,15 +126,87 @@ export default function WeaponAttackModal({ itemIndex, weaponOverride, onClose, 
     saveTrackerData({ ...td, inventory: { ...td.inventory, items: newItems } });
   };
 
-  const rollAttack = () => {
-    if (!thisAttackCounted) { onAttack(); setThisAttackCounted(true); }
-    const d20 = rollD20();
-    setAttackResult({ d20, mod: attackMod, total: d20 + attackMod });
+  // Encounter target is picked BEFORE anything is rolled - the player needs to know who
+  // they're attacking for a hit/miss result to mean anything, and the target's AC stays
+  // hidden server-side rather than being computed client-side. Once an attack roll has
+  // gone out against a target, the target picker locks (see the dropdown's `disabled`
+  // below) so a mid-swing target swap can't desync the attack roll from the damage roll.
+  const selectedTarget = encounterTargets.find(row => row.key === selectedTargetKey);
+
+  const damageComponentsFor = (result) => {
+    if (!result) return [];
+    const components = [{ amount: result.total || 0, damage_type: result.damage_type }];
+    ['extra', 'cantrip', 'smite'].forEach(key => {
+      if (result[key]) components.push({ amount: result[key].total || 0, damage_type: result[key].damage_type });
+    });
+    return components;
   };
 
-  const rerollAttack = () => {
+  // Attack-phase resolve: sends only the attack total, no damage - the backend compares
+  // it against the target's hidden AC and reports hit/miss without touching HP yet.
+  const resolveAttackAgainstTarget = async (attackTotal) => {
+    if (!selectedTarget) return null;
+    setResolvingTarget(true);
+    setEncounterResolution(null);
+    try {
+      const r = await api.post(`/campaigns/${selectedTarget.campaignId}/encounters/${selectedTarget.encounterId}/resolve`, {
+        source_character_id: character.id,
+        target_id: selectedTarget.targetId,
+        label: weapon.name,
+        mode: 'attack',
+        attack_total: attackTotal,
+      }, { suppressGlobalError: true });
+      setEncounterResolution(r.data.resolution);
+      return r.data.resolution;
+    } catch (err) {
+      const res = { error: err.response?.data?.error || 'Could not resolve against encounter target.' };
+      setEncounterResolution(res);
+      return res;
+    } finally {
+      setResolvingTarget(false);
+    }
+  };
+
+  // Damage-phase resolve: same attack total (so the backend's hit determination matches
+  // what was already shown), now with damage components attached so HP actually changes.
+  // Called automatically the moment damage is rolled/entered - there's no separate
+  // "now go pick a target and click Resolve" step anymore, since the target was already
+  // locked in before the attack roll.
+  const applyDamageToTarget = async (attackTotal, result) => {
+    if (!selectedTarget) return null;
+    setResolvingTarget(true);
+    try {
+      const r = await api.post(`/campaigns/${selectedTarget.campaignId}/encounters/${selectedTarget.encounterId}/resolve`, {
+        source_character_id: character.id,
+        target_id: selectedTarget.targetId,
+        label: weapon.name,
+        mode: 'attack',
+        attack_total: attackTotal ?? '',
+        damage_components: damageComponentsFor(result),
+      }, { suppressGlobalError: true });
+      setEncounterResolution(r.data.resolution);
+      return r.data.resolution;
+    } catch (err) {
+      setEncounterResolution({ error: err.response?.data?.error || 'Could not apply damage to encounter target.' });
+      return null;
+    } finally {
+      setResolvingTarget(false);
+    }
+  };
+
+  const rollAttack = async () => {
+    if (!thisAttackCounted) { onAttack(); setThisAttackCounted(true); }
     const d20 = rollD20();
-    setAttackResult({ d20, mod: attackMod, total: d20 + attackMod });
+    const total = d20 + attackMod;
+    setAttackResult({ d20, mod: attackMod, total });
+    if (selectedTarget) await resolveAttackAgainstTarget(total);
+  };
+
+  const rerollAttack = async () => {
+    const d20 = rollD20();
+    const total = d20 + attackMod;
+    setAttackResult({ d20, mod: attackMod, total });
+    if (selectedTarget) await resolveAttackAgainstTarget(total);
   };
 
   // 2d8 radiant, +1d8 per slot level above 1st (capped at 5d8 total), +1d8 more vs
@@ -196,7 +275,12 @@ export default function WeaponAttackModal({ itemIndex, weaponOverride, onClose, 
       const smiteSpec = { count, sides: 8, bonus: 0, damage_type: 'Radiant' };
       smite = { ...smiteSpec, ...rollDamageDetailed(smiteSpec) };
     }
-    setDamageResult({ ...buildDamage(), ...dmg, extra, cantrip, smite });
+    const result = { ...buildDamage(), ...dmg, extra, cantrip, smite };
+    setDamageResult(result);
+    // Fires immediately, not read from `damageResult` state - state set above hasn't
+    // committed yet in this tick, and reading it here would silently apply zero/stale
+    // damage (the exact stale-closure bug class this codebase has hit before).
+    if (selectedTarget) await applyDamageToTarget(attackResult?.total, result);
   };
 
   // Consolidated "what to roll" checklist - shown whether or not the player ends up
@@ -218,6 +302,9 @@ export default function WeaponAttackModal({ itemIndex, weaponOverride, onClose, 
     return list;
   };
 
+  // Rerolling after damage has already been applied to a target would double-apply it
+  // (the backend has no "undo the last event" concept) - the button is disabled in that
+  // case (see render below), so this only ever runs pre-application.
   const rerollDamage = () => {
     const dmg = rollDamageDetailed(buildDamage());
     const extraSpec = buildBonusDamage();
@@ -227,39 +314,6 @@ export default function WeaponAttackModal({ itemIndex, weaponOverride, onClose, 
     const smite = damageResult.smite ? { ...damageResult.smite, ...rollDamageDetailed(damageResult.smite) } : null;
     setUnarmedChoice(null);
     setDamageResult({ ...buildDamage(), ...dmg, extra, cantrip, smite });
-  };
-
-  const damageComponentsForEncounter = () => {
-    if (!damageResult) return [];
-    const components = [
-      { amount: damageResult.total || 0, damage_type: damageResult.damage_type },
-    ];
-    ['extra', 'cantrip', 'smite'].forEach(key => {
-      if (damageResult[key]) components.push({ amount: damageResult[key].total || 0, damage_type: damageResult[key].damage_type });
-    });
-    return components;
-  };
-
-  const resolveEncounterTarget = async () => {
-    const target = encounterTargets.find(row => row.key === selectedTargetKey);
-    if (!target || !damageResult) return;
-    setResolvingTarget(true);
-    setEncounterResolution(null);
-    try {
-      const r = await api.post(`/campaigns/${target.campaignId}/encounters/${target.encounterId}/resolve`, {
-        source_character_id: character.id,
-        target_id: target.targetId,
-        label: weapon.name,
-        mode: attackResult ? 'attack' : 'damage',
-        attack_total: attackResult?.total ?? '',
-        damage_components: damageComponentsForEncounter(),
-      }, { suppressGlobalError: true });
-      setEncounterResolution(r.data.resolution);
-    } catch (err) {
-      setEncounterResolution({ error: err.response?.data?.error || 'Could not resolve against encounter target.' });
-    } finally {
-      setResolvingTarget(false);
-    }
   };
 
   return (
@@ -276,6 +330,21 @@ export default function WeaponAttackModal({ itemIndex, weaponOverride, onClose, 
           </div>
         </div>
         <div className="modal-body">
+          {encounterTargets.length > 0 && (
+            <div style={{border:'1px solid var(--accent-light)',borderRadius:'var(--radius-sm)',padding:10,marginBottom:12}}>
+              <div style={{color:'var(--text-dim)',fontSize:10,textTransform:'uppercase',letterSpacing:1,marginBottom:5}}>Encounter Target</div>
+              <select
+                value={selectedTargetKey}
+                onChange={e => { setSelectedTargetKey(e.target.value); setEncounterResolution(null); }}
+                disabled={!!attackResult}
+                style={{width:'100%'}}
+              >
+                <option value="">— No target (just roll) —</option>
+                {encounterTargets.map(target => <option key={target.key} value={target.key}>{target.label}</option>)}
+              </select>
+            </div>
+          )}
+
           <div style={{display:'flex',gap:12,flexWrap:'wrap',fontSize:12,color:'var(--text-secondary)',marginBottom:12}}>
             <div><b>Attack:</b> {attackMod>=0?'+':''}{attackMod} ({abilityLabel} {abilityMod>=0?'+':''}{abilityMod}{weapon.proficient ? `, +${prof} prof` : ', not proficient'}{itemBonus.attack ? `, +${itemBonus.attack} item` : ''}{fsBonus.attack ? `, +${fsBonus.attack} Archery` : ''}{featBonus.attack ? `, +${featBonus.attack} feat` : ''})</div>
             <div><b>Damage:</b> {weaponDamageDice(weapon).damage_dice} {(abilityMod + itemBonus.damage + fsBonus.damage + featBonus.damage + hybridBonus.damage) !== 0 ? `${(abilityMod + itemBonus.damage + fsBonus.damage + featBonus.damage + hybridBonus.damage) >= 0 ? '+' : ''}${abilityMod + itemBonus.damage + fsBonus.damage + featBonus.damage + hybridBonus.damage} ` : ''}{weaponDamageDice(weapon).damage_type}{weapon.bonus_damage_dice ? ` + ${weapon.bonus_damage_dice} ${weapon.bonus_damage_type || weaponDamageDice(weapon).damage_type}` : ''}{fsBonus.damage ? ` (incl. +${fsBonus.damage} Dueling)` : ''}{featBonus.damage ? ` (incl. +${featBonus.damage} feat)` : ''}{hybridBonus.damage ? ` (incl. +${hybridBonus.damage} Feral Might)` : ''}</div>
@@ -333,8 +402,15 @@ export default function WeaponAttackModal({ itemIndex, weaponOverride, onClose, 
             <div style={{background:'var(--bg-primary)',borderRadius:'var(--radius-sm)',padding:12,textAlign:'center',marginBottom:12}}>
               <div style={{color:'var(--text-dim)',fontSize:11,textTransform:'uppercase',letterSpacing:1,marginBottom:4}}>Attack Roll</div>
               <div style={{color:'var(--accent-light)',fontWeight:700,fontSize:28}}>{attackResult.total}</div>
-              <div style={{color:'var(--text-dim)',fontSize:11}}>d20: {attackResult.d20} {attackResult.mod>=0?'+':''}{attackResult.mod}</div>
-              <button className="btn btn-secondary btn-sm" style={{marginTop:8}} onClick={rerollAttack}>Reroll</button>
+              {!attackResult.manual && (
+                <div style={{color:'var(--text-dim)',fontSize:11}}>d20: {attackResult.d20} {attackResult.mod>=0?'+':''}{attackResult.mod}</div>
+              )}
+              {selectedTarget && (
+                <div style={{fontSize:13,fontWeight:600,marginTop:6,color: resolvingTarget ? 'var(--text-dim)' : encounterResolution?.error ? 'var(--danger)' : encounterResolution?.hit === false ? 'var(--danger)' : encounterResolution?.hit === true ? 'var(--success)' : 'var(--text-dim)'}}>
+                  {resolvingTarget ? 'Checking hit...' : encounterResolution?.error || (encounterResolution?.hit === false ? 'Miss' : encounterResolution?.hit === true ? 'Hit!' : '')}
+                </div>
+              )}
+              <button className="btn btn-secondary btn-sm" style={{marginTop:8}} disabled={!!damageResult} onClick={rerollAttack}>Reroll</button>
             </div>
           )}
         </div>
@@ -402,28 +478,20 @@ export default function WeaponAttackModal({ itemIndex, weaponOverride, onClose, 
                   </div>
                 )
               )}
-              <div style={{display:'flex',gap:8,marginTop:10}}>
-                <button className="btn btn-secondary" style={{flex:1}} onClick={rerollDamage}>Reroll</button>
-                <button className="btn btn-primary" style={{flex:1}} onClick={onClose}>Done</button>
-              </div>
-              {encounterTargets.length > 0 && (
-                <div style={{borderTop:'1px solid var(--border)',marginTop:10,paddingTop:10,textAlign:'left'}}>
-                  <div style={{color:'var(--text-dim)',fontSize:10,textTransform:'uppercase',letterSpacing:1,marginBottom:5}}>Encounter Target</div>
-                  <div style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) auto',gap:8}}>
-                    <select value={selectedTargetKey} onChange={e => setSelectedTargetKey(e.target.value)}>
-                      {encounterTargets.map(target => <option key={target.key} value={target.key}>{target.label}</option>)}
-                    </select>
-                    <button className="btn btn-primary btn-sm" onClick={resolveEncounterTarget} disabled={resolvingTarget || !damageResult}>
-                      {resolvingTarget ? 'Resolving...' : 'Resolve'}
-                    </button>
+              {selectedTarget && (
+                <div style={{borderTop:'1px solid var(--border)',marginTop:10,paddingTop:8,textAlign:'left'}}>
+                  <div style={{color: resolvingTarget ? 'var(--text-dim)' : encounterResolution?.error ? 'var(--danger)' : 'var(--success)',fontSize:12}}>
+                    {resolvingTarget ? 'Applying damage...' : encounterResolution?.error || `${encounterResolution?.hit === false ? 'Miss' : encounterResolution?.hit === true ? 'Hit' : 'Resolved'} · ${encounterResolution?.damage_applied || 0} damage applied to ${selectedTarget.label.split(': ').slice(1).join(': ')}`}
                   </div>
-                  {encounterResolution && (
-                    <div style={{color:encounterResolution.error ? 'var(--danger)' : 'var(--success)',fontSize:12,marginTop:6}}>
-                      {encounterResolution.error || `${encounterResolution.hit === false ? 'Miss' : encounterResolution.hit === true ? 'Hit' : 'Resolved'} · ${encounterResolution.damage_applied || 0} damage applied`}
-                    </div>
+                  {encounterResolution?.error && (
+                    <button className="btn btn-secondary btn-sm" style={{marginTop:6}} onClick={() => applyDamageToTarget(attackResult?.total, damageResult)}>Retry</button>
                   )}
                 </div>
               )}
+              <div style={{display:'flex',gap:8,marginTop:10}}>
+                <button className="btn btn-secondary" style={{flex:1}} disabled={!!(selectedTarget && encounterResolution && !encounterResolution.error)} onClick={rerollDamage}>Reroll</button>
+                <button className="btn btn-primary" style={{flex:1}} onClick={onClose}>Done</button>
+              </div>
             </div>
           ) : manualHealAdvOpen ? (
             <div style={{width:'100%',background:'var(--bg-primary)',borderRadius:'var(--radius-sm)',padding:12}}>
@@ -457,6 +525,58 @@ export default function WeaponAttackModal({ itemIndex, weaponOverride, onClose, 
               )}
               <button className="btn btn-secondary" style={{width:'100%',marginTop:8}} onClick={onClose}>Close</button>
             </div>
+          ) : manualLogOpen ? (
+            <div style={{width:'100%',background:'var(--bg-primary)',borderRadius:'var(--radius-sm)',padding:12}}>
+              {!manualAttackSubmitted ? (
+                <>
+                  <div style={{color:'var(--text-dim)',fontSize:11,marginBottom:8,textAlign:'center'}}>Roll your attack in person, then enter the total:</div>
+                  <div style={{display:'flex',gap:6}}>
+                    <input type="number" placeholder="Attack total" value={manualAttackTotal} onChange={e => setManualAttackTotal(e.target.value)} style={{flex:1}} />
+                    <button
+                      className="btn btn-primary"
+                      disabled={!manualAttackTotal || resolvingTarget}
+                      onClick={async () => {
+                        const total = parseInt(manualAttackTotal);
+                        if (isNaN(total)) return;
+                        setAttackResult({ d20: null, mod: attackMod, total, manual: true });
+                        setManualAttackSubmitted(true);
+                        await resolveAttackAgainstTarget(total);
+                      }}
+                    >Submit</button>
+                  </div>
+                </>
+              ) : encounterResolution?.hit === false ? (
+                <div style={{color:'var(--danger)',fontSize:13,textAlign:'center'}}>Miss - no damage to apply.</div>
+              ) : !damageResult ? (
+                <>
+                  {encounterResolution?.error && (
+                    <div style={{color:'var(--danger)',fontSize:12,marginBottom:8,textAlign:'center'}}>{encounterResolution.error} You can still enter damage below to retry.</div>
+                  )}
+                  {encounterResolution && !encounterResolution.error && (
+                    <div style={{color:'var(--success)',fontSize:12,marginBottom:8,textAlign:'center'}}>Hit! Now enter damage dealt:</div>
+                  )}
+                  <div style={{display:'flex',gap:6}}>
+                    <input type="number" placeholder="Damage total" value={manualDamageTotal} onChange={e => setManualDamageTotal(e.target.value)} style={{flex:1}} />
+                    <button
+                      className="btn btn-primary"
+                      disabled={!manualDamageTotal || resolvingTarget}
+                      onClick={async () => {
+                        const total = parseInt(manualDamageTotal);
+                        if (isNaN(total)) return;
+                        const result = { count: 0, sides: 0, bonus: total, damage_type: weaponDamageDice(weapon).damage_type, total, rolls: [] };
+                        setDamageResult(result);
+                        await applyDamageToTarget(attackResult?.total, result);
+                      }}
+                    >Apply</button>
+                  </div>
+                </>
+              ) : (
+                <div style={{color: encounterResolution?.error ? 'var(--danger)' : 'var(--success)',fontSize:13,textAlign:'center'}}>
+                  {encounterResolution?.error || 'Damage applied.'}
+                </div>
+              )}
+              <button className="btn btn-secondary" style={{width:'100%',marginTop:8}} onClick={onClose}>Close</button>
+            </div>
           ) : (
             <>
               {!attacksExhausted && (
@@ -468,18 +588,33 @@ export default function WeaponAttackModal({ itemIndex, weaponOverride, onClose, 
                       <span>{c.dice} {c.type}</span>
                     </div>
                   ))}
+                  {selectedTarget && encounterResolution?.hit === false && (
+                    <div style={{color:'var(--danger)',fontSize:12,marginTop:4}}>Miss - no damage to roll.</div>
+                  )}
+                  {selectedTarget && !attackResult && (
+                    <div style={{color:'var(--text-dim)',fontSize:12,marginTop:4}}>Roll to attack first to see if this hits.</div>
+                  )}
                 </div>
               )}
               <div style={{display:'flex',gap:8,width:'100%'}}>
                 <button className="btn btn-primary" style={{flex:1}} disabled={attacksExhausted} onClick={rollAttack}>Roll Attack</button>
-                <button className="btn btn-primary" style={{flex:1}} disabled={attacksExhausted} onClick={rollDamageNow}>Roll Damage?</button>
+                <button
+                  className="btn btn-primary"
+                  style={{flex:1}}
+                  disabled={attacksExhausted || !!(selectedTarget && (!attackResult || resolvingTarget || !encounterResolution || encounterResolution.error || encounterResolution.hit === false))}
+                  onClick={rollDamageNow}
+                >Roll Damage?</button>
               </div>
               {td.in_initiative && (
                 <button className="btn btn-secondary" style={{width:'100%',marginTop:8}} disabled={attacksExhausted} onClick={async () => {
+                  if (!thisAttackCounted) { onAttack(); setThisAttackCounted(true); }
                   if (smiteOn && smiteLevel && !smiteApplied) { await useSlot(smiteLevel); setSmiteApplied(true); }
-                  onAttack();
-                  if ((weapon.bonus_heal_or_advantage || weapon.unarmed_heal_or_advantage) && weapon.bonus_damage_dice) {
+                  if (selectedTarget) {
+                    setManualLogOpen(true);
+                  } else if ((weapon.bonus_heal_or_advantage || weapon.unarmed_heal_or_advantage) && weapon.bonus_damage_dice) {
                     setManualHealAdvOpen(true);
+                  } else {
+                    onClose();
                   }
                 }}>
                   ✓ I'll roll in person - log an attack{smitePreview() ? ` (+ spend smite slot)` : ''}
