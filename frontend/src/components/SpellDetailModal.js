@@ -28,7 +28,6 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
   const [pickedWeaponIdx, setPickedWeaponIdx] = useState(null);
   const [encounterTargets, setEncounterTargets] = useState([]);
   const [selectedTargetKey, setSelectedTargetKey] = useState('');
-  const [manualSaveRoll, setManualSaveRoll] = useState('');
   const [resolvingTarget, setResolvingTarget] = useState(false);
   const [encounterResolution, setEncounterResolution] = useState(null);
   // "I'll roll in person" for spell damage - the player rolls physical dice and types the
@@ -148,11 +147,6 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
   // body) rather than after damage is already rolled - the picker locks once damage has
   // been rolled against it so switching targets mid-cast can't desync things.
   const selectedTarget = encounterTargets.find(row => row.key === selectedTargetKey);
-  // "Finalized" means the backend actually decided pass/fail and (if it hit) applied
-  // damage - a save spell's first resolve is often deliberately left "pending" (blank
-  // save roll queues the DM), so that alone must NOT count as finalized or the player
-  // would lose the ability to submit the real roll once they learn it from the DM.
-  const isFinalized = !!(encounterResolution && !encounterResolution.pending && !encounterResolution.error);
 
   const damageComponentsFor = (result) => {
     if (!result) return [];
@@ -163,14 +157,11 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
     return components;
   };
 
-  // Save spells stay a deliberate, re-clickable action (see the "Ask DM"/"Resolve" button
-  // in the damageResult render below) rather than auto-firing on roll: the natural table
-  // flow is roll damage now, learn the target's actual save result later from the DM, and
-  // only THEN submit it to finalize - auto-firing the instant damage is rolled would queue
-  // a pending DM prompt with whatever's in the save-roll box at that exact moment (usually
-  // blank) and give the player no way to come back and submit the real number afterward.
-  // Plain damage/attack-mode spells have no such two-step table flow, so those still fire
-  // automatically the moment damage is rolled (handled in rollNow below).
+  // Sends the action to the encounter backend. For a SAVE spell this always queues a
+  // pending DM save (save_roll blank) - the DM rolls the save in the encounter runner,
+  // which is why the damage has to ride along in this same call (the DM resolver refuses a
+  // pending event with no damage). For attack/plain-damage spells it applies damage
+  // directly. `save_type` lets the DM runner pick the target's correct save modifier.
   const resolveSpellAgainstTarget = async (result) => {
     if (!selectedTarget) return null;
     setResolvingTarget(true);
@@ -184,7 +175,9 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
         mode: spell.save_type_abbr ? 'save' : (spell.is_attack ? 'attack' : 'damage'),
         attack_total: '',
         save_dc: saveDC,
-        save_roll: spell.save_type_abbr ? manualSaveRoll : '',
+        save_type: spell.save_type_abbr || '',
+        save_type_abbr: spell.save_type_abbr || '',
+        save_roll: '',
         half_on_success: true,
         damage_components: damageComponentsFor(result),
       }, { suppressGlobalError: true });
@@ -224,12 +217,27 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
     if (selectedTarget && !spell.save_type_abbr) await resolveSpellAgainstTarget(result);
   };
 
-  const continueAfterCast = (levelUsed) => {
+  const continueAfterCast = async (levelUsed) => {
     if (spell.requires_weapon_attack) {
       setAwaitingWeapon(true);
       return;
     }
     const dmg = scaleSpellDamage(spell, levelUsed, character.level);
+    // Save spell against an encounter target: roll the damage right now and queue the DM
+    // save in one step, so the moment you cast, the DM is notified to roll the DC save
+    // (with the damage attached, which the DM resolver requires). No separate post-roll
+    // "Ask DM" click - that was the confusing out-of-order step. The DM applies full/half
+    // when they resolve the save on their end.
+    if (dmg && spell.save_type_abbr && selectedTarget) {
+      const result = {
+        ...dmg,
+        ...rollDamageDetailed(dmg),
+        secondaryResult: dmg.secondary ? rollDamageDetailed(dmg.secondary) : undefined,
+      };
+      setDamageResult(result);
+      await resolveSpellAgainstTarget(result);
+      return;
+    }
     if (dmg) {
       setPendingDamage(dmg);
     }
@@ -315,7 +323,7 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
       }
       castMetaRef.current = { spell, level: levelUsed, chargeMode };
       const tracked = await tryTrackConcentration(levelUsed);
-      if (tracked) continueAfterCast(levelUsed);
+      if (tracked) await continueAfterCast(levelUsed);
     } finally { setCasting(false); }
   };
 
@@ -336,7 +344,7 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
       setCast(`Cast free (${freeUseFeature})!${metaNote}`);
       castMetaRef.current = { spell, level: spell.level_int, freeUseFeature };
       const tracked = await tryTrackConcentration(spell.level_int);
-      if (tracked) continueAfterCast(spell.level_int);
+      if (tracked) await continueAfterCast(spell.level_int);
     } finally { setCasting(false); }
   };
 
@@ -350,7 +358,7 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
     try {
       setCast('Cast as a ritual (10 extra minutes, no slot used)!');
       const tracked = await tryTrackConcentration(spell.level_int);
-      if (tracked) continueAfterCast(spell.level_int);
+      if (tracked) await continueAfterCast(spell.level_int);
     } finally { setCasting(false); }
   };
 
@@ -398,21 +406,17 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
           {encounterTargets.length > 0 && (
             <div style={{border:'1px solid var(--accent-light)',borderRadius:'var(--radius-sm)',padding:10,marginBottom:12}}>
               <div style={{color:'var(--text-dim)',fontSize:10,textTransform:'uppercase',letterSpacing:1,marginBottom:5}}>Encounter Target</div>
-              <div style={{display:'grid',gridTemplateColumns: spell.save_type_abbr ? 'minmax(0,1fr) 100px' : '1fr',gap:8}}>
-                <select
-                  value={selectedTargetKey}
-                  onChange={e => { setSelectedTargetKey(e.target.value); setEncounterResolution(null); }}
-                  disabled={!!damageResult}
-                >
-                  <option value="">— No target (just roll) —</option>
-                  {encounterTargets.map(target => <option key={target.key} value={target.key}>{target.label}</option>)}
-                </select>
-                {spell.save_type_abbr && (
-                  <input value={manualSaveRoll} onChange={e => setManualSaveRoll(e.target.value)} placeholder={`${spell.save_type_abbr} roll`} disabled={isFinalized} />
-                )}
-              </div>
-              {spell.save_type_abbr && !manualSaveRoll && !isFinalized && (
-                <div style={{color:'var(--text-dim)',fontSize:11,marginTop:4}}>Leave the save blank to queue a DM save prompt without changing HP yet. Come back and enter the real roll once the DM has it, then hit Resolve to finalize.</div>
+              <select
+                value={selectedTargetKey}
+                onChange={e => { setSelectedTargetKey(e.target.value); setEncounterResolution(null); }}
+                disabled={!!damageResult}
+                style={{width:'100%'}}
+              >
+                <option value="">— No target (just roll) —</option>
+                {encounterTargets.map(target => <option key={target.key} value={target.key}>{target.label}</option>)}
+              </select>
+              {spell.save_type_abbr && selectedTarget && (
+                <div style={{color:'var(--text-dim)',fontSize:11,marginTop:4}}>Casting sends this to the DM to roll the {spell.save_type_abbr} save — they apply the damage.</div>
               )}
             </div>
           )}
@@ -477,28 +481,28 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
                   </div>
                 )}
               </div>
+              {/* Save spell: the whole thing was sent to the DM to roll the save the moment
+                  you cast. The player never sees the HP applied - only that it's with the
+                  DM. Retry re-sends if the queue call failed. */}
               {selectedTarget && spell.save_type_abbr ? (
                 <div style={{borderTop:'1px solid var(--border)',marginTop:10,paddingTop:8,textAlign:'left'}}>
-                  <button
-                    className="btn btn-primary btn-sm"
-                    style={{width:'100%'}}
-                    disabled={resolvingTarget || isFinalized}
-                    onClick={() => resolveSpellAgainstTarget(damageResult)}
-                  >
-                    {resolvingTarget ? 'Resolving...' : isFinalized ? 'Resolved' : manualSaveRoll ? 'Resolve' : 'Ask DM'}
-                  </button>
-                  {encounterResolution && (
-                    <div style={{color:encounterResolution.error ? 'var(--danger)' : 'var(--success)',fontSize:12,marginTop:6}}>
-                      {encounterResolution.error || (encounterResolution.pending
-                        ? `DM save queued for ${encounterResolution.target_name}.`
-                        : `${encounterResolution.save_succeeded === true ? 'Save succeeded' : encounterResolution.save_succeeded === false ? 'Save failed' : 'Resolved'} · ${encounterResolution.damage_applied || 0} damage applied`)}
-                    </div>
+                  <div style={{color: resolvingTarget ? 'var(--text-dim)' : encounterResolution?.error ? 'var(--danger)' : 'var(--accent-light)',fontSize:12,fontWeight:600}}>
+                    {resolvingTarget
+                      ? 'Sending to the DM...'
+                      : encounterResolution?.error
+                        ? encounterResolution.error
+                        : `📨 Sent to the DM to roll the ${spell.save_type_abbr} save (DC ${displayBlocks[0]?.saveDC || '?'}) for ${encounterResolution?.target_name || selectedTarget.label.split(': ').slice(1).join(': ')}. The DM applies the damage.`}
+                  </div>
+                  {encounterResolution?.error && (
+                    <button className="btn btn-secondary btn-sm" style={{marginTop:6}} onClick={() => resolveSpellAgainstTarget(damageResult)}>Retry send</button>
                   )}
                 </div>
               ) : selectedTarget && (
+                /* Attack / auto-hit damage spell - hide the applied HP number, show only
+                   the outcome. */
                 <div style={{borderTop:'1px solid var(--border)',marginTop:10,paddingTop:8,textAlign:'left'}}>
                   <div style={{color: resolvingTarget ? 'var(--text-dim)' : encounterResolution?.error ? 'var(--danger)' : 'var(--success)',fontSize:12}}>
-                    {resolvingTarget ? 'Resolving...' : encounterResolution?.error || `${encounterResolution?.save_succeeded === true ? 'Save succeeded' : encounterResolution?.save_succeeded === false ? 'Save failed' : 'Resolved'} · ${encounterResolution?.damage_applied || 0} damage applied`}
+                    {resolvingTarget ? 'Resolving...' : encounterResolution?.error || (encounterResolution?.hit === false ? 'Missed.' : encounterResolution?.hit === true ? 'Hit!' : 'Resolved.')}
                   </div>
                   {encounterResolution?.error && (
                     <button className="btn btn-secondary btn-sm" style={{marginTop:6}} onClick={() => resolveSpellAgainstTarget(damageResult)}>Retry</button>
@@ -506,7 +510,8 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
                 </div>
               )}
               <div style={{display:'flex',gap:8,marginTop:10}}>
-                <button className="btn btn-secondary" style={{flex:1}} disabled={!!(selectedTarget && isFinalized)} onClick={rollNow}>Reroll</button>
+                {/* No reroll once it's been sent to the DM / applied against a target. */}
+                <button className="btn btn-secondary" style={{flex:1}} disabled={!!(selectedTarget && encounterResolution)} onClick={rollNow}>Reroll</button>
                 <button className="btn btn-primary" style={{flex:1}} onClick={finish}>Done</button>
               </div>
             </div>

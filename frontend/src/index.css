@@ -65,7 +65,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 
 /* Wide popups with a static header/footer and a scrolling body only (spell/ability/item detail, etc) */
 .modal-lg { max-width: 920px; }
-.modal-flex { display: flex; flex-direction: column; padding: 0; max-height: 85vh; }
+.modal-flex { display: flex; flex-direction: column; padding: 0; max-height: 92vh; }
 .modal-flex .modal-header { flex-shrink: 0; padding: 20px 24px 14px; border-bottom: 1px solid var(--border); }
 .modal-flex .modal-header h2 { margin-bottom: 6px; }
 .modal-flex .modal-body { flex: 1; overflow-y: auto; padding: 16px 24px; }

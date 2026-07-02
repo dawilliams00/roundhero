@@ -19,6 +19,7 @@ export default function WeaponAttackModal({ itemIndex, weaponOverride, onClose, 
   const [smiteOn, setSmiteOn] = useState(false);
   const [smiteLevel, setSmiteLevel] = useState(null);
   const [smiteVsUndeadFiend, setSmiteVsUndeadFiend] = useState(false);
+  const [smiteInfoOpen, setSmiteInfoOpen] = useState(false);
   // Rolling Attack and rolling Damage both represent the SAME swing if done together -
   // only the first of either should count against Extra Attack, so clicking both for one
   // hit doesn't burn two attacks. Reroll buttons never count - they're correcting the
@@ -349,7 +350,7 @@ export default function WeaponAttackModal({ itemIndex, weaponOverride, onClose, 
             </div>
           )}
 
-          <div style={{display:'flex',gap:12,flexWrap:'wrap',fontSize:12,color:'var(--text-secondary)',marginBottom:12}}>
+          <div style={{display:'flex',gap:12,flexWrap:'wrap',fontSize:12,color:'var(--text-secondary)',marginBottom:8}}>
             <div><b>Attack:</b> {attackMod>=0?'+':''}{attackMod} ({abilityLabel} {abilityMod>=0?'+':''}{abilityMod}{weapon.proficient ? `, +${prof} prof` : ', not proficient'}{itemBonus.attack ? `, +${itemBonus.attack} item` : ''}{fsBonus.attack ? `, +${fsBonus.attack} Archery` : ''}{featBonus.attack ? `, +${featBonus.attack} feat` : ''})</div>
             <div><b>Damage:</b> {weaponDamageDice(weapon).damage_dice} {(abilityMod + itemBonus.damage + fsBonus.damage + featBonus.damage + hybridBonus.damage) !== 0 ? `${(abilityMod + itemBonus.damage + fsBonus.damage + featBonus.damage + hybridBonus.damage) >= 0 ? '+' : ''}${abilityMod + itemBonus.damage + fsBonus.damage + featBonus.damage + hybridBonus.damage} ` : ''}{weaponDamageDice(weapon).damage_type}{weapon.bonus_damage_dice ? ` + ${weapon.bonus_damage_dice} ${weapon.bonus_damage_type || weaponDamageDice(weapon).damage_type}` : ''}{fsBonus.damage ? ` (incl. +${fsBonus.damage} Dueling)` : ''}{featBonus.damage ? ` (incl. +${featBonus.damage} feat)` : ''}{hybridBonus.damage ? ` (incl. +${hybridBonus.damage} Feral Might)` : ''}</div>
           </div>
@@ -359,10 +360,18 @@ export default function WeaponAttackModal({ itemIndex, weaponOverride, onClose, 
             const onHitDice = tieredDice || cantripSpell.damage_dice;
             const onHitType = cantripSpell.damage_type || weaponDamageDice(weapon).damage_type;
             return (
-              <div style={{border:'1px solid var(--accent-light)',borderRadius:'var(--radius-sm)',padding:10,marginBottom:12}}>
+              <div style={{border:'1px solid var(--accent-light)',borderRadius:'var(--radius-sm)',padding:8,marginBottom:8}}>
                 <div style={{color:'var(--accent-light)',fontWeight:600,fontSize:13,marginBottom:4}}>✨ {cantripSpell.name}{onHitDice ? ` (+${onHitDice} ${onHitType} on hit)` : ' (no on-hit bonus at your level)'}</div>
-                {cantripSpell.description && <div style={{color:'var(--text-secondary)',fontSize:12,whiteSpace:'pre-wrap'}}>{cantripSpell.description}</div>}
-                {cantripSpell.higher_level && <div style={{color:'var(--text-dim)',fontSize:11,marginTop:4}}><b>At Higher Levels.</b> {cantripSpell.higher_level}</div>}
+                {/* The full rules text can be long (Booming Blade etc.) and pushed the
+                    action buttons off-screen - collapse it behind a details toggle,
+                    closed by default, so the panel stays compact. */}
+                {(cantripSpell.description || cantripSpell.higher_level) && (
+                  <details style={{fontSize:12}}>
+                    <summary style={{color:'var(--text-dim)',cursor:'pointer',fontSize:11}}>Show spell text</summary>
+                    {cantripSpell.description && <div style={{color:'var(--text-secondary)',whiteSpace:'pre-wrap',marginTop:4}}>{cantripSpell.description}</div>}
+                    {cantripSpell.higher_level && <div style={{color:'var(--text-dim)',fontSize:11,marginTop:4}}><b>At Higher Levels.</b> {cantripSpell.higher_level}</div>}
+                  </details>
+                )}
               </div>
             );
           })()}
@@ -375,11 +384,29 @@ export default function WeaponAttackModal({ itemIndex, weaponOverride, onClose, 
           )}
 
           {hasSmite && (
-            <div style={{border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',padding:10,marginBottom:12}}>
-              <label style={{display:'flex',alignItems:'center',gap:6,fontSize:13,color:'var(--text-secondary)'}}>
-                <input type="checkbox" checked={smiteOn} onChange={e => { setSmiteOn(e.target.checked); if (e.target.checked && !smiteLevel) setSmiteLevel(smiteSlotLevels[0]); }} disabled={smiteSlotLevels.length===0} />
-                ✨ Divine Smite{smiteSlotLevels.length===0 ? ' (no spell slots available)' : ''}
-              </label>
+            <div style={{border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',padding:8,marginBottom:8}}>
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8}}>
+                <label style={{display:'flex',alignItems:'center',gap:6,fontSize:13,color:'var(--text-secondary)'}}>
+                  <input type="checkbox" checked={smiteOn} onChange={e => { setSmiteOn(e.target.checked); if (e.target.checked && !smiteLevel) setSmiteLevel(smiteSlotLevels[0]); }} disabled={smiteSlotLevels.length===0} />
+                  ✨ Divine Smite{smiteSlotLevels.length===0 ? ' (no spell slots available)' : ''}
+                </label>
+                {/* Description is on-demand only - the checkbox is all you need to use it,
+                    the "?" reveals the rules text for anyone who wants to read it. Keeps
+                    the panel compact by default. */}
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  style={{padding:'2px 8px',fontSize:11}}
+                  onClick={() => setSmiteInfoOpen(o => !o)}
+                >
+                  {smiteInfoOpen ? 'Hide' : '?'}
+                </button>
+              </div>
+              {smiteInfoOpen && (
+                <div style={{color:'var(--text-dim)',fontSize:11,marginTop:6,lineHeight:1.5}}>
+                  When you hit with a melee weapon attack, you can expend a spell slot to deal extra radiant damage: 2d8 for a 1st-level slot, plus 1d8 for each slot level above 1st (max 5d8), plus an extra 1d8 against undead or fiends. Spent when you first roll the damage; the slot isn't refunded on a reroll.
+                </div>
+              )}
               {smiteOn && smiteSlotLevels.length > 0 && (
                 <div style={{display:'flex',gap:8,alignItems:'center',marginTop:8,flexWrap:'wrap'}}>
                   <span style={{color:'var(--text-dim)',fontSize:12}}>Spend slot level:</span>

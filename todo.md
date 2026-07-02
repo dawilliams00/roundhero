@@ -27,7 +27,28 @@ and item-charge row layout) is back to Claude.
 
 *(nothing currently in flight — pull the next item from the queue below when starting)*
 
-**Just shipped, not yet live-verified:** hide combat add-ons from utility spells + fix the
+**Just shipped, not yet live-verified — save-spell DM flow redesign + modal sizing.**
+Supersedes the earlier "Restored the Ask DM / Resolve button" note further down (that
+player-side two-step flow was the wrong model). New behavior:
+- **Save spell cast at an encounter target now notifies the DM on CAST** (owner: "it needs
+  to be there when I select cast"). `continueAfterCast` rolls the damage and queues the
+  pending DM save in one step — the DM's `resolvePendingSave` (`EncounterRunnerModal.js`)
+  requires the damage to ride along, so it can't be queued before the damage exists. The
+  player-side save-roll input and post-damage "Ask DM"/"Resolve" button are gone; the modal
+  just shows "📨 Sent to the DM to roll the {SAVE} save (DC N)". Payload now includes
+  `save_type`/`save_type_abbr` so the DM runner can pick the target's save modifier.
+- **Player never sees applied HP** — attack/damage spells show only "Hit!/Missed.",
+  save spells show "Sent to the DM". No damage-applied numbers leak enemy state.
+- **Reverted** an incomplete spell-attack-roll (Ray of Frost etc.) phase I'd started —
+  it was half-wired and would've failed the build on unused vars. Pure spell-attack-roll
+  support (attack box → hit/miss → damage) for non-weapon attack spells is still a TODO;
+  weapon-attack cantrips (Booming Blade) already get it via the weapon modal.
+- **Modal sizing:** `.modal-flex` max-height 85vh → 92vh. Weapon modal (opened by casting
+  Booming Blade etc.) was too tall — the cantrip rules text is now collapsed behind a
+  "Show spell text" toggle, Divine Smite's description is behind a compact "?" toggle
+  (checkbox alone to use it), and panel spacing tightened.
+
+**Earlier this session, not yet live-verified:** hide combat add-ons from utility spells + fix the
 encounter target/manual-roll gating.
 - `SpellDetailModal.js`: Codex Dice (Syric) now only shows when the spell deals damage
   (`spellDealsDamage`); Metamagic options are filtered to ones that apply to the spell
@@ -77,6 +98,15 @@ encounter resolution entirely. No backend changes — reuses the existing
 spell save payloads should include `save_type` / `save_type_abbr` (`DEX`, `WIS`, etc.)
 so the DM runner's digital save roller can choose the target's save modifier. Manual DM
 save total input works without that field.
+Campaign-side follow-up: AOE/save spells need per-target pending save resolution on the
+individual combatant rows, not one generic DM popup. Each affected creature should get
+its own manual/digital save resolver because AOE spells can require multiple saves with
+different results.
+Implementation contract for Claude: queue one pending save event per selected target by
+calling `/api/campaigns/<campaign_id>/encounters/<encounter_id>/resolve` with
+`mode: "save"`, `target_id`, `save_dc`, `save_type`/`save_type_abbr`, `half_on_success`,
+and `damage_components`, leaving `save_roll` blank. Codex will render/resolve those
+events on the matching combatant row and posts `resolves_event_id` when complete.
 `/campaigns/<id>/encounters/<id>/resolve` contract, just called at two points (attack-only,
 then attack+damage) instead of once at the end. **Next session should click through this
 on the live app**: roll a weapon attack against an encounter target end-to-end, try "I'll
