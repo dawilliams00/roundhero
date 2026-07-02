@@ -29,6 +29,49 @@ export default function SettingsModal({ onClose }) {
   const [localCompanion2Name, setLocalCompanion2Name] = useState(companion2.tab_name || 'Companion 2');
   const [showBrowser, setShowBrowser] = useState(false);
   const [showEditor, setShowEditor] = useState(false);
+  const [backupMsg, setBackupMsg] = useState('');
+  const [backupBusy, setBackupBusy] = useState(false);
+
+  // Pulls the whole homebrew library (all custom spells/feats/items/monsters/rulesets +
+  // canon overrides) as a JSON file the player can keep as a rollback point. Everything a
+  // user creates lives only in the CustomContent DB table, so this file is the backup.
+  const downloadBackup = async () => {
+    setBackupBusy(true); setBackupMsg('');
+    try {
+      const r = await api.get('/content/export');
+      const blob = new Blob([JSON.stringify(r.data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+      a.href = url; a.download = `roundhero-content-backup-${stamp}.json`;
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+      setBackupMsg(`Downloaded ${r.data.count} entries.`);
+    } catch (e) {
+      setBackupMsg('Backup download failed.');
+    } finally { setBackupBusy(false); }
+  };
+
+  // Restore is additive/repair, never destructive - it upserts entries by name and never
+  // deletes anything the file doesn't mention, so importing an old backup can't wipe newer
+  // content (see the import route). Reloads so the merged library shows immediately.
+  const restoreBackup = (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async () => {
+      setBackupBusy(true); setBackupMsg('');
+      try {
+        const parsed = JSON.parse(reader.result);
+        const r = await api.post('/content/import', parsed);
+        setBackupMsg(`Restored: ${r.data.created} added, ${r.data.updated} updated${r.data.skipped ? `, ${r.data.skipped} skipped` : ''}.`);
+      } catch (err) {
+        setBackupMsg('Restore failed — is this a RoundHero backup file?');
+      } finally { setBackupBusy(false); }
+    };
+    reader.readAsText(file);
+  };
 
   useEffect(() => {
     setLocalName(exhaustionRules.name || '');
@@ -223,6 +266,23 @@ export default function SettingsModal({ onClose }) {
             <div style={{color:'var(--text-dim)',fontSize:11,marginTop:6}}>
               Blind death saves are rolled from your sheet and sent to the DM encounter tracker, but you do not see the roll result or pass/fail counters.
             </div>
+          </div>
+        </div>
+
+        <div className="form-group" style={{marginTop:16,borderTop:'1px solid var(--border)',paddingTop:16}}>
+          <label>Homebrew Library Backup</label>
+          <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+            <button className="btn btn-secondary" style={{flex:1,minWidth:160}} disabled={backupBusy} onClick={downloadBackup}>
+              ⬇️ Download Backup
+            </button>
+            <label className="btn btn-secondary" style={{flex:1,minWidth:160,textAlign:'center',cursor:backupBusy?'default':'pointer',margin:0}}>
+              ⬆️ Restore from Backup
+              <input type="file" accept="application/json,.json" style={{display:'none'}} disabled={backupBusy} onChange={restoreBackup} />
+            </label>
+          </div>
+          {backupMsg && <div style={{color:'var(--success)',fontSize:12,marginTop:6}}>{backupMsg}</div>}
+          <div style={{color:'var(--text-dim)',fontSize:11,marginTop:6}}>
+            Saves every custom spell/feat/item/monster/ruleset and canon override (shared across the whole group) to a JSON file — keep it as a rollback point. Restore merges a file back in; it adds/updates entries and never deletes, so an old backup can't wipe newer work. This does not back up characters — those are covered by the database's own backups.
           </div>
         </div>
 

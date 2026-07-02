@@ -1,3 +1,4 @@
+from datetime import datetime
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from database import db
@@ -442,3 +443,64 @@ def reference_category(category):
     if data is None:
         return jsonify({"error": "Unknown reference category"}), 404
     return jsonify(data), 200
+
+
+# --- Homebrew library backup / restore ------------------------------------------------
+# All user-created content (custom spells/feats/items/monsters/rulesets and canon
+# overrides) lives only in the CustomContent DB table. These endpoints let a player pull a
+# full JSON snapshot as a rollback point and push it back if the DB is ever lost/reset.
+# The shared library is unfiltered-by-user everywhere else (see the GET merges above), so
+# export/import operate on the whole table, not just the caller's rows.
+
+@content_bp.route("/export", methods=["GET"])
+@jwt_required()
+def export_custom_content():
+    rows = CustomContent.query.order_by(CustomContent.content_type, CustomContent.name).all()
+    return jsonify({
+        "version": 1,
+        "exported_at": datetime.utcnow().isoformat() + "Z",
+        "count": len(rows),
+        "content": [
+            {"content_type": r.content_type, "name": r.name, "data": r.data}
+            for r in rows
+        ],
+    }), 200
+
+
+@content_bp.route("/import", methods=["POST"])
+@jwt_required()
+def import_custom_content():
+    user_id = int(get_jwt_identity())
+    payload = request.get_json() or {}
+    items = payload.get("content")
+    if not isinstance(items, list):
+        return jsonify({"error": "Expected a 'content' array (use a file from GET /content/export)."}), 400
+
+    # Upsert by (content_type, name) so re-importing a backup updates the matching entry
+    # rather than piling up duplicates. Never deletes rows the backup doesn't mention -
+    # restore is additive/repair, not a destructive mirror, so a partial/old backup can't
+    # wipe newer content. created/updated counts are returned for confirmation.
+    created = updated = skipped = 0
+    for item in items:
+        if not isinstance(item, dict):
+            skipped += 1
+            continue
+        ctype = (item.get("content_type") or "").strip()
+        name = (item.get("name") or "").strip()
+        data = item.get("data")
+        if not ctype or not name or not isinstance(data, dict):
+            skipped += 1
+            continue
+        existing = CustomContent.query.filter_by(content_type=ctype).filter(
+            db.func.lower(CustomContent.name) == name.lower()
+        ).first()
+        if existing:
+            existing.data = data
+            updated += 1
+        else:
+            entry = CustomContent(user_id=user_id, content_type=ctype, name=name)
+            entry.data = data
+            db.session.add(entry)
+            created += 1
+    db.session.commit()
+    return jsonify({"created": created, "updated": updated, "skipped": skipped}), 200

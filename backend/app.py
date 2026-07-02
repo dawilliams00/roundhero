@@ -32,7 +32,22 @@ def _apply_pending_migrations(app):
 def create_app():
     app = Flask(__name__)
 
-    database_url = os.environ.get("DATABASE_URL", "sqlite:///roundhero.db")
+    # DATA-LOSS GUARD: never fall back to ephemeral SQLite in production. Render's web
+    # filesystem is wiped on every deploy/restart, so if DATABASE_URL is ever missing (e.g.
+    # the linked Postgres was deleted or unlinked) the old silent `sqlite:///roundhero.db`
+    # fallback quietly destroyed all data on the next deploy. Render sets RENDER=1 on every
+    # service, so on the platform we refuse to boot instead of silently wiping data - a loud
+    # startup failure you can see, rather than vanished content. Local dev (no RENDER var)
+    # still gets the SQLite convenience fallback.
+    database_url = os.environ.get("DATABASE_URL")
+    if not database_url:
+        if os.environ.get("RENDER"):
+            raise RuntimeError(
+                "DATABASE_URL is not set. Refusing to start on ephemeral SQLite in production "
+                "(it would be wiped on the next deploy). Re-link the Postgres database / set "
+                "DATABASE_URL on the roundhero-api service before deploying."
+            )
+        database_url = "sqlite:///roundhero.db"  # local dev only
     if database_url.startswith("postgres://"):
         database_url = database_url.replace("postgres://", "postgresql://", 1)
     app.config["SQLALCHEMY_DATABASE_URI"] = database_url

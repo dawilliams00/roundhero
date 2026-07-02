@@ -164,6 +164,12 @@ error rather than a real bug.
 
 ## Waiting on the owner (manual, non-code steps)
 
+- **⚠️ DATA LOSS — move `roundhero-db` off the FREE Postgres plan (`render.yaml:16`).**
+  Render deletes free Postgres after a fixed lifespan → recurring wipe of ALL data (custom
+  content, characters, campaigns). This is the real fix for the reported data loss. Also
+  confirm `DATABASE_URL` is linked on `roundhero-api` and enable automatic backups. Code
+  now fails loud (won't boot) instead of silently using ephemeral SQLite, and Settings has
+  a Download/Restore homebrew-library backup — but those are safety nets, not the fix.
 - Render SPA rewrite rule for `roundhero-web` (still not added — refresh-404 on any
   non-root route).
 - `FEEDBACK_SMTP_USER` / `FEEDBACK_SMTP_PASSWORD` Render env vars (Gmail App Password).

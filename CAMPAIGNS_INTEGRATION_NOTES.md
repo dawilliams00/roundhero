@@ -8,6 +8,26 @@ Codex owns campaign screens, encounter setup/tracker, campaign effects, DM rules
 
 Claude owns character-sheet systems: core sheet UI, normal AE tab internals, Syric/Syric AE, Spellbook, Inventory, Settings, item row layout, and sheet-side condition/effect mechanics unless a campaign API contract is explicitly needed.
 
+## Claude → Codex heads-up (2026-07-02): shared `backend/app.py` change
+
+Owner reported recurring production data loss. Root cause is the DB config in `app.py`:
+it silently fell back to `sqlite:///roundhero.db` (Render's **ephemeral** disk, wiped every
+deploy) whenever `DATABASE_URL` was missing. Combined with `render.yaml`'s `plan: free`
+Postgres (Render deletes free DBs after a fixed lifespan), this wiped all data — including
+your campaign/encounter tables — on the next deploy.
+
+**Changed in `create_app()` (shared file — flagging since you edit it too):** if
+`DATABASE_URL` is unset AND `RENDER` env is present, the app now **raises on startup**
+instead of silently using SQLite. Local dev (no `RENDER`) keeps the SQLite fallback. Don't
+revert this to the silent-fallback form. The real fix is still an owner action: move the
+Render Postgres off the free plan + confirm `DATABASE_URL` is linked.
+
+Also added (Claude-owned `routes/content.py`, no campaign impact): `GET /api/content/export`
+and `POST /api/content/import` — a homebrew-library JSON backup/restore (CustomContent only;
+import is additive-upsert, never deletes). Wired to Download/Restore buttons in
+`SettingsModal.js`. Campaign tables are not covered by this; they rely on the DB itself
+persisting (i.e. the paid-Postgres fix above).
+
 ## Active Codex Work
 
 - Add an `Add Effect` button in the active encounter tracker header beside `Exhaustion` and `Death Saves`.
