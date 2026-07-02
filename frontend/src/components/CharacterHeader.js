@@ -117,7 +117,7 @@ function AbilityBox({ abbr, score, baseScore, onSaveBase, color, suspectItem }) 
 
   const title = suspectItem
     ? `Base score (${baseScore}) exactly matches "${suspectItem}"'s Set-To value - if this already includes that item's old bonus, lower it to your true base. Click to edit.`
-    : (boosted ? `${baseScore} base, raised to ${score} by an equipped item - click to edit the base score` : 'Click to edit');
+    : (boosted ? `${baseScore} base, modified to ${score} by active race, feat, item, or effect bonuses - click to edit the base score` : 'Click to edit');
 
   return (
     <div className="stat-box" style={{minWidth:38, borderColor: suspectItem ? 'var(--warning)' : color}} title={title}>

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
-import { SECTION_ORDER, SECTION_COLORS, slotBadgeTextColor, concentrationSlotCount, isCharacterCaster, HASTED_EFFECT, LETHARGIC_CONDITION, maxAttacksForCharacter, isItemActive, formatItemBuff, martialArtsDie, sorceryDisplayName, activeCompanionKey, HYBRID_FORM_EFFECT, hybridFormStats } from '../utils/dnd';
+import { SECTION_ORDER, SECTION_COLORS, slotBadgeTextColor, concentrationSlotCount, isCharacterCaster, availableSpellsForBucket, HASTED_EFFECT, LETHARGIC_CONDITION, maxAttacksForCharacter, isItemActive, formatItemBuff, martialArtsDie, sorceryDisplayName, activeCompanionKey, HYBRID_FORM_EFFECT, hybridFormStats } from '../utils/dnd';
 import AbilityDetailModal from './AbilityDetailModal';
 import CastSpellPickerModal from './CastSpellPickerModal';
 import ItemSpellsModal from './ItemSpellsModal';
@@ -106,6 +106,7 @@ export default function ActionEconomyTab() {
   const isHasted = (td.active_effects || []).includes(HASTED_EFFECT);
   const concSlots = td.concentration?.slots || [];
   const concMaxSlots = concentrationSlotCount(items, isCharacterCaster(character));
+  const hasSpellForBucket = (section) => availableSpellsForBucket(character?.spell_data || {}, section).length > 0;
   // Sorcery Points/Metamagic management (SorceryPointsModal) is also reachable from the
   // Feats/Attunement tab - surfaced here too since "anything with a use/rest/charge
   // belongs on the AE tab" is the standing rule for this tab now. Detected by substring
@@ -462,10 +463,6 @@ export default function ActionEconomyTab() {
           // feat added twice via Browse Feats, or a PDF-imported descriptive feature and
           // a separately-added custom functional version sharing a name) - only the first
           // occurrence of a given tracker_key/name renders, so the player only ever sees one.
-          // Dedup only — the hasSpellForBucket guard was removed because it hid the CAST
-          // button in Bonus Action/Reaction whenever the casting_time format didn't match
-          // exactly, which was more confusing than always showing it. A Sorcerer with
-          // Quickened Spell or a Cleric with Counterspell always has reason to see it.
           const allAbilities = (ae[section] || []).filter((a, i, arr) =>
             arr.findIndex(b => (b.tracker_key || b.name) === (a.tracker_key || a.name)) === i
           );
@@ -475,7 +472,8 @@ export default function ActionEconomyTab() {
           // WEAPONS section; Cast a Spell and class features keep their individual rows.
           const COLLAPSIBLE_NAMES = new Set(['Dash','Disengage','Dodge','Help','Hide','Ready','Search','Use an Object']);
           const standardActions = section === 'Action' ? allAbilities.filter(a => a.source_type === 'raw' && a.cost_type === 'action' && COLLAPSIBLE_NAMES.has(a.name)) : [];
-          const abilities = allAbilities.filter(a => !standardActions.includes(a));
+          const abilities = allAbilities.filter(a => !standardActions.includes(a))
+            .filter(a => a.cost_type !== 'cast_spell' || hasSpellForBucket(section));
           if (!abilities.length && !standardActions.length) return null;
           return (
             <div key={section}>

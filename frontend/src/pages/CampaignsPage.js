@@ -2112,10 +2112,10 @@ export default function CampaignsPage() {
                       <button className="btn btn-secondary btn-sm" onClick={() => setShowFeedback(true)}>Encounter Feedback</button>
                     </div>
                     {campaign.is_dm && (
-                      <form onSubmit={submitEncounter} style={{display:'grid',gridTemplateColumns:'1fr 1fr auto',gap:8,marginBottom:10}}>
+                      <form onSubmit={submitEncounter} style={{display:'grid',gridTemplateColumns:'minmax(180px,1fr) minmax(220px,1.5fr) auto',gap:8,marginBottom:10,alignItems:'stretch'}}>
                         <input value={encounterForm.name} onChange={e => setEncounterForm(f => ({ ...f, name: e.target.value }))} placeholder="Encounter name" />
-                        <input value={encounterForm.notes} onChange={e => setEncounterForm(f => ({ ...f, notes: e.target.value }))} placeholder="Notes" />
-                        <button className="btn btn-primary" disabled={!encounterForm.name.trim()}>Create</button>
+                        <textarea value={encounterForm.notes} onChange={e => setEncounterForm(f => ({ ...f, notes: e.target.value }))} placeholder="Notes" rows={2} style={{resize:'vertical',minHeight:38}} />
+                        <button className="btn btn-primary" disabled={!encounterForm.name.trim()}>Create Encounter</button>
                       </form>
                     )}
                     {encounters.length === 0 ? (

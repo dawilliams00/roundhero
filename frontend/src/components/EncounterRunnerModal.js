@@ -316,6 +316,10 @@ function mergeDeathSaveState(localRow, serverRow) {
   });
 }
 
+function combatantsChanged(before = [], after = []) {
+  return JSON.stringify(before.map(normalizeCombatant)) !== JSON.stringify(after.map(normalizeCombatant));
+}
+
 function sortedCombatants(encounter) {
   return [...((encounter?.data?.combatants || []).map(normalizeCombatant))]
     .sort((a, b) => initiativeValue(b.initiative) - initiativeValue(a.initiative) || a.name.localeCompare(b.name));
@@ -1022,7 +1026,11 @@ export default function EncounterRunnerModal({
       if (!entry) return stableRow;
       return combatantFromRoster(entry, { ...stableRow, initiative: stableRow.initiative, effects: stableRow.effects });
     });
-    patchCombatants(next);
+    if (combatantsChanged(currentRows, next)) {
+      patchCombatants(next);
+    } else {
+      dataRef.current = { ...(dataRef.current || {}), combatants: next };
+    }
   };
 
   useEffect(() => {

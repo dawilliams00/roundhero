@@ -8,6 +8,19 @@ export function CampaignProvider({ children }) {
   const [campaign, setCampaign] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  const campaignSummary = data => ({
+    ...data,
+    member_count: data.member_count ?? (data.members || []).length,
+    character_count: data.character_count ?? (data.characters || []).filter(entry => entry.active).length,
+  });
+
+  const setCurrentCampaign = useCallback(data => {
+    const summary = campaignSummary(data);
+    setCampaign(summary);
+    setCampaigns(prev => prev.map(c => c.id === summary.id ? { ...c, ...summary } : c));
+    return summary;
+  }, []);
+
   const fetchCampaigns = useCallback(async () => {
     setLoading(true);
     try {
@@ -32,16 +45,18 @@ export function CampaignProvider({ children }) {
 
   const createCampaign = useCallback(async name => {
     const r = await api.post('/campaigns/', { name });
-    setCampaign(r.data);
-    setCampaigns(prev => [r.data, ...prev.filter(c => c.id !== r.data.id)]);
-    return r.data;
+    const summary = campaignSummary(r.data);
+    setCampaign(summary);
+    setCampaigns(prev => [summary, ...prev.filter(c => c.id !== summary.id)]);
+    return summary;
   }, []);
 
   const joinCampaign = useCallback(async inviteCode => {
     const r = await api.post('/campaigns/join', { invite_code: inviteCode });
-    setCampaign(r.data);
-    setCampaigns(prev => [r.data, ...prev.filter(c => c.id !== r.data.id)]);
-    return r.data;
+    const summary = campaignSummary(r.data);
+    setCampaign(summary);
+    setCampaigns(prev => [summary, ...prev.filter(c => c.id !== summary.id)]);
+    return summary;
   }, []);
 
   const renameCampaign = useCallback(async (id, name) => {
@@ -67,33 +82,28 @@ export function CampaignProvider({ children }) {
 
   const attachCharacter = useCallback(async (campaignId, characterId) => {
     const r = await api.post(`/campaigns/${campaignId}/characters`, { character_id: characterId });
-    setCampaign(r.data);
-    return r.data;
-  }, []);
+    return setCurrentCampaign(r.data);
+  }, [setCurrentCampaign]);
 
   const detachCharacter = useCallback(async (campaignId, campaignCharacterId) => {
     const r = await api.delete(`/campaigns/${campaignId}/characters/${campaignCharacterId}`);
-    setCampaign(r.data);
-    return r.data;
-  }, []);
+    return setCurrentCampaign(r.data);
+  }, [setCurrentCampaign]);
 
   const setCampaignCharacterActive = useCallback(async (campaignId, campaignCharacterId, active) => {
     const r = await api.post(`/campaigns/${campaignId}/characters/${campaignCharacterId}/active`, { active });
-    setCampaign(r.data);
-    return r.data;
-  }, []);
+    return setCurrentCampaign(r.data);
+  }, [setCurrentCampaign]);
 
   const setPrimaryCharacter = useCallback(async (campaignId, campaignCharacterId) => {
     const r = await api.post(`/campaigns/${campaignId}/characters/${campaignCharacterId}/primary`);
-    setCampaign(r.data);
-    return r.data;
-  }, []);
+    return setCurrentCampaign(r.data);
+  }, [setCurrentCampaign]);
 
   const updateMemberRole = useCallback(async (campaignId, memberId, role) => {
     const r = await api.post(`/campaigns/${campaignId}/members/${memberId}/role`, { role });
-    setCampaign(r.data);
-    return r.data;
-  }, []);
+    return setCurrentCampaign(r.data);
+  }, [setCurrentCampaign]);
 
   const transferCampaignOwner = useCallback(async (campaignId, email) => {
     const r = await api.post(`/campaigns/${campaignId}/owner/transfer`, { email });
@@ -104,9 +114,8 @@ export function CampaignProvider({ children }) {
 
   const removeMember = useCallback(async (campaignId, memberId) => {
     const r = await api.delete(`/campaigns/${campaignId}/members/${memberId}`);
-    setCampaign(r.data);
-    return r.data;
-  }, []);
+    return setCurrentCampaign(r.data);
+  }, [setCurrentCampaign]);
 
   const leaveCampaign = useCallback(async campaignId => {
     await api.post(`/campaigns/${campaignId}/leave`);
