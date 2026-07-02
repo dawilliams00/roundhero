@@ -11,7 +11,7 @@ export function AuthProvider({ children }) {
     const token = localStorage.getItem('rh_token');
     if (token) {
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      api.get('/auth/me')
+      api.get('/auth/me', { suppressGlobalError: true })
         .then(r => setUser(r.data))
         .catch(() => { localStorage.removeItem('rh_token'); })
         .finally(() => setLoading(false));
@@ -21,7 +21,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = async (email, password) => {
-    const r = await api.post('/auth/login', { email, password });
+    const r = await api.post('/auth/login', { email, password }, { suppressGlobalError: true });
     localStorage.setItem('rh_token', r.data.token);
     api.defaults.headers.common['Authorization'] = `Bearer ${r.data.token}`;
     setUser(r.data.user);
@@ -29,7 +29,7 @@ export function AuthProvider({ children }) {
   };
 
   const register = async (username, email, password) => {
-    const r = await api.post('/auth/register', { username, email, password });
+    const r = await api.post('/auth/register', { username, email, password }, { suppressGlobalError: true });
     localStorage.setItem('rh_token', r.data.token);
     api.defaults.headers.common['Authorization'] = `Bearer ${r.data.token}`;
     setUser(r.data.user);
