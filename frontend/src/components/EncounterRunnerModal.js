@@ -400,9 +400,6 @@ function CombatantCard({ row, active, statMonster, onUpdate, onRemove, onViewMon
                 </MiniButton>
               </>
             )}
-            <MiniButton onClick={() => onUpdate(row.id, { dead: !dead })} variant={dead ? 'secondary' : 'danger'}>
-              {dead ? 'Alive' : 'Dead'}
-            </MiniButton>
             {dead && <span style={{color:'var(--danger)',fontSize:11,fontWeight:900,textTransform:'uppercase'}}>Dead</span>}
             {dying && <span style={{color:'var(--warning)',fontSize:11,fontWeight:900,textTransform:'uppercase'}}>Death saves</span>}
             <span style={{color:row.type === 'player' ? 'var(--success)' : 'var(--warning)',fontSize:11,fontWeight:900,textTransform:'uppercase'}}>{row.type}</span>
@@ -471,24 +468,21 @@ function CombatantCard({ row, active, statMonster, onUpdate, onRemove, onViewMon
       </div>
 
       <div style={{gridArea:'actions',display:'flex',gap:5,flexDirection:'column',alignItems:'stretch',minWidth:94}}>
-          {row.type === 'player' && (
-            <>
-            <div style={{color:'var(--text-secondary)',fontSize:10,fontWeight:800,textTransform:'uppercase'}}>Death Saves</div>
-            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:5}}>
-              <MiniButton onClick={() => onDeathSave(row, 'successes', 1)}>Pass {row.death_saves?.successes || 0}</MiniButton>
-              <MiniButton onClick={() => onDeathSave(row, 'failures', 1)}>Fail {row.death_saves?.failures || 0}</MiniButton>
-              <MiniButton onClick={() => onResetDeathSaves(row)}>Reset</MiniButton>
+        <div style={{color:'var(--text-secondary)',fontSize:10,fontWeight:800,textTransform:'uppercase'}}>Death Saves</div>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:5}}>
+          <MiniButton onClick={() => onDeathSave(row, 'successes', 1)}>Pass {row.death_saves?.successes || 0}</MiniButton>
+          <MiniButton onClick={() => onDeathSave(row, 'failures', 1)}>Fail {row.death_saves?.failures || 0}</MiniButton>
+          <MiniButton onClick={() => onResetDeathSaves(row)}>Reset</MiniButton>
+          <MiniButton onClick={() => onUpdate(row.id, { dead: !dead })} variant={dead ? 'secondary' : 'danger'}>{dead ? 'Alive' : 'Dead'}</MiniButton>
+        </div>
+        {row.last_death_save && (
+          <div style={{border:'1px solid rgba(154,128,255,0.42)',background:'rgba(124,92,252,0.16)',borderRadius:4,padding:'5px 6px',fontSize:11,color:'var(--text-secondary)',lineHeight:1.35}}>
+            <div style={{color:'var(--accent-light)',fontWeight:900}}>
+              Last: d20 {row.last_death_save.roll} - {deathSaveResultLabel(row.last_death_save.result)}
             </div>
-            {row.last_death_save && (
-              <div style={{border:'1px solid rgba(154,128,255,0.42)',background:'rgba(124,92,252,0.16)',borderRadius:4,padding:'5px 6px',fontSize:11,color:'var(--text-secondary)',lineHeight:1.35}}>
-                <div style={{color:'var(--accent-light)',fontWeight:900}}>
-                  Last: d20 {row.last_death_save.roll} - {deathSaveResultLabel(row.last_death_save.result)}
-                </div>
-                {row.last_death_save.blind && <div>Blind roll. Player did not see this.</div>}
-              </div>
-            )}
-            </>
-          )}
+            {row.last_death_save.blind && <div>Blind roll. Player did not see this.</div>}
+          </div>
+        )}
       </div>
     </div>
   );
