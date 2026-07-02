@@ -37,6 +37,24 @@ const SAVE_ABILITIES = {
   CHARISMA: 'charisma',
 };
 
+const SPELL_SAVE_FALLBACKS = {
+  burninghands: 'DEX',
+  chainlightning: 'DEX',
+  coneofcold: 'CON',
+  disintegrate: 'DEX',
+  fireball: 'DEX',
+  flamestrike: 'DEX',
+  lightningbolt: 'DEX',
+  meteorswarm: 'DEX',
+  sacredflame: 'DEX',
+  shatter: 'CON',
+  sickeningradiance: 'CON',
+  slow: 'WIS',
+  synapticstatic: 'INT',
+  thunderwave: 'CON',
+  web: 'DEX',
+};
+
 function sameId(left, right) {
   return String(left) === String(right);
 }
@@ -65,6 +83,14 @@ function abilityModifier(score) {
 
 function saveAbilityKey(saveType) {
   return SAVE_ABILITIES[String(saveType || '').trim().toUpperCase()] || '';
+}
+
+function normalizedSpellName(name) {
+  return String(name || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
+}
+
+function inferredSaveType(event) {
+  return event?.save_type || event?.save_ability || SPELL_SAVE_FALLBACKS[normalizedSpellName(event?.label)] || '';
 }
 
 function saveModifierForRow(row, saveType) {
@@ -297,7 +323,7 @@ function EncounterActionPopup({ event, targetRow, onResolveSave, onClose }) {
   const [rolled, setRolled] = useState(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const saveType = event.save_type || event.save_ability || '';
+  const saveType = inferredSaveType(event);
   const saveMod = saveModifierForRow(targetRow, saveType);
   const isPendingSave = event.pending && event.mode === 'save';
   const damageLines = cleanList(event.damage_details)
@@ -389,6 +415,70 @@ function EncounterActionPopup({ event, targetRow, onResolveSave, onClose }) {
           {error && <div style={{color:'var(--danger)',fontSize:12}}>{error}</div>}
         </div>
       )}
+    </div>
+  );
+}
+
+function PendingSaveResolver({ event, row, onResolveSave }) {
+  const [manualRoll, setManualRoll] = useState('');
+  const [rolled, setRolled] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const saveType = inferredSaveType(event);
+  const saveMod = saveModifierForRow(row, saveType);
+
+  const rollDigitally = () => {
+    const d20 = Math.floor(Math.random() * 20) + 1;
+    const mod = saveMod ?? 0;
+    const total = d20 + mod;
+    setRolled({ d20, mod, total });
+    setManualRoll(String(total));
+  };
+
+  const submit = async () => {
+    if (!manualRoll) return;
+    setSaving(true);
+    setError('');
+    try {
+      await onResolveSave(event, manualRoll);
+    } catch (err) {
+      setError(err.message || 'Could not resolve save.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div style={{
+      border:'1px solid rgba(255,193,7,0.7)',
+      background:'rgba(255,193,7,0.12)',
+      borderRadius:5,
+      padding:6,
+      display:'grid',
+      gap:5,
+    }}>
+      <div style={{display:'flex',justifyContent:'space-between',gap:8,alignItems:'center'}}>
+        <div style={{color:'var(--warning)',fontSize:11,fontWeight:900,textTransform:'uppercase'}}>
+          {event.label || 'Save'} {saveType ? `${saveType} save` : 'save'} DC {event.save_dc || '?'}
+        </div>
+        {saveMod !== null && <div style={{color:'var(--text-secondary)',fontSize:11}}>mod {saveMod >= 0 ? '+' : ''}{saveMod}</div>}
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) auto auto',gap:5}}>
+        <input
+          value={manualRoll}
+          onChange={e => setManualRoll(e.target.value)}
+          placeholder="Save total"
+          style={{height:28,fontSize:12,fontWeight:800}}
+        />
+        <MiniButton onClick={rollDigitally} disabled={!saveType || saveMod === null}>Roll</MiniButton>
+        <MiniButton onClick={submit} variant="primary" disabled={saving || !manualRoll}>
+          {saving ? '...' : 'Resolve'}
+        </MiniButton>
+      </div>
+      {rolled && <div style={{color:'var(--text-secondary)',fontSize:11}}>d20 {rolled.d20} {rolled.mod >= 0 ? '+' : ''}{rolled.mod} = {rolled.total}</div>}
+      {!saveType && <div style={{color:'var(--text-dim)',fontSize:11}}>Manual only until save type is known.</div>}
+      {saveType && saveMod === null && <div style={{color:'var(--text-dim)',fontSize:11}}>Manual only: no target save modifier found.</div>}
+      {error && <div style={{color:'var(--danger)',fontSize:11}}>{error}</div>}
     </div>
   );
 }
@@ -509,7 +599,7 @@ function MiniField({ label, value, onCommit, width = 58 }) {
   );
 }
 
-function CombatantCard({ row, active, statMonster, onUpdate, onRemove, onViewMonster, onAddCondition, onRemoveCondition, onRemoveEffect, onDeathSave, onResetDeathSaves, rowRef }) {
+function CombatantCard({ row, active, statMonster, pendingSaves = [], onUpdate, onRemove, onViewMonster, onAddCondition, onRemoveCondition, onRemoveEffect, onDeathSave, onResetDeathSaves, onResolveSave, rowRef }) {
   const dead = isDeadCombatant(row);
   const dying = isInDeathSaves(row);
   const dangerBackground = dead
@@ -583,6 +673,13 @@ function CombatantCard({ row, active, statMonster, onUpdate, onRemove, onViewMon
           <label style={{fontSize:10,color:'var(--text-dim)'}}>CONCENTRATION</label>
           <DraftInput value={row.concentration} onCommit={value => onUpdate(row.id, { concentration: value })} placeholder="Spell or effect" />
         </div>
+        {pendingSaves.length > 0 && (
+          <div style={{display:'grid',gap:5,marginTop:6}}>
+            {pendingSaves.map(event => (
+              <PendingSaveResolver key={event.id || `${event.label}_${event.target_id}`} event={event} row={row} onResolveSave={onResolveSave} />
+            ))}
+          </div>
+        )}
       </div>
 
       <div style={{gridArea:'effects',minWidth:0}}>
@@ -677,6 +774,16 @@ export default function EncounterRunnerModal({
     .filter(monster => !monsterSearch.trim() || monster.name.toLowerCase().includes(monsterSearch.toLowerCase()));
   const effectOptions = useMemo(() => makeEffectOptions(activeRoster), [activeRoster]);
   const effectNames = effectOptions[effectForm.type] || [];
+  const pendingSavesByTarget = useMemo(() => {
+    return cleanList(data.resolution_events)
+      .filter(event => event?.pending && event.mode === 'save' && event.target_id)
+      .reduce((acc, event) => {
+        const key = String(event.target_id);
+        if (!acc[key]) acc[key] = [];
+        acc[key].push(event);
+        return acc;
+      }, {});
+  }, [data.resolution_events]);
 
   const patchCombatants = nextCombatants => {
     const baseData = dataRef.current || {};
@@ -762,6 +869,10 @@ export default function EncounterRunnerModal({
     }
     const fresh = events.find(record => !seenResolutionEventsRef.current.has(record.key));
     events.forEach(record => seenResolutionEventsRef.current.add(record.key));
+    if (fresh?.event?.pending && fresh.event.mode === 'save' && fresh.event.target_id) {
+      focusCombatant(fresh.event.target_id);
+      return;
+    }
     if (fresh) setResolutionAlert(fresh.event);
   }, [data.resolution_events]);
 
@@ -925,6 +1036,7 @@ export default function EncounterRunnerModal({
       target_id: event.target_id,
       label: event.label,
       mode: 'save',
+      resolves_event_id: event.id || '',
       save_type: event.save_type || event.save_ability || '',
       save_dc: event.save_dc,
       save_roll: saveRoll,
@@ -1138,6 +1250,7 @@ export default function EncounterRunnerModal({
                   statMonster={statMonster}
                   rowRef={element => { rowRefs.current[row.id] = element; }}
                   active={sameId(activeId, row.id)}
+                  pendingSaves={pendingSavesByTarget[String(row.id)] || []}
                   onUpdate={updateCombatant}
                   onRemove={removeCombatant}
                   onViewMonster={(monster) => {
@@ -1149,6 +1262,7 @@ export default function EncounterRunnerModal({
                   onRemoveEffect={removeEffect}
                   onDeathSave={setDeathSave}
                   onResetDeathSaves={resetDeathSaves}
+                  onResolveSave={resolvePendingSave}
                 />
               );
             })}

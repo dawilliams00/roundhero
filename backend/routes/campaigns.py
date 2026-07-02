@@ -717,6 +717,7 @@ def resolve_encounter_action(campaign_id, encounter_id):
     save_roll = data.get("save_roll")
     save_dc = data.get("save_dc")
     save_type = data.get("save_type") or data.get("save_type_abbr") or data.get("save_ability") or ""
+    resolves_event_id = data.get("resolves_event_id") or ""
     half_on_success = bool(data.get("half_on_success", True))
     components = data.get("damage_components") or []
     hit = None
@@ -773,6 +774,7 @@ def resolve_encounter_action(campaign_id, encounter_id):
         "damage_applied": applied_damage,
         "damage_details": damage_details,
         "notes": data.get("notes") or "",
+        "resolves_event_id": resolves_event_id,
     }
 
     next_rows = []
@@ -794,6 +796,8 @@ def resolve_encounter_action(campaign_id, encounter_id):
         next_rows.append(patched)
 
     events = encounter_data.get("resolution_events") if isinstance(encounter_data.get("resolution_events"), list) else []
+    if resolves_event_id:
+        events = [entry for entry in events if str(entry.get("id") or "") != str(resolves_event_id)]
     encounter_data["combatants"] = next_rows
     encounter_data["resolution_events"] = [*events[-24:], event]
     encounter.data = encounter_data
