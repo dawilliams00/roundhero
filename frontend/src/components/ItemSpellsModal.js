@@ -46,8 +46,9 @@ export default function ItemSpellsModal({ item, onCast, onClose }) {
           <div style={{flex:1,overflowY:'auto'}}>
             {(item.granted_spells || []).map((g, i) => {
               const spell = resolveSpell(g);
+              const chargeCost = g.charge_cost ?? 1;
               return (
-                <div key={i} onClick={() => setViewing({ spell, chargeCost: g.charge_cost || 1, noLethargy: !!g.no_lethargy })} style={{display:'flex',alignItems:'center',gap:8,padding:'8px 0',borderBottom:'1px solid var(--border)',cursor:'pointer'}}>
+                <div key={i} onClick={() => setViewing({ spell, chargeCost, noLethargy: !!g.no_lethargy })} style={{display:'flex',alignItems:'center',gap:8,padding:'8px 0',borderBottom:'1px solid var(--border)',cursor:'pointer'}}>
                   <div style={{background: spell.level_int===0 ? 'var(--text-dim)' : `var(--slot-${spell.level_int})`,color: spell.level_int===0 ? '#fff' : slotBadgeTextColor(spell.level_int),borderRadius:4,padding:'1px 6px',fontSize:10,fontWeight:600,minWidth:24,textAlign:'center'}}>
                     {spell.level_int===0?'C':spell.level_int}
                   </div>
@@ -55,7 +56,7 @@ export default function ItemSpellsModal({ item, onCast, onClose }) {
                     <div style={{color: schoolColor(spell.school),fontWeight:500,fontSize:13}}>{spell.name}</div>
                     <div style={{color:'var(--text-dim)',fontSize:11}}>{spell.school}</div>
                   </div>
-                  <div style={{color:'var(--text-dim)',fontSize:11}}>{g.charge_cost || 1} chg</div>
+                  <div style={{color:'var(--text-dim)',fontSize:11}}>{chargeCost} chg</div>
                 </div>
               );
             })}

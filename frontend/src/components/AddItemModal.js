@@ -114,7 +114,8 @@ export default function AddItemModal({ item, onSave, onClose }) {
       granted_spells: form.granted_spells.filter(s => s.name.trim()).map(s => {
         const baseLvl = parseInt(s.level_int) || 0;
         const cl = parseInt(s.cast_level);
-        return { name: s.name.trim(), level_int: baseLvl, charge_cost: parseInt(s.charge_cost)||1, cast_level: (!isNaN(cl) && cl >= baseLvl) ? cl : null };
+        const parsedChargeCost = parseInt(s.charge_cost, 10);
+        return { name: s.name.trim(), level_int: baseLvl, charge_cost: Number.isFinite(parsedChargeCost) ? Math.max(0, parsedChargeCost) : 1, cast_level: (!isNaN(cl) && cl >= baseLvl) ? cl : null };
       }),
       buffs: form.buffs || [],
       item_type: form.item_type,
@@ -361,7 +362,7 @@ export default function AddItemModal({ item, onSave, onClose }) {
                 )}
               </div>
               <input type="number" min={s.level_int || 0} value={s.cast_level ?? ''} onChange={e=>updateSpellRow(i,'cast_level',e.target.value)} title="Cast at this slot level (blank = the spell's own level). Affects damage scaling when the player uses the item." placeholder={s.level_int ? `L${s.level_int}` : 'base'} style={{width:56}} />
-              <input type="number" min={1} value={s.charge_cost} onChange={e=>updateSpellRow(i,'charge_cost',e.target.value)} title="Charges consumed per cast" style={{width:56}} />
+              <input type="number" min={0} value={s.charge_cost} onChange={e=>updateSpellRow(i,'charge_cost',e.target.value)} title="Charges consumed per cast" style={{width:56}} />
               <button className="btn btn-secondary btn-sm" onClick={()=>removeSpellRow(i)}>×</button>
             </div>
           );
