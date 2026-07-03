@@ -1380,7 +1380,20 @@ def update_encounter(campaign_id, encounter_id):
             return jsonify({"error": "Invalid encounter status"}), 400
         encounter.status = status
     if "data" in data:
-        encounter.data = data.get("data") or {}
+        new_data = data.get("data") or {}
+        # resolution_events is an append-only event log mutated exclusively by
+        # POST .../resolve, which does a fresh read-then-write against this same DB row.
+        # This PUT sends the DM client's full local data snapshot on every combatant
+        # patch (HP/conditions/initiative edits, and the periodic party-stat sync) - if a
+        # player's /resolve call adds a pending save between the DM's last fetch and this
+        # PUT, trusting the client's copy of resolution_events here would silently erase
+        # it. Confirmed bug: DM sees a pending-save popup appear then vanish moments
+        # later when their own next sync/edit PUTs a stale snapshot over it. Always keep
+        # whatever's currently in the DB for this key instead of what the client sent.
+        existing = encounter.data if isinstance(encounter.data, dict) else {}
+        existing_events = existing.get("resolution_events")
+        new_data["resolution_events"] = existing_events if isinstance(existing_events, list) else []
+        encounter.data = new_data
     db.session.commit()
     return jsonify(encounter.to_dict()), 200
 

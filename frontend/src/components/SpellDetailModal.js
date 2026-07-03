@@ -32,6 +32,14 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
   const [resolvingTarget, setResolvingTarget] = useState(false);
   const [killPrompt, setKillPrompt] = useState(null);
   const [encounterResolution, setEncounterResolution] = useState(null);
+  // AOE save spells (Fireball, Ice Storm, etc.) hit every creature the caster picks, not
+  // just one - selectedTargetKeys is a separate multi-select list used only for save
+  // spells (attack/damage spells keep the original single-target picker above, since a
+  // single spell attack roll or auto-hit damage instance only ever resolves against one
+  // target). multiResolutions holds one resolution per target key once sent, so each
+  // creature's send/error status can be shown and retried independently.
+  const [selectedTargetKeys, setSelectedTargetKeys] = useState([]);
+  const [multiResolutions, setMultiResolutions] = useState(null);
   // "I'll roll in person" for spell damage - the player rolls physical dice and types the
   // total, instead of the app rolling for them. Flows into the same damageResult screen
   // (and the same target resolution / Ask-DM path) as a digital roll.
@@ -81,7 +89,16 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
           });
         });
         setEncounterTargets(targets);
-        setSelectedTargetKey(current => current || targets[0]?.key || '');
+        // Save spells use the checkbox multi-select (selectedTargetKeys) instead of this
+        // single dropdown - auto-filling selectedTargetKey here too would make
+        // `selectedTarget` truthy by default even with zero boxes checked, which made the
+        // damage-result footer falsely claim a save spell was "sent to the DM" when no
+        // target was ever actually selected (found in review - selectedTargetKey has no
+        // way to get cleared for a save spell otherwise, since the dropdown that would
+        // normally let the player change/clear it isn't rendered for save spells at all).
+        if (!spell.save_type_abbr) {
+          setSelectedTargetKey(current => current || targets[0]?.key || '');
+        }
       })
       .catch(() => {
         if (!cancelled) setEncounterTargets([]);
@@ -160,6 +177,10 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
   // route to WeaponAttackModal instead) and not a save spell (those never roll to hit).
   const needsAttackRoll = !!spell.is_attack && !spell.requires_weapon_attack && !spell.save_type_abbr;
   const attackMod = displayBlocks[0]?.attackMod ?? 0;
+  // Save spells get the multi-select AOE picker (Fireball can hit several creatures at
+  // once, each rolling their own save); attack/damage spells keep the single-target
+  // picker since a single attack roll or auto-hit instance only ever resolves one target.
+  const isSaveSpell = !!spell.save_type_abbr;
 
   const finish = () => { onClose(); if (onCastSuccess) onCastSuccess(castMetaRef.current || { spell, level: spell.level_int, chargeMode }); };
 
@@ -168,6 +189,11 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
   // been rolled against it so switching targets mid-cast can't desync things.
   const selectedTarget = encounterTargets.find(row => row.key === selectedTargetKey);
   const targetDisplayName = () => selectedTarget ? selectedTarget.label.split(': ').slice(1).join(': ').replace(/ \(enemy\)$/, '') : 'Your enemy';
+  const selectedTargetsMulti = encounterTargets.filter(row => selectedTargetKeys.includes(row.key));
+  const toggleTargetKey = (key) => {
+    setSelectedTargetKeys(keys => keys.includes(key) ? keys.filter(k => k !== key) : [...keys, key]);
+    setMultiResolutions(null);
+  };
   // Kill narration note to the encounter (flavor for the DM). Save spells never reach this
   // - the DM applies their damage, so the caster's client never learns the target fell.
   const narrateKill = async (text) => {
@@ -225,6 +251,42 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
     } finally {
       setResolvingTarget(false);
     }
+  };
+
+  // AOE save spell: same damage instance applies to every selected creature, but each
+  // gets its own pending-save event (the DM rolls a separate save per creature - an AOE
+  // save can pass for one target and fail for another). Sequential, not Promise.all - a
+  // handful of targets at most, and keeping it sequential means a retry after a partial
+  // failure only re-sends the ones that actually failed. Per the agreed contract, each
+  // call queues one pending save (save_roll blank); Codex's DM runner renders/resolves
+  // each on its own combatant row.
+  const resolveMultiSaveTargets = async (result, targets = selectedTargetsMulti) => {
+    if (!targets.length) return;
+    setResolvingTarget(true);
+    const saveDC = displayBlocks[0]?.saveDC || '';
+    const next = { ...(multiResolutions || {}) };
+    for (const target of targets) {
+      try {
+        const r = await api.post(`/campaigns/${target.campaignId}/encounters/${target.encounterId}/resolve`, {
+          source_character_id: character.id,
+          target_id: target.targetId,
+          label: spell.name,
+          mode: 'save',
+          attack_total: '',
+          save_dc: saveDC,
+          save_type: spell.save_type_abbr || '',
+          save_type_abbr: spell.save_type_abbr || '',
+          save_roll: '',
+          half_on_success: true,
+          damage_components: damageComponentsFor(result),
+        }, { suppressGlobalError: true });
+        next[target.key] = r.data.resolution;
+      } catch (err) {
+        next[target.key] = { error: err.response?.data?.error || 'Could not send to the DM.' };
+      }
+    }
+    setMultiResolutions(next);
+    setResolvingTarget(false);
   };
 
   // Attack-phase resolve for needsAttackRoll spells: sends only the attack total, no
@@ -299,19 +361,20 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
       return;
     }
     const dmg = scaleSpellDamage(spell, levelUsed, character.level);
-    // Save spell against an encounter target: roll the damage right now and queue the DM
-    // save in one step, so the moment you cast, the DM is notified to roll the DC save
+    // Save spell against encounter target(s): roll the damage right now and queue the DM
+    // save(s) in one step, so the moment you cast, the DM is notified to roll the DC save
     // (with the damage attached, which the DM resolver requires). No separate post-roll
     // "Ask DM" click - that was the confusing out-of-order step. The DM applies full/half
-    // when they resolve the save on their end.
-    if (dmg && spell.save_type_abbr && selectedTarget) {
+    // when they resolve each save on their end. AOE spells (Fireball etc.) can have
+    // multiple targets selected - each gets its own pending save event.
+    if (dmg && spell.save_type_abbr && selectedTargetsMulti.length > 0) {
       const result = {
         ...dmg,
         ...rollDamageDetailed(dmg),
         secondaryResult: dmg.secondary ? rollDamageDetailed(dmg.secondary) : undefined,
       };
       setDamageResult(result);
-      await resolveSpellAgainstTarget(result);
+      await resolveMultiSaveTargets(result, selectedTargetsMulti);
       return;
     }
     if (dmg) {
@@ -481,18 +544,38 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
         <div className="modal-body">
           {encounterTargets.length > 0 && (
             <div style={{border:'1px solid var(--accent-light)',borderRadius:'var(--radius-sm)',padding:10,marginBottom:12}}>
-              <div style={{color:'var(--text-dim)',fontSize:10,textTransform:'uppercase',letterSpacing:1,marginBottom:5}}>Encounter Target</div>
-              <select
-                value={selectedTargetKey}
-                onChange={e => { setSelectedTargetKey(e.target.value); setEncounterResolution(null); }}
-                disabled={!!(damageResult || attackResult)}
-                style={{width:'100%'}}
-              >
-                <option value="">— No target (just roll) —</option>
-                {encounterTargets.map(target => <option key={target.key} value={target.key}>{target.label}</option>)}
-              </select>
-              {spell.save_type_abbr && selectedTarget && (
-                <div style={{color:'var(--text-dim)',fontSize:11,marginTop:4}}>Casting sends this to the DM to roll the {spell.save_type_abbr} save — they apply the damage.</div>
+              <div style={{color:'var(--text-dim)',fontSize:10,textTransform:'uppercase',letterSpacing:1,marginBottom:5}}>
+                Encounter Target{isSaveSpell ? 's' : ''}
+              </div>
+              {isSaveSpell ? (
+                <div style={{display:'flex',flexDirection:'column',gap:4,maxHeight:140,overflowY:'auto'}}>
+                  {encounterTargets.map(target => (
+                    <label key={target.key} style={{display:'flex',alignItems:'center',gap:6,fontSize:12,color:'var(--text-secondary)',cursor: multiResolutions ? 'default' : 'pointer'}}>
+                      <input
+                        type="checkbox"
+                        checked={selectedTargetKeys.includes(target.key)}
+                        disabled={!!multiResolutions}
+                        onChange={() => toggleTargetKey(target.key)}
+                      />
+                      {target.label}
+                    </label>
+                  ))}
+                </div>
+              ) : (
+                <select
+                  value={selectedTargetKey}
+                  onChange={e => { setSelectedTargetKey(e.target.value); setEncounterResolution(null); }}
+                  disabled={!!(damageResult || attackResult)}
+                  style={{width:'100%'}}
+                >
+                  <option value="">— No target (just roll) —</option>
+                  {encounterTargets.map(target => <option key={target.key} value={target.key}>{target.label}</option>)}
+                </select>
+              )}
+              {isSaveSpell && selectedTargetsMulti.length > 0 && (
+                <div style={{color:'var(--text-dim)',fontSize:11,marginTop:4}}>
+                  Casting sends this to the DM to roll the {spell.save_type_abbr} save for each selected creature — they apply the damage.
+                </div>
               )}
             </div>
           )}
@@ -559,8 +642,36 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
               </div>
               {/* Save spell: the whole thing was sent to the DM to roll the save the moment
                   you cast. The player never sees the HP applied - only that it's with the
-                  DM. Retry re-sends if the queue call failed. */}
-              {selectedTarget && spell.save_type_abbr ? (
+                  DM. Retry re-sends if the queue call failed. AOE spells with several
+                  targets selected show one line per creature, each independently
+                  retryable, since a partial send failure shouldn't force resending to
+                  targets that already queued fine. */}
+              {isSaveSpell && selectedTargetsMulti.length > 0 ? (
+                <div style={{borderTop:'1px solid var(--border)',marginTop:10,paddingTop:8,textAlign:'left'}}>
+                  {selectedTargetsMulti.map(target => {
+                    const res = multiResolutions?.[target.key];
+                    const name = target.label.split(': ').slice(1).join(': ');
+                    return (
+                      <div key={target.key} style={{fontSize:12,fontWeight:600,marginBottom:4,color: resolvingTarget && !res ? 'var(--text-dim)' : res?.error ? 'var(--danger)' : res ? 'var(--accent-light)' : 'var(--text-dim)'}}>
+                        {resolvingTarget && !res
+                          ? `Sending for ${name}...`
+                          : res?.error
+                            ? `${name}: ${res.error}`
+                            : res
+                              ? `📨 ${res.target_name || name}: sent to the DM to roll the ${spell.save_type_abbr} save (DC ${displayBlocks[0]?.saveDC || '?'}).`
+                              : `${name}: pending...`}
+                      </div>
+                    );
+                  })}
+                  {multiResolutions && Object.values(multiResolutions).some(r => r?.error) && (
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      style={{marginTop:6}}
+                      onClick={() => resolveMultiSaveTargets(damageResult, selectedTargetsMulti.filter(t => multiResolutions[t.key]?.error))}
+                    >Retry failed</button>
+                  )}
+                </div>
+              ) : selectedTarget && spell.save_type_abbr ? (
                 <div style={{borderTop:'1px solid var(--border)',marginTop:10,paddingTop:8,textAlign:'left'}}>
                   <div style={{color: resolvingTarget ? 'var(--text-dim)' : encounterResolution?.error ? 'var(--danger)' : 'var(--accent-light)',fontSize:12,fontWeight:600}}>
                     {resolvingTarget
@@ -587,7 +698,7 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
               )}
               <div style={{display:'flex',gap:8,marginTop:10}}>
                 {/* No reroll once it's been sent to the DM / applied against a target. */}
-                <button className="btn btn-secondary" style={{flex:1}} disabled={!!(selectedTarget && encounterResolution)} onClick={rollNow}>Reroll</button>
+                <button className="btn btn-secondary" style={{flex:1}} disabled={!!(selectedTarget && encounterResolution) || !!(selectedTargetsMulti.length > 0 && multiResolutions)} onClick={rollNow}>Reroll</button>
                 <button className="btn btn-primary" style={{flex:1}} onClick={finish}>Done</button>
               </div>
             </div>
