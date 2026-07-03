@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useCharacter } from '../context/CharacterContext';
 import api from '../utils/api';
-import { schoolColor, getSpellcastingBlocks, getAbilityOverrideBlock, scaleSpellDamage, rollDamageDetailed, concentrationSlotCount, isCharacterCaster, maxAttacksForCharacter, HASTED_EFFECT, METAMAGIC_OPTIONS, metamagicCost, featBuffItems, raceBuffItems } from '../utils/dnd';
+import { schoolColor, getSpellcastingBlocks, getAbilityOverrideBlock, scaleSpellDamage, rollDamageDetailed, rollD20, concentrationSlotCount, isCharacterCaster, maxAttacksForCharacter, HASTED_EFFECT, METAMAGIC_OPTIONS, metamagicCost, featBuffItems, raceBuffItems } from '../utils/dnd';
 import InfoModal from './InfoModal';
 import WeaponAttackModal from './WeaponAttackModal';
 import KillPromptModal from './KillPromptModal';
@@ -37,6 +37,14 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
   // (and the same target resolution / Ask-DM path) as a digital roll.
   const [manualDamageOpen, setManualDamageOpen] = useState(false);
   const [manualDamageTotal, setManualDamageTotal] = useState('');
+  // Spell-attack cantrips/spells (Fire Bolt, Ray of Frost, etc. - is_attack but not a
+  // weapon-attack cantrip like Booming Blade and not a save spell) need their own
+  // attack-roll step before damage, same as WeaponAttackModal's Roll Attack -> hit/miss ->
+  // Roll Damage flow. Previously these skipped straight to the damage roll with no attack
+  // check at all - a real gap, not just a missing nicety (see todo.md).
+  const [attackResult, setAttackResult] = useState(null);
+  const [manualAttackOpen, setManualAttackOpen] = useState(false);
+  const [manualAttackTotal, setManualAttackTotal] = useState('');
   const [castLevel, setCastLevel] = useState(spell?.level_int || 0);
   const castMetaRef = useRef(null);
   // Tracks whether the player actually rolled/logged a weapon attack for a weapon-attack
@@ -148,6 +156,10 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
     return true;
   };
   const applicableMetamagic = knownMetamagic.filter(metamagicAppliesToSpell);
+  // Pure spell-attack cast (Fire Bolt, Ray of Frost) - not a weapon-attack cantrip (those
+  // route to WeaponAttackModal instead) and not a save spell (those never roll to hit).
+  const needsAttackRoll = !!spell.is_attack && !spell.requires_weapon_attack && !spell.save_type_abbr;
+  const attackMod = displayBlocks[0]?.attackMod ?? 0;
 
   const finish = () => { onClose(); if (onCastSuccess) onCastSuccess(castMetaRef.current || { spell, level: spell.level_int, chargeMode }); };
 
@@ -184,7 +196,7 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
   // which is why the damage has to ride along in this same call (the DM resolver refuses a
   // pending event with no damage). For attack/plain-damage spells it applies damage
   // directly. `save_type` lets the DM runner pick the target's correct save modifier.
-  const resolveSpellAgainstTarget = async (result) => {
+  const resolveSpellAgainstTarget = async (result, attackTotal = '') => {
     if (!selectedTarget) return null;
     setResolvingTarget(true);
     setEncounterResolution(null);
@@ -195,7 +207,7 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
         target_id: selectedTarget.targetId,
         label: spell.name,
         mode: spell.save_type_abbr ? 'save' : (spell.is_attack ? 'attack' : 'damage'),
-        attack_total: '',
+        attack_total: attackTotal,
         save_dc: saveDC,
         save_type: spell.save_type_abbr || '',
         save_type_abbr: spell.save_type_abbr || '',
@@ -215,6 +227,47 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
     }
   };
 
+  // Attack-phase resolve for needsAttackRoll spells: sends only the attack total, no
+  // damage - the backend compares it against the target's hidden AC and reports hit/miss
+  // without touching HP yet. Mirrors WeaponAttackModal's resolveAttackAgainstTarget.
+  const resolveAttackOnly = async (attackTotal) => {
+    if (!selectedTarget) return null;
+    setResolvingTarget(true);
+    setEncounterResolution(null);
+    try {
+      const r = await api.post(`/campaigns/${selectedTarget.campaignId}/encounters/${selectedTarget.encounterId}/resolve`, {
+        source_character_id: character.id,
+        target_id: selectedTarget.targetId,
+        label: spell.name,
+        mode: 'attack',
+        attack_total: attackTotal,
+      }, { suppressGlobalError: true });
+      setEncounterResolution(r.data.resolution);
+      return r.data.resolution;
+    } catch (err) {
+      const res = { error: err.response?.data?.error || 'Could not resolve against encounter target.' };
+      setEncounterResolution(res);
+      return res;
+    } finally {
+      setResolvingTarget(false);
+    }
+  };
+
+  const rollAttackRoll = async () => {
+    const d20 = rollD20();
+    const total = d20 + attackMod;
+    setAttackResult({ d20, mod: attackMod, total });
+    if (selectedTarget) await resolveAttackOnly(total);
+  };
+
+  const submitManualAttack = async () => {
+    const total = parseInt(manualAttackTotal);
+    if (isNaN(total)) return;
+    setAttackResult({ d20: null, mod: attackMod, total, manual: true });
+    setManualAttackOpen(false);
+    if (selectedTarget) await resolveAttackOnly(total);
+  };
+
   // Serves both the first roll (from the pendingDamage screen) and Reroll (from the
   // damageResult screen) - Reroll disables itself once a target resolution is finalized
   // (see render below) so this never double-applies damage to a target. Save spells are
@@ -226,7 +279,7 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
       secondaryResult: pendingDamage.secondary ? rollDamageDetailed(pendingDamage.secondary) : undefined,
     };
     setDamageResult(result);
-    if (selectedTarget && !spell.save_type_abbr) await resolveSpellAgainstTarget(result);
+    if (selectedTarget && !spell.save_type_abbr) await resolveSpellAgainstTarget(result, attackResult?.total ?? '');
   };
 
   // Manual damage entry ("I'll roll in person") - the player types the total they rolled
@@ -237,7 +290,7 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
     if (isNaN(total)) return;
     const result = { ...pendingDamage, total, rolls: [], bonus: 0, manual: true };
     setDamageResult(result);
-    if (selectedTarget && !spell.save_type_abbr) await resolveSpellAgainstTarget(result);
+    if (selectedTarget && !spell.save_type_abbr) await resolveSpellAgainstTarget(result, attackResult?.total ?? '');
   };
 
   const continueAfterCast = async (levelUsed) => {
@@ -432,7 +485,7 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
               <select
                 value={selectedTargetKey}
                 onChange={e => { setSelectedTargetKey(e.target.value); setEncounterResolution(null); }}
-                disabled={!!damageResult}
+                disabled={!!(damageResult || attackResult)}
                 style={{width:'100%'}}
               >
                 <option value="">— No target (just roll) —</option>
@@ -540,12 +593,44 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
             </div>
           ) : pendingDamage ? (
             <div style={{width:'100%',background:'var(--bg-primary)',borderRadius:'var(--radius-sm)',padding:12,textAlign:'center'}}>
+              {needsAttackRoll && (
+                attackResult != null ? (
+                  <div style={{marginBottom:12}}>
+                    <div style={{color:'var(--text-dim)',fontSize:11,textTransform:'uppercase',letterSpacing:1,marginBottom:4}}>Attack Roll</div>
+                    <div style={{color:'var(--accent-light)',fontWeight:700,fontSize:28}}>{attackResult.total}</div>
+                    {!attackResult.manual && (
+                      <div style={{color:'var(--text-dim)',fontSize:11}}>d20: {attackResult.d20} {attackResult.mod>=0?'+':''}{attackResult.mod}</div>
+                    )}
+                    {selectedTarget && (
+                      <div style={{fontSize:13,fontWeight:600,marginTop:6,color: resolvingTarget ? 'var(--text-dim)' : encounterResolution?.error ? 'var(--danger)' : encounterResolution?.hit === false ? 'var(--danger)' : encounterResolution?.hit === true ? 'var(--success)' : 'var(--text-dim)'}}>
+                        {resolvingTarget ? 'Checking hit...' : encounterResolution?.error || (encounterResolution?.hit === false ? 'Miss' : encounterResolution?.hit === true ? 'Hit!' : '')}
+                      </div>
+                    )}
+                    <button className="btn btn-secondary btn-sm" style={{marginTop:8}} disabled={!!damageResult} onClick={rollAttackRoll}>Reroll</button>
+                  </div>
+                ) : manualAttackOpen ? (
+                  <div style={{marginBottom:12}}>
+                    <div style={{color:'var(--text-dim)',fontSize:11,marginBottom:8}}>Roll your spell attack in person, then enter the total:</div>
+                    <div style={{display:'flex',gap:6}}>
+                      <input type="number" placeholder="Attack total" value={manualAttackTotal} onChange={e => setManualAttackTotal(e.target.value)} style={{flex:1}} autoFocus />
+                      <button className="btn btn-primary" disabled={!manualAttackTotal || resolvingTarget} onClick={submitManualAttack}>Enter</button>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{marginBottom:12}}>
+                    <button className="btn btn-primary" style={{width:'100%',marginBottom:8}} onClick={rollAttackRoll}>Roll to Attack</button>
+                    <button className="btn btn-secondary" style={{width:'100%'}} onClick={() => setManualAttackOpen(true)}>✓ I'll roll in person - enter attack total</button>
+                  </div>
+                )
+              )}
               <div style={{color:'var(--text-dim)',fontSize:11,textTransform:'uppercase',letterSpacing:1,marginBottom:10}}>
                 {pendingDamage.label} {spell.damage_type}{pendingDamage.secondary ? ` + ${pendingDamage.secondary.label} ${pendingDamage.secondary.type}` : ''} damage
                 {spell.save_type_abbr ? ` · ${spell.save_type_abbr} DC vs caster · half on success` : ''}
                 {spell.is_attack ? ' · requires a spell attack roll' : ''}
               </div>
-              {manualDamageOpen ? (
+              {needsAttackRoll && selectedTarget && encounterResolution?.hit === false ? (
+                <div style={{color:'var(--danger)',fontSize:12,marginBottom:8}}>Miss - no damage to roll.</div>
+              ) : manualDamageOpen ? (
                 <>
                   <div style={{color:'var(--text-dim)',fontSize:11,marginBottom:8}}>Roll your {pendingDamage.label}{pendingDamage.secondary ? ` + ${pendingDamage.secondary.label}` : ''} in person, then enter the total:</div>
                   <div style={{display:'flex',gap:6,marginBottom:8}}>
@@ -558,9 +643,19 @@ export default function SpellDetailModal({ spell, onClose, chargeMode, onCastSuc
                 <>
                   <div style={{display:'flex',gap:8}}>
                     <button className="btn btn-secondary" style={{flex:1}} onClick={finish}>Skip</button>
-                    <button className="btn btn-primary" style={{flex:1}} onClick={rollNow}>Roll Damage?</button>
+                    <button
+                      className="btn btn-primary"
+                      style={{flex:1}}
+                      disabled={needsAttackRoll && !!selectedTarget && (!attackResult || resolvingTarget || !encounterResolution || encounterResolution.error || encounterResolution.hit === false)}
+                      onClick={rollNow}
+                    >Roll Damage?</button>
                   </div>
-                  <button className="btn btn-secondary" style={{width:'100%',marginTop:8}} onClick={() => setManualDamageOpen(true)}>✓ I'll roll in person - enter damage</button>
+                  <button
+                    className="btn btn-secondary"
+                    style={{width:'100%',marginTop:8}}
+                    disabled={needsAttackRoll && !!selectedTarget && (!attackResult || resolvingTarget || !encounterResolution || encounterResolution.error || encounterResolution.hit === false)}
+                    onClick={() => setManualDamageOpen(true)}
+                  >✓ I'll roll in person - enter damage</button>
                 </>
               )}
             </div>
