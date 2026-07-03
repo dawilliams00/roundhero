@@ -90,6 +90,23 @@ and item-charge row layout) is back to Claude.
 
 *(nothing currently in flight — pull the next item from the queue below when starting)*
 
+**Just shipped, live-verified locally — spell-attack roll step for non-weapon spell
+attacks (Fire Bolt, Ray of Frost, etc.).** Owner reported "the roll to attack button is
+gone" when casting Fire Bolt — traced to the reverted half-built phase noted below, not a
+fresh regression. `SpellDetailModal.js` now has a `needsAttackRoll` gate
+(`spell.is_attack && !requires_weapon_attack && !save_type_abbr`) that inserts a Roll to
+Attack / manual-entry step before the damage roll, mirroring `WeaponAttackModal.js`'s
+existing Roll Attack → hit/miss → Roll Damage pattern: d20 + spell attack mod, resolves
+hit/miss against a selected encounter target via the existing `/resolve` endpoint's
+`mode:'attack'`, and disables Roll Damage until a hit resolves (when a target is selected;
+untargeted casts roll damage freely, same as the weapon modal). No backend changes.
+Weapon-attack cantrips, save spells, and plain damage-only spells are untouched — the new
+JSX/disabled-conditions are all gated behind `needsAttackRoll`, false for those cases.
+Tested live in a local preview server (created a disposable Wizard test character, added
+Fire Bolt, cast it: Roll to Attack → 12 (d20:7+5) → Roll Damage → 9 Fire → Done, no console
+errors) — full encounter-target hit/miss gating not yet re-tested live against a real
+encounter, worth another pass next time one's running. Commit `97789b4`.
+
 **Just shipped, not yet live-verified — save-spell DM flow redesign + modal sizing.**
 Supersedes the earlier "Restored the Ask DM / Resolve button" note further down (that
 player-side two-step flow was the wrong model). New behavior:
@@ -102,10 +119,11 @@ player-side two-step flow was the wrong model). New behavior:
   `save_type`/`save_type_abbr` so the DM runner can pick the target's save modifier.
 - **Player never sees applied HP** — attack/damage spells show only "Hit!/Missed.",
   save spells show "Sent to the DM". No damage-applied numbers leak enemy state.
-- **Reverted** an incomplete spell-attack-roll (Ray of Frost etc.) phase I'd started —
-  it was half-wired and would've failed the build on unused vars. Pure spell-attack-roll
-  support (attack box → hit/miss → damage) for non-weapon attack spells is still a TODO;
-  weapon-attack cantrips (Booming Blade) already get it via the weapon modal.
+- ~~Reverted an incomplete spell-attack-roll (Ray of Frost etc.) phase — half-wired, would've
+  failed the build. Pure spell-attack-roll support is still a TODO.~~ **Built properly
+  2026-07-02** — see the "Spell-attack roll step" entry below. Weapon-attack cantrips
+  (Booming Blade) already had it via the weapon modal; this covers non-weapon spell attacks
+  (Fire Bolt, Ray of Frost, etc.) too.
 - **Modal sizing:** `.modal-flex` max-height 85vh → 92vh. Weapon modal (opened by casting
   Booming Blade etc.) was too tall — the cantrip rules text is now collapsed behind a
   "Show spell text" toggle, Divine Smite's description is behind a compact "?" toggle

@@ -192,7 +192,8 @@ casually cross these):
 When merging campaign/DM work into `main`: pause Claude's active edits or commit them
 first, merge deliberately (expect conflicts in the shared/bridge files above — keep both
 sides' changes rather than replacing whole files), run `py_compile` on touched backend
-files, do a careful frontend diff review (no Node here), then commit and push. Campaign
+files, do a careful frontend diff review (plus a live click-through now that Node/npm and
+a browser preview are available — see below), then commit and push. Campaign
 tables (`Campaign`, `CampaignMember`, `CampaignCharacter`, `CampaignEffect`,
 `CampaignEncounter`) are new tables — `db.create_all()` creates them fine on Render, no
 `PENDING_COLUMNS` entry needed unless a change adds a column to an *existing* table.
@@ -666,11 +667,14 @@ Self/Ally/Enemy targeting flow for Polymorph specifically — full agreed spec l
   data both look correct (Wizard 18/20 features aren't excluded). Best guess is a scroll-
   affordance issue, not a filter bug, but unconfirmed without a live repro (does the
   *unfiltered* view also stop early, or only a locked-subclass preview?).
-- Standing sandbox limitation: **no Node/npm, no browser access** in this environment. Every
-  frontend change in this project's history has shipped without in-sandbox visual
-  verification — Render's real build is the only thing that catches a genuine compile
-  error before the owner clicks through it live. Assume any recent frontend batch still
-  needs a live click-through before calling it fully done.
+- ~~Standing sandbox limitation: no Node/npm, no browser access~~ **No longer true as of
+  2026-07-02** — Node/npm and a browser preview tool are both available now (see "Local
+  Node/npm note" above; `npm start`/`python app.py` can be run directly and clicked through
+  via the preview tool, e.g. used to verify the spell-attack-roll fix this session). Most
+  of this project's frontend history still shipped without in-sandbox visual verification
+  before this changed, so treat older "not yet live-verified" notes at face value, but new
+  frontend work going forward should get an actual click-through in a preview server before
+  being called done, not just a compile check.
 
 ## Backlog (future plans, not currently active — see `todo.md` for what's in flight)
 
