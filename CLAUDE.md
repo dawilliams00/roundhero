@@ -85,9 +85,7 @@ testing with their own character "Syric Nightbloom," a level 13 Shadar-kai Wizar
 imported from a D&D Beyond PDF), plus a second real PDF-imported character, **Barry
 McCockiner** (multiclass Paladin/Sorcerer) used to catch multiclass-specific bugs Syric
 alone wouldn't surface. No test suite exists — verification is `python -m py_compile` for
-backend syntax and careful manual diff/JSX review for frontend (no Node/npm in this
-sandbox, confirmed absent repeatedly — don't retry `node`/`npm`/`npx`; let Render's real
-build step catch compile errors on deploy). The owner is non-technical-ish but experienced
+backend syntax and `npm run build` for frontend when Node is available locally. The owner is non-technical-ish but experienced
 with this project; feedback comes almost entirely from screenshots of the live app and an
 old Raspberry Pi/Tkinter tracker they're porting features from (source under
 `Desktop\Wearables\Syric Arcane Controller\` — the live copy, not the dated `Backup`
@@ -116,6 +114,17 @@ npm install
 npm start        # :3000, proxies API to :5000
 npm run build    # -> build/
 ```
+
+**Local dev login/testing note:**
+- `localhost:3000` is the local React dev app backed by the local Flask/SQLite database,
+  not Render production. The owner's real Render/Yahoo login will not work there unless
+  that user also exists in the local DB.
+- Codex smoke-tested local login by creating a throwaway account through the UI:
+  username `codextest`, email `codextest@example.com`, password `test`.
+- After login, Codex created `Smoke Hero` and `Smoke Campaign` as disposable local test
+  records. Do not use those as production assumptions.
+- If login on `localhost:3000` shows auth errors, first confirm whether the local backend
+  is running on `localhost:5000` and whether the account exists in the local SQLite DB.
 
 ## Deploy
 
@@ -188,12 +197,10 @@ tables (`Campaign`, `CampaignMember`, `CampaignCharacter`, `CampaignEffect`,
 `CampaignEncounter`) are new tables — `db.create_all()` creates them fine on Render, no
 `PENDING_COLUMNS` entry needed unless a change adds a column to an *existing* table.
 
-Local Codex shell note: `npm` is not on PATH in this desktop session. Use the bundled
-runtime paths from `load_workspace_dependencies` instead, especially
-`C:\Users\David\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe`
-and `...\dependencies\bin\pnpm.cmd`. If `pnpm run build` blocks on ignored dependency
-build scripts, run the existing local script directly with bundled Node, e.g.
-`node.exe frontend\node_modules\react-scripts\bin\react-scripts.js build`.
+Local Node/npm note: Node.js is installed at `C:\Program Files\nodejs` and npm globals at
+`C:\Users\David\AppData\Roaming\npm`; both were added to the user PATH on 2026-07-02.
+Already-running shells may still need:
+`$env:Path = 'C:\Program Files\nodejs;C:\Users\David\AppData\Roaming\npm;' + $env:Path`.
 
 Current campaign/encounter feature state (DM-owned, live): invite-code join, DM/player
 roles with promote/demote, character roster with Remove (detach) vs Inactivate (soft
